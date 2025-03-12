@@ -158,7 +158,8 @@ void methodOopDesc::print_codes() {
   ResourceMark rm;
   selector()->print_symbol_on(mystd);
   mystd->cr();
-  MethodIterator mi(this, &MethodPrinterClosure(mystd));
+  MethodPrinterClosure closure = MethodPrinterClosure(mystd);
+  MethodIterator mi(this, &closure);
   mystd->cr();
 }
 
@@ -224,7 +225,7 @@ class methodStream {
   }
 
   void align(u_char* hp) {
-    u_char* end = (u_char*) (((int) hp + 3) & (~3));
+    u_char* end = (u_char*) (((intptr_t) hp + 3) & (~3));
     while (hp < end) {
       put_byte(255);
       hp++;
@@ -730,11 +731,11 @@ GrowableArray<intptr_t>* methodOopDesc::expression_stack_mapping(int bci) {
 
 
 static void lookup_primitive_and_patch(u_char* p, u_char byte) {
-  assert((int)p % 4 == 0, "first instruction supposed to be aligned");
+  assert((intptr_t)p % 4 == 0, "first instruction supposed to be aligned");
   *p = byte;	// patch byte
   p += 4;	// advance to primitive name
   //(*(symbolOop*)p)->print_symbol_on();
-  *(int*)p = (int)primitives::lookup(*(symbolOop*)p)->fn();
+  *(int*)p = (intptr_t)primitives::lookup(*(symbolOop*)p)->fn();
 }
 
 bool methodOopDesc::is_primitiveMethod() const {
