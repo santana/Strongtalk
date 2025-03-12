@@ -2026,7 +2026,7 @@ bool ArithNode::copyPropagate(BB* bb, Use* u, PReg* d, bool replace) {
   if (_src->isConstPReg() && operIsConst()) {
     assert(success, "CP must have worked");
     // can constant-fold this operation
-    int c1 = (int)((ConstPReg*)_src)->constant;
+    int c1 = (intptr_t)((ConstPReg*)_src)->constant;
     int c2 = (int)operConst();
     int res;
     switch (_op) {
