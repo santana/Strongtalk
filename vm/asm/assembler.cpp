@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#include <cstdint>
+
 #include "incls/_precompiled.incl"
 #include "incls/_assembler.cpp.incl"
 
@@ -237,7 +239,7 @@ void Assembler::emit_arith(int op1, int op2, Register dst, oop obj) {
   assert((op1 & 0x02) == 0, "sign-extension bit should not be set");
   emit_byte(op1);
   emit_byte(op2 | dst.number());
-  emit_data((int)obj, relocInfo::oop_type);
+  emit_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 
@@ -364,7 +366,7 @@ void Assembler::pushl(int imm32) {
 
 void Assembler::pushl(oop obj) {
   emit_byte(0x68);
-  emit_data((int)obj, relocInfo::oop_type);
+  emit_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 
@@ -433,7 +435,7 @@ void Assembler::movl(Register dst, int imm32) {
 
 void Assembler::movl(Register dst, oop obj) {
   emit_byte(0xB8 | dst.number());
-  emit_data((int)obj, relocInfo::oop_type);
+  emit_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 
@@ -459,7 +461,7 @@ void Assembler::movl(Address dst, int imm32) {
 void Assembler::movl(Address dst, oop obj) {
   emit_byte(0xC7);
   emit_operand(eax, dst);
-  emit_data((int)obj, relocInfo::oop_type);
+  emit_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 
@@ -570,7 +572,7 @@ void Assembler::cmpl(Address dst, int imm32) {
 void Assembler::cmpl(Address dst, oop obj) {
   emit_byte(0x81);
   emit_operand(edi, dst);
-  emit_data((int)obj, relocInfo::oop_type);
+  emit_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 
@@ -1023,7 +1025,7 @@ void Assembler::call(Label& L) {
 
 void Assembler::call(char* entry, relocInfo::relocType rtype) {
   emit_byte(0xE8);
-  emit_data((int)entry - ((int)_code_pos + sizeof(long)), rtype);
+  emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(long)), rtype);
 }
 
 
@@ -1041,7 +1043,7 @@ void Assembler::call(Address adr) {
 
 void Assembler::jmp(char* entry, relocInfo::relocType rtype) {
   emit_byte(0xE9);
-  emit_data((int)entry - ((int)_code_pos + sizeof(long)), rtype);
+  emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(long)), rtype);
 }
 
 
@@ -1122,7 +1124,7 @@ void Assembler::jcc(Condition cc, char* dst, relocInfo::relocType rtype) {
   // 0000 1111 1000 tttn #32-bit disp
   emit_byte(0x0F);
   emit_byte(0x80 | cc);
-  emit_data((int)dst - ((int)_code_pos + sizeof(long)), rtype);
+  emit_data((intptr_t)dst - ((intptr_t)_code_pos + sizeof(long)), rtype);
 }
 
 
@@ -1363,7 +1365,7 @@ void MacroAssembler::leave() {
 
 void MacroAssembler::inline_oop(oop o) {
   emit_byte(0xA9);
-  emit_data((int)o, relocInfo::oop_type);
+  emit_data((intptr_t)o, relocInfo::oop_type);
 }
 
 
@@ -1374,8 +1376,8 @@ void MacroAssembler::inline_oop(oop o) {
 // allow proper stack traversal.
 
 void MacroAssembler::set_last_Delta_frame_before_call() {
-  movl(Address((int)&last_Delta_fp, relocInfo::external_word_type), ebp);
-  movl(Address((int)&last_Delta_sp, relocInfo::external_word_type), esp);
+  movl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
+  movl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
 }
 
 
@@ -1387,7 +1389,7 @@ void MacroAssembler::set_last_Delta_frame_after_call() {
 
 
 void MacroAssembler::reset_last_Delta_frame() {
-  movl(Address((int)&last_Delta_fp, relocInfo::external_word_type), 0);
+  movl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), 0);
 }
 
 
@@ -1530,9 +1532,9 @@ void MacroAssembler::store_check(Register obj, Register tmp) {
   // base changes. Advantage: only one instead of two instructions.
   assert(obj != tmp, "registers must be different");
   Label no_store;
-  cmpl(obj, (int)Universe::new_gen.boundary());        // assumes boundary between new_gen and old_gen is fixed
+  cmpl(obj, (intptr_t)Universe::new_gen.boundary());   // assumes boundary between new_gen and old_gen is fixed
   jcc(Assembler::less, no_store);                      // avoid marking dirty if target is a new object
-  movl(tmp, Address((int)&byte_map_base, relocInfo::external_word_type));
+  movl(tmp, Address((intptr_t)&byte_map_base, relocInfo::external_word_type));
   shrl(obj, card_shift);
   movb(Address(tmp, obj, Address::times_1), 0);
   bind(no_store);
@@ -1602,7 +1604,7 @@ void MacroAssembler::inspect(char* title) {
   char* entry = StubRoutines::call_inspector_entry();
   if (entry != NULL) {
     call(entry, relocInfo::runtime_call_type);			// call stub invoking the inspector
-    testl(eax, int(title));					// additional info for inspector
+    testl(eax, intptr_t(title));				// additional info for inspector
   } else {
     const char* s = (title == NULL) ? "" : title;
     std->print_cr("cannot call inspector for \"%s\" - no entry point yet", s);

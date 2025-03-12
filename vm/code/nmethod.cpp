@@ -75,7 +75,7 @@ void nmethod::initForTesting(int size, LookupKey* key) {
   _scopeLen = 0;
   _number_of_noninlined_blocks = 0;
   main_id = Universe::code->jump_table()->allocate(1);
-  promoted_id = NULL;
+  promoted_id = jumpTableID();
 
   _invocation_count		= 0;
   _uncommon_trap_counter	= 0;
@@ -389,8 +389,8 @@ void nmethod::makeZombie(bool clearInlineCaches) {
     std->print_cr("%s nmethod 0x%x becomes zombie", (is_method() ? "normal" : "block"), this);
     if (WizardMode) {
       std->print_cr("entry code sequence:");
-      char* beg = (char*)min(int(specialHandlerCall()), int(entryPoint()), int(verifiedEntryPoint()));
-      char* end = (char*)max(int(specialHandlerCall()), int(entryPoint()), int(verifiedEntryPoint()));
+      char* beg = (char*)min(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
+      char* end = (char*)max(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
       Disassembler::decode(beg, end + 10);
     }
   }

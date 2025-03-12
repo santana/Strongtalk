@@ -269,7 +269,7 @@ bool scan_key(RScope* sender, char* line, klassOop* receiver_klass, methodOop* m
   if (class_side) rec = rec->klass();
   *receiver_klass = rec;
  
-  GrowableArray<int>* bcis = new GrowableArray<int>(10);
+  GrowableArray<intptr_t>* bcis = new GrowableArray<intptr_t>(10);
 
   char* bcis_string = strstr(method_id, " ");
 
@@ -420,7 +420,7 @@ bool scan_key(char* line, LookupKey* key) {
   if (class_side) rec = rec->klass();
 
 
-  GrowableArray<int>* bcis = new GrowableArray<int>(10);
+  GrowableArray<intptr_t>* bcis = new GrowableArray<intptr_t>(10);
 
   char* bcis_string = strstr(method_id, " ");
 
@@ -704,7 +704,7 @@ void InliningDatabase::add_lookup_entry(LookupKey* outer, LookupKey* inner) {
 }
 
 bool InliningDatabase::lookup(LookupKey* outer, LookupKey* inner) {
-  if (table_no == 0) return NULL;  // Skim the cream
+  if (table_no == 0) return false;  // Skim the cream
 
   unsigned int index = index_for(outer, inner);
   if (!table[index].is_filled()) return false; 

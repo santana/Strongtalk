@@ -75,7 +75,7 @@ class Stub: public ResourceObj {
 class DebugInfoWriter: public PRegClosure {
  private:
   GrowableArray<PReg*>*	_pregs;			// maps index -> preg
-  GrowableArray<int>*	_locations;		// previous preg location or illegalLocation
+  GrowableArray<intptr_t>*	_locations;	// previous preg location or illegalLocation
   GrowableArray<bool>*	_present;		// true if preg is currently present
 
   Location location_at(int i)			{ return Location(_locations->at(i)); }
@@ -84,7 +84,7 @@ class DebugInfoWriter: public PRegClosure {
  public:
   DebugInfoWriter(int number_of_pregs) {
     _pregs     = new GrowableArray<PReg*>(number_of_pregs, number_of_pregs, NULL                );
-    _locations = new GrowableArray<int  >(number_of_pregs, number_of_pregs, illegalLocation._loc);
+    _locations = new GrowableArray<intptr_t>(number_of_pregs, number_of_pregs, illegalLocation._loc);
     _present   = new GrowableArray<bool >(number_of_pregs, number_of_pregs, false               );
   }
 

@@ -134,7 +134,7 @@ class jumpTableEntry : public ValueObj {
   char* link() const;
 
   // operations for unused
-  int next_free() const;
+  intptr_t next_free() const;
 
   // operations for nmethod stubs (is_nmethod_stub() == true)
   nmethod* method() const;        // NULL if not pointing to a method

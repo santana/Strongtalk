@@ -305,7 +305,7 @@ class methodOopDesc : public memOopDesc {
   InterpretedIC* ic_at(int bci) const;
 
   // Returns an array of byte code indecies contributing to the expression stack
-  GrowableArray<int>* expression_stack_mapping(int bci);
+  GrowableArray<intptr_t>* expression_stack_mapping(int bci);
 
   // For debugging only
   void print_codes();

@@ -551,7 +551,7 @@ int methodOopDesc::next_bci(int bci) const {
 
 class ExpressionStackMapper : public MethodClosure {
  private:
-   GrowableArray<int>* mapping;
+   GrowableArray<intptr_t>* mapping;
    int target_bci;
 
    void map_push() { map_push(bci()); }
@@ -581,7 +581,7 @@ class ExpressionStackMapper : public MethodClosure {
    }
 
  public:
-  ExpressionStackMapper(GrowableArray<int>* mapping, int target_bci) {
+  ExpressionStackMapper(GrowableArray<intptr_t>* mapping, int target_bci) {
     this->mapping    = mapping;
     this->target_bci = target_bci;
   }
@@ -712,8 +712,8 @@ void ExpressionStackMapper::dll_call_node(DLLCallNode* node) {
 }
 
 
-GrowableArray<int>* methodOopDesc::expression_stack_mapping(int bci) {
-  GrowableArray<int>* mapping = new GrowableArray<int>(10);
+GrowableArray<intptr_t>* methodOopDesc::expression_stack_mapping(int bci) {
+  GrowableArray<intptr_t>* mapping = new GrowableArray<intptr_t>(10);
   ExpressionStackMapper blk(mapping, bci);
   MethodIterator i(this, &blk);
 
@@ -721,7 +721,7 @@ GrowableArray<int>* methodOopDesc::expression_stack_mapping(int bci) {
   // %todo:
   //    move reverse to GrowableArray
 
-  GrowableArray<int>* result = new GrowableArray<int>(mapping->length());
+  GrowableArray<intptr_t>* result = new GrowableArray<intptr_t>(mapping->length());
   for (int index = mapping->length() - 1; index >= 0; index--) {
     result->push(mapping->at(index));
   }

@@ -32,7 +32,7 @@ void MethodPrinterClosure::indent() {
   if (WizardMode) {
     st->indent();
     st->print("      <");
-    GrowableArray<int>* map = method()->expression_stack_mapping(bci());
+    GrowableArray<intptr_t>* map = method()->expression_stack_mapping(bci());
     for (int i = 0; i < map->length(); i++)
       st->print(" %d", map->at(i));
     st->print_cr(" >");

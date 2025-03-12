@@ -27,6 +27,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // physical location (register, stack position or context temporary),
 // there is a corresponding location and vice versa.
 
+#include <cstdint>
+
 enum Mode {
 // mode\bits		3...................31	describes
 //			3..9	10..16	17..31
@@ -160,15 +162,15 @@ const Location topOfFloatStack	= Location::specialLocation(5);	// only used if U
 
 class IntFreeList : public PrintableResourceObj {
  protected:
-  int			_first;	// the first available integer
-  GrowableArray<int>*	_list;	// the list
+  intptr_t			_first;	// the first available integer
+  GrowableArray<intptr_t>*	_list;	// the list
 
   void grow();
 
  public:
   IntFreeList(int size);
 
-  int	allocate();		// returns a new integer, grows the list if necessary
+  intptr_t	allocate();	// returns a new integer, grows the list if necessary
   int	allocated();		// returns the number of allocated integers
   void	release(int i);		// marks the integer i as 'available' again
   int	length();		// the maximum number of integers ever allocated

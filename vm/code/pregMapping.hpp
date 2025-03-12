@@ -47,16 +47,16 @@ class PRegMapping: public PrintableResourceObj {
   bool                  _NLRinProgress;		// indicates that a NLR is in progress (see also Note above)
   Locations*		_locs;			// the locations freelist
   GrowableArray<PReg*>*	_pregs;			// the pregs, a NULL entry means the slot is not used
-  GrowableArray<int>*	_regLocs;		// the register to which a preg is mapped or -1
-  GrowableArray<int>*	_stkLocs;		// the stack location to which a preg is mapped or -1
-  GrowableArray<int>*	_tmpLocs;		// a list of temporary locations used by instances of Temporary
+  GrowableArray<intptr_t>*	_regLocs;	// the register to which a preg is mapped or -1
+  GrowableArray<intptr_t>*	_stkLocs;	// the stack location to which a preg is mapped or -1
+  GrowableArray<intptr_t>*	_tmpLocs;	// a list of temporary locations used by instances of Temporary
   						// (these locations will be freed when the mapping is copied)
 
   // Helper routines
   int  size() const				{ return _pregs->length(); }
   bool used(int i) const			{ return _pregs->at(i) != NULL; }
-  int  regLoc(int i) const			{ return _regLocs->at(i); }
-  int  stkLoc(int i) const			{ return _stkLocs->at(i); }
+  intptr_t  regLoc(int i) const			{ return _regLocs->at(i); }
+  intptr_t  stkLoc(int i) const			{ return _stkLocs->at(i); }
   bool hasRegLoc(int i) const			{ return _locs->isLocation(regLoc(i)); }
   bool hasStkLoc(int i) const			{ return _locs->isLocation(stkLoc(i)); }
   int  location(int i) const			{ int rloc = regLoc(i); return rloc >= 0 ? rloc : stkLoc(i); }

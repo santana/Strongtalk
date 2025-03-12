@@ -233,7 +233,7 @@ inline int ScopeDescRecorder::getValueIndex(int v) {
 }
 
 inline int ScopeDescRecorder::getOopIndex(oop o) {
-  return o == 0 ? 0 : oops->insertIfAbsent((int)o) + 1;
+  return o == 0 ? 0 : oops->insertIfAbsent((intptr_t)o) + 1;
 }
 
 void ScopeDescRecorder::emit_illegal_node(bool is_last) {
@@ -386,7 +386,7 @@ class ScopeDescNode: public ResourceObj {
   ScopeInfo scopesTail;
   ScopeInfo next;
 
-  ScopeDescNode(methodOop method, bool allocates_compiled_context, int scopeID, bool lite, int senderBCI, bool visible);
+  ScopeDescNode(methodOop method, bool allocates_compiled_context, int scopeID, bool lite, intptr_t senderBCI, bool visible);
 
   void addNested(ScopeInfo scope);
 
@@ -458,7 +458,7 @@ class PcDescInfoClass : public ResourceObj {
   void copy_to(int*& addr);
 };
 
-ScopeDescNode::ScopeDescNode(methodOop method, bool allocates_compiled_context, int scopeID, bool lite, int senderBCI, bool visible) {
+ScopeDescNode::ScopeDescNode(methodOop method, bool allocates_compiled_context, int scopeID, bool lite, intptr_t senderBCI, bool visible) {
   this->scopeID                    = scopeID;
   this->method                     = method;
   this->lite                       = lite;
@@ -566,7 +566,7 @@ class MethodScopeNode: public ScopeDescNode {
 		  bool            allocates_compiled_context,
 		  bool            lite,
 		  int             scopeID,
-		  int             senderBCI,
+		  intptr_t        senderBCI,
 		  bool            visible)
     : ScopeDescNode(method, allocates_compiled_context, scopeID, lite, senderBCI, visible) {
       this->key               = key;
@@ -600,7 +600,7 @@ class TopLevelBlockScopeNode: public ScopeDescNode {
   u_char code() { return TOPLEVELBLOCK_CODE; }
 
   TopLevelBlockScopeNode(methodOop  method, LogicalAddress* receiver_location, klassOop receiver_klass, bool allocates_compiled_context)
-  : ScopeDescNode(method, allocates_compiled_context, false, 0, NULL, true) {
+  : ScopeDescNode(method, allocates_compiled_context, false, 0, (intptr_t)nullptr, true) {
     this->receiver_location = receiver_location;
     this->receiver_klass    = receiver_klass;
   }
@@ -626,7 +626,7 @@ class BlockScopeNode: public ScopeDescNode {
 		 bool      allocates_compiled_context,
 		 bool      lite,
 		 int       scopeID,
-		 int       senderBCI, 
+		 intptr_t  senderBCI, 
 		 bool      visible) 
     : ScopeDescNode(method, allocates_compiled_context, scopeID, lite, senderBCI, visible) {
     this->parent = parent;
@@ -695,7 +695,7 @@ void ScopeDescRecorder::generate() {
 void ScopeDescRecorder::generateDependencies() {
   int end_marker = 0;
   for (int index = 0; index < dependants->length(); index++) {
-    int i = oops->insertIfAbsent((int)dependants->at(index));
+    int i = oops->insertIfAbsent((intptr_t)dependants->at(index));
     if (i > end_marker)  end_marker = i;
   }
   dependants_end = end_marker;
@@ -740,7 +740,7 @@ ScopeInfo ScopeDescRecorder::addMethodScope(LookupKey*      key,
 					    bool            lite,
 					    int             scopeID,
 					    ScopeInfo       senderScope, 
-					    int             senderBCI,
+					    intptr_t        senderBCI,
 					    bool            visible) {
   return addScope(
     new MethodScopeNode(key, method, receiver_location, allocates_compiled_context, lite, scopeID, senderBCI, visible),		      
@@ -754,7 +754,7 @@ ScopeInfo ScopeDescRecorder::addBlockScope(methodOop       method,
 					   bool            lite,
 					   int             scopeID,
 					   ScopeInfo       senderScope, 
-					   int             senderBCI,
+					   intptr_t        senderBCI,
 					   bool            visible) {
   return addScope(
     new BlockScopeNode(method, parent, allocates_compiled_context, lite, scopeID, senderBCI, visible),
@@ -847,7 +847,7 @@ inline void ScopeDescRecorder::genIndex(int index) {
   }
 }
 
-void ScopeDescRecorder::genValue(int v) {
+void ScopeDescRecorder::genValue(intptr_t v) {
   genIndex(getValueIndex(v));
 }
 

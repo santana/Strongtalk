@@ -119,14 +119,14 @@ void IntFreeList::grow() {
 
 IntFreeList::IntFreeList(int size) {
   _first = -1;
-  _list = new GrowableArray<int>(2);
+  _list = new GrowableArray<intptr_t>(2);
   assert(_list->length() == 0, "should be zero");
 }
 
-int IntFreeList::allocate() {
+intptr_t IntFreeList::allocate() {
   if (_first < 0)
     grow();
-  int i = _first;
+  intptr_t i = _first;
   _first = _list->at(i);
   _list->at_put(i, -1); // for debugging only
   return i;
@@ -134,7 +134,7 @@ int IntFreeList::allocate() {
 
 int IntFreeList::allocated() {
   int n = length();
-  int i = _first;
+  intptr_t i = _first;
   while (i >= 0) {
     i = _list->at(i);
     n--;

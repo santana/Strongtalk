@@ -65,7 +65,7 @@ class ScopeDescRecorder: public ResourceObj {
                            bool            lite         = false,
 			   int             scopeID      = 0,
 			   ScopeInfo       senderScope  = NULL, 
-			   int             senderBCI    = IllegalBCI,
+			   intptr_t        senderBCI    = IllegalBCI,
 			   bool            visible      = false);
 
 
@@ -76,7 +76,7 @@ class ScopeDescRecorder: public ResourceObj {
                           bool            lite             = false,
 			  int             scopeID          = 0,
 			  ScopeInfo       senderScope      = NULL, 
-			  int             senderBCI        = IllegalBCI,
+			  intptr_t        senderBCI        = IllegalBCI,
 			  bool            visible          = false);
 
   // Adds a top level block scope
@@ -156,7 +156,7 @@ class ScopeDescRecorder: public ResourceObj {
   inline int getOopIndex(oop o);
   
   inline void genIndex(int index);
-  void genValue(int v);
+  void genValue(intptr_t v);
   void genOop(oop o);
 
   // Make the private stuff reachable from the internal nodes
