@@ -66,7 +66,7 @@ class outputStream : public ResourceObj {
 };
 
 // Standard output
-extern outputStream* _std;
+extern outputStream* _mystd;
 
 outputStream* getErr();
 outputStream* getStd();

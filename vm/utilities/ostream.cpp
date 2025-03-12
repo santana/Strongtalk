@@ -153,13 +153,13 @@ fileStream::~fileStream() {
 #undef std
 #endif
 
-outputStream* _std;
+outputStream* _mystd;
 outputStream* _err;
 
 void ostream_init() {
-  if (_std) return;
-  _std = new(true) outputStream();   // NB: this stream is allocated on the C heap
-  _err = _std;
+  if (_mystd) return;
+  _mystd = new(true) outputStream();   // NB: this stream is allocated on the C heap
+  _err = _mystd;
 }
 
 outputStream* getErr() {
@@ -169,5 +169,5 @@ outputStream* getErr() {
 
 outputStream* getStd() {
 	ostream_init();
-	return _std;
+	return _mystd;
 }
