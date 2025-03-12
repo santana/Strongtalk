@@ -390,9 +390,9 @@ static int result_counter = 0;
 
 static void trace_result(int compilation, methodOop method, oop result) {
   ResourceMark rm;
-  std->print("%6d: 0x%08x (compilation %4d, ", result_counter++, int(result), compilation);
+  mystd->print("%6d: 0x%08x (compilation %4d, ", result_counter++, int(result), compilation);
   method->selector()->print_value();
-  std->print(")\n", compilation);
+  mystd->print(")\n", compilation);
 }
 
 

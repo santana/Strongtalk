@@ -44,12 +44,12 @@ void BaseHandle::push() {
     next->prev = this;
   }
   if (log)
-    std->print_cr("Pushing handle '%s': 0x%x", label, this);
+    mystd->print_cr("Pushing handle '%s': 0x%x", label, this);
   setFirst(this);
 }
 void BaseHandle::pop() {
   if (log)
-    std->print_cr("Popping handle '%s': 0x%x", label, this);
+    mystd->print_cr("Popping handle '%s': 0x%x", label, this);
   if (prev) {
     prev->next = next;
   } else {

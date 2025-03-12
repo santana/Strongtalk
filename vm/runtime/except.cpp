@@ -3,7 +3,7 @@
 void trace(vframe* from_frame, int start_frame, int number_of_frames){
   FlagSetting fs(ActivationShowCode, true);
 
-  std->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
+  mystd->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
   int  vframe_no = 1;
 
   for (vframe* f = from_frame; f; f = f->sender() ) {
@@ -25,12 +25,12 @@ void traceCompiledFrame(frame& f) {
     assert(vf->is_compiled_frame(), "must be compiled frame");
     nmethod* nm = vf->code();
     lprintf("Found nmethod: 0x%x\n", nm);
-    nm->print_value_on(std);
+    nm->print_value_on(mystd);
 
-    std->print("\n @%d called from %#x",
+    mystd->print("\n @%d called from %#x",
                vf->scope()->offset(),
                f.pc() - Assembler::sizeOfCall);
-    std->cr();
+    mystd->cr();
     
     trace(vf, 0, 10);
 }

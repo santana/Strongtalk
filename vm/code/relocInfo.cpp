@@ -40,27 +40,27 @@ int relocInfo::print(nmethod* m, int last_offset) {
   int* addr = (int*) (m->insts() + current_offset);
   printIndent();
   if (isOop()) {
-    std->print("embedded oop   @0x%lx = ", addr);
+    mystd->print("embedded oop   @0x%lx = ", addr);
     oop(*addr)->print_value();
   } else {
     assert(isCall(), "must be a call");
     char* target = (char*) (*addr + (intptr_t) addr + oopSize);
     if (isIC()) {
-      std->print("inline cache   @0x%lx", addr);
+      mystd->print("inline cache   @0x%lx", addr);
     } else if (isPrimitive()) {
-      std->print("primitive call @0x%lx = ", addr);
+      mystd->print("primitive call @0x%lx = ", addr);
       primitive_desc* pd = primitives::lookup((fntype) target);
       if (pd != NULL) {
-        std->print("(%s)", pd->name());
+        mystd->print("(%s)", pd->name());
       } else {
-        std->print("runtime routine");
+        mystd->print("runtime routine");
       }
     } else if (isDLL()) {
-      std->print("DLL call @0x%lx = ", addr);
+      mystd->print("DLL call @0x%lx = ", addr);
     } else if (isUncommonTrap()) {
-      std->print("uncommon trap @0x%lx", addr);
+      mystd->print("uncommon trap @0x%lx", addr);
     } else {
-      std->print("run-time call @0x%lx", addr);
+      mystd->print("run-time call @0x%lx", addr);
     }
   }
   return current_offset;

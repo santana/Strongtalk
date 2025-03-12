@@ -298,11 +298,11 @@ void space::oops_do(oopsDoFn f) {
 }
 
 void space::print() {
-  std->print(" %5s %6dK, %d%% used", name(), capacity() / K, used() * 100 / capacity());
+  mystd->print(" %5s %6dK, %d%% used", name(), capacity() / K, used() * 100 / capacity());
   if (WizardMode) {
-    std->print(" [%#-6lx,%#-6lx[", bottom(), top());
+    mystd->print(" [%#-6lx,%#-6lx[", bottom(), top());
   }
-  std->cr();
+  mystd->cr();
 }
 
 void space::object_iterate(ObjectClosure* blk) {
@@ -341,14 +341,14 @@ public:
     if (obj->is_new()) {
       // Make sure the the_obj is in the remembered set
       if (!Universe::remembered_set->is_object_dirty(the_obj)) {
-        std->cr();
-        std->print_cr("New obj reference found in non dirty page.");
-        std->print_cr("- object containing the reference:");
+        mystd->cr();
+        mystd->print_cr("New obj reference found in non dirty page.");
+        mystd->print_cr("- object containing the reference:");
         the_obj->print();
-        std->print_cr("- the referred object:");
-        std->print("[0x%lx]: 0x%lx = ", o, obj);
+        mystd->print_cr("- the referred object:");
+        mystd->print("[0x%lx]: 0x%lx = ", o, obj);
         obj->print_value();
-        std->cr();
+        mystd->cr();
         Universe::remembered_set->print_set_for_object(the_obj);
         warning("gc problem");
       }

@@ -61,7 +61,7 @@ void IC::print() {
     case megamorphic: s = "Megamorphic"; break;
     default         : ShouldNotReachHere();
   }
-  std->print("%s IC: %d entries\n", s, number_of_targets());
+  mystd->print("%s IC: %d entries\n", s, number_of_targets());
 
   IC_Iterator* it = iterator();
   it->init_iteration();

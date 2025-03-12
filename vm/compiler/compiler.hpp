@@ -145,11 +145,11 @@ public:
 #ifdef DEBUG
 // cout: output stream for compiler messages
 // Intended usage pattern: if (CompilerDebug) cout(PrintXXX)->print("....").
-// This will print the message to std if the PrintXXX flag is set or to the compiler's string buffer otherwise.
+// This will print the message to mystd if the PrintXXX flag is set or to the compiler's string buffer otherwise.
 outputStream* cout(bool flag);	// for compiler debugging; returns stdout or compiler-internal string stream depending on flag
 void print_cout();		// prints hidden messages of current compilation
 #else
-#define cout(flag)  if (flag) std
+#define cout(flag)  if (flag) mystd
 #endif
 
 #endif

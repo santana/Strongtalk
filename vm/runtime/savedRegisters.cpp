@@ -40,8 +40,8 @@ static oop  saved_edi;
 
 oop SavedRegisters::fetch(int register_number, int* frame_pointer) {
   if (frame_pointer != stored_frame_pointer) {
-    std->print_cr("Cannot fetch register from non-bottom frame:");
-    std->print_cr(" register number = %d, fp = 0x%lx", register_number, frame_pointer);
+    mystd->print_cr("Cannot fetch register from non-bottom frame:");
+    mystd->print_cr(" register number = %d, fp = 0x%lx", register_number, frame_pointer);
     fatal("vm aborted");
   }
   if (register_number == eax.number()) return saved_eax;

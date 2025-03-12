@@ -170,17 +170,17 @@ oop bootstrap::get_object() {
 
   if (type == '0') {
     int v = get_integer();
-    // if (TraceBootstrap) std->print_cr("i %d", v);
+    // if (TraceBootstrap) mystd->print_cr("i %d", v);
     return as_smiOop(v);
   }
   if (type == '-') { 
     int v = get_integer();
-    // if (TraceBootstrap) std->print_cr("i %d", -v);
+    // if (TraceBootstrap) mystd->print_cr("i %d", -v);
     return as_smiOop(-v);
   }
   if (type == '3') {
     int v = get_integer();
-    // if (TraceBootstrap) std->print_cr("r %d", v);
+    // if (TraceBootstrap) mystd->print_cr("r %d", v);
     return at(v);
   }
 

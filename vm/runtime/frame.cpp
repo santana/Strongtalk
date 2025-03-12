@@ -179,17 +179,17 @@ char* frame::print_name() const {
 }
 
 void frame::print() const {
-  std->print("[%s frame: fp = %#lx, sp = %#lx, pc = %#lx", print_name(), fp(), sp(), pc());
+  mystd->print("[%s frame: fp = %#lx, sp = %#lx, pc = %#lx", print_name(), fp(), sp(), pc());
   if (is_compiled_frame()) {
-    std->print(", nm = %#x", findNMethod(pc()));
+    mystd->print(", nm = %#x", findNMethod(pc()));
   } else if (is_interpreted_frame()) {
-    std->print(", hp = %#x, method = %#x", hp(), method());
+    mystd->print(", hp = %#x, method = %#x", hp(), method());
   }
-  std->print_cr("]");
+  mystd->print_cr("]");
 
   if (PrintLongFrames) {
     for (oop* p = sp(); p < (oop*)fp(); p++)
-      std->print_cr("  - 0x%lx: 0x%lx", p, *p);
+      mystd->print_cr("  - 0x%lx: 0x%lx", p, *p);
   }
 }
 
@@ -218,7 +218,7 @@ void frame::print_for_deoptimization(outputStream* st) {
    if (ActivationShowBCI) {
      st->print(" bci=%d ", vf->bci());
    }
-   std->print_cr(" @ 0x%lx", fp());
+   mystd->print_cr(" @ 0x%lx", fp());
    print_context_chain(vf->interpreter_context(), st);
    if (ActivationShowExpressionStack) {
      GrowableArray<oop>* stack = vf->expression_stack();
@@ -236,12 +236,12 @@ void frame::print_for_deoptimization(outputStream* st) {
    compiledVFrame* vf = (compiledVFrame*) vframe::new_vframe(this);
    assert(vf->is_compiled_frame(), "should be compiled vframe");
    vf->code()->print_value_on(st);
-   std->print_cr(" @ 0x%lx", fp());
+   mystd->print_cr(" @ 0x%lx", fp());
 
    while (true) {
      st->print("    ");
      vf->method()->print_value_on(st);
-     std->print_cr(" @ %d", vf->scope()->offset());
+     mystd->print_cr(" @ %d", vf->scope()->offset());
      print_context_chain(vf->compiled_context(), st);
      if (vf->is_top()) break;
      vf = (compiledVFrame*) vf->sender();
@@ -253,14 +253,14 @@ void frame::print_for_deoptimization(outputStream* st) {
  if (is_deoptimized_frame()) {
    st->print("D "); 
    frame_array()->print_value();
-   std->print_cr(" @ 0x%lx", fp());
+   mystd->print_cr(" @ 0x%lx", fp());
 
    deoptimizedVFrame* vf = (deoptimizedVFrame*) vframe::new_vframe(this);
    assert(vf->is_deoptimized_frame(), "should be deoptimized vframe");
    while (true) {
      st->print("    ");
      vf->method()->print_value_on(st);
-     std->cr();
+     mystd->cr();
      print_context_chain(vf->deoptimized_context(), st);
      if (vf->is_top()) break;
      vf = (deoptimizedVFrame*) vf->sender();
@@ -507,9 +507,9 @@ bool frame::should_be_deoptimized() const {
   if (!is_compiled_frame()) return false;
   nmethod* nm = code();
   if (TraceApplyChange) {
-    std->print("checking (%s) ", nm->is_marked_for_deoptimization() ? "true" : "false"); 
-    nm->print_value_on(std);
-    std->cr();
+    mystd->print("checking (%s) ", nm->is_marked_for_deoptimization() ? "true" : "false"); 
+    nm->print_value_on(mystd);
+    mystd->cr();
   }
   return nm->is_marked_for_deoptimization();
 }

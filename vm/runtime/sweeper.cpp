@@ -87,7 +87,7 @@ void Sweeper::step() {
 }
 
 void Sweeper::print() const {
-  std->print_cr("%s", name());
+  mystd->print_cr("%s", name());
 }
 
 void Sweeper::activate() {
@@ -118,7 +118,7 @@ inline void CodeSweeper::updateInterval() {
     fractionPerTask = 8;
     const double log2 = 0.69314718055995;   // log(2)
     decayFactor = exp(log2 * CodeSweeperInterval * fractionPerTask / CounterHalfLifeTime);
-    if (PrintCodeSweep) std->print("*method sweep: decay factor %f\n", decayFactor);
+    if (PrintCodeSweep) mystd->print("*method sweep: decay factor %f\n", decayFactor);
   }
 }
 
@@ -184,7 +184,7 @@ void MethodSweeper::task() {
   objArrayOop array     = Universe::systemDictionaryObj();
   int          length   = array->length();
   int number_of_entries = length / fractionPerTask;
-  if (PrintCodeSweep) std->print("*method sweep: %d entries...", number_of_entries);
+  if (PrintCodeSweep) mystd->print("*method sweep: %d entries...", number_of_entries);
   TraceTime t("MethodSweep ", PrintCodeSweep);
 
   int end = (index + number_of_entries);
@@ -234,7 +234,7 @@ void ZoneSweeper::task() {
   //    we need to validate next
   int total = Universe::code->numberOfNMethods();
   int todo = total / fractionPerTask;
-  if (PrintCodeSweep) std->print("*zone sweep: %d of %d entries...", todo, total);
+  if (PrintCodeSweep) mystd->print("*zone sweep: %d of %d entries...", todo, total);
   TraceTime t("ZoneSweep ", PrintCodeSweep);
   
   for (int index = 0; index < todo; index++) {

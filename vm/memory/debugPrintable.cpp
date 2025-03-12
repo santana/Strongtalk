@@ -45,8 +45,8 @@ class Command {
   ResourceMark rm;
  public:
   Command(char* str) {
-    std->cr();
-	std->print_cr("\"Executing %s\"", str);
+    mystd->cr();
+	mystd->print_cr("\"Executing %s\"", str);
   }
 
   ~Command() {
@@ -114,9 +114,9 @@ void ps() { // print stack
     DeltaProcess* p = DeltaProcess::active();
     if (!p) return;
     Command c("ps");
-    std->print(" for process: ");
+    mystd->print(" for process: ");
     p->print();
-    std->cr();
+    mystd->cr();
 
     if (p->last_Delta_fp() != NULL) {
       // If the last_Delta_fp is set we are in C land and
@@ -143,9 +143,9 @@ void pd() { // print stack
     Command c("pd");
     // Prints the stack of the current Delta process
     DeltaProcess* p = DeltaProcess::active();
-    std->print(" for process: ");
+    mystd->print(" for process: ");
     p->print();
-    std->cr();
+    mystd->cr();
 
     if (p->last_Delta_fp() != NULL) {
       // If the last_Delta_fp is set we are in C land and
@@ -166,7 +166,7 @@ void oat(int index) {
     oop obj = objectIDTable::at(index);
     obj->print();
   } else {
-    std->print_cr("index %d out of bounds", index);
+    mystd->print_cr("index %d out of bounds", index);
   }
 }
 
@@ -254,18 +254,18 @@ void pm(int m) {
 
 void print_codes(char* class_name, char* selector) { 
   Command c("print_codes");
-  std->print_cr("Finding %s in %s.", selector, class_name);
+  mystd->print_cr("Finding %s in %s.", selector, class_name);
   oop result = Universe::find_global(class_name);
   if (!result) {
-    std->print_cr("Could not find global %s.", class_name);
+    mystd->print_cr("Could not find global %s.", class_name);
   } else if (!result->is_klass()) {
-    std->print_cr("Global %s is not a class.", class_name);
+    mystd->print_cr("Global %s is not a class.", class_name);
   } else {
     symbolOop sel = oopFactory::new_symbol(selector);
     methodOop method = klassOop(result)->klass_part()->lookup(sel);
     if (!method) method = result->blueprint()->lookup(sel);
     if (!method) {
-      std->print_cr("Method %s is not in %s.", selector, class_name);
+      mystd->print_cr("Method %s is not in %s.", selector, class_name);
     } else {
       method->pretty_print();
       method->print_codes();
@@ -277,27 +277,27 @@ void help() {
   Command c("help");
 
 
-  std->print_cr("basic");
-  std->print_cr("  pp(void* p)   - try to make sense of p");
-  std->print_cr("  pv(int p)     - ((PrintableResourceObj*) p)->print()");
-  std->print_cr("  ps()          - print current process stack");
-  std->print_cr("  pss()         - print all process stacks");
-  std->print_cr("  oat(int i)    - print object with id = i");
+  mystd->print_cr("basic");
+  mystd->print_cr("  pp(void* p)   - try to make sense of p");
+  mystd->print_cr("  pv(int p)     - ((PrintableResourceObj*) p)->print()");
+  mystd->print_cr("  ps()          - print current process stack");
+  mystd->print_cr("  pss()         - print all process stacks");
+  mystd->print_cr("  oat(int i)    - print object with id = i");
  
-  std->print_cr("methodOop");
-  std->print_cr("  pm(int m)     - pretty print methodOop(m)");
-  std->print_cr("  ph(int hp)    - pretty print method containing hp");
-  std->print_cr("  findm(int hp) - returns methodOop containing hp");
+  mystd->print_cr("methodOop");
+  mystd->print_cr("  pm(int m)     - pretty print methodOop(m)");
+  mystd->print_cr("  ph(int hp)    - pretty print method containing hp");
+  mystd->print_cr("  findm(int hp) - returns methodOop containing hp");
 
-  std->print_cr("misc.");
-  std->print_cr("  flush()       - flushes the log file");
-  std->print_cr("  events()      - dump last 50 event");
+  mystd->print_cr("misc.");
+  mystd->print_cr("  flush()       - flushes the log file");
+  mystd->print_cr("  events()      - dump last 50 event");
 
 
-  std->print_cr("compiler debugging");
-  std->print_cr("  debug()       - to set things up for compiler debugging");
-  std->print_cr("  ndebug()      - undo debug");
-  std->print_cr("  pc()          - theCompiler->print_code(false)");
-  std->print_cr("  pscopes()     - theCompiler->topScope->printTree()");
-  std->print_cr("  urs_ps()      - print current process stack with many flags turned on");
+  mystd->print_cr("compiler debugging");
+  mystd->print_cr("  debug()       - to set things up for compiler debugging");
+  mystd->print_cr("  ndebug()      - undo debug");
+  mystd->print_cr("  pc()          - theCompiler->print_code(false)");
+  mystd->print_cr("  pscopes()     - theCompiler->topScope->printTree()");
+  mystd->print_cr("  urs_ps()      - print current process stack with many flags turned on");
 }

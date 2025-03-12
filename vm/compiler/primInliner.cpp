@@ -991,7 +991,7 @@ Expr* PrimInliner::genCall(bool canFail) {
 
 
 void PrimInliner::print() {
-  std->print("a PrimInliner\n");
+  mystd->print("a PrimInliner\n");
 }
 
 

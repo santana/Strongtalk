@@ -53,6 +53,6 @@ class Disclaimer: AllStatic {
     #endif
   }
 
-  static void print_disclaimer(outputStream* s = std);
+  static void print_disclaimer(outputStream* s = mystd);
   static void initialize();
 };

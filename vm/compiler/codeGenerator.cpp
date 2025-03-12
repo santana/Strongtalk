@@ -123,7 +123,7 @@ class DebugInfoWriter: public PRegClosure {
 	}
 	// debugging
 	if (PrintDebugInfoGeneration) {
-	  std->print_cr("%5d: %-20s @ %s", pc_offset, preg->name(), new_loc.name());
+	  mystd->print_cr("%5d: %-20s @ %s", pc_offset, preg->name(), new_loc.name());
 	}
 	rec->changeLogicalAddress(preg->logicalAddress(), nameNode, pc_offset);
       }
@@ -134,7 +134,7 @@ class DebugInfoWriter: public PRegClosure {
 
 
   void print() {
-    std->print_cr("a DebugInfoWriter");
+    mystd->print_cr("a DebugInfoWriter");
   }
 };
 
@@ -310,8 +310,8 @@ void CodeGenerator::generateMergeStubs() {
   char* start_pc = _masm->pc();
   while (_mergeStubs.nonEmpty()) _mergeStubs.pop()->generateMergeStub();
   if (PrintCodeGeneration && _masm->pc() > start_pc) {
-    std->print("---\n");
-    std->print("fixup merge stubs\n");
+    mystd->print("---\n");
+    mystd->print("fixup merge stubs\n");
     _masm->code()->decode();
   }
 }
@@ -382,10 +382,10 @@ void CodeGenerator::finalize(InlinedScope* scope) {
   if (CompilerDebug) _masm->movl(eax, nofCompilations);
 
   if (PrintCodeGeneration) {
-    std->print("---\n");
-    std->print("merge stubs\n");
+    mystd->print("---\n");
+    mystd->print("merge stubs\n");
     _masm->code()->decode();
-    std->print("---\n");
+    mystd->print("---\n");
   }
 }
 
@@ -485,10 +485,10 @@ void CodeGenerator::finalize(InlinedScope* scope) {
   if (CompilerDebug) _masm->movl(eax, nofCompilations);
 
   if (PrintCodeGeneration) {
-    std->print("---\n");
-    std->print("entry point\n");
+    mystd->print("---\n");
+    mystd->print("entry point\n");
     _masm->code()->decode();
-    std->print("---\n");
+    mystd->print("---\n");
   }
 }
 */
@@ -598,9 +598,9 @@ static int _numberOfNLRs	= 0;
 void CodeGenerator::indent() {
   const int maxIndent = 40;
   if (_callDepth <= maxIndent) {
-    std->print("%*s", _callDepth, "");
+    mystd->print("%*s", _callDepth, "");
   } else {
-    std->print("%*d: ", maxIndent-2, _callDepth);
+    mystd->print("%*d: ", maxIndent-2, _callDepth);
   }
 }
 
@@ -635,7 +635,7 @@ void CodeGenerator::verifyArguments(oop recv, oop* ebp, int nofArgs) {
   _callDepth++;
   if (TraceCalls) { 
     ResourceMark rm;
-    indent(); std->print("( %s %s ", recv->print_value_string(), nmethodName());
+    indent(); mystd->print("( %s %s ", recv->print_value_string(), nmethodName());
   }
   verifyObj(recv);
   int i = nofArgs;
@@ -646,13 +646,13 @@ void CodeGenerator::verifyArguments(oop recv, oop* ebp, int nofArgs) {
     if (TraceCalls) {
       ResourceMark rm;
       if (print_args_long || (*arg)->is_smi()) {
-        std->print("%s ", (*arg)->print_value_string());
+        mystd->print("%s ", (*arg)->print_value_string());
       } else {
-        std->print("0x%x ", *arg);
+        mystd->print("0x%x ", *arg);
       }
     }
   }
-  if (TraceCalls) std->cr();
+  if (TraceCalls) mystd->cr();
   if (VerifyDebugInfo) { 
     deltaVFrame* f = DeltaProcess::active()->last_delta_vframe();
     while (f != NULL) {
@@ -668,7 +668,7 @@ void CodeGenerator::verifyReturn(oop result) {
   result->verify();
   if (TraceCalls) {
     ResourceMark rm;
-    indent(); std->print(") %s -> %s\n", nmethodName(), result->print_value_string());
+    indent(); mystd->print(") %s -> %s\n", nmethodName(), result->print_value_string());
   }
   _callDepth--;
 }
@@ -684,7 +684,7 @@ void CodeGenerator::verifyNLR(char* fp, char* nlrFrame, int nlrScopeID, oop resu
   result->verify();
   if (TraceCalls) {
     ResourceMark rm;
-    indent(); std->print(") %s  ^ %s\n", nmethodName(), result->print_value_string());
+    indent(); mystd->print(") %s  ^ %s\n", nmethodName(), result->print_value_string());
   }
   _callDepth--;
 }
@@ -757,7 +757,7 @@ static bool bb_needs_jump;
 
 
 void CodeGenerator::beginOfBasicBlock(Node* node) {
-  if (PrintCodeGeneration && WizardMode) std->print("--- begin of basic block (N%d) ---\n", node->id());
+  if (PrintCodeGeneration && WizardMode) mystd->print("--- begin of basic block (N%d) ---\n", node->id());
   bindLabel(node);
 }
 
@@ -767,7 +767,7 @@ void CodeGenerator::endOfBasicBlock(Node* node) {
     Node* from = node;
     Node* to   = node->next();
     if (PrintCodeGeneration) {
-      std->print("branch from N%d to N%d\n", from->id(), to->id());
+      mystd->print("branch from N%d to N%d\n", from->id(), to->id());
       if (PrintPRegMapping) _currentMapping->print();
     }
     jmp(from, to);
@@ -775,7 +775,7 @@ void CodeGenerator::endOfBasicBlock(Node* node) {
     if (PrintCodeGeneration) _masm->code()->decode();
   }
 
-  if (PrintCodeGeneration && WizardMode) std->print("--- end of basic block (N%d) ---\n", node->id());
+  if (PrintCodeGeneration && WizardMode) mystd->print("--- end of basic block (N%d) ---\n", node->id());
 }
 
 
@@ -797,10 +797,10 @@ void CodeGenerator::beginOfNode(Node* node) {
   if (GenerateFullDebugInfo) updateDebuggingInfo(node);
   // debugging
   if (PrintCodeGeneration) {
-    std->print("---\n");
-    std->print("N%d: ", node->id());
+    mystd->print("---\n");
+    mystd->print("N%d: ", node->id());
     node->print();
-    std->print(" (bci = %d)\n", node->bci());
+    mystd->print(" (bci = %d)\n", node->bci());
     if (PrintPRegMapping) _currentMapping->print();
   }
   bb_needs_jump = true;

@@ -36,11 +36,11 @@ void InterpretedDLL_Cache::verify() {
 
 
 void InterpretedDLL_Cache::print() {
-  std->print("DLL call ");
+  mystd->print("DLL call ");
   dll_name()->print_value();
-  std->print("::");
+  mystd->print("::");
   funct_name()->print_value();
-  std->print(" (0x%x, %s, interpreted)\n", entry_point(), async() ? "asynchronous" : "synchronous");
+  mystd->print(" (0x%x, %s, interpreted)\n", entry_point(), async() ? "asynchronous" : "synchronous");
 }
 
 
@@ -75,11 +75,11 @@ void CompiledDLL_Cache::verify() {
 
 
 void CompiledDLL_Cache::print() {
-  std->print("DLL call ");
+  mystd->print("DLL call ");
   dll_name()->print_value();
-  std->print("::");
+  mystd->print("::");
   function_name()->print_value();
-  std->print(" (0x%x, %s, compiled)\n", entry_point(), async() ? "asynchronous" : "synchronous");
+  mystd->print(" (0x%x, %s, compiled)\n", entry_point(), async() ? "asynchronous" : "synchronous");
 }
 
 
@@ -125,21 +125,21 @@ dll_func DLLs::lookup(symbolOop dll_name, symbolOop function_name) {
   dll_func result = lookup_fail(dll_name, function_name);
   if (result) {
     if (TraceDLLLookup) {
-      std->print("DLL looking for ");
-      dll_name->print_symbol_on(std);
-      std->print("::");
-      function_name->print_symbol_on(std);
-      std->print_cr(" -> 0x%lx", result);
+      mystd->print("DLL looking for ");
+      dll_name->print_symbol_on(mystd);
+      mystd->print("::");
+      function_name->print_symbol_on(mystd);
+      mystd->print_cr(" -> 0x%lx", result);
     }
     return result;
   }
 
-  std->print("DLL lookup ");
-  function_name->print_symbol_on(std);
-  std->print(" in ");
-  dll_name->print_symbol_on(std);
-  std->print(" failed.");
-  std->cr();
+  mystd->print("DLL lookup ");
+  function_name->print_symbol_on(mystd);
+  mystd->print(" in ");
+  dll_name->print_symbol_on(mystd);
+  mystd->print(" failed.");
+  mystd->cr();
 
   DeltaProcess::active()->suspend(DLL_lookup_error);
   return NULL;

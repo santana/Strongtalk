@@ -147,11 +147,11 @@ void VirtualSpace::shrink(int size) {
 }
 
 void VirtualSpace::print() {  
-  std->print_cr("Virtual space:");
-  std->print_cr(" - committed: %d", committed_size());
-  std->print_cr(" - reserved: %d",  reserved_size());
-  std->print_cr(" - [low, high]: [0x%lx, 0x%lx]",  low(), high());
-  std->print_cr(" - [low_b, high_b]: [0x%lx, 0x%lx]",  low_boundary(), high_boundary());
+  mystd->print_cr("Virtual space:");
+  mystd->print_cr(" - committed: %d", committed_size());
+  mystd->print_cr(" - reserved: %d",  reserved_size());
+  mystd->print_cr(" - [low, high]: [0x%lx, 0x%lx]",  low(), high());
+  mystd->print_cr(" - [low_b, high_b]: [0x%lx, 0x%lx]",  low_boundary(), high_boundary());
 }
 
 
@@ -195,7 +195,7 @@ int VirtualSpaces::uncommitted_size() {
 }
 
 void VirtualSpaces::print() {
-  std->print_cr("VirtualSpaces:");
+  mystd->print_cr("VirtualSpaces:");
   for(VirtualSpace* p = head; p; p = p->next)
     p->print();
 }

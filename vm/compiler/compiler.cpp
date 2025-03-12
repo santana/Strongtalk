@@ -104,9 +104,9 @@ Compiler::Compiler(blockClosureOop blk, NonInlinedBlockScopeDesc* scope) : _scop
     LookupKey* outer = &parentNMethod->outermost()->key;
     rs = InliningDatabase::lookup_and_remove(outer, key);
     if (rs && TraceInliningDatabase) {
-      std->print("ID block compile: ");
+      mystd->print("ID block compile: ");
       key->print();
-      std->cr();
+      mystd->cr();
     }
   }
   initialize(rs);
@@ -343,7 +343,7 @@ bool NewBackendGuard::_first_use = true;
 nmethod* Compiler::compile() {
   NewBackendGuard guard;
 
-  if ((PrintProgress > 0) && (nofCompilations % PrintProgress == 0)) std->print(".");
+  if ((PrintProgress > 0) && (nofCompilations % PrintProgress == 0)) mystd->print(".");
   const char* compiling;
   if (DeltaProcess::active()->isUncommon()) {
     compiling = recompilee ? "Uncommon-Recompiling " : "Uncommon-Compiling ";
@@ -367,8 +367,8 @@ nmethod* Compiler::compile() {
   TraceTime t(compiling, should_trace);
     
   if (should_trace || PrintCode) {
-    print_key(std);
-    if (PrintCode || PrintInlining) std->print("\n");
+    print_key(mystd);
+    if (PrintCode || PrintInlining) mystd->print("\n");
   }
 
   topScope->genCode();
@@ -438,9 +438,9 @@ nmethod* Compiler::compile() {
 #endif
 
   if (PrintDebugInfoGeneration) {
-    std->cr();
-    std->cr();
-    std->print_cr("Start of debugging info.");
+    mystd->cr();
+    mystd->cr();
+    mystd->print_cr("Start of debugging info.");
   }
   topScope->generateDebugInfo();	// must come before gen to set scopeInfo
   topScope->generateDebugInfoForNonInlinedBlocks();
@@ -484,7 +484,7 @@ nmethod* Compiler::compile() {
 
   if (verifyOften) nm->verify();
 
-  if (PrintDebugInfo) nm->print_inlining(std, true);
+  if (PrintDebugInfo) nm->print_inlining(mystd, true);
 
   return nm;
 }
@@ -680,7 +680,7 @@ void Compiler::print_key(outputStream* str) {
   str->print(" (no. %d, method %#x", nofCompilations, method);
   // print the parent scope offset for block compiles.
   if (blockScope) {
-    std->print(", parent offset %d", blockScope->parent()->offset());
+    mystd->print(", parent offset %d", blockScope->parent()->offset());
   }
   str->print(")...");
 }
@@ -758,7 +758,7 @@ void Compiler::copy_noninlined_block_info(nmethod* nm) {
 
 #ifdef DEBUG
 outputStream* cout(bool flag) {
-  return (flag || theCompiler == NULL) ? std : theCompiler->messages;
+  return (flag || theCompiler == NULL) ? mystd : theCompiler->messages;
 }
 
 void print_cout() {

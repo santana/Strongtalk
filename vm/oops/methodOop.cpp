@@ -140,7 +140,7 @@ symbolOop methodOopDesc::enclosing_method_selector() const {
 }
 
 void methodOopDesc::print_value_for(klassOop receiver_klass, outputStream* st) {
-  outputStream* s = st ? st : std;
+  outputStream* s = st ? st : mystd;
   if (is_blockMethod()) {
     s->print("[] in ");
     enclosing_method_selector()->print_symbol_on(s);
@@ -156,10 +156,10 @@ void methodOopDesc::print_value_for(klassOop receiver_klass, outputStream* st) {
 
 void methodOopDesc::print_codes() {
   ResourceMark rm;
-  selector()->print_symbol_on(std);
-  std->cr();
-  MethodIterator mi(this, &MethodPrinterClosure(std));
-  std->cr();
+  selector()->print_symbol_on(mystd);
+  mystd->cr();
+  MethodIterator mi(this, &MethodPrinterClosure(mystd));
+  mystd->cr();
 }
 
 
@@ -334,7 +334,7 @@ objArrayOop methodOopDesc::fileout_body() {
 	    break;
         }
 	default:
-          std->print_cr("Format unknown %s", Bytecodes::format_as_string(c.format()));
+          mystd->print_cr("Format unknown %s", Bytecodes::format_as_string(c.format()));
 	  fatal("aborting");
       }
     }

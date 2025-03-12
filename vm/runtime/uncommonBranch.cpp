@@ -68,7 +68,7 @@ static bool has_invalid_context(frame* f) {
   while (true) {
     contextOop con = vf->compiled_context();
 
-    // std->print_cr("checking context fp = 0x%lx, pc = 0x%lx", f->fp(), f->pc());
+    // mystd->print_cr("checking context fp = 0x%lx, pc = 0x%lx", f->fp(), f->pc());
     if (con) con->print();
 
     if (con && con->unoptimized_context()) return true;
@@ -162,11 +162,11 @@ void uncommon_trap() {
   */
 
   if (PrintUncommonBranches)  {
-    std->print("%s trap in ", used ? "Uncommon" : "New uncommon");
-    nm->print_value_on(std);
-    std->print(" #%d", nm->uncommon_trap_counter());
-    if (WizardMode) std->print(" @%d called from %#x", vf->scope()->offset(), f.pc() - Assembler::sizeOfCall);
-    std->cr();
+    mystd->print("%s trap in ", used ? "Uncommon" : "New uncommon");
+    nm->print_value_on(mystd);
+    mystd->print(" #%d", nm->uncommon_trap_counter());
+    if (WizardMode) mystd->print(" @%d called from %#x", vf->scope()->offset(), f.pc() - Assembler::sizeOfCall);
+    mystd->cr();
     if (TraceDeoptimization) vf->print_activation(0);
     process->trace_top(0, 3);
   }

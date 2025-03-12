@@ -167,12 +167,12 @@ LookupKey* InterpretedRFrame::key() const {
       if (_method != NULL) 
         _method->print();
       else
-        std->print("method is null");
-      std->cr();
+        mystd->print("method is null");
+      mystd->cr();
       if (method != NULL)
         method->print();
       else
-        std->print("looked up method is null");
+        mystd->print("looked up method is null");
     }
     assert(_method == lookupCache::compile_time_normal_lookup(_receiverKlass, sel),
 	   "inconsistent lookup result");

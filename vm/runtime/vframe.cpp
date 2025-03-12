@@ -134,7 +134,7 @@ void deltaVFrame::verify() const {
   for (int index = 0; index < number_of_arguments; index++) {
     oop argument = argument_at(index);
     if (argument->is_context()) {
-      std->print_cr("Argument is a context");
+      mystd->print_cr("Argument is a context");
       print_activation(0);
       warning("verify failed");
     }
@@ -191,13 +191,13 @@ GrowableArray<oop>* interpretedVFrame::expression_stack() const {
   int computed_size = method()->expression_stack_mapping(bci())->length();
   if (size != computed_size) {
     warning("Expression stack size  @%d is %d but computed to %d", bci(), size, computed_size);
-    std->print_cr("[expression stack:"); 
+    mystd->print_cr("[expression stack:"); 
     for (int index = 0; index < result->length(); index++) {
-      std->print(" - ");
-      result->at(index)->print_value_on(std);
-      std->cr();
+      mystd->print(" - ");
+      result->at(index)->print_value_on(mystd);
+      mystd->cr();
     }
-    std->print_cr("]"); 
+    mystd->print_cr("]"); 
     method()->pretty_print();
     method()->print_codes();
   }
@@ -307,7 +307,7 @@ compiledVFrame* compiledVFrame::new_vframe(const frame* fr, ScopeDesc* sd, int b
 void compiledVFrame::rewind_bci() {
   int new_bci = method()->find_bci_from(_bci);
   assert(new_bci >= 0, "must be real bci");
-  std->print_cr("%d -> %d", _bci, new_bci);
+  mystd->print_cr("%d -> %d", _bci, new_bci);
   _bci = new_bci;
 }
 
@@ -407,13 +407,13 @@ GrowableArray<oop>* compiledVFrame::expression_stack() const {
   int computed_size = method()->expression_stack_mapping(bci())->length();
   if (result->length() != computed_size) {
     warning("Expression stack size  @%d is %d but computed to %d", bci(), result->length(), computed_size);
-    std->print_cr("[expression stack:"); 
+    mystd->print_cr("[expression stack:"); 
     for (int index = 0; index < result->length(); index++) {
-      std->print(" - ");
-      result->at(index)->print_value_on(std);
-      std->cr();
+      mystd->print(" - ");
+      result->at(index)->print_value_on(mystd);
+      mystd->cr();
     }
-    std->print_cr("]"); 
+    mystd->print_cr("]"); 
     method()->pretty_print();
     method()->print_codes();
   }
@@ -683,11 +683,11 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
   }
 
   if (TraceDeoptimization && comp_context) {
-    std->print(" - ");
+    mystd->print(" - ");
     comp_context->print_value();
-    std->print_cr(" -> ");
+    mystd->print_cr(" -> ");
     result->print_value();
-    std->cr();
+    mystd->cr();
   }
  
   assert(result->unoptimized_context() == NULL, "cannot have deoptimized context");
@@ -939,7 +939,7 @@ GrowableArray<oop>* deoptimizedVFrame::expression_stack() const {
 
 void cVFrame::print() {
   vframe::print();
-  std->print_cr("C frame");
+  mystd->print_cr("C frame");
 }
 
 void cVFrame::print_value() const {
@@ -958,8 +958,8 @@ void cChunk::print_value() const {
 
 void cChunk::print() {
   vframe::print();
-  std->print_cr("C Chunk inbetween Delta");
-  std->print_cr("C     link 0x%lx", _fr.link());
+  mystd->print_cr("C Chunk inbetween Delta");
+  mystd->print_cr("C     link 0x%lx", _fr.link());
 }
 
 oop cChunk::callee_argument_at(int index) const {

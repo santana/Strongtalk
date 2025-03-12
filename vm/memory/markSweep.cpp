@@ -137,7 +137,7 @@ oop MarkSweep::collect(oop p) {
   }
 
   if (PrintGC) {
-    std->print(" %.1fM -> %.1fM",
+    mystd->print(" %.1fM -> %.1fM",
                (double) old_used                 / (double) (1024 * 1024),
                (double) Universe::old_gen.used() / (double) (1024 * 1024));
   }
@@ -159,7 +159,7 @@ void MarkSweep::deallocate() {
 
 void MarkSweep::trace(char* msg) {
   if (TraceGC)
-    std->print("%s", msg);
+    mystd->print("%s", msg);
 }
 
 memOop MarkSweep::reverse(oop* p) {

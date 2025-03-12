@@ -161,8 +161,8 @@ class pnode : public CHeapObj {
     if (ProfilerShowMethodHolder) {
       klassOop method_holder = receiver_klass()->klass_part()->lookup_method_holder_for(m);
       if (method_holder && (method_holder != receiver_klass())) {
-        std->print(", in ");
-        method_holder->klass_part()->print_name_on(std);
+        mystd->print(", in ");
+        method_holder->klass_part()->print_name_on(mystd);
       }
     }
   }
@@ -434,7 +434,7 @@ static int compare_nodes(const void* p1,  const void* p2) {
 
 void print_ticks(char* title, int ticks, int total) {
  if (ticks>0)
-    std->print_cr("%5.1f%%  %3d %s", ticks * 100.0 / total, ticks, title);
+    mystd->print_cr("%5.1f%%  %3d %s", ticks * 100.0 / total, ticks, title);
 }
 
 void FlatProfiler::print(int cutoff) {
@@ -460,9 +460,9 @@ void FlatProfiler::print(int cutoff) {
     total += array->at(index)->ticks.total();
   }
 
-  std->cr();
-  std->print_cr("Flatprofile %3.2f secs (%d ticks):", secs, total);
-  std->cr();
+  mystd->cr();
+  mystd->print_cr("Flatprofile %3.2f secs (%d ticks):", secs, total);
+  mystd->cr();
 
   // print interpreted methods
   tick_counter interpreted_ticks;
@@ -473,11 +473,11 @@ void FlatProfiler::print(int cutoff) {
     if (n->is_interpreted()) {
       interpreted_ticks.add(&n->ticks);
       if (!has_interpreted_ticks) {
-        interpretedNode::print_title(std);
+        interpretedNode::print_title(mystd);
         has_interpreted_ticks = true;
       }
       if (print_count++ < ProfilerNumberOfInterpreterMethods) {
-        n->print(std, total);
+        n->print(mystd, total);
       }
     }
   }
@@ -485,12 +485,12 @@ void FlatProfiler::print(int cutoff) {
     tick_counter others;
     for ( ; index < array->length(); index++) others.add(&array->at(index)->ticks);
     if (others.total() > 0) {
-      interpretedNode::print_total(std, &interpreted_ticks, total, "(all above)");
-      interpretedNode::print_total(std, &others, total, "(all others)");
+      interpretedNode::print_total(mystd, &interpreted_ticks, total, "(all above)");
+      interpretedNode::print_total(mystd, &others, total, "(all others)");
     }
     interpreted_ticks.add(&others);
-    interpretedNode::print_total(std, &interpreted_ticks, total, "Total interpreted");
-    std->cr();
+    interpretedNode::print_total(mystd, &interpreted_ticks, total, "Total interpreted");
+    mystd->cr();
   }
 
   // print compiled methods
@@ -502,11 +502,11 @@ void FlatProfiler::print(int cutoff) {
     if (n->is_compiled()) {
       compiled_ticks.add(&n->ticks);
       if (!has_compiled_ticks) {
-        compiledNode::print_title(std);
+        compiledNode::print_title(mystd);
         has_compiled_ticks = true;
       }
       if (print_count++ < ProfilerNumberOfCompiledMethods) {
-        n->print(std, total);
+        n->print(mystd, total);
       }
     }
   }
@@ -515,18 +515,18 @@ void FlatProfiler::print(int cutoff) {
     tick_counter others;
     for ( ; index < array->length(); index++) others.add(&array->at(index)->ticks);
     if (others.total() > 0) {
-      compiledNode::print_total(std, &compiled_ticks, total, "(all above)");
-      compiledNode::print_total(std, &others, total, "(all others)");
+      compiledNode::print_total(mystd, &compiled_ticks, total, "(all above)");
+      compiledNode::print_total(mystd, &others, total, "(all others)");
     }
     compiled_ticks.add(&others);
-    compiledNode::print_total(std, &compiled_ticks, total, "Total compiled");
-    std->cr();
+    compiledNode::print_total(mystd, &compiled_ticks, total, "Total compiled");
+    mystd->cr();
   }
 
-  std->cr();
+  mystd->cr();
 
   if (total_ticks() > 0) {
-    std->print_cr(" Additional ticks:");
+    mystd->print_cr(" Additional ticks:");
     print_ticks("Garbage collector", gc_ticks,        total);
     print_ticks("Process semaphore", semaphore_ticks, total);
     print_ticks("Unknown code",      unknown_ticks,   total);

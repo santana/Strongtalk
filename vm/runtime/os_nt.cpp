@@ -638,9 +638,9 @@ void os_init() {
   ULONG processorId = 1;
   while (!(processMask & processorId) && processorId < processMask)
     processorId >>= 1;
-  std->print_cr("processor: %ld", processorId);
+  mystd->print_cr("processor: %ld", processorId);
   if (!SetProcessAffinityMask(GetCurrentProcess(), processorId))
-    std->print_cr("error code: %d", GetLastError());
+    mystd->print_cr("error code: %d", GetLastError());
   // end processor affinity - for removal
 
   SetConsoleCtrlHandler(&HandlerRoutine, TRUE);

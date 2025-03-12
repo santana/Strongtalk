@@ -71,11 +71,6 @@ extern outputStream* _mystd;
 outputStream* getErr();
 outputStream* getStd();
 
-#ifdef std
-#undef std
-#endif
-
-#define std getStd()
 //#define err getErr()
 
 // Standard error

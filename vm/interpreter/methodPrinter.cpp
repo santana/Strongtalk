@@ -25,7 +25,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # include "incls/_methodPrinter.cpp.incl"
 
 MethodPrinterClosure::MethodPrinterClosure(outputStream* stream) {
-  st = stream ? stream : std;
+  st = stream ? stream : mystd;
 }
 
 void MethodPrinterClosure::indent() {

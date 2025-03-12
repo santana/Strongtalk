@@ -93,17 +93,17 @@ class cacheElement { // : ValueObj {
 
     if (key.klass() || key.selector_or_method()) {
       if (result.is_empty()) {
-         std->print("Verify failed in lookupCache: ");
-	 std->cr();
-	 std->print("  element = (");
-	 key.klass()->print_value_on(std);
-         std->print("::");
-         key.selector_or_method()->print_value_on(std);
-         std->print(")");
-         std->cr();
-	 std->print("  result = (");
-         result.print_on(std);
-         std->print_cr(")");
+         mystd->print("Verify failed in lookupCache: ");
+	 mystd->cr();
+	 mystd->print("  element = (");
+	 key.klass()->print_value_on(mystd);
+         mystd->print("::");
+         key.selector_or_method()->print_value_on(mystd);
+         mystd->print(")");
+         mystd->cr();
+	 mystd->print("  result = (");
+         result.print_on(mystd);
+         mystd->print_cr(")");
 	 fatal("lookupCache verify failed");
       }
       nmethod* nm = Universe::code->lookup(&key);
@@ -281,9 +281,9 @@ LookupResult lookupCache::cache_miss_lookup(LookupKey* key, bool compile) {
     RScope* rs = InliningDatabase::lookup_and_remove(key);
     if (rs) {
       if (TraceInliningDatabase) {
-        std->print("ID compile: ");
+        mystd->print("ID compile: ");
 	key->print();
-	std->cr();
+	mystd->cr();
       }
 
       // Remove old nmethod if present

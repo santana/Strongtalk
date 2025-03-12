@@ -1271,7 +1271,7 @@ static astNode* get_literal_node(oop obj, int bci, scopeNode* scope) {
   return new characterNode(bci, scope, obj);
 }
 
-void prettyPrintStream::print() { std->print("pretty-printer stream"); }
+void prettyPrintStream::print() { mystd->print("pretty-printer stream"); }
 
 void defaultPrettyPrintStream::indent() {
   for (int i = 0; i < indentation; i++) {
@@ -1283,7 +1283,7 @@ void defaultPrettyPrintStream::print(char* str)  {
     print_char(str[i]);
 }
 void defaultPrettyPrintStream::print_char(char c)  {
-  std->print("%c", c);
+  mystd->print("%c", c);
   pos += width_of_char(c);
 }
 int defaultPrettyPrintStream::width_of_string(char* str) {
@@ -1547,8 +1547,8 @@ class StackChecker {
 
   ~StackChecker() {
     if (pp->_size() != size + offset) {
-      std->print_cr("StackTracer found misaligned stack");
-      std->print_cr("Expecting %d but found %d", size + offset, pp->_size());
+      mystd->print_cr("StackTracer found misaligned stack");
+      mystd->print_cr("Expecting %d but found %d", size + offset, pp->_size());
       fatal("aborting");
     }
   }

@@ -111,9 +111,9 @@ nmethod* compile_method(LookupKey* key, methodOop m) {
       VM_OptimizeRScope op(rscope);
       VMProcess::execute(&op);
       if (TraceInliningDatabase) {
-        std->print_cr("Inlining database compile ");
-	key->print_on(std);
-	std->cr();
+        mystd->print_cr("Inlining database compile ");
+	key->print_on(mystd);
+	mystd->cr();
       }
       return op.result();
     }
@@ -179,12 +179,12 @@ void Recompilation::doit() {
     
     //slr debugging
   if (false && _nm) {
-    std->cr();
-    _nm->print_value_on(std);
-    std->cr();
-    _method->print_value_on(std);
-    std->cr();
-    std->print_cr("uncommon? %d", _nm->isUncommonRecompiled());
+    mystd->cr();
+    _nm->print_value_on(mystd);
+    mystd->cr();
+    _method->print_value_on(mystd);
+    mystd->cr();
+    mystd->print_cr("uncommon? %d", _nm->isUncommonRecompiled());
   }
     //slr debugging
   

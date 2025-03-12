@@ -28,13 +28,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 void Variable::print() {
   if (in_register()) {
-    std->print("R%d", offset());
+    mystd->print("R%d", offset());
   } else if (on_stack()) {
-    std->print("S[%d]", offset());
+    mystd->print("S[%d]", offset());
   } else if (is_unused()) {
-    std->print("UN");
+    mystd->print("UN");
   } else if (is_top_of_stack()){
-    std->print("tos");
+    mystd->print("tos");
   } else {
     fatal("invalid variable");
   }
@@ -312,16 +312,16 @@ void MappingTask::generate_code(MapConformance* mc) {
 }
 
 void MappingTask::print(int index) {
-  std->print("  %2d: ", index);
+  mystd->print("  %2d: ", index);
   src.print();
-  std->print(" -> ");
+  mystd->print(" -> ");
   dst.print();
   if (_what_happend != NULL) {
-    std->set_indentation(35);
-    std->indent();
-    std->print("%s", _what_happend);
+    mystd->set_indentation(35);
+    mystd->indent();
+    mystd->print("%s", _what_happend);
   }
-  std->cr();
+  mystd->cr();
 }
 
 MapConformance::MapConformance() {
@@ -348,27 +348,27 @@ void MapConformance::generate(Variable free_register1, Variable free_register2) 
 }
 
 void MapConformance::move(Variable src, Variable dst) {
-  std->print("	move  ");
+  mystd->print("	move  ");
   src.print();
-  std->print(",	");
+  mystd->print(",	");
   dst.print();
-  std->cr();
+  mystd->cr();
 }
 
 void MapConformance::push(Variable src) {
-  std->print("	push  ");
+  mystd->print("	push  ");
   src.print();
-  std->cr();
+  mystd->cr();
 }
 
 void MapConformance::pop(Variable dst) {
-  std->print("	pop  ");
+  mystd->print("	pop  ");
   dst.print();
-  std->cr();
+  mystd->cr();
 }
 
 void MapConformance::print() {
-  std->print_cr("MapConformance");
+  mystd->print_cr("MapConformance");
   for (int index = 0; index < mappings->length(); index++) {
     mappings->at(index)->print(index);
   }

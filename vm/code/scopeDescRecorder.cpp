@@ -943,7 +943,7 @@ Location ScopeDescRecorder::convert_location(Location loc) {
   ScopeInfo scope = theCompiler->scopes->at(scope_id)->scopeInfo();
   assert(scope, "scope must exist");
   if (scope->offset == INVALID_OFFSET) {
-    std->print_cr(loc.name());
+    mystd->print_cr(loc.name());
     theCompiler->print_code(false);
     fatal("compiler error: context location appears outside its scope");    // Urs 5/96
   }

@@ -29,7 +29,7 @@ const int indent_col =  3;
 const int value_col  = 16;
 
 PrintObjectClosure::PrintObjectClosure(outputStream* st = NULL) {
-  this->st = st ? st : std;
+  this->st = st ? st : mystd;
 }
 
 void PrintObjectClosure::do_object(memOop obj) {

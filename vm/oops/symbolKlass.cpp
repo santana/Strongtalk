@@ -79,9 +79,9 @@ void symbolKlass::oop_print_value_on(oop obj, outputStream* st) {
 
 void symbolKlass::print(oop obj) {
   assert_symbol(obj, "dispatch check");
-  std->print("'");
+  mystd->print("'");
   symbolOop(obj)->print_symbol_on();
-  std->print("' ");
+  mystd->print("' ");
 }
 
 oop symbolKlass::oop_shallow_copy(oop obj, bool tenured) {

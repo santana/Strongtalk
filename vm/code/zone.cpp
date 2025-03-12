@@ -308,7 +308,7 @@ void zone::compact(bool forced) {
   char* firstFree = NULL;
   if (!forced) adjustPolicy();
   if (needsCompaction()) {
-    if (PrintCodeReclamation) std->print("I");
+    if (PrintCodeReclamation) mystd->print("I");
     firstFree = methodHeap->compact(moveInsts);
   }
   // unchainFrames();
@@ -401,7 +401,7 @@ void zone::PICs_do(void f(PIC* pic)) {
 }
 
 # define NMLINE(format, n, ntot, ntot2) 				      \
-  std->print(format, (n), 100.0 * (n) / (ntot), 100.0 * (n) / (ntot2))
+  mystd->print(format, (n), 100.0 * (n) / (ntot), 100.0 * (n) / (ntot2))
 
 class nmsizes {
   int n, insts, locs, scopes;
@@ -418,7 +418,7 @@ class nmsizes {
     int bigTotal = tot.total();
     int myTotal = total();
     if (! isEmpty()) {
-      std->print("%-13s (%ld methods): ", name, n);
+      mystd->print("%-13s (%ld methods): ", name, n);
       NMLINE("headers = %ld (%2.0f%%/%2.0f%%); ", n*sizeof(nmethod),
 	     myTotal, bigTotal);
       NMLINE("insts = %ld (%2.0f%%/%2.0f%%);\n", insts, myTotal, bigTotal);
@@ -429,7 +429,7 @@ class nmsizes {
   }
 
   void print(char* title, int t) {
-    std->print_cr("   %3d %s nmethods %2d%% = %4dK (hdr %2d%%, inst %2d%%, locs %2d%%, debug %2d%%)",
+    mystd->print_cr("   %3d %s nmethods %2d%% = %4dK (hdr %2d%%, inst %2d%%, locs %2d%%, debug %2d%%)",
                   n,
 		  title,
                   total() * 100 / t,
@@ -462,18 +462,18 @@ void zone::print() {
     }
   }
 
-  std->print_cr("Zone:");
+  mystd->print_cr("Zone:");
 
   if (!nms.isEmpty()) {
-    std->print_cr("  Code (%dK, %d%% used)", methodHeap->capacity() / K, (methodHeap->usedBytes() * 100) / methodHeap->capacity());
+    mystd->print_cr("  Code (%dK, %d%% used)", methodHeap->capacity() / K, (methodHeap->usedBytes() * 100) / methodHeap->capacity());
     nms.print("live", methodHeap->capacity());
   }
   if (uncommon) {
-    std->print_cr("(%d live uncommon nmethods)", uncommon);
+    mystd->print_cr("(%d live uncommon nmethods)", uncommon);
   }
   if (!zombies.isEmpty()) {
     zombies.print("dead", methodHeap->capacity());
-    std->print_cr("  PICs (%dK, %d%% used)", picHeap->capacity() / K, (picHeap->usedBytes() * 100) / picHeap->capacity());
+    mystd->print_cr("  PICs (%dK, %d%% used)", picHeap->capacity() / K, (picHeap->usedBytes() * 100) / picHeap->capacity());
   }
 
   int n     = 0;
@@ -485,7 +485,7 @@ void zone::print() {
   int total = insts + n * sizeof(PIC);
 
   if (n > 0) {
-    std->print_cr("   %3d entries = %dK (hdr %2d%%, inst %2d%%)",
+    mystd->print_cr("   %3d entries = %dK (hdr %2d%%, inst %2d%%)",
                   n,
    		  total / K,
                   n * sizeof(PIC) * 100 / total,
@@ -639,9 +639,9 @@ void zone::mark_dependents_for_deoptimization() {
       for (int index = 0; index < nms->length(); index++) {
         nmethod* elem = nms->at(index);	
 	if (TraceApplyChange) {
-          std->print("invalidating "); 
-          elem->print_value_on(std);
-          std->cr();
+          mystd->print("invalidating "); 
+          elem->print_value_on(mystd);
+          mystd->cr();
         }
 	elem->mark_for_deoptimization();
       }

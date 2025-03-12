@@ -776,9 +776,9 @@ void PIC::verify() {
   for (int i = 0; i < k->length() - 1; i++) {
     for (int j = i + 1; j < k->length(); j++) {
       if (k->at(i) == k->at(j)) {
-        std->print("The class ");
-        k->at(i)->klass_part()->print_name_on(std);
-        std->print_cr("is twice in PIC 0x%lx", this);
+        mystd->print("The class ");
+        k->at(i)->klass_part()->print_name_on(mystd);
+        mystd->print_cr("is twice in PIC 0x%lx", this);
         warning("PIC verify error");
       }
     }

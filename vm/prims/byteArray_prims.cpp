@@ -853,7 +853,7 @@ void break_on_error(void* address, oop result) {
   int err = os::error_code();
   if (value == 0 && err) {
     ResourceMark rm;
-    std->print_cr("Last error: 0x%x %d", address, err);
+    mystd->print_cr("Last error: 0x%x %d", address, err);
     DeltaProcess::active()->trace_top(1, 5);
     if (false)
       os::breakpoint();

@@ -79,11 +79,11 @@ void CostModel::set_cost_for_send(Bytecodes::SendType type, int cost) {
 
   
 void CostModel::print() {
-  std->print("%40s: %s\n", "Bytecode", "Cost");
+  mystd->print("%40s: %s\n", "Bytecode", "Cost");
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
     Bytecodes::Code code = Bytecodes::Code(i);
     if (Bytecodes::is_defined(code)) {
-      std->print("%40s: %d\n", Bytecodes::name(code), cost_for(code));
+      mystd->print("%40s: %d\n", Bytecodes::name(code), cost_for(code));
     }
   }
 }

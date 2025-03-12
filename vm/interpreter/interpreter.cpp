@@ -98,15 +98,15 @@ bool Interpreter::has_timers()          { return InterpreterCodeStatus()[5] == 1
 
 void Interpreter::print_code_status() {
   if (is_optimized()) {
-    std->print_cr("- Interpreter code is optimized");
+    mystd->print_cr("- Interpreter code is optimized");
   } else {
-    std->print("- Interpreter code is in debug mode: ");
-    if (can_trace_bytecodes()) std->print("trace_bytecodes ");
-    if (can_trace_sends())     std->print("trace_sends ");
-    if (has_assertions())      std->print("assertions ");
-    if (has_stack_checks())    std->print("stack_checks ");
-    if (has_timers())          std->print("timers ");
-    std->cr();
+    mystd->print("- Interpreter code is in debug mode: ");
+    if (can_trace_bytecodes()) mystd->print("trace_bytecodes ");
+    if (can_trace_sends())     mystd->print("trace_sends ");
+    if (has_assertions())      mystd->print("assertions ");
+    if (has_stack_checks())    mystd->print("stack_checks ");
+    if (has_timers())          mystd->print("timers ");
+    mystd->cr();
   }
 }
 
@@ -128,9 +128,9 @@ void Interpreter::loop_counter_overflow() {
   if (debug) {
     ResourceMark rm;
     int l = loop_counter_limit();
-    std->print("loop counter > %d in ", l);
+    mystd->print("loop counter > %d in ", l);
     method->print_value();
-    std->cr();
+    mystd->cr();
   }
 }
 
@@ -178,10 +178,10 @@ extern "C" void verifyPIC(oop pic) {
 extern "C" void trace_send(oop receiver, methodOop method) {
   if (TraceMessageSend) {
     ResourceMark rm;
-    std->print("Trace ");
+    mystd->print("Trace ");
     receiver->print_value();
     method->selector()->print_value();
-    std->cr();
+    mystd->cr();
   }
 }
 
@@ -201,13 +201,13 @@ void Interpreter::trace_bytecode() {
       }
       u_char* ip = DeltaProcess::active()->last_frame().hp();
       char* name = Bytecodes::name((Bytecodes::Code)*ip);
-      std->print("%9d 0x%x: %02x %s\n", NumberOfBytecodesExecuted, ip, *ip, name);
+      mystd->print("%9d 0x%x: %02x %s\n", NumberOfBytecodesExecuted, ip, *ip, name);
     }
   }
   else if (TraceBytecodes) {
     u_char* ip = DeltaProcess::active()->last_frame().hp();
     char* name = Bytecodes::name((Bytecodes::Code)*ip);
-    std->print("%9d 0x%x: %02x %s\n", NumberOfBytecodesExecuted, ip, *ip, name);
+    mystd->print("%9d 0x%x: %02x %s\n", NumberOfBytecodesExecuted, ip, *ip, name);
   }
 }
 
@@ -981,11 +981,11 @@ char* InterpreterGenerator::store_temp_n(bool pop) {
 
 extern "C" void trace_push_global(oop assoc, oop value) {
   ResourceMark rm;
-  std->print_cr("Trace push_global: ");
+  mystd->print_cr("Trace push_global: ");
   assoc->print_value();
-  std->cr();
+  mystd->cr();
   value->print_value();
-  std->cr();
+  mystd->cr();
 }
 
 char* InterpreterGenerator::push_global() {
@@ -3500,9 +3500,9 @@ char* InterpreterGenerator::generate_instruction(Bytecodes::Code code) {
 
 void InterpreterGenerator::info(char* name) {
   if (!Disclaimer::is_product() && PrintInterpreter) {
-    std->print("%s\n", name);
+    mystd->print("%s\n", name);
     masm->code()->decode();
-    std->cr();
+    mystd->cr();
   }
 }
 
@@ -3558,9 +3558,9 @@ void InterpreterGenerator::generate_all() {
       #ifndef PRODUCT
         int length = masm->pc() - start_point;
 	char* name = Bytecodes::name((Bytecodes::Code)i);
-        std->print("Bytecode 0x%02x: %s (%d bytes), entry point = 0x%x\n", i, name, length, entry_point);
+        mystd->print("Bytecode 0x%02x: %s (%d bytes), entry point = 0x%x\n", i, name, length, entry_point);
 	masm->code()->decode();
-	std->cr();
+	mystd->cr();
       #endif
       }
     }
@@ -3589,7 +3589,7 @@ static char* interpreter_code;
 void interpreter_init() {
   const bool debug = false; // change this to switch between debug/optimized version
   if (!Disclaimer::is_product() && PrintInterpreter) {
-    std->print("\nBytecode Interpreter\n\n");
+    mystd->print("\nBytecode Interpreter\n\n");
   }
 
   interpreter_code = os::exec_memory(interpreter_size);
@@ -3598,7 +3598,7 @@ void interpreter_init() {
   InterpreterGenerator g(code, debug);
 
   if (!Disclaimer::is_product() && PrintInterpreter) {
-    std->print("%d bytes generated for the interpreter\n", code->code_size());
+    mystd->print("%d bytes generated for the interpreter\n", code->code_size());
 //    exit(0);
   }
 

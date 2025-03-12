@@ -107,8 +107,8 @@ oop Delta::does_not_understand(oop receiver, symbolOop selector, int nofArgs, oo
     if (interpreter_normal_lookup(receiver->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
       { ResourceMark rm;
-        std->print("LOOKUP ERROR\n");
-        sel->print_value(); std->print(" not found\n");
+        mystd->print("LOOKUP ERROR\n");
+        sel->print_value(); mystd->print(" not found\n");
       }
       if (DeltaProcess::active()->is_scheduler()) {
         DeltaProcess::active()->trace_stack();

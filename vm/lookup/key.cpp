@@ -90,7 +90,7 @@ void LookupKey::print_inlining_database_on(outputStream* st) const {
 }
 
 void LookupKey::print() const {
-  print_on(std);
+  print_on(mystd);
 }
 
 char* LookupKey::print_string() const {

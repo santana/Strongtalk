@@ -966,7 +966,7 @@ void BBIterator::print_code(bool suppressTrivial) {
   for (int i = 0; i < list->length(); i++) {
     BB* bb = list->at(i);
     if (bb->nnodes > 0) bb->print_code(suppressTrivial);
-    if (bb->next() != NULL) std->print_cr("\tgoto N%d", bb->next()->first->id());
+    if (bb->next() != NULL) mystd->print_cr("\tgoto N%d", bb->next()->first->id());
     if (!suppressTrivial) lprintf("\n");
   }
 }

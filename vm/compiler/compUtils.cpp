@@ -45,7 +45,7 @@ void PerformanceDebugger::stop_report() {
   for (int i = reports->length() - 1; i >= 0; i--) {
     if (strcmp(reports->at(i), report) == 0) return;  // already printed identical msg
   }
-  std->print(report);
+  mystd->print(report);
   reports->append(report);
   str = NULL;
 }
@@ -53,7 +53,7 @@ void PerformanceDebugger::stop_report() {
 void PerformanceDebugger::report_compile() {
   if (!compileReported) {
     compileReported = true;
-    std->print("\n*while compiling nmethod for %s:\n", c->key->print_string());
+    mystd->print("\n*while compiling nmethod for %s:\n", c->key->print_string());
   }
 }
 

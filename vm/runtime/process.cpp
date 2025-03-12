@@ -135,9 +135,9 @@ void Process::external_resume_current() {
 
 void Process::basic_transfer(Process* target) {
   if (TraceProcessEvents) {
-    std->print("Process: "); print();
-    std->print(" -> "); target->print();
-    std->cr();
+    mystd->print("Process: "); print();
+    mystd->print(" -> "); target->print();
+    mystd->cr();
   }
   os::transfer(_thread, _event, target->_thread, target->_event);
   applyStepping();
@@ -224,7 +224,7 @@ void VMProcess::loop() {
 }
 
 void VMProcess::print() {
-  std->print_cr("VMProcess");
+  mystd->print_cr("VMProcess");
 }
 
 void VMProcess::execute(VM_Operation* op) {
@@ -404,9 +404,9 @@ void DeltaProcess::transfer_and_continue() {
     set_active(scheduler());
 
     if (TraceProcessEvents) {
-      std->print("Async call: "); print();
-      std->print("        to: "); scheduler()->print();
-      std->cr();
+      mystd->print("Async call: "); print();
+      mystd->print("        to: "); scheduler()->print();
+      mystd->cr();
     }
   }
   os::transfer_and_continue(_thread, _event, scheduler()->_thread, scheduler()->_event);
@@ -421,7 +421,7 @@ bool DeltaProcess::wait_for_async_dll(int timeout_in_ms) {
   if (Processes::has_completed_async_call()) return true;
 
   if (TraceProcessEvents) {
-    std->print("Waiting for async %d ms", timeout_in_ms);
+    mystd->print("Waiting for async %d ms", timeout_in_ms);
   }
 
   _is_idle = true;
@@ -432,7 +432,7 @@ bool DeltaProcess::wait_for_async_dll(int timeout_in_ms) {
     os::reset_event(_async_dll_completion_event);
 
   if (TraceProcessEvents) {
-    std->print_cr(result ? " {timeout}" : " {async}");
+    mystd->print_cr(result ? " {timeout}" : " {async}");
   }
 
   return result;
@@ -448,7 +448,7 @@ void DeltaProcess::async_dll_call_completed() {
 
 void DeltaProcess::wait_for_control() {
   if (TraceProcessEvents) {
-    std->print("*");
+    mystd->print("*");
   }
 
   set_state(yielded_after_async_dll);
@@ -587,21 +587,21 @@ void DeltaProcess::preempt_active() {
 }
 void DeltaProcess::print() {
   processObj()->print_value();
-  std->print(" ");
+  mystd->print(" ");
   switch (state()) {
-    case initialized:             std->print_cr("initialized");            break;
-    case running:                 std->print_cr("running");                break;
-    case yielded:                 std->print_cr("yielded");                break;
-    case in_async_dll:            std->print_cr("in asynchronous dll all");break;
-    case yielded_after_async_dll: std->print_cr("yielded after asynchronous dll"); break;
-    case preempted:               std->print_cr("preempted");              break;
-    case completed:               std->print_cr("completed");              break;
-    case boolean_error:           std->print_cr("boolean error");          break;
-    case lookup_error:            std->print_cr("lookup error");           break;
-    case primitive_lookup_error:  std->print_cr("primitive lookup error"); break;
-    case DLL_lookup_error:        std->print_cr("DLL lookup error");       break;
-    case NLR_error:               std->print_cr("NLR error");              break;
-    case stack_overflow:          std->print_cr("stack overflow");         break;
+    case initialized:             mystd->print_cr("initialized");            break;
+    case running:                 mystd->print_cr("running");                break;
+    case yielded:                 mystd->print_cr("yielded");                break;
+    case in_async_dll:            mystd->print_cr("in asynchronous dll all");break;
+    case yielded_after_async_dll: mystd->print_cr("yielded after asynchronous dll"); break;
+    case preempted:               mystd->print_cr("preempted");              break;
+    case completed:               mystd->print_cr("completed");              break;
+    case boolean_error:           mystd->print_cr("boolean error");          break;
+    case lookup_error:            mystd->print_cr("lookup error");           break;
+    case primitive_lookup_error:  mystd->print_cr("primitive lookup error"); break;
+    case DLL_lookup_error:        mystd->print_cr("DLL lookup error");       break;
+    case NLR_error:               mystd->print_cr("NLR error");              break;
+    case stack_overflow:          mystd->print_cr("stack overflow");         break;
   }
 }
 
@@ -761,20 +761,20 @@ extern "C" contextOop nlr_home_context;
 
 inline void trace_deoptimization_start() {
   if (TraceDeoptimization) {
-    std->print("[Unpacking]");
+    mystd->print("[Unpacking]");
     if (nlr_through_unpacking) {
-      std->print(" NLR %s", (nlr_home == (int) cur_fp) ? "inside" : "outside");
+      mystd->print(" NLR %s", (nlr_home == (int) cur_fp) ? "inside" : "outside");
     }
-    std->cr();
-    std->print(" - array ");
+    mystd->cr();
+    mystd->print(" - array ");
     frame_array->print_value();
-    std->print_cr(" @ 0x%lx", old_fp);
+    mystd->print_cr(" @ 0x%lx", old_fp);
   }
 }
 inline void trace_deoptimization_frame(frame &current, oop* current_sp, char* current_pc) {
   if (TraceDeoptimization) {
     frame v(current_sp, current.fp(), current_pc);
-    v.print_for_deoptimization(std);
+    v.print_for_deoptimization(mystd);
   }
 }
 
@@ -884,7 +884,7 @@ extern "C" void unpack_frame_array() {
 	  // compute number of arguments to pop
           nlr_home_id = ~method->number_of_arguments();
           nlr_target_found = true;
-	  // std->print("target frame for NLR (%d, 0x%lx):",method->number_of_arguments(), nlr_home_id);
+	  // mystd->print("target frame for NLR (%d, 0x%lx):",method->number_of_arguments(), nlr_home_id);
         }
       }
     }
@@ -910,19 +910,19 @@ extern "C" void verify_at_end_of_deoptimization() {
     BlockScavenge bs;
     ResourceMark rm;
     DeltaProcess::active()->verify();
-    std->print_cr("[Stack after unpacking]");
+    mystd->print_cr("[Stack after unpacking]");
     DeltaProcess::active()->trace_stack_for_deoptimization();
   }
 }
 
 void DeltaProcess::deoptimize_stretch(frame* first_frame, frame* last_frame) {
   if (TraceDeoptimization) {
-    std->print_cr("[Deoptimizing]");
+    mystd->print_cr("[Deoptimizing]");
     frame c = *first_frame;
-    c.print_for_deoptimization(std);
+    c.print_for_deoptimization(mystd);
     while (c.fp() != last_frame->fp()) {
       c = c.sender();
-      c.print_for_deoptimization(std);
+      c.print_for_deoptimization(mystd);
     }
   }
 
@@ -1000,7 +1000,7 @@ void DeltaProcess::trace_stack() {
 }
 
 void DeltaProcess::trace_stack_from(vframe* start_frame) {
-  std->print_cr("- Stack trace");
+  mystd->print_cr("- Stack trace");
   int  vframe_no   = 1;
   for (vframe* f = start_frame; f; f = f->sender() ) {
     if (f->is_delta_frame()) {
@@ -1009,7 +1009,7 @@ void DeltaProcess::trace_stack_from(vframe* start_frame) {
       f->print();
     }
     if (vframe_no == StackPrintLimit) {
-      std->print_cr("...<more frames>...");
+      mystd->print_cr("...<more frames>...");
       return;
     }
   }
@@ -1020,10 +1020,10 @@ void DeltaProcess::trace_stack_for_deoptimization(frame* f) {
     int  vframe_no   = 1;
     frame v = f ? *f : last_frame();
     do {
-      v.print_for_deoptimization(std);
+      v.print_for_deoptimization(mystd);
       v = v.sender();
       if (vframe_no == StackPrintLimit) {
-        std->print_cr("...<more frames>...");
+        mystd->print_cr("...<more frames>...");
         return;
       }
       vframe_no++;
@@ -1034,7 +1034,7 @@ void DeltaProcess::trace_stack_for_deoptimization(frame* f) {
 void DeltaProcess::trace_top(int start_frame, int number_of_frames) {
   FlagSetting fs(ActivationShowCode, true);
 
-  std->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
+  mystd->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
   int  vframe_no = 1;
 
   for (vframe* f = last_delta_vframe(); f; f = f->sender() ) {
@@ -1115,7 +1115,7 @@ bool Processes::has_completed_async_call() {
 }
 
 void Processes::print() {
-  std->print_cr("All processes:");
+  mystd->print_cr("All processes:");
   ALL_PROCESSES(p) {
     ResourceMark rm;
     p->print();
@@ -1259,10 +1259,10 @@ void Processes::deoptimize_all() {
 void handle_error(ProcessState error) {
   DeltaProcess* proc = DeltaProcess::active();
   if (proc->is_scheduler()) {
-    std->print_cr("Error happend in the scheduler");
-    std->print("Status: ");
-    proc->status_symbol()->print_symbol_on(std);
-    std->cr();
+    mystd->print_cr("Error happend in the scheduler");
+    mystd->print("Status: ");
+    proc->status_symbol()->print_symbol_on(mystd);
+    mystd->cr();
     evaluator::read_eval_loop();
   } else {
     proc->suspend(error);
@@ -1312,7 +1312,7 @@ extern "C" void suspend_on_NLR_error() {
 void trace_stack_at_exception(int* sp, int* fp, char* pc) {
   ResourceMark rm;
 
-  std->print_cr("Trace at exception");
+  mystd->print_cr("Trace at exception");
 
   vframe* vf;
   if (last_Delta_fp) {
@@ -1333,7 +1333,7 @@ void suspend_process_at_stack_overflow(int *sp, int* fp, char* pc) {
   last_Delta_sp = (oop*) sp;
 
   if (proc->is_scheduler()) {
-    std->print_cr("Stack overflow happened in scheduler");
+    mystd->print_cr("Stack overflow happened in scheduler");
   } else {
     proc->suspend(stack_overflow);
     proc->set_terminating();

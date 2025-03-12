@@ -673,11 +673,11 @@ void CompiledLoop::findRegCandidates() {
 }
 
 void CompiledLoop::print() {
-  std->print("((CompiledLoop*)%#x) = [N%d..N%d], cond = [N%d..N%d], body = [N%d..N%d] (bci %d..%d)\n", 
+  mystd->print("((CompiledLoop*)%#x) = [N%d..N%d], cond = [N%d..N%d], body = [N%d..N%d] (bci %d..%d)\n", 
           this, _firstNodeID, _lastNodeID, _startOfCond->id(), _endOfCond->id(), 
 	  _startOfBody->id(), _endOfBody->id(),
 	  _startOfLoop->bci(), _endOfLoop->bci());
-  std->print("\tloopVar=%s, lower=%s, upper=%s\n", _loopVar->safeName(), _lowerBound->safeName(), _upperBound->safeName());
+  mystd->print("\tloopVar=%s, lower=%s, upper=%s\n", _loopVar->safeName(), _lowerBound->safeName(), _upperBound->safeName());
 }
 
 
@@ -699,13 +699,13 @@ void HoistedTypeTest::print_test_on(outputStream* s) {
 
 
 void HoistedTypeTest::print() {
-  std->print("((HoistedTypeTest*)%#x): ", this);
-  print_test_on(std);
-  std->cr();
+  mystd->print("((HoistedTypeTest*)%#x): ", this);
+  print_test_on(mystd);
+  mystd->cr();
 }
 
 void LoopRegCandidate::print() {
-  std->print("((LoopRegCandidate*)%#x): %s, %d uses, %d defs\n", this, _preg->name(), _nuses, _ndefs);
+  mystd->print("((LoopRegCandidate*)%#x): %s, %d uses, %d defs\n", this, _preg->name(), _nuses, _ndefs);
 }
 
 # endif

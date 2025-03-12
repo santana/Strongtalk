@@ -42,7 +42,7 @@ double timer::seconds() {
 }
 
 void timer::print() {
-  std->print_cr("%3.3f", userTime);
+  mystd->print_cr("%3.3f", userTime);
 }
 
 void elapsedTimer::start() {
@@ -60,7 +60,7 @@ double elapsedTimer::seconds() {
 }
 
 void elapsedTimer::print() {
-  std->print_cr("%3.3f", seconds());
+  mystd->print_cr("%3.3f", seconds());
 }
 
 TimeStamp::TimeStamp() : counter(0,0) {
@@ -80,7 +80,7 @@ double TimeStamp::seconds() {
 TraceTime::TraceTime(const char* title, bool doit) {
   active = doit;
   if (active) {
-    std->print("[%s", title);
+    mystd->print("[%s", title);
     t.start();
   }
 }
@@ -88,7 +88,7 @@ TraceTime::TraceTime(const char* title, bool doit) {
 TraceTime::~TraceTime() {
   if (active) {
     t.stop();
-    std->print_cr(", %3.3f secs]", t.seconds());
+    mystd->print_cr(", %3.3f secs]", t.seconds());
   }
 }
 

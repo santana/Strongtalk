@@ -194,9 +194,9 @@ class CheckDirtyClosure : public OopClosure {
       is_dirty = true;
       /*
       { FlagSetting fs(PrintObjectID, false);
-        std->print("0x%lx ", o);
+        mystd->print("0x%lx ", o);
         (*o)->print_value();
-        std->cr();
+        mystd->cr();
       }
       */
     }
@@ -234,24 +234,24 @@ int rSet::number_of_pages_with_dirty_objects_in(oldSpace* sp) {
 }
 
 void rSet::print_set_for_object(memOop obj) {
-  std->print("Remember set for 0x%lx ", obj);
+  mystd->print("Remember set for 0x%lx ", obj);
   obj->print_value();
-  std->cr();
+  mystd->cr();
   if (obj->is_new()) {
-    std->print_cr(" object is in new space!");
+    mystd->print_cr(" object is in new space!");
   } else {
-    std->sp();
+    mystd->sp();
     char* current_byte = byte_for(obj->addr());
     char* end_byte     = byte_for(obj->addr() + obj->size());
     while (current_byte <= end_byte) {
       if (*current_byte) {
-        std->print("_");
+        mystd->print("_");
       } else {
-        std->print("*");
+        mystd->print("*");
       }
       current_byte++;
     }
-    std->cr();
+    mystd->cr();
   }
 }
 

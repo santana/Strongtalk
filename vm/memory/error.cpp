@@ -31,19 +31,19 @@ void report_vm_state() {
     recursive_error = true;
 #ifdef DELTA_COMPILER
     if (theCompiler) {
-      std->print("\nThe error happened while compiling ");
-      theCompiler->print_key(std);
-      std->cr();
+      mystd->print("\nThe error happened while compiling ");
+      theCompiler->print_key(mystd);
+      mystd->cr();
       if (CompilerDebug) {
 	print_cout();
       } else {
-	std->print("(No compiler debug output available -- run with +CompilerDebug to get it)");
+	mystd->print("(No compiler debug output available -- run with +CompilerDebug to get it)");
       }
-      std->cr();
+      mystd->cr();
     }
 #endif // DELTA_COMPILER
 
-    std->print("\nLast 10 internal VM events:\n");
+    mystd->print("\nLast 10 internal VM events:\n");
     eventLog->printPartial(10);
     recursive_error = false;
   }
@@ -57,9 +57,9 @@ void report_error(char* title, char* format, ...) {
   vsprintf(buffer, format, ap);
   va_end(ap);
 
-  std->cr();
-  std->print_cr("[A Runtime Error Occurred]");
-  std->print_raw(buffer);
+  mystd->cr();
+  mystd->print_cr("[A Runtime Error Occurred]");
+  mystd->print_raw(buffer);
 
   if (!bootstrapping) report_vm_state();
 

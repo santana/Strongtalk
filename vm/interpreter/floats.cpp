@@ -165,9 +165,9 @@ void Floats::generate(MacroAssembler* masm, Function f) {
   if (!Disclaimer::is_product() && PrintInterpreter) {
     int length = masm->pc() - entry_point;
     char* name = function_name_for(f);
-    std->print("Float function %d: %s (%d bytes), entry point = 0x%x\n", f, name, length, entry_point);
+    mystd->print("Float function %d: %s (%d bytes), entry point = 0x%x\n", f, name, length, entry_point);
     masm->code()->decode();
-    std->cr();
+    mystd->cr();
   }
 }
 
@@ -187,9 +187,9 @@ void Floats::init(MacroAssembler* masm) {
   for (int i = max_number_of_functions; i-- > 0;) _function_table[i] = masm->pc();
   masm->hlt();
   if (!Disclaimer::is_product() && PrintInterpreter) {
-    std->print("Undefined float functions entry point\n");
+    mystd->print("Undefined float functions entry point\n");
     masm->code()->decode();
-    std->cr();
+    mystd->cr();
   }
 
   // nullary functions
@@ -233,12 +233,12 @@ void Floats::init(MacroAssembler* masm) {
 
 void Floats::print() {
   if (_is_initialized) {
-    std->print_cr("Float functions:");
+    mystd->print_cr("Float functions:");
     for (int i = 0; i < number_of_functions; i++) {
-      std->print("%3d: 0x%x %s\n", i, _function_table[i], function_name_for(Function(i)));
+      mystd->print("%3d: 0x%x %s\n", i, _function_table[i], function_name_for(Function(i)));
     }
   } else {
-    std->print_cr("Floats not yet initialized");
+    mystd->print_cr("Floats not yet initialized");
   }
-  std->cr();
+  mystd->cr();
 }

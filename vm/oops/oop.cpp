@@ -58,8 +58,8 @@ void oopDesc::print_on(outputStream* st) {
   } 
 }
 
-void oopDesc::print()       { print_on(std);       }
-void oopDesc::print_value() { print_value_on(std); }
+void oopDesc::print()       { print_on(mystd);       }
+void oopDesc::print_value() { print_value_on(mystd); }
 
 char* oopDesc::print_string() {
   stringStream* st = new stringStream(50);

@@ -92,7 +92,7 @@ void Universe::scavenge(oop* p) {
     TraceTime   t("Scavenge", PrintScavenge);
 
     if (PrintScavenge && WizardMode) {
-      std->print(" %d",tenuring_threshold);
+      mystd->print(" %d",tenuring_threshold);
     }
     
     if (VerifyBeforeScavenge) verify();

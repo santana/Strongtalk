@@ -34,7 +34,7 @@ void NativeCall::verify() {
 
 
 void NativeCall::print() {
-  std->print_cr("0x%x: call 0x%x", instruction_address(), destination());
+  mystd->print_cr("0x%x: call 0x%x", instruction_address(), destination());
 }
 
 // Implementation of NativeMov
@@ -46,7 +46,7 @@ void NativeMov::verify() {
 
 
 void NativeMov::print() {
-  std->print_cr("0x%x: mov reg, 0x%x", instruction_address(), data());
+  mystd->print_cr("0x%x: mov reg, 0x%x", instruction_address(), data());
 }
 
 // Implementation of NativeTest
@@ -57,6 +57,6 @@ void NativeTest::verify() {
 
 
 void NativeTest::print() {
-  std->print_cr("0x%x: test eax, 0x%x", instruction_address(), data());
+  mystd->print_cr("0x%x: test eax, 0x%x", instruction_address(), data());
 }
 

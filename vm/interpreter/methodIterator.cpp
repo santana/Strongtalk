@@ -311,12 +311,12 @@ void SpecializedMethodClosure::dll_call_node(DLLCallNode* node) {
 // MethodIterator
 
 void MethodIterator::unknown_code(u_char code) {
-  std->print_cr("Unknown code found 0x%x", code);
+  mystd->print_cr("Unknown code found 0x%x", code);
   fatal("aborting");
 }
 
 void MethodIterator::should_never_encounter(u_char code) {
-  std->print_cr("Should never iterate through code 0x%x", code);
+  mystd->print_cr("Should never iterate through code 0x%x", code);
   fatal("aborting");
 }
 

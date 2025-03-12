@@ -113,10 +113,10 @@ void jumpTable::freeID(int index) {
 }
 
 void jumpTable::print() {
-  std->print_cr("jumpTable %#lx: capacity %ld (%ld used)", this, length, usedIDs);
+  mystd->print_cr("jumpTable %#lx: capacity %ld (%ld used)", this, length, usedIDs);
   for (int i = 0; i < length; i++) {
     if (!major_at(i)->is_unused()) {
-      std->print(" %3d: ", i);
+      mystd->print(" %3d: ", i);
       major_at(i)->print();
     }
   }
@@ -280,35 +280,35 @@ nmethod* jumpTableEntry::parent_nmethod(int& index) const {
 
 void jumpTableEntry::print() {
   if (is_unused()) { 
-    std->print_cr("Unused {next = %d}", (intptr_t) destination());
+    mystd->print_cr("Unused {next = %d}", (intptr_t) destination());
     return;
   }
   if (is_nmethod_stub()) {
-    std->print("Nmethod stub ");
+    mystd->print("Nmethod stub ");
     Disassembler::decode(jump_inst_addr(), state_addr());
     nmethod* nm = method();
     if (nm) {
       nm->key.print();
     } else {
-      std->print_cr("{not pointing to nmethod}");
+      mystd->print_cr("{not pointing to nmethod}");
     }
     return;
   }
 
   if (is_block_closure_stub()) {
-    std->print("Block closure stub");
+    mystd->print("Block closure stub");
     Disassembler::decode(jump_inst_addr(), state_addr());
     nmethod* nm = block_nmethod();
     if (nm) {
       nm->key.print();
     } else {
-      std->print_cr("{not compiled yet}");
+      mystd->print_cr("{not compiled yet}");
     }
     return;
   }
 
   if (is_link()) {
-    std->print_cr("Link for:");
+    mystd->print_cr("Link for:");
     jumpTable::jump_entry_for_at(link(), 0)->print();
     return;
   }

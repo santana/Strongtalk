@@ -386,9 +386,9 @@ void nmethod::makeZombie(bool clearInlineCaches) {
   p[2] = char(offset);
 
   if (TraceZombieCreation) {
-    std->print_cr("%s nmethod 0x%x becomes zombie", (is_method() ? "normal" : "block"), this);
+    mystd->print_cr("%s nmethod 0x%x becomes zombie", (is_method() ? "normal" : "block"), this);
     if (WizardMode) {
-      std->print_cr("entry code sequence:");
+      mystd->print_cr("entry code sequence:");
       char* beg = (char*)min(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
       char* end = (char*)max(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
       Disassembler::decode(beg, end + 10);
@@ -455,7 +455,7 @@ void nmethod::flush() {
   // completely deallocate this method
   EventMarker em("flushing nmethod %#lx %s", this, "");
   if (PrintMethodFlushing) {
-    std->print_cr("*flushing nmethod %#lx", this);
+    mystd->print_cr("*flushing nmethod %#lx", this);
   }
   if (isZombie()) {
     clear_inline_caches();    // make sure they're cleared (may not have been done by makeZombie)
@@ -647,7 +647,7 @@ void nmethod::verify() {
 
   for (PcDesc* p = pcs(); p < pcsEnd(); p++) {
     if (! p->verify(this)) {
-      std->print_cr("\t\tin nmethod at %#lx (pcs)", this);
+      mystd->print_cr("\t\tin nmethod at %#lx (pcs)", this);
     }
   }
   
@@ -712,23 +712,23 @@ void nmethod::PrimitiveICs_do(void f(PrimitiveIC*)) {
 void nmethod::print() {
   ResourceMark rm;
   printIndent();
-  std->print("((nmethod*)%#lx) ", this);
-  std->print(" for method %#lx ", method());
+  mystd->print("((nmethod*)%#lx) ", this);
+  mystd->print(" for method %#lx ", method());
   key.print();
-  std->print(" { ");
-  if (isYoung()) std->print("YOUNG ");
-  if (version()) std->print("v%d ", version());
-  if (level()) std->print("l%d ", level());
-  if (isZombie()) std->print("zombie ");
-  if (isToBeRecompiled()) std->print("TBR ");
-  if (isUncommonRecompiled()) std->print("UNCOMMON ");
-  std->print_cr("}:");
+  mystd->print(" { ");
+  if (isYoung()) mystd->print("YOUNG ");
+  if (version()) mystd->print("v%d ", version());
+  if (level()) mystd->print("l%d ", level());
+  if (isZombie()) mystd->print("zombie ");
+  if (isToBeRecompiled()) mystd->print("TBR ");
+  if (isUncommonRecompiled()) mystd->print("UNCOMMON ");
+  mystd->print_cr("}:");
   Indent ++;   
       
   printIndent();
-  std->print_cr("instructions (%ld bytes): [%#lx..%#lx]", size(), insts(), instsEnd());
+  mystd->print_cr("instructions (%ld bytes): [%#lx..%#lx]", size(), insts(), instsEnd());
   printIndent();
-  std->print_cr("((nmethod*)%#lx)->printCode()", this);
+  mystd->print_cr("((nmethod*)%#lx)->printCode()", this);
   // don't print code/locs/pcs by default -- too much output   -Urs 1/95
   // printCode();
   scopes()->print();
@@ -747,15 +747,15 @@ void nmethod::printCode() {
 void nmethod::printLocs() {
   ResourceMark m;	// in case methods get printed via the debugger
   printIndent();
-  std->print_cr("locations:");
+  mystd->print_cr("locations:");
   Indent ++;
   relocIterator iter(this);
   int last_offset = 0;
   for (relocInfo* l = locs(); l < locsEnd(); l++) {
     iter.next();
     last_offset = l->print(this, last_offset);
-    if (iter.type() == relocInfo::uncommon_type && iter.wasUncommonTrapExecuted()) std->print(" (taken)");
-    std->cr();
+    if (iter.type() == relocInfo::uncommon_type && iter.wasUncommonTrapExecuted()) mystd->print(" (taken)");
+    mystd->cr();
   }
   Indent --;
 }
@@ -800,7 +800,7 @@ static ScopeDesc* print_scope_node(nmethodScopes* scopes, ScopeDesc* sd, int lev
 void nmethod::print_inlining(outputStream* st, bool with_debug_info) {
   // Takes advantage of the fact that the scope tree is stored in a depth first traversal order.
   ResourceMark rm;
-  if (st == NULL) st = std;
+  if (st == NULL) st = mystd;
   st->print_cr("nmethod inlining structure");
   ScopeDesc* result = print_scope_node(scopes(), scopes()->root(), 0, st, with_debug_info);
   if (result != NULL) warning("print_inlining returned prematurely");
@@ -914,7 +914,7 @@ void nmethod::restore_from_patch(nmethod_patch* data) {
 
 
 void nmethod::print_inlining_database() {
-  print_inlining_database_on(std);
+  print_inlining_database_on(mystd);
 }
 
 

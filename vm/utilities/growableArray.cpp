@@ -143,4 +143,4 @@ void GenericGrowableArray::raw_sort(int f(const void *, const void *)) {
   qsort(data, length(), sizeof(void*), f);
 }
 
-void GenericGrowableArray::print_short() { std->print("Growable Array %#lx", this); }
+void GenericGrowableArray::print_short() { mystd->print("Growable Array %#lx", this); }

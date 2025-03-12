@@ -43,12 +43,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   #define _vsnprintf   vsnprintf
 
   #define __stdcall __attribute__ ((stdcall))
-  #define std _std
+  #define mystd _mystd
 
   #define int64_t signed long long int
 #elif defined(__clang__)
   #define _vsnprintf   vsnprintf
-  #define std _std
+  #define mystd _mystd
 #else
 
   #error Unrecognized compiler

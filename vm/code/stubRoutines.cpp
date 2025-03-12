@@ -86,11 +86,11 @@ void StubRoutines::trace_DLL_call_1(dll_func function, oop* last_argument, int n
   oop* arg_ptr = last_argument + (nof_arguments - 1);
   for (i = 1; i <= nof_arguments; i++, arg_ptr--) {
     oop arg = *arg_ptr;
-    std->print("%6d. ", i);
+    mystd->print("%6d. ", i);
     if (arg->is_smi()) {
-      std->print("smi   value = %d\n", ((smiOop)arg)->value());
+      mystd->print("smi   value = %d\n", ((smiOop)arg)->value());
     } else {
-      std->print("proxy value = 0x%08x (proxy = 0x%08x)\n", ((proxyOop)arg)->get_pointer(), arg);
+      mystd->print("proxy value = 0x%08x (proxy = 0x%08x)\n", ((proxyOop)arg)->get_pointer(), arg);
     }
   }
 }
@@ -98,13 +98,13 @@ void StubRoutines::trace_DLL_call_1(dll_func function, oop* last_argument, int n
 
 void StubRoutines::trace_DLL_call_2(int result) {
   if (!TraceDLLCalls) return; // in case it has been turned off during run-time
-  std->print("    result = 0x%08x\n", result);
+  mystd->print("    result = 0x%08x\n", result);
 }
 
 
 void StubRoutines::wrong_DLL_call() {
   { ResourceMark rm;
-    std->print("DLL call error: number of arguments probably wrong\n");
+    mystd->print("DLL call error: number of arguments probably wrong\n");
   }
   if (DeltaProcess::active()->is_scheduler()) {
     DeltaProcess::active()->trace_stack();
@@ -1760,10 +1760,10 @@ char* StubRoutines::generate(MacroAssembler* masm, char* title, char* gen(MacroA
   char* entry_point = gen(masm);
   char* new_pc = masm->pc();
   if (!Disclaimer::is_product() && PrintStubRoutines) {
-    std->print("Stub routine: %s", title);
-    std->print(" (%d bytes), entry point = 0x%x\n", new_pc - old_pc, entry_point);
+    mystd->print("Stub routine: %s", title);
+    mystd->print(" (%d bytes), entry point = 0x%x\n", new_pc - old_pc, entry_point);
     masm->code()->decode();
-    std->cr();
+    mystd->cr();
   }
   return entry_point;
 }
@@ -1774,10 +1774,10 @@ char* StubRoutines::generate(MacroAssembler* masm, char* title, char* gen(MacroA
   char* entry_point = gen(masm, argument);
   char* new_pc = masm->pc();
   if (!Disclaimer::is_product() && PrintStubRoutines) {
-    std->print("Stub routine: %s %d", title, argument);
-    std->print(" (%d bytes), entry point = 0x%x\n", new_pc - old_pc, entry_point);
+    mystd->print("Stub routine: %s %d", title, argument);
+    mystd->print(" (%d bytes), entry point = 0x%x\n", new_pc - old_pc, entry_point);
     masm->code()->decode();
-    std->cr();
+    mystd->cr();
   }
   return entry_point;
 }
@@ -1835,7 +1835,7 @@ void StubRoutines::init() {
   assert(code->code_size() < _code_size, "Stub routines too large for allocated space");
   _is_initialized = true;
   if (!Disclaimer::is_product() && PrintStubRoutines) {
-    std->print("%d bytes generated for stub routines\n", masm->offset());
+    mystd->print("%d bytes generated for stub routines\n", masm->offset());
     exit(0);
   }
 };

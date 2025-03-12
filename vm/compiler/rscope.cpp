@@ -514,51 +514,51 @@ void RInterpretedScope::extend() {
 }
 
 void RScope::print() { 
-  std->print("; sender: %#lx@%ld; count %ld\n", PrintHexAddresses ? _sender : 0, _senderBCI, nsends);
+  mystd->print("; sender: %#lx@%ld; count %ld\n", PrintHexAddresses ? _sender : 0, _senderBCI, nsends);
 }
 
 void RNonDummyScope::printSubScopes() const {
   for (int i = 0; i < ncodes && _subScopes[i] == NULL; i++) ;
   if (i < ncodes) {
-    std->print("{ ");
+    mystd->print("{ ");
     for (i = 0; i < ncodes; i++) {
-      std->print("%#lx ", PrintHexAddresses ? _subScopes[i] : 0);
+      mystd->print("%#lx ", PrintHexAddresses ? _subScopes[i] : 0);
     }
-    std->print("}");
+    mystd->print("}");
   } else {
-    std->print("none");
+    mystd->print("none");
   }
 }
 
 void RInterpretedScope::print_short() {
-  std->print("((RInterpretedScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, _key->print_string(), nsends);
+  mystd->print("((RInterpretedScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, _key->print_string(), nsends);
 }
 
 void RInlinedScope::print_short() {
-  std->print("((RInlinedScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, desc->selector()->as_string(), nsends);
+  mystd->print("((RInlinedScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, desc->selector()->as_string(), nsends);
 }
 
 void RInlinedScope::print() {
   print_short();
-  std->print(": scope %#lx; subScopes: ", PrintHexAddresses ? desc : 0);
+  mystd->print(": scope %#lx; subScopes: ", PrintHexAddresses ? desc : 0);
   printSubScopes();
-  if (uncommon.nonEmpty()) { std->print("; uncommon "); uncommon.print(); }
+  if (uncommon.nonEmpty()) { mystd->print("; uncommon "); uncommon.print(); }
   RScope::print();
 }
 
 void RPICScope::print_short() {
-  std->print("((RPICScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, method()->selector()->as_string(), nsends);
+  mystd->print("((RPICScope*)%#lx) \"%s\" #%ld", PrintHexAddresses ? this : 0, method()->selector()->as_string(), nsends);
 }
 
 void RPICScope::print() {
   print_short();
-  std->print(": IC %#lx; subScopes: ", PrintHexAddresses ? _sd : 0);
+  mystd->print(": IC %#lx; subScopes: ", PrintHexAddresses ? _sd : 0);
   printSubScopes();
-  if (uncommon.nonEmpty()) { std->print("; uncommon "); uncommon.print(); }
+  if (uncommon.nonEmpty()) { mystd->print("; uncommon "); uncommon.print(); }
 }
 
 void RUntakenScope::print_short() {
-  std->print("((RUntakenScope*)%#lx) \"%s\"", PrintHexAddresses ? this : 0);
+  mystd->print("((RUntakenScope*)%#lx) \"%s\"", PrintHexAddresses ? this : 0);
 }
 
 void RUntakenScope::print() {
@@ -568,16 +568,16 @@ void RUntakenScope::print() {
 }
 
 void RUncommonBranch::print() {
-  std->print("((RUncommonScope*)%#lx) : %#lx@%ld\n", PrintHexAddresses ? this : 0, PrintHexAddresses ? scope : 0, bci());
+  mystd->print("((RUncommonScope*)%#lx) : %#lx@%ld\n", PrintHexAddresses ? this : 0, PrintHexAddresses ? scope : 0, bci());
 }
 
-void RUninlinableScope::print_short()	{ std->print("((RUninlinableScope*)%#lx)", PrintHexAddresses ? this : 0); }
-void RNullScope::print_short() 		{ std->print("((RNullScope*)%#lx)", PrintHexAddresses ? this : 0); }
+void RUninlinableScope::print_short()	{ mystd->print("((RUninlinableScope*)%#lx)", PrintHexAddresses ? this : 0); }
+void RNullScope::print_short() 		{ mystd->print("((RNullScope*)%#lx)", PrintHexAddresses ? this : 0); }
 
 void RNullScope::printTree(int bci, int level) const { }
 
 void RScope::printTree(int bci, int level) const {
-  std->print("%*s%3ld: ", level * 2, "", bci); ((RScope*)this)->print_short(); std->print("\n");
+  mystd->print("%*s%3ld: ", level * 2, "", bci); ((RScope*)this)->print_short(); mystd->print("\n");
 }
 
 void RNonDummyScope::printTree(int senderBCI, int level) const {
@@ -591,7 +591,7 @@ void RNonDummyScope::printTree(int senderBCI, int level) const {
     }
     for (int j = u; j < uncommon.length() && uncommon.at(j)->bci() < bci; u++, j++) ;
     if (j < uncommon.length() && uncommon.at(j)->bci() == bci) {
-      std->print("  %*s%3ld: uncommon\n", level * 2, "", bci);
+      mystd->print("  %*s%3ld: uncommon\n", level * 2, "", bci);
     }
   }
 }
@@ -602,7 +602,7 @@ void RDatabaseScope::print() {
 }
 
 void RDatabaseScope::print_short() {
-  std->print("((RDatabaseScope*)%#lx)  \"%s\"", PrintHexAddresses ? this : 0, _key->print_string());
+  mystd->print("((RDatabaseScope*)%#lx)  \"%s\"", PrintHexAddresses ? this : 0, _key->print_string());
 }
 
 bool RDatabaseScope::equivalent(InlinedScope* s) const {

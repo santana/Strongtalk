@@ -154,7 +154,7 @@ int IntFreeList::length() {
 }
 
 void IntFreeList::print() {
-  std->print("FreeList 0x%x:", this);
+  mystd->print("FreeList 0x%x:", this);
   _list->print();
 }
 

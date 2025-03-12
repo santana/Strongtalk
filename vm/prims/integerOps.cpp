@@ -248,7 +248,7 @@ void Integer::print() {
   IntegerOps::Integer_to_string(*this, 10, s);
   int i = 0;
   while (s[i] != '\x0') {
-    std->print("%c", s[i]);
+    mystd->print("%c", s[i]);
     i++;
   }
 }
@@ -1272,9 +1272,9 @@ static void factorial(int n) {
     IntegerOps::mul(x, y, z);
     assert(z.size_in_bytes() <= sizeof(z), "result too big");
   };
-  std->print("%d! = ", n);
+  mystd->print("%d! = ", n);
   z.print();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -1295,9 +1295,9 @@ static void unfactorial(int n) {
     assert(z.size_in_bytes() <= sizeof(z), "result too big");
   };
 
-  std->print("%dun! = ", n);
+  mystd->print("%dun! = ", n);
   z.print();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -1305,25 +1305,25 @@ static void convert_to_double(int n) {
   Integer z;
   IntegerOps::int_to_Integer(n, z);
   bool ok;
-  std->print_cr("%d = %f", n, z.as_double(ok));
+  mystd->print_cr("%d = %f", n, z.as_double(ok));
 }
 
 
 static void convert_to_integer(double x) {
   Integer z;
   IntegerOps::double_to_Integer(x, z);
-  std->print("%f = ", x);
+  mystd->print("%f = ", x);
   z.print();
-  std->cr();
+  mystd->cr();
 }
 
 
 static void convert_from_string(char* s) {
   Integer z;
   IntegerOps::string_to_Integer(s, 10, z);
-  std->print("%s = ", s);
+  mystd->print("%s = ", s);
   z.print();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -1413,7 +1413,7 @@ void IntegerOps::self_test() {
   convert_from_string("12345678901255678912345676601234567891234567890123456789");
 
   // end
-  std->print_cr("IntegerOps::self_test() done");
+  mystd->print_cr("IntegerOps::self_test() done");
   exit(0);
 }
 

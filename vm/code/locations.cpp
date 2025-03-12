@@ -285,23 +285,23 @@ void Locations::print() {
   int len = _freeList->length();
   int i;
   // print used locations
-  std->print("Locations:\n");
+  mystd->print("Locations:\n");
   for (i = 0; i < len; i++) {
     if (nofUses(i) > 0) {
-      std->print("%d: %d uses\n", i, nofUses(i));
+      mystd->print("%d: %d uses\n", i, nofUses(i));
     }
   }
-  std->cr();
+  mystd->cr();
   // print whole free list
-  std->print("Free List:\n");
-  std->print("no. of arguments    : %d\n", _nofArguments);
-  std->print("no. of registers    : %d\n", _nofRegisters);
-  std->print("first free register : %d\n", _firstFreeRegister);
-  std->print("first free stack loc: %d\n", _firstFreeStackTmp);
+  mystd->print("Free List:\n");
+  mystd->print("no. of arguments    : %d\n", _nofArguments);
+  mystd->print("no. of registers    : %d\n", _nofRegisters);
+  mystd->print("first free register : %d\n", _firstFreeRegister);
+  mystd->print("first free stack loc: %d\n", _firstFreeStackTmp);
   for (i = 0; i < len; i++) {
-    std->print("%d: %d\n", i, _freeList->at(i));
+    mystd->print("%d: %d\n", i, _freeList->at(i));
   }
-  std->cr();
+  mystd->cr();
 }
 
 

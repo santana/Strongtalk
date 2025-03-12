@@ -169,7 +169,7 @@ bool TokenStream::is_table_entry(oop* addr) {
   unsigned int length;
   if (sscanf(current(), "!%d%n", &value, &length) == 1 && strlen(current()) == length) {
     if(!objectIDTable::is_index_ok(value)) {
-      std->print_cr("Could not find index %d in object table.", value);
+      mystd->print_cr("Could not find index %d in object table.", value);
       return true;
     }
     *addr = objectIDTable::at(value);
@@ -232,7 +232,7 @@ bool evaluator::get_oop(TokenStream* st, oop* addr) {
   if (st->is_object_search(addr)) { st->advance(); return true; }
   if (st->is_name(addr))          { st->advance(); return true; }
   if (st->is_symbol(addr))        { st->advance(); return true; }
-  std->print_cr("Error: could not oop'ify [%s]", st->current());
+  mystd->print_cr("Error: could not oop'ify [%s]", st->current());
   return false; 
 }
 
@@ -240,9 +240,9 @@ bool evaluator::get_oop(TokenStream* st, oop* addr) {
 bool validate_lookup(oop receiver, symbolOop selector) {
  LookupKey key(receiver->klass(), selector);
  if (lookupCache::lookup(&key).is_empty()) {
-   std->print_cr("Lookup error");
-   key.print_on(std);
-   std->cr();
+   mystd->print_cr("Lookup error");
+   key.print_on(mystd);
+   mystd->cr();
    return false;
  }
  return true;
@@ -286,7 +286,7 @@ void evaluator::eval_message(TokenStream* st) {
     result = Delta::call_generic(&cache, receiver, selector, nofArgs, arguments);
   }
   result->print_value();
-  std->cr();
+  mystd->cr();
 }
 
 void evaluator::top_command(TokenStream* st) {
@@ -299,7 +299,7 @@ void evaluator::top_command(TokenStream* st) {
     }
     st->advance();
     if (!st->eos()) {
-      std->print_cr("warning: garbage at end");
+      mystd->print_cr("warning: garbage at end");
     }
   }
   DeltaProcess::active()->trace_top(1, number_of_frames_to_show);
@@ -311,14 +311,14 @@ void evaluator::change_debug_flag(TokenStream* st, bool value) {
     st->current();
     bool r = value;
     if (!debugFlags::boolAtPut(st->current(), &r)) { 
-      std->print_cr("boolean flag %s not found", st->current());
+      mystd->print_cr("boolean flag %s not found", st->current());
     }
     st->advance();
     if (!st->eos()) {
-      std->print_cr("warning: garbage at end");
+      mystd->print_cr("warning: garbage at end");
     }
   } else {
-    std->print_cr("boolean flag expected");
+    mystd->print_cr("boolean flag expected");
   }
 }
 
@@ -339,7 +339,7 @@ void evaluator::show_command(TokenStream* st) {
       }
       st->advance();
       if (!st->eos()) {
-        std->print_cr("warning: garbage at end");
+        mystd->print_cr("warning: garbage at end");
       }
     }    
   }
@@ -375,8 +375,8 @@ bool evaluator::process_line() {
     if (st.is_status())  { print_status();                                   return true;  }
     if (st.is_abort())   {
       if (DeltaProcess::active()->is_scheduler()) {
-        std->print_cr("You cannot abort in the scheduler");
-	std->print_cr("Try another command");
+        mystd->print_cr("You cannot abort in the scheduler");
+	mystd->print_cr("Try another command");
       } else {
         dispatchTable::reset(); 
         is_aborting = true; 
@@ -393,10 +393,10 @@ bool evaluator::process_line() {
     if (get_oop(&st, &receiver)) {
       st.advance();
       if (!st.eos()) {
-        std->print_cr("warning: garbage at end");
+        mystd->print_cr("warning: garbage at end");
       }
       receiver->print();
-      std->cr();
+      mystd->cr();
       return true;
     }
   }
@@ -408,13 +408,13 @@ bool evaluator::process_line() {
 void evaluator::read_eval_loop() {
   ResourceMark rm;
   do {
-    std->print("Eval> ");
+    mystd->print("Eval> ");
   } while (process_line());
 }
 
 
 void evaluator::print_mini_help() {
-  std->print_cr("Use '?' for help ('c' to continue)");
+  mystd->print_cr("Use '?' for help ('c' to continue)");
 }
 
 class ProcessStatusClosure : public ProcessClosure {
@@ -424,43 +424,43 @@ class ProcessStatusClosure : public ProcessClosure {
    ProcessStatusClosure() { index = 1; }
 
   void do_process(DeltaProcess* p) {
-    std->print(" %d:%s ", index++, DeltaProcess::active() == p ? "*" : " ");
+    mystd->print(" %d:%s ", index++, DeltaProcess::active() == p ? "*" : " ");
     p->print();
   }
 };
 
 void evaluator::print_status() {
-  std->print_cr("Processes:");
+  mystd->print_cr("Processes:");
   ProcessStatusClosure iter;
   Processes::process_iterate(&iter);
 }
 
 void evaluator::print_help() {
-  std->cr();
-  std->print_cr("<command>  ::= 'q'     | 'quit'    -> quits the system");
-  std->print_cr("             | 's'     | 'step'    -> single step byte code");
-  std->print_cr("             | 'n'     | 'next'    -> single step statement");
-  std->print_cr("             | 'e'     | 'end'     -> single step to end of method");
-  std->print_cr("             | 'c'     | 'cont'    -> continue execution");
-  std->print_cr("                       | 'abort'   -> aborts the current process");
-  std->print_cr("                       | 'genesis' -> aborts all processes and restarts the scheduler");
-  std->print_cr("                       | 'break'   -> provokes fatal() to get into C++ debugger");
-  std->print_cr("                       | 'event'   -> prints the event log");
-  std->print_cr("                       | 'stack'   -> prints the stack of current process");
-  std->print_cr("                       | 'status'  -> prints the status all processes");
-  std->print_cr("                       | 'top' <n> -> prints the top of current process");
-  std->print_cr("                       | 'show' <s> <n> -> prints some activation");
-  std->print_cr("             | '?'     | 'help'    -> prints this help\n");
-  std->print_cr("             | '^' <expr>          -> evaluates the expression");
-  std->print_cr("             | '-' name            -> turns off debug flag");
-  std->print_cr("             | '+' name            -> turns on debug flag");
-  std->print_cr("             | <object>            -> prints this object\n");
-  std->cr();
-  std->print_cr("<expr>     ::= <unary>  | <binary>  | <keyword>\n");
-  std->print_cr("<object>   ::= <number>            -> smi(number)");
-  std->print_cr("             | !<number>           -> objectTable[number]");
-  std->print_cr("             | 0x<hex_number>      -> object_start(number)");
-  std->print_cr("             | name                -> Smalltalk at: #name");
-  std->print_cr("             | #name               -> new_symbol(name)");
-  std->cr();
+  mystd->cr();
+  mystd->print_cr("<command>  ::= 'q'     | 'quit'    -> quits the system");
+  mystd->print_cr("             | 's'     | 'step'    -> single step byte code");
+  mystd->print_cr("             | 'n'     | 'next'    -> single step statement");
+  mystd->print_cr("             | 'e'     | 'end'     -> single step to end of method");
+  mystd->print_cr("             | 'c'     | 'cont'    -> continue execution");
+  mystd->print_cr("                       | 'abort'   -> aborts the current process");
+  mystd->print_cr("                       | 'genesis' -> aborts all processes and restarts the scheduler");
+  mystd->print_cr("                       | 'break'   -> provokes fatal() to get into C++ debugger");
+  mystd->print_cr("                       | 'event'   -> prints the event log");
+  mystd->print_cr("                       | 'stack'   -> prints the stack of current process");
+  mystd->print_cr("                       | 'status'  -> prints the status all processes");
+  mystd->print_cr("                       | 'top' <n> -> prints the top of current process");
+  mystd->print_cr("                       | 'show' <s> <n> -> prints some activation");
+  mystd->print_cr("             | '?'     | 'help'    -> prints this help\n");
+  mystd->print_cr("             | '^' <expr>          -> evaluates the expression");
+  mystd->print_cr("             | '-' name            -> turns off debug flag");
+  mystd->print_cr("             | '+' name            -> turns on debug flag");
+  mystd->print_cr("             | <object>            -> prints this object\n");
+  mystd->cr();
+  mystd->print_cr("<expr>     ::= <unary>  | <binary>  | <keyword>\n");
+  mystd->print_cr("<object>   ::= <number>            -> smi(number)");
+  mystd->print_cr("             | !<number>           -> objectTable[number]");
+  mystd->print_cr("             | 0x<hex_number>      -> object_start(number)");
+  mystd->print_cr("             | name                -> Smalltalk at: #name");
+  mystd->print_cr("             | #name               -> new_symbol(name)");
+  mystd->cr();
 }

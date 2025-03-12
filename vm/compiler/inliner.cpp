@@ -714,7 +714,7 @@ Expr* Inliner::picPredict() {
       if (e->isUnknownExpr()) continue;
       if (!allKlasses->findKlass(e->klass())) {
         if (PrintInlining) {
-          std->print("%*s*discarding static type info for send %s (not found in PIC): ",
+          mystd->print("%*s*discarding static type info for send %s (not found in PIC): ",
             depth, "", _info->sel->as_string());
           e->print();
         }
@@ -1052,7 +1052,7 @@ InlinedScope* Inliner::notify(const char* msg) {
 }
 
 void Inliner::print() {
-  std->print("((Inliner*)%#x)\n", PrintHexAddresses ? this : 0);
+  mystd->print("((Inliner*)%#x)\n", PrintHexAddresses ? this : 0);
 }
 
 Expr* Inliner::inlineBlockInvocation(SendInfo* info) {

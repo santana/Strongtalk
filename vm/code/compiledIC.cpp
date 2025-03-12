@@ -97,20 +97,20 @@ char* CompiledIC::normalLookup(oop recv) {
   //
   // assert(!Interpreter::contains(begin_addr()), "should be handled in the interpreter");
   if (Interpreter::contains(begin_addr())) {
-    std->print_cr("nmethod called from interpreter reports ic miss:");
-    std->print_cr("interpreter call at: 0x%x", begin_addr());
-    std->print_cr("nmethod entry point: 0x%x", Interpreter::_last_native_called);
+    mystd->print_cr("nmethod called from interpreter reports ic miss:");
+    mystd->print_cr("interpreter call at: 0x%x", begin_addr());
+    mystd->print_cr("nmethod entry point: 0x%x", Interpreter::_last_native_called);
     InterpretedIC* ic = as_InterpretedIC(next_instruction_address());
     fatal("please notify VM people");
   }
 
   if (TraceLookup) {
-    std->print("CompiledIC lookup (");
+    mystd->print("CompiledIC lookup (");
     recv->klass()->print_value();
-    std->print(", ");
+    mystd->print(", ");
     selector()->print_value();
-    std->print(")");
-    std->cr();
+    mystd->print(")");
+    mystd->cr();
   }
   klassOop klass = recv->klass();
   symbolOop sel = selector();
@@ -144,8 +144,8 @@ char* CompiledIC::normalLookup(oop recv) {
     if (interpreter_normal_lookup(recv->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
       { ResourceMark rm;
-        std->print("LOOKUP ERROR\n");
-        sel->print_value(); std->print(" not found\n");
+        mystd->print("LOOKUP ERROR\n");
+        sel->print_value(); mystd->print(" not found\n");
       }
       if (DeltaProcess::active()->is_scheduler()) {
         DeltaProcess::active()->trace_stack();
@@ -168,9 +168,9 @@ char* CompiledIC::normalLookup(oop recv) {
 
     LookupKey key(klass, sel);
 
-    std->print("Compiled lookup failed for: ");
-    key.print_on(std);
-    std->cr();
+    mystd->print("Compiled lookup failed for: ");
+    key.print_on(mystd);
+    mystd->cr();
 
     DeltaProcess::active()->trace_stack();
     warning("Lookup error: DoesNotUnderstand semantics not implemented for compiled code");
@@ -303,14 +303,14 @@ char* CompiledIC::superLookup(oop recv) {
   symbolOop       sel = selector();
 
   if (TraceLookup) {
-    std->print("CompiledIC super lookup (");
+    mystd->print("CompiledIC super lookup (");
     recv_klass->print_value();
-    std->print(", ");
+    mystd->print(", ");
     mhld_klass->print_value();
-    std->print(", ");
+    mystd->print(", ");
     selector()->print_value();
-    std->print(")");
-    std->cr();
+    mystd->print(")");
+    mystd->cr();
   }
 
   // The inline cache for super sends looks like the inline cache

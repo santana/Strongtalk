@@ -135,32 +135,32 @@ bool TempDecoder::is_heap_parameter(byteArrayOop name, objArrayOop tempInfo) {
 }
 
 void TempPrinter::decode(methodOop method, int bci) {
-  std->print_cr("TempDecoding:");
+  mystd->print_cr("TempDecoding:");
   TempDecoder::decode(method, bci);
 }
 
 void TempPrinter::parameter(byteArrayOop name, int index) {
-  std->print_cr("  param:      %s@%d", name->as_string(), index);
+  mystd->print_cr("  param:      %s@%d", name->as_string(), index);
 }
 
 void TempPrinter::stack_temp(byteArrayOop name, int no) {
-  std->print_cr("  stack temp: %s@%d", name->as_string(), no);
+  mystd->print_cr("  stack temp: %s@%d", name->as_string(), no);
 }
 
 void TempPrinter::stack_float_temp(byteArrayOop name, int fno) {
-  std->print_cr("  stack float temp: %s@%d", name->as_string(), fno);
+  mystd->print_cr("  stack float temp: %s@%d", name->as_string(), fno);
 }
 
 void TempPrinter::heap_temp(byteArrayOop name, int no){
-  std->print_cr("  heap temp:  %s@%d", name->as_string(), no);
+  mystd->print_cr("  heap temp:  %s@%d", name->as_string(), no);
 }
 
 void TempPrinter::heap_parameter(byteArrayOop name, int no){
-  std->print_cr("  heap param:  %s@%d", name->as_string(), no);
+  mystd->print_cr("  heap param:  %s@%d", name->as_string(), no);
 }
 
 void TempPrinter::no_debug_info() {
-  std->print_cr("method has no debug information");
+  mystd->print_cr("method has no debug information");
 }
 
 

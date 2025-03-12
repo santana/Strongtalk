@@ -30,8 +30,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class Disassembler : AllStatic {
  public:
-  static void decode(nmethod* nm,            outputStream* st = std);
-  static void decode(char* begin, char* end, outputStream* st = std);
+  static void decode(nmethod* nm,            outputStream* st = mystd);
+  static void decode(char* begin, char* end, outputStream* st = mystd);
 };
 
 # endif

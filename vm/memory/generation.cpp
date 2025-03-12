@@ -25,8 +25,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # include "incls/_generation.cpp.incl"
 
 void generation::print() {
-  std->print(" total %6dK, %d%% used ", capacity()/K, (100 * used())/capacity());
-  std->print_cr(" [%#x, %#x[", low_boundary, high_boundary);
+  mystd->print(" total %6dK, %d%% used ", capacity()/K, (100 * used())/capacity());
+  mystd->print_cr(" [%#x, %#x[", low_boundary, high_boundary);
 }
 
 void newGeneration::swap_spaces() {
@@ -116,7 +116,7 @@ void newGeneration::switch_pointers(oop f, oop t) {
 
 void newGeneration::print() {
   if (WizardMode) {
-    std->print_cr(" New generation");
+    mystd->print_cr(" New generation");
     generation::print();
   }
   eden()->print();
@@ -248,7 +248,7 @@ oop* oldGeneration::allocate_in_next_space(int size) {
 
 void oldGeneration::print() {
   if (WizardMode) {
-    std->print_cr(" Old generation");
+    mystd->print_cr(" Old generation");
     generation::print();
   }
   FOR_EACH_OLD_SPACE(s) s->print();

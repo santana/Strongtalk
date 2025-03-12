@@ -289,7 +289,7 @@ void nmethodScopes::print_partition() {
   int v_size = value_size() * sizeof(int);
   int total  = v_size + p_size + o_size + d_size;
  
-  std->print_cr("{deps %d%%, oops %d%%, bytes %d%%, pcs %d%%}",
+  mystd->print_cr("{deps %d%%, oops %d%%, bytes %d%%, pcs %d%%}",
                 d_size * 100/ total,
                 o_size * 100/ total,
                 v_size * 100/ total,

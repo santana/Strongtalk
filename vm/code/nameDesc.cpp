@@ -28,32 +28,32 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # include "incls/_nameDesc.cpp.incl"
 
 void LocationNameDesc::print() {
-  std->print("@%s (%d)", location().name(), offset);
+  mystd->print("@%s (%d)", location().name(), offset);
 }
 
 void ValueNameDesc::print() {
-  std->print("=");
+  mystd->print("=");
   value()->print_value();
-  std->print(" (%d)", offset);
+  mystd->print(" (%d)", offset);
 }
 
 void BlockValueNameDesc::print() {
-  std->print("[=");
+  mystd->print("[=");
   block_method()->print_value();
-  std->print("]");
-  std->print(" (%d)", offset);
+  mystd->print("]");
+  mystd->print(" (%d)", offset);
 }
 
 void MemoizedBlockNameDesc::print() {
-  std->print("[@%s =", location().name());
+  mystd->print("[@%s =", location().name());
   block_method()->print_value();
-  std->print("]");
-  std->print(" (%d)", offset);
+  mystd->print("]");
+  mystd->print(" (%d)", offset);
 }
 
 void IllegalNameDesc::print() {
-  std->print("###illegal###");
-  std->print(" (%d)", offset);
+  mystd->print("###illegal###");
+  mystd->print(" (%d)", offset);
 }
 
 bool LocationNameDesc::equal(NameDesc* other) const {

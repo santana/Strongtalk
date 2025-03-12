@@ -149,10 +149,6 @@ fileStream::~fileStream() {
   _file = NULL;
 }
 
-#ifdef std
-#undef std
-#endif
-
 outputStream* _mystd;
 outputStream* _err;
 

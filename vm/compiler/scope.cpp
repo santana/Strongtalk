@@ -815,7 +815,7 @@ void print_selector_cr(symbolOop selector) {
   assert(length < 100, "selector longer than 99 characters - buffer overrun");
   strncpy(buffer, selector->chars(), length);
   buffer[length] = '\0';
-  std->print_cr("%s", buffer);
+  mystd->print_cr("%s", buffer);
 }
 
 void InlinedScope::generateDebugInfo() {
@@ -823,18 +823,18 @@ void InlinedScope::generateDebugInfo() {
 
   if (PrintDebugInfoGeneration) {
     if (isMethodScope()) {
-      std->print("Method: ");
+      mystd->print("Method: ");
       print_selector_cr(method()->selector());
-      std->print_cr("self: %s", _self->preg()->name());
+      mystd->print_cr("self: %s", _self->preg()->name());
     } else {
       methodOop m;
-      std->print("Method: ");
+      mystd->print("Method: ");
       for (m = method(); m->is_blockMethod(); m = m->parent()) {
-        std->print("[] in ");
+        mystd->print("[] in ");
       }
       print_selector_cr(m->selector());
       method()->print_codes();
-      std->print_cr("no receiver (block method)");
+      mystd->print_cr("no receiver (block method)");
     }
   }
 
@@ -848,7 +848,7 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _temporaries->at(i)->preg();
         rec->addTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) std->print_cr("temp[%2d]: %s", i, preg->name());
+	if (PrintDebugInfoGeneration) mystd->print_cr("temp[%2d]: %s", i, preg->name());
       }
     }
     // float temporaries
@@ -857,7 +857,7 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _floatTemporaries->at(i)->preg();
         rec->addTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) std->print_cr("float[%2d]: %s", i, preg->name());
+	if (PrintDebugInfoGeneration) mystd->print_cr("float[%2d]: %s", i, preg->name());
       }
     }
     // context temporaries
@@ -866,7 +866,7 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _contextTemporaries->at(i)->preg();
         rec->addContextTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) std->print_cr("c_temp[%2d]: %s", i, preg->name());
+	if (PrintDebugInfoGeneration) mystd->print_cr("c_temp[%2d]: %s", i, preg->name());
       }
     }
     // expr stack
@@ -881,7 +881,7 @@ void InlinedScope::generateDebugInfo() {
 	  //       debug info than actually needed for the new backend. Discuss
 	  //       this with Lars.
           rec->addExprStack(_scopeInfo, i, r->createLogicalAddress());
-          if (PrintDebugInfoGeneration) std->print_cr("expr[%2d]: %s", i, r->name());
+          if (PrintDebugInfoGeneration) mystd->print_cr("expr[%2d]: %s", i, r->name());
         } else {
   	  // r's scope is too low (i.e. it's not actually live anymore)
 	  // this can only happen if the expression is discarded; thus it's safe not to describe this entry
@@ -896,7 +896,7 @@ void InlinedScope::generateDebugInfo() {
   len = _subScopes->length();
   for (i = 0; i < len; i++) {
     InlinedScope* s = _subScopes->at(i);
-    if (PrintDebugInfoGeneration) std->print_cr("Subscope %d (id = %d):", i, s->scopeID());
+    if (PrintDebugInfoGeneration) mystd->print_cr("Subscope %d (id = %d):", i, s->scopeID());
     s->generateDebugInfo();
   }
 }

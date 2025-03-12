@@ -105,7 +105,7 @@ oop primitive_desc::eval(oop* a) {
 
   if (ebx_now != ebx_on_stack)
   {
-    std->print_cr("ebx changed (%X -> %X) in :", ebx_on_stack, ebx_now);
+    mystd->print_cr("ebx changed (%X -> %X) in :", ebx_on_stack, ebx_now);
     print();
   }
 
@@ -113,18 +113,18 @@ oop primitive_desc::eval(oop* a) {
 }
 
 void primitives::print_table() {
-  std->print_cr("Primitive table:");
+  mystd->print_cr("Primitive table:");
   for (int index = 0; index < size_of_primitive_table; index++) {
     primitive_desc* e = primitive_table[index];
-    std->print("%3d ",index);
+    mystd->print("%3d ",index);
     e->print();
   }
-  std->print_cr(" - format: <index> <name> <number_of_parameters> <flags> [category]");
-  std->print_cr("    flags:  R = has receiver,           F = has failure block,");
-  std->print_cr("            S = can scavenge,           N = can perform NLR,");
-  std->print_cr("            C = can be constant folded, D = can invoke Delta code");
-  std->print_cr("            I = internal,               P = needs Delta fp code");
-  std->print_cr("            W = can walk stack (computed)");
+  mystd->print_cr(" - format: <index> <name> <number_of_parameters> <flags> [category]");
+  mystd->print_cr("    flags:  R = has receiver,           F = has failure block,");
+  mystd->print_cr("            S = can scavenge,           N = can perform NLR,");
+  mystd->print_cr("            C = can be constant folded, D = can invoke Delta code");
+  mystd->print_cr("            I = internal,               P = needs Delta fp code");
+  mystd->print_cr("            W = can walk stack (computed)");
 }
 
 
@@ -139,7 +139,7 @@ symbolOop primitive_desc::selector() const {
 
 
 void primitive_desc::print() {
-  std->print("%48s %d %s%s%s%s%s%s%s%s%s",
+  mystd->print("%48s %d %s%s%s%s%s%s%s%s%s",
              name(),
              number_of_parameters(),
 	     has_receiver()           ? "R" : "_",
@@ -152,18 +152,18 @@ void primitive_desc::print() {
 	     is_internal()            ? "I" : "_",
 	     needs_delta_fp_code()    ? "P" : "_");
   switch(group()) {
-    case IntComparisonPrimitive:   std->print(", smi compare");           break;
-    case IntArithmeticPrimitive:   std->print(", smi arith");             break;
-    case FloatComparisonPrimitive: std->print(", double compare");        break;
-    case FloatArithmeticPrimitive: std->print(", double arith");          break;
-    case ByteArrayPrimitive:       std->print(", byte array op.");        break;
-    case DoubleByteArrayPrimitive: std->print(", double-byte array op."); break;
-    case ObjArrayPrimitive:        std->print(", array op.");             break;
-    case BlockPrimitive: 	   std->print(", block/context");         break;
+    case IntComparisonPrimitive:   mystd->print(", smi compare");           break;
+    case IntArithmeticPrimitive:   mystd->print(", smi arith");             break;
+    case FloatComparisonPrimitive: mystd->print(", double compare");        break;
+    case FloatArithmeticPrimitive: mystd->print(", double arith");          break;
+    case ByteArrayPrimitive:       mystd->print(", byte array op.");        break;
+    case DoubleByteArrayPrimitive: mystd->print(", double-byte array op."); break;
+    case ObjArrayPrimitive:        mystd->print(", array op.");             break;
+    case BlockPrimitive: 	   mystd->print(", block/context");         break;
     case NormalPrimitive:                                                 break;
     default: fatal("Unknown primitive group");
   }
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -294,8 +294,8 @@ void primitives::lookup_and_patch() {
 
     { ResourceMark rm;
       // primitive not found => process error
-      std->print("primitive lookup error\n");
-      sel->print_value(); std->print(" not found\n");
+      mystd->print("primitive lookup error\n");
+      sel->print_value(); mystd->print(" not found\n");
     }
     if (DeltaProcess::active()->is_scheduler()) {
       ResourceMark rm;

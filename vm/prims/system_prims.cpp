@@ -372,7 +372,7 @@ PRIM_DECL_1(systemPrimitives::defWindowProc, oop resultProxy) {
   PROLOGUE_1("defWindowProc", resultProxy);
   if (!resultProxy->is_proxy())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  std->print_cr("Please use the new Platform DLLLookup system to retrieve DefWindowProcA");
+  mystd->print_cr("Please use the new Platform DLLLookup system to retrieve DefWindowProcA");
   dll_func func = DLLs::lookup(oopFactory::new_symbol("user"), oopFactory::new_symbol("DefWindowProcA"));
   proxyOop(resultProxy)->set_pointer((void*)func);
   return resultProxy;
@@ -610,15 +610,15 @@ PRIM_DECL_1(systemPrimitives::inlining_database_compile, oop file_name) {
     VMProcess::execute(&op);
 
     if (TraceInliningDatabase) {
-      std->print_cr("compiling {%s} completed", str);
-      std->print_cr("[Database]");
-      rs->print_inlining_database_on(std, NULL, -1, 0);
-      std->print_cr("[Compiled method]");
-      op.result()->print_inlining_database_on(std);
+      mystd->print_cr("compiling {%s} completed", str);
+      mystd->print_cr("[Database]");
+      rs->print_inlining_database_on(mystd, NULL, -1, 0);
+      mystd->print_cr("[Compiled method]");
+      op.result()->print_inlining_database_on(mystd);
     }
   } else {
     if (TraceInliningDatabase) {
-       std->print_cr("compiling {%s} failed", str);
+       mystd->print_cr("compiling {%s} failed", str);
     }
   }
   return trueObj;
@@ -636,9 +636,9 @@ PRIM_DECL_0(systemPrimitives::inlining_database_compile_next) {
     VM_OptimizeRScope op(rs);
     VMProcess::execute(&op);
     if (TraceInliningDatabase) {
-      std->print("Compiling ");
-      op.result()->key.print_on(std);
-      std->print_cr(" in background = 0x%lx", op.result());
+      mystd->print("Compiling ");
+      op.result()->key.print_on(mystd);
+      mystd->print_cr(" in background = 0x%lx", op.result());
     }
   }
   return end_of_table ? falseObj : trueObj;

@@ -35,22 +35,22 @@ void Universe::genesis() {
   ResourceMark rm;
 
   /*
-  std->print_cr("Delta version %d.%d%s (%s %s).",
+  mystd->print_cr("Delta version %d.%d%s (%s %s).",
                 Universe::major_version(), Universe::minor_version(), Universe::beta_version(), 
 		__DATE__, __TIME__);
-  std->print_cr("Copyright 1994 - 1996, LongView Technologies L.L.C. All rights reserved.");
-  std->print_cr("(use argument -? for a list of flags)");
+  mystd->print_cr("Copyright 1994 - 1996, LongView Technologies L.L.C. All rights reserved.");
+  mystd->print_cr("(use argument -? for a list of flags)");
   */
   
-  std->cr();
+  mystd->cr();
   Disclaimer::print_disclaimer();
-  std->print_cr("Version %d.%d (build %s %s)", Universe::major_version(), Universe::minor_version(), __DATE__, __TIME__);
-  std->print_cr("(use argument -? for a list of flags)");
-  std->cr();
+  mystd->print_cr("Version %d.%d (build %s %s)", Universe::major_version(), Universe::minor_version(), __DATE__, __TIME__);
+  mystd->print_cr("(use argument -? for a list of flags)");
+  mystd->cr();
 
-  if (UseNewBackend | TryNewBackend)	std->print_cr("- VM using new backend (%s makeConformant)", UseNewMakeConformant ? "new" : "old");
+  if (UseNewBackend | TryNewBackend)	mystd->print_cr("- VM using new backend (%s makeConformant)", UseNewMakeConformant ? "new" : "old");
   //if (Disclaimer::is_product())	Disclaimer::print_disclaimer();
-  if (Disclaimer::is_debug())		std->print_cr("- VM is in debug mode");
+  if (Disclaimer::is_debug())		mystd->print_cr("- VM is in debug mode");
   if (!Interpreter::is_optimized())	Interpreter::print_code_status();
   
   scavengeCount = 0;
@@ -158,11 +158,11 @@ void Universe::verify(bool postScavenge) {
 
 
 void Universe::print() {
-  std->print_cr("Memory:");
+  mystd->print_cr("Memory:");
   new_gen.print();
   old_gen.print();
   if (WizardMode) {
-    std->print_cr("  (threshold=%d)", tenuring_threshold);
+    mystd->print_cr("  (threshold=%d)", tenuring_threshold);
   }
 }
 
@@ -175,7 +175,7 @@ oop* Universe::object_start(oop* p) {
 
 class PrintClosure: public ObjectClosure {
   void do_object(memOop obj) { 
-    PrintObjectClosure blk(std);
+    PrintObjectClosure blk(mystd);
     blk.do_object(obj);
     obj->layout_iterate(&blk);
   }

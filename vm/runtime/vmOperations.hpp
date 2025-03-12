@@ -39,7 +39,7 @@ class VM_Operation : public PrintableStackObj {
    void evaluate();
    // Evaluate is called in the vmProcess
    virtual void doit() = 0;
-   void print() { std->print("%s", name()); }
+   void print() { mystd->print("%s", name()); }
 
    virtual char* name() { return "vanilla"; }
 };

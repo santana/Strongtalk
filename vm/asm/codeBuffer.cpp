@@ -106,9 +106,9 @@ void CodeBuffer::copyTo(nmethod* nm) {
 
 
 void CodeBuffer::print() {
-  std->print("CodeBuffer:\n");
-  std->print("Code  [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", instsStart, instsEnd, instsOverflow);
-  std->print("Reloc [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", locsStart,  locsEnd,  locsOverflow );
+  mystd->print("CodeBuffer:\n");
+  mystd->print("Code  [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", instsStart, instsEnd, instsOverflow);
+  mystd->print("Reloc [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", locsStart,  locsEnd,  locsOverflow );
 }
 
 

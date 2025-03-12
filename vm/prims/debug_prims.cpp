@@ -132,7 +132,7 @@ PRIM_DECL_2(debugPrimitives::printMethodCodes, oop receiver, oop sel) {
 
 PRIM_DECL_2(debugPrimitives::generateIR, oop receiver, oop sel) {
   PRIMITIVE_FAILS_IN_PRODUCT
-  std->print_cr("primitiveGenerateIR called...");
+  mystd->print_cr("primitiveGenerateIR called...");
   ResourceMark rm;	// needed to avoid memory leaks!
   PROLOGUE_2("generateIR", receiver, sel)
   if (!sel->is_byteArray())
@@ -267,13 +267,13 @@ PRIM_DECL_1(debugPrimitives::printInvocationCounterHistogram, oop size) {
   // Collect the methods
   CollectMethodClosure blk(col, smiOop(size)->value());
   Universe::object_iterate(&blk);
-  std->print_cr("Collected %d methods", col->length());
+  mystd->print_cr("Collected %d methods", col->length());
   // Sort the methods based on the invocation counters.
   col->sort(&compare_method_counters);
   // Print out the result
   for (int index = 0; index < col->length(); index++) {
     methodOop m = col->at(index);
-    std->print("[%d] ", m->invocation_count());
+    mystd->print("[%d] ", m->invocation_count());
     m->pretty_print();
   }
   return trueObj;
@@ -311,7 +311,7 @@ PRIM_DECL_1(debugPrimitives::printNMethodCounterHistogram, oop size) {
   // Collect the nmethods
   FOR_ALL_NMETHOD(nm) col->push(nm);
 
-  std->print_cr("Collected %d nmethods", col->length());
+  mystd->print_cr("Collected %d nmethods", col->length());
   // Sort the methods based on the invocation counters.
   col->sort(&compare_nmethod_counters);
   // Print out the result
@@ -319,7 +319,7 @@ PRIM_DECL_1(debugPrimitives::printNMethodCounterHistogram, oop size) {
             ? smiOop(size)->value() : col->length();
   for (int index = 0; index < end; index++) {
     nmethod* m = col->at(index);
-    std->print("[%d] ", m->invocation_count());
+    mystd->print("[%d] ", m->invocation_count());
     m->scopes()->print_partition();
     m->method()->pretty_print();
   }
@@ -403,9 +403,9 @@ class Counter : public ResourceObj {
      number++;
    }
    void print(char* prefix) {
-     std->print("%s%s", prefix, title);
-     std->fill_to(22);
-     std->print_cr("%6d %8d", number, total_size * oopSize);
+     mystd->print("%s%s", prefix, title);
+     mystd->fill_to(22);
+     mystd->print_cr("%6d %8d", number, total_size * oopSize);
    }
    void add(Counter* i) {
      total_size += i->total_size;
@@ -481,9 +481,9 @@ Counter* ObjectHistogram::counter(memOop obj) {
 }
 
 void ObjectHistogram::print() {
-  std->print("Object Histogram");
-  std->fill_to(22);
-  std->print_cr("number    bytes");
+  mystd->print("Object Histogram");
+  mystd->fill_to(22);
+  mystd->print_cr("number    bytes");
   Counter* total = new Counter("Total");
   counters->sort(&Counter::compare);
   for(int index = 0; index < counters->length(); index++) {

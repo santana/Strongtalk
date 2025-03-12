@@ -48,7 +48,7 @@ bool symbolOopDesc::verify() {
 }
 
 void symbolOopDesc::print_symbol_on(outputStream* st) {
-  st = st ? st : std;
+  st = st ? st : mystd;
   for (int index = 1; index <= length(); index++)
     st->put(byte_at(index));
 }

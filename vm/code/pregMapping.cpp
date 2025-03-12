@@ -112,7 +112,7 @@ void PRegMapping::ensureOneFreeRegister() {
     // no free registers available => find a register to spill
     int i = spillablePRegIndex();
     if (i < 0) fatal("too many temporaries or locked pregs: out of spillable registers");
-    // std->print("WARNING: Register spilling - check if this works\n");
+    // mystd->print("WARNING: Register spilling - check if this works\n");
     spillRegister(regLoc(i));
     assert(_locs->freeRegisters(), "at least one register should be available now");
     verify();
@@ -269,7 +269,7 @@ void PRegMapping::kill(PReg* preg) {
   int i = index(preg);
   if (i >= 0) {
     if (PrintPRegMapping) {
-      std->print("kill ");
+      mystd->print("kill ");
       print(i);
     }
     int rloc = regLoc(i);
@@ -288,7 +288,7 @@ void PRegMapping::killAll(PReg* exception) {
     if (used(i) && _pregs->at(i) != exception) {
       assert(!PRegLocker::locks(_pregs->at(i)), "PReg is locked");
       if (PrintPRegMapping) {
-        std->print("kill ");
+        mystd->print("kill ");
         print(i);
       }
       int rloc = regLoc(i);
@@ -668,9 +668,9 @@ void PRegMapping::old_makeConformant(PRegMapping* with) {
   }
   char* end_of_code = _assm->pc();
   if (PrintMakeConformantCode && begin_of_code < end_of_code) {
-    std->print_cr("MakeConformant:");
+    mystd->print_cr("MakeConformant:");
     Disassembler::decode(begin_of_code, end_of_code);
-    std->cr();
+    mystd->cr();
   }
 
   verify();
@@ -821,9 +821,9 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
     char* end_of_code = _assm->pc();
     if (PrintMakeConformantCode) {
       chelper.print();
-      std->print_cr("(using R%d & R%d as temporary registers)", temp1.register_number(), temp2.register_number());
+      mystd->print_cr("(using R%d & R%d as temporary registers)", temp1.register_number(), temp2.register_number());
       Disassembler::decode(begin_of_code, end_of_code);
-      std->cr();
+      mystd->cr();
     }
 
     // Mapping should not be used anymore now, since it is not representing the
@@ -838,9 +838,9 @@ void PRegMapping::makeConformant(PRegMapping* with) {
   //guarantee(NLRinProgress() == with->NLRinProgress(), "cannot be made conformant");
 
   if (PrintPRegMapping && WizardMode) {
-    std->print("make conformant:\n");
+    mystd->print("make conformant:\n");
     print();
-    std->print("with ");
+    mystd->print("with ");
     with->print();
   }
 
@@ -922,42 +922,42 @@ void PRegMapping::print(int i) {
   assert(used(i), "unused slot");
   int rloc = regLoc(i);
   int sloc = stkLoc(i);
-  std->print("%s -> ", _pregs->at(i)->name());
+  mystd->print("%s -> ", _pregs->at(i)->name());
   if (rloc >= 0) {
-    std->print(_locs->locationAsRegister(rloc).name());
+    mystd->print(_locs->locationAsRegister(rloc).name());
   }
   if (sloc >= 0) {
-    if (rloc >= 0) std->print(", ");
+    if (rloc >= 0) mystd->print(", ");
     int offs = _locs->locationAsByteOffset(sloc);
-    std->print("[ebp%s%d]", (offs < 0 ? "" : "+"), offs);
+    mystd->print("[ebp%s%d]", (offs < 0 ? "" : "+"), offs);
   }
-  std->cr();
+  mystd->cr();
 }
 
 
 void PRegMapping::print() {
   if (WizardMode) _locs->print();
   if (nofPRegs() > 0) {
-    std->print("PReg mapping:\n");
+    mystd->print("PReg mapping:\n");
     for (int i = 0; i < size(); i++) {
       if (used(i)) print(i);
     }
   } else {
-    std->print("PReg mapping is empty\n");
+    mystd->print("PReg mapping is empty\n");
   }
-  std->cr();
+  mystd->cr();
   if (_tmpLocs->length() > 0) {
-    std->print("Temporaries in use:\n");
+    mystd->print("Temporaries in use:\n");
     for (int i = 0; i < _tmpLocs->length(); i++) {
       int loc = _tmpLocs->at(i);
       assert(_locs->isRegister(loc), "temporaries must be in registers");
-      std->print("temp %d -> %d %s\n", i, loc, _locs->locationAsRegister(loc).name());
+      mystd->print("temp %d -> %d %s\n", i, loc, _locs->locationAsRegister(loc).name());
     }
-    std->cr();
+    mystd->cr();
   }
   if (NLRinProgress()) {
-    std->print_cr("NLR in progress");
-    std->cr();
+    mystd->print_cr("NLR in progress");
+    mystd->cr();
   }
 }
 

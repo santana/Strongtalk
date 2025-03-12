@@ -46,14 +46,14 @@ void VM_Scavenge::doit() {
   }
 
   if (PrintStackAtScavenge) {
-    std->print_cr("*** BEFORE ***");
+    mystd->print_cr("*** BEFORE ***");
     Processes::print();
   }
   Universe::scavenge(addr);
   if (PrintStackAtScavenge) {
-    std->print_cr("*** AFTER ***");
+    mystd->print_cr("*** AFTER ***");
     Processes::print();
-    std->print_cr("******");
+    mystd->print_cr("******");
   }
 } 			
  			

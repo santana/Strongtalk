@@ -105,7 +105,7 @@ class Displacement : public ValueObj {
       case ic_info         : s = "nlr "; break;
       default              : s = "????"; break;
     }
-    std->print("%s (info = 0x%x)", s, info());
+    mystd->print("%s (info = 0x%x)", s, info());
   }
 
   friend class Assembler;
@@ -879,21 +879,21 @@ void Assembler::ret(int imm16) {
 
 void Assembler::print(Label& L) {
   if (L.is_unused()) {
-    std->print_cr("undefined label");
+    mystd->print_cr("undefined label");
   } else if (L.is_bound()) {
-    std->print_cr("bound label to %d", L.pos());
+    mystd->print_cr("bound label to %d", L.pos());
   } else if (L.is_unbound()) {
     Label l = L;
-    std->print_cr("unbound label");
+    mystd->print_cr("unbound label");
     while (l.is_unbound()) {
       Displacement disp = disp_at(l);
-      std->print("@ %d ", l.pos());
+      mystd->print("@ %d ", l.pos());
       disp.print();
-      std->cr();
+      mystd->cr();
       disp.next(l);
     }
   } else {
-    std->print_cr("label in inconsistent state (pos = %d)", L._pos);
+    mystd->print_cr("label in inconsistent state (pos = %d)", L._pos);
   }
 }
 
@@ -986,7 +986,7 @@ void Assembler::bind(Label& L) {
       // previous instruction is jump jumping immediately after it => eliminate it
       const int long_size = 5;
       assert(byte_at(offset() - long_size) == 0xE9, "jmp expected");
-      if (PrintJumpElimination) std->print_cr("@ %d jump to next eliminated", L.pos());
+      if (PrintJumpElimination) mystd->print_cr("@ %d jump to next eliminated", L.pos());
       // remove first entry from label list
       disp_at(L).next(L);
       // eliminate instruction (set code pointers back)
@@ -1078,8 +1078,8 @@ void Assembler::jmp(Label& L) {
     if (EliminateJumpsToJumps && _unbound_label.is_unbound() && _binding_pos == offset()) {
       // current position is target of jumps
       if (PrintJumpElimination) {
-        std->print_cr("eliminated jumps/calls to %d", _binding_pos);
-        std->print("from ");
+        mystd->print_cr("eliminated jumps/calls to %d", _binding_pos);
+        mystd->print("from ");
         print(_unbound_label);
       }
       link_to(L, _unbound_label);
@@ -1563,40 +1563,40 @@ void MacroAssembler::fpop() {
 // debugging
 
 void MacroAssembler::print_reg(char* name, oop obj) {
-  std->print("%s = ", name);
+  mystd->print("%s = ", name);
   if (obj == NULL) {
-    std->print_cr("NULL");
+    mystd->print_cr("NULL");
   } else if (obj->is_smi()) {
-    std->print_cr("smi (%d)", smiOop(obj)->value());
+    mystd->print_cr("smi (%d)", smiOop(obj)->value());
   } else if (obj->is_mem() && Universe::is_heap((oop*)obj)) {
     // use explicit checks to avoid crashes even in a broken system
     if (obj == Universe::nilObj()) {
-      std->print_cr("nil (0x%08x)", obj);
+      mystd->print_cr("nil (0x%08x)", obj);
     } else if (obj == Universe::trueObj()) {
-      std->print_cr("true (0x%08x)", obj);
+      mystd->print_cr("true (0x%08x)", obj);
     } else if (obj == Universe::falseObj()) {
-      std->print_cr("false (0x%08x)", obj);
+      mystd->print_cr("false (0x%08x)", obj);
     } else {
-      std->print_cr("memOop (0x%08x)", obj);
+      mystd->print_cr("memOop (0x%08x)", obj);
     }
   } else {
-    std->print_cr("0x%08x", obj);
+    mystd->print_cr("0x%08x", obj);
   }
 }
 
 
 void MacroAssembler::inspector(oop edi, oop esi, oop ebp, oop esp, oop ebx, oop edx, oop ecx, oop eax, char* eip) {
   char* title = (char*)(nativeTest_at(eip)->data());
-  if (title != NULL) std->print_cr("%s", title);
+  if (title != NULL) mystd->print_cr("%s", title);
   print_reg("eax", eax);
   print_reg("ebx", ebx);
   print_reg("ecx", ecx);
   print_reg("edx", edx);
   print_reg("edi", edi);
   print_reg("esi", esi);
-  std->print_cr("ebp = 0x%08x", ebp);
-  std->print_cr("esp = 0x%08x", esp);
-  std->cr();
+  mystd->print_cr("ebp = 0x%08x", ebp);
+  mystd->print_cr("esp = 0x%08x", esp);
+  mystd->cr();
 }
 
 
@@ -1607,6 +1607,6 @@ void MacroAssembler::inspect(char* title) {
     testl(eax, intptr_t(title));				// additional info for inspector
   } else {
     const char* s = (title == NULL) ? "" : title;
-    std->print_cr("cannot call inspector for \"%s\" - no entry point yet", s);
+    mystd->print_cr("cannot call inspector for \"%s\" - no entry point yet", s);
   }
 }

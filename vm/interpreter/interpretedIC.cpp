@@ -373,23 +373,23 @@ void InterpretedIC::replace(nmethod* nm) {
 
 
 void InterpretedIC::print() {
-  std->print("Inline cache (");
+  mystd->print("Inline cache (");
   if (is_empty()) {
-    std->print("empty");
+    mystd->print("empty");
   } else {
-    std->print(Bytecodes::send_type_as_string(send_type()));
+    mystd->print(Bytecodes::send_type_as_string(send_type()));
   }
-  std->print(") ");
+  mystd->print(") ");
   selector()->print_value();
-  std->cr();
+  mystd->cr();
   InterpretedIC_Iterator it(this);
   while (!it.at_end()) {
-    std->print("\t- klass: ");
+    mystd->print("\t- klass: ");
     it.klass()->print_value();
     if (it.is_interpreted()) {
-      std->print(";\tmethod  %#x\n", it.interpreted_method());
+      mystd->print(";\tmethod  %#x\n", it.interpreted_method());
     } else {
-      std->print(";\tnmethod %#x\n", it.compiled_method());
+      mystd->print(";\tnmethod %#x\n", it.compiled_method());
     }
     it.advance();
   }
@@ -545,8 +545,8 @@ oop InterpretedIC::does_not_understand(oop receiver, InterpretedIC* ic, frame* f
     if (interpreter_normal_lookup(receiver->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
       { ResourceMark rm;
-      std->print("LOOKUP ERROR\n");
-      sel->print_value(); std->print(" not found\n");
+      mystd->print("LOOKUP ERROR\n");
+      sel->print_value(); mystd->print(" not found\n");
       }
       if (DeltaProcess::active()->is_scheduler()) {
         DeltaProcess::active()->trace_stack();
@@ -570,13 +570,13 @@ oop InterpretedIC::does_not_understand(oop receiver, InterpretedIC* ic, frame* f
 
 
 void InterpretedIC::trace_inline_cache_miss(InterpretedIC* ic, klassOop klass, LookupResult result) {
-  std->print("InterpretedIC lookup (");
+  mystd->print("InterpretedIC lookup (");
   klass->print_value();
-  std->print(", ");
+  mystd->print(", ");
   ic->selector()->print_value();
-  std->print(") --> ");
-  result.print_short_on(std);
-  std->cr();
+  mystd->print(") --> ");
+  result.print_short_on(mystd);
+  mystd->cr();
 }
 
 objArrayOop cacheMissResult(oop result, int argCount) {
@@ -612,7 +612,7 @@ oop* InterpretedIC::inline_cache_miss() {
 
   // tracing
   if (TraceInlineCacheMiss) {
-    std->print("IC miss, ");  trace_inline_cache_miss(ic, klass, result);
+    mystd->print("IC miss, ");  trace_inline_cache_miss(ic, klass, result);
   }
   // handle the lookup result
   if (!result.is_empty()) {
@@ -765,6 +765,6 @@ bool InterpretedIC_Iterator::is_super_send() const {
 
 
 void InterpretedIC_Iterator::print() {
-  std->print_cr("InterpretedIC_Iterator %#x for ic %#x (%s)", this, _ic, selector()->as_string());
+  mystd->print_cr("InterpretedIC_Iterator %#x for ic %#x (%s)", this, _ic, selector()->as_string());
 }
 

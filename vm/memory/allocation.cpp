@@ -99,10 +99,10 @@ void ResourceAreaChunk::print() {
 }
 
 void ResourceAreaChunk::print_short() {
-  std->print("ResourceAreaChunk %#lx", this);
+  mystd->print("ResourceAreaChunk %#lx", this);
 }
 void ResourceAreaChunk::print_alloc(char* addr, int size) {
-  std->print_cr("allocating %ld bytes at %#lx", size, addr);
+  mystd->print_cr("allocating %ld bytes at %#lx", size, addr);
 }
 
 ResourceArea::ResourceArea() {
@@ -196,7 +196,7 @@ ResourceAreaChunk* Resources::new_chunk(int min_capacity,
     res = new ResourceAreaChunk(min_capacity, previous);
     _allocated += res->capacity();
     if (PrintResourceChunkAllocation) {
-      std->print("*allocating new resource area chunk of >=%d bytes, new total = %d bytes\n", min_capacity, _allocated);
+      mystd->print("*allocating new resource area chunk of >=%d bytes, new total = %d bytes\n", min_capacity, _allocated);
     }
   }
   _in_consistent_state = true;

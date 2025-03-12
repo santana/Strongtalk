@@ -205,7 +205,7 @@ bool InliningDatabase::file_out(nmethod* nm, outputStream* index_st) {
   if (file_name == NULL) return false;
 
   if (TraceInliningDatabase) {
-    std->print_cr("Dumping %s", file_name);
+    mystd->print_cr("Dumping %s", file_name);
   }
   fileStream out(file_name);
   if (out.is_open()) {
@@ -472,24 +472,24 @@ void InliningDatabase::load_index_file() {
       if (first.is_block_type()) {
         if (fgets( line, 1000, stream)) {
           if (scan_key(line, &second)) {
-	    // std->print("Block ");
-            // first.print_on(std);
-	    // std->print(" outer ");
-            // second.print_on(std);
-            // std->cr();
+	    // mystd->print("Block ");
+            // first.print_on(mystd);
+	    // mystd->print(" outer ");
+            // second.print_on(mystd);
+            // mystd->cr();
             add_lookup_entry(&second, &first);
 	  } else {
-            std->print_cr("Index file parsing block failed for %s", line);
+            mystd->print_cr("Index file parsing block failed for %s", line);
 	  }
 	}
       } else {
-	// std->print("Method ");
-        // first.print_on(std);
-        // std->cr();
+	// mystd->print("Method ");
+        // first.print_on(mystd);
+        // mystd->cr();
         add_lookup_entry(&first);
       }
     } else {
-      std->print_cr("Index file parsing failed for %s", line);
+      mystd->print_cr("Index file parsing failed for %s", line);
     }
   }
   fclose(stream);
@@ -545,26 +545,26 @@ RScope* InliningDatabase::file_in(LookupKey* outer, LookupKey* inner) {
   char* file_name = compute_file_name(outer, inner, false);
   if (file_name == NULL) {
     if (TraceInliningDatabase) {
-      std->print("Failed opening file for ");
+      mystd->print("Failed opening file for ");
       if (inner) {
         inner->print();
-        std->print(" ");
+        mystd->print(" ");
       }
       outer->print();
-      std->cr();
+      mystd->cr();
     }
     return NULL;
   }
   RScope* result = file_in(file_name);
   
   if (TraceInliningDatabase && result == NULL) {
-    std->print("Failed parsing file for ");
+    mystd->print("Failed parsing file for ");
     if (inner) {
       inner->print();
-      std->print(" ");
+      mystd->print(" ");
     }
     outer->print();
-    std->cr();
+    mystd->cr();
   }
  
   return result;
@@ -649,7 +649,7 @@ RScope* InliningDatabase::select_and_remove(bool* end_of_table) {
 
 void InliningDatabase::allocate_table(unsigned int size) {
   if (TraceInliningDatabase) {
-    std->print_cr("InliningDatabase::allocate_table(%d)", size);
+    mystd->print_cr("InliningDatabase::allocate_table(%d)", size);
   }
   table_size      = size;
   table_size_mask = size - 1;
@@ -693,13 +693,13 @@ void InliningDatabase::add_lookup_entry(LookupKey* outer, LookupKey* inner) {
   table_no++;
 
   if (TraceInliningDatabase) {
-    std->print_cr("InliningDatabase::add_lookup_entry @ %d", index);
+    mystd->print_cr("InliningDatabase::add_lookup_entry @ %d", index);
     if (inner) {
       inner->print();
-      std->print(" ");
+      mystd->print(" ");
     }
     outer->print();
-    std->cr();
+    mystd->cr();
   }
 }
 

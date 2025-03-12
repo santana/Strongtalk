@@ -53,9 +53,9 @@ class memConverter: public ResourceObj {
       int new_index = new_klass->klass_part()->lookup_inst_var(name);
       if (new_index > 0) {
 	if (TraceApplyChange) {
-          std->print("map ");
-	  name->print_symbol_on(std);
-	  std->print_cr(" %d -> %d", old_index + old_header_size, new_index);
+          mystd->print("map ");
+	  name->print_symbol_on(mystd);
+	  mystd->print_cr(" %d -> %d", old_index + old_header_size, new_index);
 	}
         // We found a match between a old and new class
         mapping->push(old_index + old_header_size);
@@ -437,9 +437,9 @@ memConverter* ClassChange::create_converter_for(klassOop old_class, klassOop new
 
 void ClassChange::update_class_vars() {
   if (TraceApplyChange) {
-    std->print(" - updating class variables for: ");
+    mystd->print(" - updating class variables for: ");
     old_klass()->print_value();
-    std->cr();
+    mystd->cr();
   }
 
   Klass* k = old_klass()->klass_part();
@@ -468,9 +468,9 @@ void ClassChange::update_class_vars() {
 
 void ClassChange::update_methods(bool instance_side) {
   if (TraceApplyChange) {
-    std->print(" updating %s-side methods for: ", instance_side ? "instance" : "class");
+    mystd->print(" updating %s-side methods for: ", instance_side ? "instance" : "class");
     old_klass()->print_value();
-    std->cr();
+    mystd->cr();
   }
 
   if (instance_side) {
@@ -583,8 +583,8 @@ bool Reflection::needs_schema_change() {
     bool sub_result = class_changes->at(index)->needs_schema_change();
     if (TraceApplyChange && sub_result) {
       class_changes->at(index)->old_klass()->print_value();
-      std->cr();
-      std->print_cr("  needs schema change because: %s.", class_changes->at(index)->reason_for_schema_change());
+      mystd->cr();
+      mystd->print_cr("  needs schema change because: %s.", class_changes->at(index)->reason_for_schema_change());
     }
     result = result || sub_result;
   }
@@ -692,12 +692,12 @@ void Reflection::apply_change(mixinOop    new_mixin,
 			      objArrayOop invocations) {
   ResourceMark rm;
   if (TraceApplyChange) {
-    std->print("Reflective change");
-    std->print_cr("[new]"); 
+    mystd->print("Reflective change");
+    mystd->print_cr("[new]"); 
     new_mixin->print();
-    std->print_cr("[old]"); 
+    mystd->print_cr("[old]"); 
     old_mixin->print();
-    std->print_cr("[invocations]"); 
+    mystd->print_cr("[invocations]"); 
     invocations->print();
     Universe::verify();
   }
@@ -720,7 +720,7 @@ void Reflection::apply_change(mixinOop    new_mixin,
 
   if (format_changed) {
     if (TraceApplyChange) {
-      std->print_cr(" - schema change is needed");
+      mystd->print_cr(" - schema change is needed");
     }
 
     converted = new GrowableArray<memOop> (100);
@@ -752,8 +752,8 @@ void Reflection::apply_change(mixinOop    new_mixin,
     for (int j = 0; j < converted->length(); j++) {
       memOop obj = converted->at(j);
       if (TraceApplyChange) {
-        std->print_cr("Old: 0x%lx, 0x%lx", obj,              obj->mark());
-        std->print_cr("New: 0x%lx, 0x%lx", obj->forwardee(), obj->forwardee()->mark());
+        mystd->print_cr("Old: 0x%lx, 0x%lx", obj,              obj->mark());
+        mystd->print_cr("New: 0x%lx, 0x%lx", obj->forwardee(), obj->forwardee()->mark());
       }
       obj->set_mark(obj->forwardee()->mark());
     }
@@ -763,7 +763,7 @@ void Reflection::apply_change(mixinOop    new_mixin,
 
   } else {
     if (TraceApplyChange) {
-      std->print_cr(" - no schema change (%s%s%s)",
+      mystd->print_cr(" - no schema change (%s%s%s)",
 	class_vars_changed        ? "class variables "  : "",
 	instance_methods_changed  ? "instance methods " : "",
 	class_methods_changed     ? "class methods "    : "");

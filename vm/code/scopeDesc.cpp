@@ -277,12 +277,12 @@ bool ScopeDesc::verify() {
   // don't do a full verify of parent/sender -- too many redundant verifies
   ScopeDesc* s = sender();
   if (s && !s->shallow_verify()) {
-    std->print("invalid sender %#lx of ScopeDesc %#lx", s, this);
+    mystd->print("invalid sender %#lx of ScopeDesc %#lx", s, this);
     ok = false;
   }
   ScopeDesc* p = parent();
   if (p && !p->shallow_verify()) {
-    std->print("invalid parent %#lx of ScopeDesc %#lx", p, this);
+    mystd->print("invalid parent %#lx of ScopeDesc %#lx", p, this);
     ok = false;
   }
   return ok;
@@ -310,11 +310,11 @@ class PrintNameDescClosure: public NameDescClosure {
   char* _pc0;
 
   void print(char* title, int no, NameDesc* nd, char* pc) {
-    std->fill_to(_indent);
+    mystd->fill_to(_indent);
     if (UseNewBackend) {
-      std->print("%5d: ", pc - _pc0);
+      mystd->print("%5d: ", pc - _pc0);
     }
-    std->print("%s[%d]\t", title, no); nd->print(); std->cr();
+    mystd->print("%s[%d]\t", title, no); nd->print(); mystd->cr();
   }
 
  public:
@@ -328,31 +328,31 @@ class PrintNameDescClosure: public NameDescClosure {
 
 
 void ScopeDesc::print(int indent, bool all_pcs) {
-  std->fill_to(indent);
+  mystd->fill_to(indent);
   printName();
-  std->print("ScopeDesc @%d%s: ", offset(), is_lite() ? ", lite" : "");
-  std->print(" (ID %ld) ", scopeID());
+  mystd->print("ScopeDesc @%d%s: ", offset(), is_lite() ? ", lite" : "");
+  mystd->print(" (ID %ld) ", scopeID());
   method()->selector()->print_symbol_on();
-  std->print(" %#x", method());
-  std->cr();
+  mystd->print(" %#x", method());
+  mystd->cr();
   ScopeDesc* s = sender();
   if (s != NULL) {
-    std->fill_to(indent);
-    std->print("sender: (%d) @ %ld", s->offset(), long(senderBCI()));
+    mystd->fill_to(indent);
+    mystd->print("sender: (%d) @ %ld", s->offset(), long(senderBCI()));
   }
   ScopeDesc* p = parent();
   if (p != NULL) {
     if (s != NULL) {
-      std->print("; ");
+      mystd->print("; ");
     } else {
-      std->fill_to(indent);
+      mystd->fill_to(indent);
     }
-    std->print("parent: (%d)", p->offset());
+    mystd->print("parent: (%d)", p->offset());
   }
   if (s != NULL || p != NULL) {
-    std->cr();
+    mystd->cr();
   }
-  std->fill_to(indent);
+  mystd->fill_to(indent);
   printSelf();
   PrintNameDescClosure blk(indent+2, _scopes->my_nmethod()->insts());
   if (all_pcs) {
@@ -393,15 +393,15 @@ MethodScopeDesc::MethodScopeDesc(const nmethodScopes* scopes, int offset, char* 
 
 
 void MethodScopeDesc::printName() {
-  std->print("Method");
+  mystd->print("Method");
 }
 
 
 void MethodScopeDesc::printSelf() {
   printIndent();
-  std->print("self: ");
+  mystd->print("self: ");
   self()->print();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -413,7 +413,7 @@ void MethodScopeDesc::print_value_on(outputStream* st) const {
 
 void BlockScopeDesc::printSelf() {
   ScopeDesc::printSelf();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -430,7 +430,7 @@ bool BlockScopeDesc::s_equivalent(ScopeDesc* s) const {
 
 
 void BlockScopeDesc::printName() {
-  std->print("Block");
+  mystd->print("Block");
 }
 
 
@@ -479,11 +479,11 @@ NonInlinedBlockScopeDesc::NonInlinedBlockScopeDesc(const nmethodScopes* scopes, 
 
 
 void NonInlinedBlockScopeDesc::print() {
-  std->print("NonInlinedBlockScopeDesc\n");
-  std->print(" - method: "); 
+  mystd->print("NonInlinedBlockScopeDesc\n");
+  mystd->print(" - method: "); 
   method()->print_value();
-  std->cr();
-  std->print(" - parent offset: %d\n", _parentScopeOffset);
+  mystd->cr();
+  mystd->print(" - parent offset: %d\n", _parentScopeOffset);
 }
 
 
@@ -502,9 +502,9 @@ TopLevelBlockScopeDesc::TopLevelBlockScopeDesc(const nmethodScopes* scopes, int 
 
 void TopLevelBlockScopeDesc::printSelf() {
   ScopeDesc::printSelf(); 
-  std->print("self: ");
+  mystd->print("self: ");
   self()->print();
-  std->cr();
+  mystd->cr();
 }
 
 
@@ -525,7 +525,7 @@ bool TopLevelBlockScopeDesc::s_equivalent(ScopeDesc* s) const {
 
 
 void TopLevelBlockScopeDesc::printName() {
-  std->print("TopLevelBlock");
+  mystd->print("TopLevelBlock");
 }
 
 
