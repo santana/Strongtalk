@@ -58,7 +58,8 @@ void EventLog::printPartial(int n) {
   EL_Event* e = next;
   // find starting point
   if (n >= EventLogLength) n = EventLogLength - 1;
-  for (int i = 0; i < n; i++, e = prevEvent(e, buf, bufEnd)) ;
+  int i;
+  for (i = 0; i < n; i++, e = prevEvent(e, buf, bufEnd)) ;
   
   // skip empty entries
   i = 0;

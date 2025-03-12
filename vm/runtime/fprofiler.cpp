@@ -447,7 +447,8 @@ void FlatProfiler::print(int cutoff) {
 
   GrowableArray <pnode*>* array = new GrowableArray<pnode*>(200);
 
-  for(int index = 0; index < table_size; index++) {
+  int index;
+  for(index = 0; index < table_size; index++) {
     for(pnode* node = table[index]; node; node = node->next())
       array->append(node);
   }

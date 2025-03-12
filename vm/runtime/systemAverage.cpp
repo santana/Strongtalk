@@ -36,7 +36,8 @@ void SlidingSystemAverage::reset() {
 
 unsigned int* SlidingSystemAverage::update() {
   // clear the array;
-  for (unsigned int index = 0; index < number_of_cases; index++) {
+  unsigned int index;
+  for (index = 0; index < number_of_cases; index++) {
     stat[index] = 0;
   }
 
