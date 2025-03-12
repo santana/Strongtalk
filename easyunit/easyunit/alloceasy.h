@@ -1,7 +1,11 @@
 #ifndef _EASYUNIT_ALLOC_
 #define _EASYUNIT_ALLOC_
 #include <string.h>
+#if defined(__OPENBSD__)
+#include <sys/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <stdlib.h>
 
 namespace easyunit {
