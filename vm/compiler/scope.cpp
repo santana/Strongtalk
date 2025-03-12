@@ -592,7 +592,7 @@ void InlinedScope::copy_noninlined_block_info(nmethod* nm) {
     if (blk->isUsed()) {
       int offset = theCompiler->scopeDescRecorder()->
                      offset_for_noninlined_scope_node(blk->closure()->noninlined_block_scope());
-      nm->noninlined_block_at_put(blk->closure()->id().minor(), offset);
+      nm->noninlined_block_at_put(blk->closure()->id().minor_version(), offset);
     }
   }
 }
