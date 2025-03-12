@@ -148,7 +148,7 @@ bool frame::is_entry_frame() const {
 }
 
 bool frame::has_next_Delta_fp() const {
-  return at(frame_next_Delta_fp_offset) != NULL;
+  return at(frame_next_Delta_fp_offset) != 0;
 }
 
 int* frame::next_Delta_fp() const	{
@@ -499,7 +499,8 @@ frame frame::sender() const {
 }
 
 frame frame::delta_sender() const {
-  for (frame s = sender(); !s.is_delta_frame(); s = s.sender()) ;
+  frame s;
+  for (s = sender(); !s.is_delta_frame(); s = s.sender()) ;
   return s;
 }
 
