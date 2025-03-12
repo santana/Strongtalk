@@ -23,6 +23,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // A growable array.
 
+#include <type_traits>
+
 typedef void (*voidDoFn)(void* p);
 typedef bool (*growableArrayFindFn)(void* token, void* elem);
 
@@ -75,7 +77,11 @@ template<class E> class GrowableArray : public GenericGrowableArray {
 
   E at(int i) const {
     assert(0 <= i && i < len, "illegal index");
-    return reinterpret_cast<E> (data[i]);
+    if constexpr (std::is_same_v<E, bool>) {
+      return data[i] != nullptr;
+    } else {
+      return reinterpret_cast<E> (data[i]);
+    }
   }
 
   E first() const {
