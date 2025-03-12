@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_byteArray_prims.cpp.incl"
 #include "test.h"
@@ -69,7 +71,7 @@ SETUP(PointerAlienPrimsTests) {
 
   alien = byteArrayOop(ah.as_oop());
   byteArrayPrimitives::alienSetSize(as_smiOop(0), alien);
-  byteArrayPrimitives::alienSetAddress(as_smiOop((int)alien_byte_region), alien);
+  byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)alien_byte_region), alien);
   memset(alien_byte_region, 0, 16);
 
   invalidAlien = byteArrayOop(iah.as_oop());

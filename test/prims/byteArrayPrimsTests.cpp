@@ -123,24 +123,24 @@ TESTF(ByteArrayPrimsTests, alienAddressShouldReturnCorrectAddress) {
 
   ((int*)bytes)[0] = -16;
   ((u_char**)bytes)[1] = alien_byte_region;
-  ASSERT_EQUALS_M((int)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "wrong address");
+  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "wrong address");
 }
 
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldAssignCorrectAddress) {
   u_char* bytes = alien->bytes();
 
-  int address = (int)alien_byte_region;
+  int address = (intptr_t)alien_byte_region;
   ((int*)bytes)[0] = -16;
   ASSERT_TRUE_M(alien == byteArrayPrimitives::alienSetAddress(as_smiOop(address), alien), "Should return alien");
   ASSERT_EQUALS_M(address, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "Address should match");
 }
 
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldAssignCorrectAddressFromLargeInteger) {
-  PersistentHandle address(as_large_integer((int)alien_byte_region));
+  PersistentHandle address(as_large_integer((intptr_t)alien_byte_region));
   byteArrayPrimitives::alienSetSize(as_smiOop(-16), alien);
   
   ASSERT_TRUE_M(alien == byteArrayPrimitives::alienSetAddress(address.as_oop(), alien), "Should return alien");
-  ASSERT_EQUALS_M((int)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "Address should match");
+  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "Address should match");
 }
 
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldReturnMarkedSymbolForAddressOutOfRange) {
@@ -276,7 +276,7 @@ TESTF(ByteArrayPrimsTests, alienUnsignedByteAtPutShouldReturnMarkedSymbolWhenVal
 }
 
 TESTF(ByteArrayPrimsTests, alienUnsignedByteAtPutShouldReturnMarkedSymbolWhenIndexTooSmall) {
-  byteArrayPrimitives::alienSetAddress(as_smiOop((int)&alien_byte_region), alien);
+  byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)&alien_byte_region), alien);
   oop result = byteArrayPrimitives::alienUnsignedByteAtPut(as_smiOop(0), as_smiOop(0), alien);
   checkMarkedSymbol("wrong type", result, vmSymbols::index_not_valid());
 }

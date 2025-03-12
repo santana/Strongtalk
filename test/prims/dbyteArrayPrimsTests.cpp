@@ -46,13 +46,13 @@ TESTF(DByteArrayPrimsTests, allocateSize2ShouldAllocateTenuredWhenRequested) {
 TESTF(DByteArrayPrimsTests, allocateSize2ShouldFailWithNonDoubleByteArray) {
   oop result = doubleByteArrayPrimitives::allocateSize2(falseObj, as_smiOop(10), Universe::find_global("Object"));
   ASSERT_TRUE(result->is_mark());
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::invalid_klass()), (int)result);
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::invalid_klass()), (intptr_t)result);
 }
 
 TESTF(DByteArrayPrimsTests, allocateSize2ShouldFailWithNonKlass) {
   oop result = doubleByteArrayPrimitives::allocateSize2(falseObj, as_smiOop(10), Universe::trueObj());
   ASSERT_TRUE(result->is_mark());
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::invalid_klass()), (int)result);
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::invalid_klass()), (intptr_t)result);
 }
 
 TESTF(DByteArrayPrimsTests, allocateSize2ShouldFailWithNonInteger) {

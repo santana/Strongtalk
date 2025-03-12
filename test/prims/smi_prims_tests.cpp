@@ -27,5 +27,5 @@ TESTF(SmiPrimsTests, quoShouldReturnDivideReceiverByArgument) {
 
 TESTF(SmiPrimsTests, quoShouldReturnReceiverHasWrongTypeWhenNotSMI) {
   oop result = smiQuo(as_smiOop(2), smiOop(quoSymbol));
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::receiver_has_wrong_type()), (int)result);
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::receiver_has_wrong_type()), (intptr_t)result);
 }

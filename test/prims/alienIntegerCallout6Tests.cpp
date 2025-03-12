@@ -74,7 +74,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((int)ptr), alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
   alienHandle = new PersistentHandle(alien);
   handles->append(&alienHandle);
 }
@@ -115,7 +115,7 @@ void release(PersistentHandle** handle) {
   *handle = NULL;
 }
 void setAddress(PersistentHandle* handle, void* argument) {
-  byteArrayPrimitives::alienSetAddress(asOop((int)argument), handle->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)argument), handle->as_oop());
 }
 oop callout(oop arg[]) {
   return byteArrayPrimitives::alienCallResult6(arg[5], arg[4], arg[3], arg[2], arg[1], arg[0], resultAlien->as_oop(), functionAlien->as_oop());
@@ -180,7 +180,7 @@ SETUP(AlienIntegerCallout6Tests) {
   smim1 = as_smiOop(-1);
   handles = new(true) GrowableArray<PersistentHandle**>(6);
 
-  allocateAlien(functionAlien,        8,  0, &returnFirst6);
+  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst6);
   allocateAlien(resultAlien,         12,  8);
   allocateAlien(directAlien,         12,  4);
   allocateAlien(addressAlien,         8, -4, &address);
@@ -189,18 +189,18 @@ SETUP(AlienIntegerCallout6Tests) {
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = returnFirst6;
-  intCalloutFunctions[1] = returnSecond6;
-  intCalloutFunctions[2] = returnThird6;
-  intCalloutFunctions[3] = returnFourth6;
-  intCalloutFunctions[4] = returnFifth6;
-  intCalloutFunctions[5] = returnSixth6;
-  intPointerCalloutFunctions[0] = returnFirstPointer6;
-  intPointerCalloutFunctions[1] = returnSecondPointer6;
-  intPointerCalloutFunctions[2] = returnThirdPointer6;
-  intPointerCalloutFunctions[3] = returnFourthPointer6;
-  intPointerCalloutFunctions[4] = returnFifthPointer6;
-  intPointerCalloutFunctions[5] = returnSixthPointer6;
+  intCalloutFunctions[0] = (void *)returnFirst6;
+  intCalloutFunctions[1] = (void *)returnSecond6;
+  intCalloutFunctions[2] = (void *)returnThird6;
+  intCalloutFunctions[3] = (void *)returnFourth6;
+  intCalloutFunctions[4] = (void *)returnFifth6;
+  intCalloutFunctions[5] = (void *)returnSixth6;
+  intPointerCalloutFunctions[0] = (void *)returnFirstPointer6;
+  intPointerCalloutFunctions[1] = (void *)returnSecondPointer6;
+  intPointerCalloutFunctions[2] = (void *)returnThirdPointer6;
+  intPointerCalloutFunctions[3] = (void *)returnFourthPointer6;
+  intPointerCalloutFunctions[4] = (void *)returnFifthPointer6;
+  intPointerCalloutFunctions[5] = (void *)returnSixthPointer6;
 }
 
 TEARDOWN(AlienIntegerCallout6Tests){
@@ -228,7 +228,7 @@ TESTF(AlienIntegerCallout6Tests, alienCallResult6ShouldCallFunctionAndIgnoreResu
 }
 
 TESTF(AlienIntegerCallout6Tests, alienCallResult6WithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, &forceScavenge6);
+  setAddress(functionAlien, (void *)&forceScavenge6);
   checkIntResult("incorrect initialization", 0, resultAlien);
   byteArrayPrimitives::alienCallResult6(smi0, smi0, smi0, smi0, smi0, smi0, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);

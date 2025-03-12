@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_byteArray_prims.cpp.incl"
 #include "test.h"
@@ -59,13 +61,13 @@ SETUP(AlienIntegerCallout0Tests) {
   byteArrayPrimitives::alienSetAddress(smi0, invalidFunctionAlien);
 
   fnAlien = byteArrayOop(ca.as_oop());
-  byteArrayPrimitives::alienSetAddress(as_smiOop((int)&clock), fnAlien);
+  byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)&clock), fnAlien);
 
   addressAlien = byteArrayOop(aa.as_oop());
-  byteArrayPrimitives::alienSetAddress(as_smiOop((int)&address), addressAlien);
+  byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)&address), addressAlien);
 
   pointerAlien = byteArrayOop(pa.as_oop());
-  byteArrayPrimitives::alienSetAddress(as_smiOop((int)&address), pointerAlien);
+  byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)&address), pointerAlien);
 }
 
 TEARDOWN(AlienIntegerCallout0Tests){

@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_byteArray_prims.cpp.incl"
 #include "test.h"
@@ -25,8 +27,8 @@ extern "C" oop PRIM_API forceScavenge1(int ignore) {
   return vmSymbols::completed();
 }
 
-extern "C" int PRIM_API argAlignment(int a) {
-  return ((int) &a) & 0xF;
+extern "C" intptr_t PRIM_API argAlignment(int a) {
+  return ((intptr_t) &a) & 0xF;
 }
 
 extern "C" char* PRIM_API argUnsafe1(char* a) {
@@ -45,7 +47,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((int)ptr), alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
   alienHandle = new PersistentHandle(alien);
   handles->append(&alienHandle);
 }
@@ -94,7 +96,7 @@ void allocateUnsafe(PersistentHandle* &handle, PersistentHandle* &contents) {
   memOop(unsafeAlien->as_oop())->instVarAtPut(offset, contents->as_oop());
 }
 void setAddress(void* p, PersistentHandle* alien) {
-  byteArrayPrimitives::alienSetAddress(asOop((int)p), alien->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)p), alien->as_oop());
 }
 END_DECLARE
 
@@ -104,7 +106,7 @@ SETUP(AlienIntegerCallout1Tests) {
   smi1 = as_smiOop(1);
   handles = new(true) GrowableArray<PersistentHandle**>(5);
 
-  allocateAlien(functionAlien,        8,  0, &labs);
+  allocateAlien(functionAlien,        8,  0, (void *)&labs);
   allocateAlien(resultAlien,         12,  8);
   allocateAlien(directAlien,         12,  4);
   allocateAlien(addressAlien,         8, -4, &address);
@@ -131,10 +133,10 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1ShouldCallFunction) {
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1WithUnsafeAlienShouldCallFunction) {
-  setAddress(&argUnsafe1, functionAlien);
+  setAddress((void *)&argUnsafe1, functionAlien);
   byteArrayPrimitives::alienCallResult1(unsafeAlien->as_oop(), resultAlien->as_oop(), functionAlien->as_oop());
 
-  checkIntResult("wrong result", (int)byteArrayOop(unsafeContents->as_oop())->bytes(), resultAlien);
+  checkIntResult("wrong result", (intptr_t)byteArrayOop(unsafeContents->as_oop())->bytes(), resultAlien);
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1ShouldCallFunctionAndIgnoreResultWhenResultAlienNil) {
@@ -157,7 +159,7 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1WithDirectArgumentShouldCallFun
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1WithPointerArgumentShouldCallFunction) {
-  oop address = asOop((int)&callLabs);
+  oop address = asOop((intptr_t)&callLabs);
   byteArrayPrimitives::alienSetAddress(address, functionAlien->as_oop());
   byteArrayPrimitives::alienSignedLongAtPut(as_smiOop(-1), smi1, pointerAlien->as_oop());
   byteArrayPrimitives::alienCallResult1(pointerAlien->as_oop(), resultAlien->as_oop(), functionAlien->as_oop());
@@ -166,7 +168,7 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1WithPointerArgumentShouldCallFu
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1Should16ByteAlignArgs) {
-  oop fnAddress = asOop((int)&argAlignment);
+  oop fnAddress = asOop((intptr_t)&argAlignment);
   byteArrayPrimitives::alienSetAddress(fnAddress, functionAlien->as_oop());
 
   oop result = byteArrayPrimitives::alienCallResult1(addressAlien->as_oop(), resultAlien->as_oop(), functionAlien->as_oop());
@@ -187,7 +189,7 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1Should16ByteAlignArgs) {
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1WithOddSizedArgumentShouldCallFunction) {
-  oop address = asOop((int)&size5);
+  oop address = asOop((intptr_t)&size5);
   byteArrayPrimitives::alienSetAddress(address, functionAlien->as_oop());
   byteArrayPrimitives::alienSetSize(as_smiOop(5), directAlien->as_oop());
   byteArrayPrimitives::alienUnsignedLongAtPut(smi0, smi1, directAlien->as_oop());
@@ -199,7 +201,7 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1WithOddSizedArgumentShouldCallF
 }
 
 TESTF(AlienIntegerCallout1Tests, alienCallResult1WithScavengeShouldReturnCorrectResult) {
-  oop address = asOop((int)&forceScavenge1);
+  oop address = asOop((intptr_t)&forceScavenge1);
   byteArrayPrimitives::alienSetAddress(address, functionAlien->as_oop());
   byteArrayPrimitives::alienCallResult1(directAlien->as_oop(), resultAlien->as_oop(), functionAlien->as_oop());
 

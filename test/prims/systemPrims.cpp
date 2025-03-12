@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_system_prims.cpp.incl"
 //#include "handle.hpp"
@@ -54,19 +56,19 @@ TEST(SystemPrimTests, shrinkMemoryShouldReduceOldSpaceCapacity) {
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnValueOutOfRangeWhenInsufficientFreeSpace) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::value_out_of_range()), (int)systemPrimitives::shrinkMemory(as_smiOop(freeSpace + 1)));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()), (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(freeSpace + 1)));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnValueOutOfRangeWhenNegative) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::value_out_of_range()), (int)systemPrimitives::shrinkMemory(as_smiOop(-1)));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()), (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(-1)));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnArgumentIsOfWrongType) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((int)markSymbol(vmSymbols::first_argument_has_wrong_type()), (int)systemPrimitives::shrinkMemory(vmSymbols::and1()));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::first_argument_has_wrong_type()), (intptr_t)systemPrimitives::shrinkMemory(vmSymbols::and1()));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
@@ -166,7 +168,7 @@ TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenLargeIntegerAddressTo
 }
 
 TEST(SystemPrimTests, alienFreeShouldFreeLargeIntegerAddress) {
-  int address = (int) malloc(4);
+  intptr_t address = (intptr_t) malloc(4);
   oop result = systemPrimitives::alienFree(as_large_integer(address));
   
   ASSERT_TRUE_M(!result->is_mark(), "should not be marked");

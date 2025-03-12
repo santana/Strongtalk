@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_byteArray_prims.cpp.incl"
 #include "test.h"
@@ -87,7 +89,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((int)ptr), alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
   alienHandle = new PersistentHandle(alien);
   handles->append(&alienHandle);
 }
@@ -128,7 +130,7 @@ void release(PersistentHandle** handle) {
   *handle = NULL;
 }
 void setAddress(PersistentHandle* handle, void* argument) {
-  byteArrayPrimitives::alienSetAddress(asOop((int)argument), handle->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)argument), handle->as_oop());
 }
 oop callout(oop arg[], oop result, oop address) {
   return byteArrayPrimitives::alienCallResult7(arg[6], arg[5], arg[4], arg[3], arg[2], arg[1], arg[0], result, address);
@@ -199,7 +201,7 @@ SETUP(AlienIntegerCallout7Tests) {
   smim1 = as_smiOop(-1);
   handles = new(true) GrowableArray<PersistentHandle**>(7);
 
-  allocateAlien(functionAlien,        8,  0, &returnFirst7);
+  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst7);
   allocateAlien(resultAlien,         12,  8);
   allocateAlien(directAlien,         12,  4);
   allocateAlien(addressAlien,         8, -4, &address);
@@ -208,21 +210,21 @@ SETUP(AlienIntegerCallout7Tests) {
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = returnFirst7;
-  intCalloutFunctions[1] = returnSecond7;
-  intCalloutFunctions[2] = returnThird7;
-  intCalloutFunctions[3] = returnFourth7;
-  intCalloutFunctions[4] = returnFifth7;
-  intCalloutFunctions[5] = returnSixth7;
-  intCalloutFunctions[6] = returnSeventh7;
+  intCalloutFunctions[0] = (void *)returnFirst7;
+  intCalloutFunctions[1] = (void *)returnSecond7;
+  intCalloutFunctions[2] = (void *)returnThird7;
+  intCalloutFunctions[3] = (void *)returnFourth7;
+  intCalloutFunctions[4] = (void *)returnFifth7;
+  intCalloutFunctions[5] = (void *)returnSixth7;
+  intCalloutFunctions[6] = (void *)returnSeventh7;
 
-  intPointerCalloutFunctions[0] = returnFirstPointer7;
-  intPointerCalloutFunctions[1] = returnSecondPointer7;
-  intPointerCalloutFunctions[2] = returnThirdPointer7;
-  intPointerCalloutFunctions[3] = returnFourthPointer7;
-  intPointerCalloutFunctions[4] = returnFifthPointer7;
-  intPointerCalloutFunctions[5] = returnSixthPointer7;
-  intPointerCalloutFunctions[6] = returnSeventhPointer7;
+  intPointerCalloutFunctions[0] = (void *)returnFirstPointer7;
+  intPointerCalloutFunctions[1] = (void *)returnSecondPointer7;
+  intPointerCalloutFunctions[2] = (void *)returnThirdPointer7;
+  intPointerCalloutFunctions[3] = (void *)returnFourthPointer7;
+  intPointerCalloutFunctions[4] = (void *)returnFifthPointer7;
+  intPointerCalloutFunctions[5] = (void *)returnSixthPointer7;
+  intPointerCalloutFunctions[6] = (void *)returnSeventhPointer7;
 
   for (int index = 0; index < argCount; index++)
     zeroes[index] = smi0;
@@ -245,7 +247,7 @@ TESTF(AlienIntegerCallout7Tests, alienCallResult7ShouldCallSumFunction) {
   byteArrayPrimitives::alienSignedLongAtPut(asOop(-1), smi1, addressAlien->as_oop());
   for (int index = 0; index < argCount; index++)
     arg[index] = addressAlien->as_oop();
-  byteArrayPrimitives::alienSetAddress(asOop((int)&sum7), functionAlien->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)&sum7), functionAlien->as_oop());
   callout(arg);
   checkIntResult("wrong result", -1 * argCount, resultAlien);
 }
@@ -262,7 +264,7 @@ TESTF(AlienIntegerCallout7Tests, alienCallResult7ShouldCallFunctionAndIgnoreResu
 }
 
 TESTF(AlienIntegerCallout7Tests, alienCallResult7WithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, &forceScavenge7);
+  setAddress(functionAlien, (void *)&forceScavenge7);
   checkIntResult("incorrect initialization", 0, resultAlien);
   oop result = callout(zeroes, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);

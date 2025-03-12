@@ -68,7 +68,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((int)ptr), alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
   alienHandle = new PersistentHandle(alien);
   handles->append(&alienHandle);
 }
@@ -109,7 +109,7 @@ void release(PersistentHandle** handle) {
   *handle = NULL;
 }
 void setAddress(PersistentHandle* handle, void* argument) {
-  byteArrayPrimitives::alienSetAddress(asOop((int)argument), handle->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)argument), handle->as_oop());
 }
 void checkArgnPassed(int argIndex, int argValue, void**functionArray) {
   setAddress(functionAlien, functionArray[argIndex]);
@@ -168,7 +168,7 @@ SETUP(AlienIntegerCallout5Tests) {
   smim1 = as_smiOop(-1);
   handles = new(true) GrowableArray<PersistentHandle**>(5);
 
-  allocateAlien(functionAlien,        8,  0, &returnFirst5);
+  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst5);
   allocateAlien(resultAlien,         12,  8);
   allocateAlien(directAlien,         12,  4);
   allocateAlien(addressAlien,         8, -4, &address);
@@ -177,16 +177,16 @@ SETUP(AlienIntegerCallout5Tests) {
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = returnFirst5;
-  intCalloutFunctions[1] = returnSecond5;
-  intCalloutFunctions[2] = returnThird5;
-  intCalloutFunctions[3] = returnFourth5;
-  intCalloutFunctions[4] = returnFifth5;
-  intPointerCalloutFunctions[0] = returnFirstPointer5;
-  intPointerCalloutFunctions[1] = returnSecondPointer5;
-  intPointerCalloutFunctions[2] = returnThirdPointer5;
-  intPointerCalloutFunctions[3] = returnFourthPointer5;
-  intPointerCalloutFunctions[4] = returnFifthPointer5;
+  intCalloutFunctions[0] = (void *)returnFirst5;
+  intCalloutFunctions[1] = (void *)returnSecond5;
+  intCalloutFunctions[2] = (void *)returnThird5;
+  intCalloutFunctions[3] = (void *)returnFourth5;
+  intCalloutFunctions[4] = (void *)returnFifth5;
+  intPointerCalloutFunctions[0] = (void *)returnFirstPointer5;
+  intPointerCalloutFunctions[1] = (void *)returnSecondPointer5;
+  intPointerCalloutFunctions[2] = (void *)returnThirdPointer5;
+  intPointerCalloutFunctions[3] = (void *)returnFourthPointer5;
+  intPointerCalloutFunctions[4] = (void *)returnFifthPointer5;
 }
 
 TEARDOWN(AlienIntegerCallout5Tests){
@@ -214,7 +214,7 @@ TESTF(AlienIntegerCallout5Tests, alienCallResult5ShouldCallFunctionAndIgnoreResu
 }
 
 TESTF(AlienIntegerCallout5Tests, alienCallResult5WithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, &forceScavenge5);
+  setAddress(functionAlien, (void *)&forceScavenge5);
   checkIntResult("incorrect initialization", 0, resultAlien);
   byteArrayPrimitives::alienCallResult5(smi0, smi0, smi0, smi0, smi0, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);

@@ -1,3 +1,5 @@
+#include <cstdint>
+
 # include "incls/_precompiled.incl"
 # include "incls/_byteArray_prims.cpp.incl"
 #include "test.h"
@@ -30,7 +32,7 @@ extern "C" int PRIM_API forceScavengeWA(int a, int b) {
 }
 
 extern "C" int PRIM_API argAlignment2(int a, int b) {
-  return ((int) &a) & 0xF;
+  return ((intptr_t) &a) & 0xF;
 }
 
 DECLARE(AlienIntegerCalloutWithArgumentsTests)
@@ -49,7 +51,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((int)ptr), alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
   alienHandle = new PersistentHandle(alien);
   handles->append(&alienHandle);
 }
@@ -90,7 +92,7 @@ void release(PersistentHandle** handle) {
   *handle = NULL;
 }
 void setAddress(PersistentHandle* handle, void* argument) {
-  byteArrayPrimitives::alienSetAddress(asOop((int)argument), handle->as_oop());
+  byteArrayPrimitives::alienSetAddress(asOop((intptr_t)argument), handle->as_oop());
 }
 oop callout(oop arg[], oop result, oop address) {
   objArrayOop argOops = oopFactory::new_objArray(2);
@@ -138,7 +140,7 @@ SETUP(AlienIntegerCalloutWithArgumentsTests) {
   smim1 = as_smiOop(-1);
   handles = new(true) GrowableArray<PersistentHandle**>(5);
 
-  allocateAlien(functionAlien,        8,  0, &returnFirst2);
+  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst2);
   allocateAlien(resultAlien,         12,  8);
   allocateAlien(directAlien,         12,  4);
   allocateAlien(addressAlien,         8, -4, &address);
@@ -147,10 +149,10 @@ SETUP(AlienIntegerCalloutWithArgumentsTests) {
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = returnFirst2;
-  intCalloutFunctions[1] = returnSecond2;
-  intPointerCalloutFunctions[0] = returnFirstPointer2;
-  intPointerCalloutFunctions[1] = returnSecondPointer2;
+  intCalloutFunctions[0] = (void *)returnFirst2;
+  intCalloutFunctions[1] = (void *)returnSecond2;
+  intPointerCalloutFunctions[0] = (void *)returnFirstPointer2;
+  intPointerCalloutFunctions[1] = (void *)returnSecondPointer2;
 }
 
 TEARDOWN(AlienIntegerCalloutWithArgumentsTests){
@@ -167,7 +169,7 @@ TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldC
 }
 
 TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResult1Should16ByteAlignArgs) {
-  oop fnAddress = asOop((int)&argAlignment2);
+  oop fnAddress = asOop((intptr_t)&argAlignment2);
   byteArrayPrimitives::alienSetAddress(fnAddress, functionAlien->as_oop());
 
   oop arg[argCount];
@@ -192,7 +194,7 @@ TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldC
 }
 
 TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsWithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, &forceScavengeWA);
+  setAddress(functionAlien, (void *)&forceScavengeWA);
   checkIntResult("incorrect initialization", 0, resultAlien);
   oop result = callout(zeroes, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);
