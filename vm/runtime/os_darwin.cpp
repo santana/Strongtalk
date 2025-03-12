@@ -38,11 +38,6 @@
 # include <ucontext.h>
 # include <errno.h>
 
-#ifdef bool
-#undef bool
-#define bool _bool_type_
-#endif
-
 void os_dump_context2(ucontext_t *context) {
 #ifdef __slr_ignore__
     mcontext_t mcontext = context->uc_mcontext;
