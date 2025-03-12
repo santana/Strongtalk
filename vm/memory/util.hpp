@@ -22,6 +22,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
+#include <cstdint>
+
 // conveniences
 
 extern int Indent;
@@ -63,7 +65,7 @@ inline int max(int a, int b, int c)	{ return a > b ? max(a, c) : max(b, c); }
 #define between(p, low, high) ((void*)(p) >= (void*)(low) && (void*)(p) < (void*)(high))
 
 inline void *align(void* p, int alignment) {
-  int number = (int) p;
+  intptr_t number = (intptr_t) p;
   int adjust = alignment - (number%alignment) % alignment;
   return (void*) (number + adjust);
 }

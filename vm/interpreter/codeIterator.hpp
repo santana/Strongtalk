@@ -24,6 +24,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // CodeIterator is a simple but fast iterator for
 // scanning byte code instructions in a methodOop.
 
+#include <cstdint>
+
 class CodeIterator: public StackObj {
  private:
   methodOop method;
@@ -31,7 +33,7 @@ class CodeIterator: public StackObj {
   u_char*   end;
 
   inline void    align();
-  inline u_char* align(u_char* p) const			{ return (u_char*) (((int) p + 3) & (~3)); }
+  inline u_char* align(u_char* p) const			{ return (u_char*) (((intptr_t) p + 3) & (~3)); }
 
  public:
   // Constructor
@@ -48,7 +50,7 @@ class CodeIterator: public StackObj {
   // accessors
   u_char	byte_at(int offset_from_instruction)	{ return current[offset_from_instruction]; }
   oop		oop_at(int offset_from_instruction)	{ return *aligned_oop(offset_from_instruction); }
-  int		word_at(int offset_from_instruction)	{ return (int) *aligned_oop(offset_from_instruction); }
+  intptr_t	word_at(int offset_from_instruction)	{ return (intptr_t) *aligned_oop(offset_from_instruction); }
 
   Bytecodes::Code		code() const		{ return Bytecodes::Code(*current); }
   Bytecodes::CodeType		code_type() const	{ return Bytecodes::code_type(code()); }

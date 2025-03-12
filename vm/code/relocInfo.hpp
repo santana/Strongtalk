@@ -37,6 +37,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   3 bits indicating the relocation type
 //  13 bits indicating the byte offset from the previous relocInfo address
 
+#include <cstdint>
+
 const int reloc_type_width   =  3;
 const int reloc_offset_width = 13;
 
@@ -165,7 +167,7 @@ class relocIterator : StackObj {
 
   char* callDestination() const {
     assert(type() != relocInfo::oop_type, "must be call");
-    return *(char**)addr + int(addr) + 4;	// INTEL-SPECIFIC
+    return *(char**)addr + intptr_t(addr) + 4;	// INTEL-SPECIFIC
   }
 
   // for uncommon traps only: was it ever executed?

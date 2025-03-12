@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#include <cstdint>
+
 // A methodOop is a method with byte codes.
 
 const int method_size_mask_bitno  =  2;
@@ -47,8 +49,8 @@ class methodOopDesc : public memOopDesc {
 
  public:
   // offsets for code generation
-  static int selector_or_method_byte_offset()	{ return int(&(((methodOopDesc*)NULL)->_selector_or_method)) - Mem_Tag; }
-  static int counters_byte_offset()		{ return int(&(((methodOopDesc*)NULL)->_counters)) - Mem_Tag; }
+  static int selector_or_method_byte_offset()	{ return intptr_t(&(((methodOopDesc*)NULL)->_selector_or_method)) - Mem_Tag; }
+  static int counters_byte_offset()		{ return intptr_t(&(((methodOopDesc*)NULL)->_counters)) - Mem_Tag; }
   static int codes_byte_offset()		{ return sizeof(methodOopDesc) - Mem_Tag; }
 
   smiOop size_and_flags() const { return addr()->_size_and_flags; }
@@ -58,7 +60,7 @@ class methodOopDesc : public memOopDesc {
   }
 
   int flags() const {
-    return get_unsigned_bitfield((int)size_and_flags(), method_flags_mask_bitno, method_flags_mask_size);
+    return get_unsigned_bitfield((intptr_t)size_and_flags(), method_flags_mask_bitno, method_flags_mask_size);
   }
 
   void set_flags(int flags) {
@@ -66,7 +68,7 @@ class methodOopDesc : public memOopDesc {
   }
 
   int nofArgs() const {			 // number of arguments (excluding receiver)
-    return get_unsigned_bitfield((int)size_and_flags(), method_args_mask_bitno, method_args_mask_size); }
+    return get_unsigned_bitfield((intptr_t)size_and_flags(), method_args_mask_bitno, method_args_mask_size); }
 
  public:
 	friend methodOop as_methodOop(void* p);
@@ -134,7 +136,7 @@ class methodOopDesc : public memOopDesc {
   bool was_never_executed();		// was method never executed? (count = 0, empty inline caches)
 
   int size_of_codes() const {		// size of byte codes in words
-    return get_unsigned_bitfield((int) size_and_flags(), method_size_mask_bitno, method_size_mask_size);
+    return get_unsigned_bitfield((intptr_t) size_and_flags(), method_size_mask_bitno, method_size_mask_size);
   }
 
   void set_size_of_code(int size) {

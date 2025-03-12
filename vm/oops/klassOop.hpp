@@ -35,6 +35,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //      [superKlass           ]
 //      [methodDict           ]
 
+#include <cstdint>
+
 class klassOopDesc : public memOopDesc {
  private:
   Klass _klass_part; 
@@ -55,8 +57,8 @@ class klassOopDesc : public memOopDesc {
   void print_superclasses();
 
   void bootstrap_object(bootstrap* st);
-  static int nonIndexableSizeOffset() {
-    return (int)(&klassOop(NULL)->klass_part()->_non_indexable_size);
+  static intptr_t nonIndexableSizeOffset() {
+    return (intptr_t)(&klassOop(NULL)->klass_part()->_non_indexable_size);
   }
 };
 

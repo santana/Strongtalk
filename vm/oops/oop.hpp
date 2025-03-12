@@ -30,6 +30,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // So, xxxOop pointers are tagged, but xxxDesc* pointers aren't.
 // NB: the above is true only for memOops
 
+#include <cstdint>
+
 extern "C" oop nilObj;
 
 class oopDesc {
@@ -48,7 +50,7 @@ class oopDesc {
   oopDesc();
 
   // tag checks
-  int tag() const 		{ return maskBits(int(this), Tag_Mask); }
+  intptr_t tag() const 		{ return maskBits(intptr_t(this), Tag_Mask); }
   bool is_smi() const   { return tag() == Int_Tag; }
   bool is_mem() const   { return tag() == Mem_Tag; }
   bool is_mark() const  { return tag() == Mark_Tag; }

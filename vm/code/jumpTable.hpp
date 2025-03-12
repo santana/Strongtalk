@@ -33,6 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifdef DELTA_COMPILER
 
+#include <cstdint>
+
 class jumpTableEntry;
 class jumpTable;
 
@@ -150,7 +152,7 @@ class jumpTableEntry : public ValueObj {
   void verify();
 
   // size of jump table entry
-  static int size()                     { return (int)align((void*)(sizeof(char) + jump_inst_size()), sizeof(oop)); }
+  static intptr_t size()                     { return (intptr_t)align((void*)(sizeof(char) + jump_inst_size()), sizeof(oop)); }
 
   friend class jumpTable;
 };

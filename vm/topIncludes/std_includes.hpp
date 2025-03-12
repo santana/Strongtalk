@@ -33,7 +33,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
   #define int64_t __int64
 
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(__clang__)
 
   #ifndef _WIN32 // mingw 
     #define _isnan(n) isnan(n)
@@ -46,7 +46,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   #define std _std
 
   #define int64_t signed long long int
-
+#elif defined(__clang__)
+  #define _vsnprintf   vsnprintf
+  #define std _std
 #else
 
   #error Unrecognized compiler

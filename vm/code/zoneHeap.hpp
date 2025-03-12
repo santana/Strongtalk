@@ -27,6 +27,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // maintains a map of the heap + free lists to reduce fragmentation
 // allocations are in multiples of block size (2**k)
 
+#include <cstdint>
+
 class HeapChunk;
 class ChunkKlass;
 class FreeList;
@@ -103,7 +105,7 @@ class Heap: public CHeapObj {
   ChunkKlass* mapAddr(void* p) const {
     char* pp = (char*)p;
     assert(pp >= base && pp < base + size, "not in this heap");
-    assert(int(pp) % blockSize == 0, "must be block-aligned");
+    assert(intptr_t(pp) % blockSize == 0, "must be block-aligned");
     u_char* fm = (u_char*)heapKlass;
     return (ChunkKlass*)(fm + ((pp - base) >> log2BS));
   }

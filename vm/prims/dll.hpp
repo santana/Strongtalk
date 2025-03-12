@@ -23,6 +23,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Support routines for Dynamic Link Libraries (DLLs)
 
+#include <cstdint>
+
 class InterpretedDLL_Cache: public ValueObj {
  private:
   symbolOop _dll_name;
@@ -69,7 +71,7 @@ class CompiledDLL_Cache: public NativeCall {
   symbolOop function_name()			{ return symbolOop(test_at(test_2_instruction_offset)->data()); }
   dll_func  entry_point()			{ return (dll_func)mov_at(mov_edx_instruction_offset)->data(); }
   bool      async() const;
-  void	    set_entry_point(dll_func f)		{ mov_at(mov_edx_instruction_offset)->set_data(int(f)); }
+  void	    set_entry_point(dll_func f)		{ mov_at(mov_edx_instruction_offset)->set_data(intptr_t(f)); }
 
   // Debugging
   void      verify();

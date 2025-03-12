@@ -28,6 +28,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    // call that might cause scavenge/gc
 //    saved_oop.as_klass()->foo();
 
+#include <cstdint>
+
 class HandleMark;
 class Handle;
 class FunctionProcessClosure;
@@ -79,8 +81,8 @@ class PersistentHandle : public CHeapObj {
   static PersistentHandle* first;
 
 public:
-  static int savedOffset() {
-    return (int)&((PersistentHandle*)NULL)->saved;
+  static intptr_t savedOffset() {
+    return (intptr_t)&((PersistentHandle*)NULL)->saved;
   }
   PersistentHandle(oop toSave);
   ~PersistentHandle();

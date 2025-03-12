@@ -27,6 +27,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // to reduce include file dependencies.  (If foo.h contains a bar* and
 // struct bar is defined here, foo.h need not depend on bar.h.)
 
+#include <cstdint>
+
 #define SYSTEM_NAME "strongtalk"
 
 class bootstrap;
@@ -39,7 +41,7 @@ typedef int _bool_type_;
 #endif
 #define bool _bool_type_
 
-typedef int smi;
+typedef intptr_t smi;
 
 #ifdef WIN32
 typedef          long  int32_t;
