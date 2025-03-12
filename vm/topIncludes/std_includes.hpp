@@ -47,6 +47,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
   #define int64_t signed long long int
 #elif defined(__clang__)
+  #define _isnan(n) isnan(n)
+  #define _finite(n) finite(n)
   #define _vsnprintf   vsnprintf
   #define mystd _mystd
 #else
