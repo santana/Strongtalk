@@ -301,7 +301,8 @@ void MethodPrinterClosure::allocate_closure(AllocationType type, int nofArgs, me
   {
     st->inc();
     st->inc();
-    MethodIterator it(meth, &MethodPrinterClosure(st));
+    MethodPrinterClosure closure = MethodPrinterClosure(st);
+    MethodIterator it(meth, &closure);
     st->dec();
     st->dec();
   }
