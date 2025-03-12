@@ -88,8 +88,8 @@ class cacheElement { // : ValueObj {
 
   void verify() {
     assert(sizeof(cacheElement) == 16, 		"checking structure layout");
-    assert((int)&this->key-(int)this == 0,  	"checking structure layout");
-    assert((int)&this->result-(int)this == 8,  	"checking structure layout");
+    assert((intptr_t)&this->key - (intptr_t)this == 0,  	"checking structure layout");
+    assert((intptr_t)&this->result - (intptr_t)this == 8,  	"checking structure layout");
 
     if (key.klass() || key.selector_or_method()) {
       if (result.is_empty()) {
@@ -112,7 +112,7 @@ class cacheElement { // : ValueObj {
       } else if (result.is_entry() && result.get_nmethod() != nm) {
 	error("key %s: nmethod does not match codeTable nmethod", key.print_string());
       }
-      if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(&key) != NULL) {
+      if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(&key)) {
 	error("key %s: interpreted method in lookupTable despite inlining DB entry", key.print_string());
       }
     }
@@ -133,8 +133,8 @@ class cacheElement { // : ValueObj {
 static cacheElement primary[primary_cache_size];
 static cacheElement secondary[secondary_cache_size];
 
-int lookupCache::primary_cache_address()	{ return int(&primary[0]); }
-int lookupCache::secondary_cache_address()	{ return int(&secondary[0]); }
+int lookupCache::primary_cache_address() { return intptr_t(&primary[0]); }
+int lookupCache::secondary_cache_address() { return intptr_t(&secondary[0]); }
 
 void lookupCache::flush() {
   int index;
@@ -181,7 +181,7 @@ void lookupCache::verify() {
 
 inline unsigned int lookupCache::hash_value(LookupKey* key) {
   return
-    ((unsigned int) key->klass() ^ (unsigned int) key->selector_or_method())
+    ((uintptr_t) key->klass() ^ (uintptr_t) key->selector_or_method())
     / sizeof(cacheElement);
 }
 
@@ -246,7 +246,7 @@ inline LookupResult lookupCache::lookup(LookupKey* key, bool compile) {
   number_of_misses++;
   LookupResult result = cache_miss_lookup(key, compile);
   if (!result.is_empty()) {
-    if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(key) != NULL) {
+    if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(key)) {
       // don't update the cache during inliningDB compiles if the result is a methodOop
       // contained in the inlining DB -- otherwise method won't be compiled eagerly
       assert(theCompiler, "should only happen during compilation");   // otherwise ic lookup is broken
