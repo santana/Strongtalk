@@ -185,7 +185,7 @@ protected:
   void initialize(methodOop method, klassOop methodHolder, InlinedScope* sender, RScope* rs, SendInfo* info);
 
 public:
-  int		scopeID() const 			{ return _scopeID; }
+  smi		scopeID() const 			{ return _scopeID; }
   InlinedScope*	sender() const 				{ return _sender; }
   int		senderBCI() const     			{ return _senderBCI; }
   ScopeInfo	scopeInfo() const			{ return _scopeInfo; }
