@@ -19,13 +19,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 class HCodeBuffer: public ResourceObj {
-  GrowableArray<unsigned int> *_bytes;
+  GrowableArray<uintptr_t> *_bytes;
   GrowableArray<oop> *_oops;
   void align();
   bool isAligned();
 public:
   HCodeBuffer() {
-    _bytes = new GrowableArray<unsigned int>();
+    _bytes = new GrowableArray<uintptr_t>();
     _oops  = new GrowableArray<oop>();
   }
   void pushByte(unsigned char op);
