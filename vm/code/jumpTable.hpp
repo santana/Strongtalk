@@ -52,8 +52,8 @@ class jumpTableID : ValueObj {
   bool has_minor() const 		{ return _minor != max_value; }
   bool is_block() const 		{ return _minor > 0;          }
   bool is_valid() const 		{ return _major != max_value; }
-  u_short major() const 		{ return _major; }
-  u_short minor() const 		{ return _minor; }
+  u_short major_version() const 	{ return _major; }
+  u_short minor_version() const 	{ return _minor; }
   jumpTableID sub(u_short minor) const 	{ return jumpTableID(_major, minor); }
 };
 

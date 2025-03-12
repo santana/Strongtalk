@@ -271,7 +271,7 @@ void FlatProfiler::interpreted_update(methodOop method, klassOop klass, TickPosi
 }
 
 void FlatProfiler::compiled_update(nmethod* nm, TickPosition where) {
-  int index = entry(nm->main_id.major());
+  int index = entry(nm->main_id.major_version());
   if (!table[index]) {
     table[index] = new compiledNode(nm, where);
   } else {

@@ -88,8 +88,8 @@ Compiler::Compiler(blockClosureOop blk, NonInlinedBlockScopeDesc* scope) : _scop
   parentNMethod = e->parent_nmethod(sub_index);
 
   short main_index = parentNMethod->main_id.is_block() 
-                     ? parentNMethod->promoted_id.major()
-                     : parentNMethod->main_id.major() ;
+                     ? parentNMethod->promoted_id.major_version()
+                     : parentNMethod->main_id.major_version() ;
 
   main_jumpTable_id     = jumpTableID(main_index, sub_index);
   promoted_jumpTable_id = jumpTableID();

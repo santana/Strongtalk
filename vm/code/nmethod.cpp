@@ -488,7 +488,7 @@ void nmethod::add_family(GrowableArray<nmethod*>* result) {
   // Add myself
   result->append(this);
   // Find the major for all my sub jumpTable entries
-  int major = is_method() ? main_id.major() : promoted_id.major();
+  int major = is_method() ? main_id.major_version() : promoted_id.major_version();
   // Add all filled jumpTable entries to the family
   for (int minor = 1; minor <= number_of_noninlined_blocks(); minor++) {
     jumpTableEntry* entry = Universe::code->jump_table()->at(jumpTableID(major, minor));
