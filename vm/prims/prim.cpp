@@ -47,17 +47,17 @@ typedef  oop (PRIM_API *prim_fntype9)(oop, oop, oop, oop, oop, oop, oop, oop, oo
 oop primitive_desc::eval(oop* a) {
   const bool reverseArgs = true;	// change this when changing primitive calling convention
   oop res;
-  int ebx_on_stack;
+  long rbx_on_stack;
 
   // %hack: see below
 #ifndef __GNUC__
-  __asm mov ebx_on_stack, ebx
+  __asm mov rbx_on_stack, rbx
 #else
-  __asm__("pushl %%eax;"
-          "movl %%ebx, %%eax;"
-          "movl %%eax, %0;"
-          "popl %%eax;"
-          : "=a"(ebx_on_stack));
+  __asm__("pushq %%rax;"
+          "movq %%rbx, %%rax;"
+          "movq %%rax, %0;"
+          "popq %%rax;"
+          : "=a"(rbx_on_stack));
 #endif
   if (reverseArgs) {
     switch (number_of_parameters()) {
@@ -90,22 +90,22 @@ oop primitive_desc::eval(oop* a) {
   }
 
   // %hack: some primitives alter EBX and crash the compiler's constant propagation
-  int ebx_now;
+  long rbx_now;
 #ifndef __GNUC__
-  __asm mov ebx_now, ebx
-  __asm mov ebx, ebx_on_stack
+  __asm mov rbx_now, rbx
+  __asm mov rbx, rbx_on_stack
 #else
-  __asm__("pushl %%eax;"
-          "movl %%ebx, %%eax;"
-          "movl %%eax, %0;"
-          "movl %1, %%eax;"
-          "movl %%eax, %%ebx;"
-          "popl %%eax;" : "=a"(ebx_now) : "a"(ebx_on_stack));
+  __asm__("pushq %%rax;"
+          "movq %%rbx, %%rax;"
+          "movq %%rax, %0;"
+          "movq %1, %%rax;"
+          "movq %%rax, %%rbx;"
+          "popq %%rax;" : "=a"(rbx_now) : "a"(rbx_on_stack));
 #endif
 
-  if (ebx_now != ebx_on_stack)
+  if (rbx_now != rbx_on_stack)
   {
-    mystd->print_cr("ebx changed (%X -> %X) in :", ebx_on_stack, ebx_now);
+    mystd->print_cr("rbx changed (%lX -> %lX) in :", rbx_on_stack, rbx_now);
     print();
   }
 
