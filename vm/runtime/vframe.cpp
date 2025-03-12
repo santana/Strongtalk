@@ -567,16 +567,16 @@ void compiledVFrame::verify_debug_info() const {
 
 class Indenting : public ValueObj {
 public:
-  Indenting() {_std->inc();}
-  ~Indenting() {_std->dec();}
+  Indenting() {_mystd->inc();}
+  ~Indenting() {_mystd->dec();}
 };
 
 void traceFrame(const compiledVFrame* vf, contextOop con) {
     if (TraceCanonicalContext) {
       FlagSetting flag(TraceCanonicalContext, false);
-      _std->cr();
-      _std->indent();
-      _std->print_cr("context(0x%x), vframe(0x%x), block? %d", con, vf,
+      _mystd->cr();
+      _mystd->indent();
+      _mystd->print_cr("context(0x%x), vframe(0x%x), block? %d", con, vf,
         vf ? vf->method()->is_blockMethod() : false);
       if (vf) {
         vf->print_activation(0);
@@ -721,7 +721,7 @@ contextOop compiledMethodVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _std->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
   }
   return conOut;
 }
@@ -756,7 +756,7 @@ contextOop compiledBlockVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _std->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
   }
   return conOut;
 }
@@ -817,7 +817,7 @@ contextOop compiledTopLevelBlockVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _std->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
   }
   return conOut;
 }
