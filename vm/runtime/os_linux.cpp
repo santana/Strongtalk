@@ -22,7 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 #ifndef __OS_LINUX__
 #define __OS_LINUX__
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__OpenBSD__)
 # include <pthread.h>
 # include "incls/_os.cpp.incl"
 # include <unistd.h>
@@ -33,10 +33,23 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # include <stdio.h>
 # include <dlfcn.h>
 # include <signal.h>
+#ifndef __OpenBSD__
 # include <ucontext.h>
+#endif
 # include <errno.h>
 
 void os_dump_context2(ucontext_t *context) {
+#ifdef __OpenBSD__
+    printf("\nRAX: %lx", context->sc_rax);
+    printf("\nRBX: %lx", context->sc_rbx);
+    printf("\nRCX: %lx", context->sc_rcx);
+    printf("\nRDX: %lx", context->sc_rdx);
+    printf("\nRIP: %lx", context->sc_rip);
+    printf("\nRSP: %lx", context->sc_rsp);
+    printf("\nRBP: %lx", context->sc_rbp);
+    printf("\nRDI: %lx", context->sc_rdi);
+    printf("\nRSI: %lx", context->sc_rsi);
+#else
     mcontext_t mcontext = context->uc_mcontext;
     printf("\nEAX: %x", mcontext.gregs[REG_EAX]);
     printf("\nEBX: %x", mcontext.gregs[REG_EBX]);
@@ -47,11 +60,14 @@ void os_dump_context2(ucontext_t *context) {
     printf("\nEBP: %x", mcontext.gregs[REG_EBP]);
     printf("\nEDI: %x", mcontext.gregs[REG_EDI]);
     printf("\nESI: %x", mcontext.gregs[REG_ESI]);
+#endif
 }
 void os_dump_context() {
+#ifndef __OpenBSD__
 	ucontext_t context;
 	getcontext(&context);
 	os_dump_context2(&context);
+#endif
 }
 
 static int    main_thread_id;
@@ -207,7 +223,7 @@ static Event* threadCreated = NULL;
 
 char* calcStackLimit() {
   char* stackptr;
-  asm("movl %%esp, %0;" : "=a"(stackptr));
+  asm("movq %%rsp, %0;" : "=a"(stackptr));
   stackptr = (char*) align(stackptr, os::vm_page_size());
   
   int stackHeadroom = 2 * os::vm_page_size();
@@ -386,15 +402,30 @@ void os::timerStop() {}
 void os::timerPrintBuffer() {}
 
 char* os::reserve_memory(int size) {
-  return (char*) mmap(0, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  void *p;
+
+  p = mmap(0, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (p == MAP_FAILED) {
+    fatal2("Unable to reserve memory with size %d (errno = %d)", size, errno);
+    exit(-1);
+  }
+  return (char *)p;
 }
   
 bool os::commit_memory(char* addr, int size) {
-  return !mprotect(addr, size, PROT_READ | PROT_WRITE);
+  if (mprotect(addr, size, PROT_READ | PROT_WRITE) != 0) {
+    fatal3("Unable to set access protection on %p with size %d (errno = %d)", addr, size, errno);
+    return false;
+  }
+  return true;
 }
 
 bool os::uncommit_memory(char* addr, int size) {
-  return !mprotect(addr, size, PROT_NONE);
+  if (mprotect(addr, size, PROT_NONE) != 0) {
+    fatal3("Unable to unset access protection on %p with size %d (errno = %d)", addr, size, errno);
+    return false;
+  }
+  return true;
 }
 
 bool os::release_memory(char* addr, int size) {
@@ -411,7 +442,15 @@ void* os::malloc(int size) {
 }
 
 char* os::exec_memory(int size) {
-  return (char*) mmap(0, size, PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  void* p;
+
+  p = mmap(0, size, PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+  if (p == MAP_FAILED) {
+    fatal2("Unable to reserve memory with size %d (errno = %d)", size, errno);
+    exit(-1);
+  }
+  return (char *)p;
 }
 
 void* os::calloc(int size, char filler) {
@@ -606,13 +645,19 @@ static void handler(int signum, siginfo_t* info, void* context) {
 //	install_dummy_handler();
 //	trace_stack(os::current_thread_id());
     if (!userHandler) {
-        printf("\nsignal: %d\ninfo: %x\ncontext: %x", signum, (int) info, (int) context);
+        printf("\nsignal: %d\ninfo: %lx\ncontext: %lx", signum, reinterpret_cast<intptr_t>(info), reinterpret_cast<intptr_t>(context));
 	    os_dump_context2((ucontext_t*) context);
     } else {
-        mcontext_t mcontext = ((ucontext_t*) context)->uc_mcontext;
-        userHandler((void*) mcontext.gregs[REG_EBP], 
-                    (void*) mcontext.gregs[REG_ESP], 
-                    (void*) mcontext.gregs[REG_EIP]);
+#ifdef __OpenBSD__
+        userHandler(reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rbp),
+                    reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rsp),
+                    reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rip));
+#else
+        mcontext_t mcontext = reinterpret_cast<ucontext_t*>(context)->uc_mcontext;
+        userHandler(reinterpret_cast<void*>(mcontext.gregs[REG_EBP]),
+                    reinterpret_cast<void*>(mcontext.gregs[REG_ESP]),
+                    reinterpret_cast<void*>(mcontext.gregs[REG_EIP]));
+#endif
     }
     exit(-1);
 }
