@@ -120,7 +120,7 @@ klassOop Klass::create_subclass(mixinOop mixin, klassOop instSuper, klassOop met
   return NULL;
 }
 
-klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass, mixinOop mixin, int vtbl) {
+klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass, mixinOop mixin, void *vtbl) {
   BlockScavenge bs;
 
   assert(mixin->classVars()->is_objArray(),                "checking instance side class var names");
@@ -159,7 +159,7 @@ klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClas
 
   return klass;
 }
-klassOop Klass::create_generic_class(klassOop super_class, mixinOop mixin, int vtbl) {
+klassOop Klass::create_generic_class(klassOop super_class, mixinOop mixin, void *vtbl) {
   return create_generic_class(super_class->klass(), super_class, super_class->klass()->klass(), mixin, vtbl);
 }
 

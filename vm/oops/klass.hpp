@@ -63,7 +63,7 @@ class Klass : ValueObj {
   // Returns the enclosing klassOop
   klassOop as_klassOop() const {
    // see klassOop.hpp for layout.
-   return (klassOop) (((char*) this) - sizeof(memOopDesc) + Mem_Tag);
+   return reinterpret_cast<klassOop>(reinterpret_cast<char *>(const_cast<Klass*>(this)) - sizeof(memOopDesc) + Mem_Tag);
   }
 
   smi non_indexable_size() const {
@@ -102,10 +102,13 @@ class Klass : ValueObj {
   bool           includes_classVar(symbolOop name);  // Tells whether the name is present
 
   // virtual pointer value
-  int    vtbl_value() const           { return ((int*) this)[vtbl_position]; }
-  void set_vtbl_value(int vtbl) {
-    assert(vtbl % 4 == 0, "VTBL should be aligned");
-    ((int*) this)[vtbl_position] = vtbl; }
+  void *vtbl_value() const {
+    return reinterpret_cast<void**>(const_cast<Klass*>(this))[vtbl_position];
+  }
+  void set_vtbl_value(void *vtbl) {
+    assert(reinterpret_cast<uintptr_t>(vtbl) % 4 == 0, "VTBL should be aligned");
+    reinterpret_cast<void**>(this)[vtbl_position] = vtbl;
+  }
 
   void bootstrap_klass_part_one(bootstrap* bs);
   void bootstrap_klass_part_two(bootstrap* bs);
@@ -173,8 +176,8 @@ class Klass : ValueObj {
   virtual klassOop create_subclass(mixinOop mixin, klassOop instSuper, klassOop metaClass, Format format);
 
  protected:
-  static klassOop create_generic_class(klassOop super_class, mixinOop mixin, int vtbl);
-  static klassOop create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass, mixinOop mixin, int vtbl);
+  static klassOop create_generic_class(klassOop super_class, mixinOop mixin, void *vtbl);
+  static klassOop create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass, mixinOop mixin, void *vtbl);
 
  public:
 

@@ -41,7 +41,7 @@ class klassOopDesc : public memOopDesc {
  private:
   Klass _klass_part; 
  public:
-  klassOop addr() const { return  (klassOop) memOopDesc::addr(); }
+  klassOop addr() const { return reinterpret_cast<klassOop>(memOopDesc::addr()); }
   Klass* klass_part() const { return &addr()->_klass_part; }
 
   bool is_invalid() const { return mark()->is_klass_invalid(); }
