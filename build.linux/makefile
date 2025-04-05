@@ -1,86 +1,106 @@
-# makefile for Strongtalk
-#
-# revision history
-# -----------------------------------------------------------------------
-# 2007.02.20	dave.raymer@gmail.com		file created
-# -----------------------------------------------------------------------
-
 include ../build.linux/makefile-macros.incl
 
-LIB_DIR = $(BIN_DIR)/asm_objs/COFF/converted
-TEST_DIRECTORIES	= $(TEST_SRC_DIR)/utilities \
-$(TEST_SRC_DIR)/runtime \
-$(TEST_SRC_DIR)/prims \
-$(TEST_SRC_DIR)/main \
-$(EASYUNIT_DIR)/src
-TEST-EXECUTABLE = $(BUILD_DIR)/strongtalk-test
+TEST_EXECUTABLE = $(BUILD_DIR)/strongtalk-test
 TEST_SHARED_LIB = $(BUILD_DIR)/strongtalk-test.so
 EXECUTABLE = $(BUILD_DIR)/strongtalk
 SHARED_LIB = $(BUILD_DIR)/strongtalk.so
-DIRECTORIES	= $(TEST_DIRECTORIES) \
-$(VM_SRC_DIR)/asm \
-$(VM_SRC_DIR)/code \
-$(VM_SRC_DIR)/compiler \
-$(VM_SRC_DIR)/disasm \
-$(VM_SRC_DIR)/interpreter \
-$(VM_SRC_DIR)/lookup \
-$(VM_SRC_DIR)/memory \
-$(VM_SRC_DIR)/oops \
-$(VM_SRC_DIR)/prims \
-$(VM_SRC_DIR)/recompiler \
-$(VM_SRC_DIR)/runtime \
-$(VM_SRC_DIR)/utilities
+PRECOMPILED_HEADERS = $(BUILD_DIR)/incls/_precompiled.incl.gch
 WRK=$(shell pwd)
+
+TEST_DIRECTORIES=                 \
+	$(TEST_SRC_DIR)/utilities \
+	$(TEST_SRC_DIR)/runtime   \
+	$(TEST_SRC_DIR)/prims     \
+	$(TEST_SRC_DIR)/main      \
+	$(EASYUNIT_DIR)/src
+
+VM_DIRECTORIES	=                 \
+	$(VM_SRC_DIR)/asm         \
+	$(VM_SRC_DIR)/code        \
+	$(VM_SRC_DIR)/compiler    \
+	$(VM_SRC_DIR)/disasm      \
+	$(VM_SRC_DIR)/interpreter \
+	$(VM_SRC_DIR)/lookup      \
+	$(VM_SRC_DIR)/memory      \
+	$(VM_SRC_DIR)/oops        \
+	$(VM_SRC_DIR)/prims       \
+	$(VM_SRC_DIR)/recompiler  \
+	$(VM_SRC_DIR)/runtime     \
+	$(VM_SRC_DIR)/utilities
 
 ifneq ($(WRK),$(BUILD_DIR))
 $(warning "Running in $(WRK)")
 $(error "Must be run from build directory: $(BUILD_DIR)")
 endif
 
-default: dependencies objects link test
+all: dependencies objects shlib vm test
 
-test:
+test: $(TEST_EXECUTABLE)
 	export LD_LIBRARY_PATH=$(WRK)
-	$(TEST-EXECUTABLE) -b ../strongtalk.bst
+	$(TEST_EXECUTABLE) -b ../strongtalk.bst
 
-link:
-	g++ -v $(OPT) $(LDOPTIONS)-shared -o $(SHARED_LIB) -L/usr/lib32 `find $(VM_SRC_DIR) -name "*.o"|grep -v main.o` -lpthread -ldl -lrt 
-	g++ -v $(OPT) $(LDOPTIONS) -o $(EXECUTABLE) -L/usr/lib32 $(VM_SRC_DIR)/*/main.o $(SHARED_LIB)
-	g++ -v $(OPT) $(LDOPTIONS) -shared -o $(TEST_SHARED_LIB) -L/usr/lib32 `find $(TEST_SRC_DIR) -name "*.o"|grep -v main.o` $(EASYUNIT_DIR)/src/*.o
-	g++ -v $(OPT) $(LDOPTIONS) -o $(TEST-EXECUTABLE) $(SHARED_LIB) $(TEST_SHARED_LIB) $(TEST_SRC_DIR)/main/main.o
+shlib: $(SHARED_LIB)
 
-objects: incls/_precompiled.incl.gch
-	for i in $(DIRECTORIES);\
+$(SHARED_LIB): precompiled-headers
+	$(CXX) -v -shared -o $@ -L/usr/lib $$(find $(VM_SRC_DIR) -name "*.o"|grep -v main.o) -lpthread
+
+vm: $(EXECUTABLE)
+
+$(EXECUTABLE): $(SHARED_LIB) $(VM_SRC_DIR)/runtime/main.o
+	$(CXX) -v $(LDFLAGS) -o $@ -L/usr/lib $(VM_SRC_DIR)/*/main.o $(SHARED_LIB)
+
+$(TEST_SHARED_LIB):
+	$(CXX) -v $(LDFLAGS) -shared -o $@ -L/usr/lib $$(find $(TEST_SRC_DIR) -name "*.o"|grep -v main.o) $(EASYUNIT_DIR)/src/*.o
+
+$(TEST_EXECUTABLE):
+	$(CXX) -v $(LDFLAGS) -o $@ $(SHARED_LIB) $(TEST_SHARED_LIB) $(TEST_SRC_DIR)/main/main.o
+
+objects: vm-objects test-objects
+
+test-objects: $(PRECOMPILED_HEADERS)
+	for i in $(TEST_DIRECTORIES);\
 	do \
-		make -C $$i -f $(MAKE_DIR)/makefile.incl $@;\
+		CXXFLAGS="$(CXXFLAGS)" $(MAKE) -C $$i $$(ls $$i/*.cpp | sed 's/\.cpp/\.o/g'); \
 	done
 
-incls/_precompiled.incl.gch: includeDB.all
-	$(C++) -c -x c++-header -o $(BUILD_DIR)/incls/_precompiled.incl.gch -g $(OPT) $(C++OPTIONS) $(DEFINES) $(INCL_PATH) incls/_precompiled.incl
+vm-objects: $(PRECOMPILED_HEADERS)
+	for i in $(VM_DIRECTORIES);\
+	do \
+		CXXFLAGS="$(CXXFLAGS)" $(MAKE) -C $$i $$(ls $$i/*.cpp | sed 's/\.cpp/\.o/g'); \
+	done
+
+precompiled-headers: $(PRECOMPILED_HEADERS)
+
+$(PRECOMPILED_HEADERS): $(BUILD_DIR)/includeDB.all
+	$(CXX) -c -x c++-header -o $@ $(CXXFLAGS) $(BUILD_DIR)/incls/_precompiled.incl
 
 $(BUILD_DIR)/makedeps: $(TOOLS_SRC_DIR)/makedeps/makeDeps.cpp
-	$(C++) -m32 -Wno-write-strings -o $@ $^
+	$(CXX) -Wno-write-strings -o $@ $^
 
 dependencies: $(BUILD_DIR)/makedeps $(INCL_PLATFORM) $(BUILD_DIR)/includeDB.all
 	$(BUILD_DIR)/makedeps $(INCL_PLATFORM) $(BUILD_DIR)/includeDB.all
 
 $(BUILD_DIR)/includeDB.all: $(INCL_DB1) $(INCL_DB2) 
-	$(RMDIR) $(INCL_DIR)
-	$(RM) Dependencies.hh $(BUILD_DIR)/includeDB.all includeDB.current
-	$(MKDIR) $(INCL_DIR)
-	$(CAT) $(INCL_DB1) $(INCL_DB2) >> $(BUILD_DIR)/includeDB.all
+	rm -rf $(INCL_DIR)
+	rm -f $(BUILD_DIR)/Dependencies.hh $(BUILD_DIR)/includeDB.all $(BUILD_DIR)/includeDB.current
+	mkdir $(INCL_DIR)
+	cat $(INCL_DB1) $(INCL_DB2) >> $(BUILD_DIR)/includeDB.all
 
 $(INCL_PLATFORM):
-	$(TOUCH) $@
+	touch $@
 
-clean:
-	$(RMDIR) $(INCL_DIR)
-	$(RM) Dependencies.hh $(BUILD_DIR)/includeDB.all includeDB.current
-	$(RM) *~
-	for i in $(DIRECTORIES);\
-	do \
-		make -C $$i -f $(MAKE_DIR)/makefile.incl clean;\
-	done
+clean: test-clean vm-clean
+
+vm-clean:
+	rm -rf $(INCL_DIR)
+	rm -f $(BUILD_DIR)/Dependencies.hh
+	rm -f $(BUILD_DIR)/includeDB.all $(BUILD_DIR)/includeDB.current
+	rm -f $(SHARED_LIB) $(EXECUTABLE)
+	find $(VM_DIRECTORIES) -name '*.o' -exec rm -f {} \;
+
+test-clean:
+	rm -f $(TEST_SHARED_LIB) $(TEST_EXECUTABLE)
+	find $(TEST_DIRECTORIES) -name '*.o' -exec rm -f {} \;
 
 pristine: clean
-	$(RM) $(BUILD_DIR)/makedeps
+	rm -f $(BUILD_DIR)/makedeps
