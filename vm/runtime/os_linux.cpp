@@ -51,15 +51,15 @@ void os_dump_context2(ucontext_t *context) {
     printf("\nRSI: %lx", context->sc_rsi);
 #else
     mcontext_t mcontext = context->uc_mcontext;
-    printf("\nEAX: %x", mcontext.gregs[REG_EAX]);
-    printf("\nEBX: %x", mcontext.gregs[REG_EBX]);
-    printf("\nECX: %x", mcontext.gregs[REG_ECX]);
-    printf("\nEDX: %x", mcontext.gregs[REG_EDX]);
-    printf("\nEIP: %x", mcontext.gregs[REG_EIP]);
-    printf("\nESP: %x", mcontext.gregs[REG_ESP]);
-    printf("\nEBP: %x", mcontext.gregs[REG_EBP]);
-    printf("\nEDI: %x", mcontext.gregs[REG_EDI]);
-    printf("\nESI: %x", mcontext.gregs[REG_ESI]);
+    printf("\nRAX: %x", mcontext.gregs[REG_RAX]);
+    printf("\nRBX: %x", mcontext.gregs[REG_RBX]);
+    printf("\nRCX: %x", mcontext.gregs[REG_RCX]);
+    printf("\nRDX: %x", mcontext.gregs[REG_RDX]);
+    printf("\nRIP: %x", mcontext.gregs[REG_RIP]);
+    printf("\nRSP: %x", mcontext.gregs[REG_RSP]);
+    printf("\nRBP: %x", mcontext.gregs[REG_RBP]);
+    printf("\nRDI: %x", mcontext.gregs[REG_RDI]);
+    printf("\nRSI: %x", mcontext.gregs[REG_RSI]);
 #endif
 }
 void os_dump_context() {
@@ -654,9 +654,9 @@ static void handler(int signum, siginfo_t* info, void* context) {
                     reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rip));
 #else
         mcontext_t mcontext = reinterpret_cast<ucontext_t*>(context)->uc_mcontext;
-        userHandler(reinterpret_cast<void*>(mcontext.gregs[REG_EBP]),
-                    reinterpret_cast<void*>(mcontext.gregs[REG_ESP]),
-                    reinterpret_cast<void*>(mcontext.gregs[REG_EIP]));
+        userHandler(reinterpret_cast<void*>(mcontext.gregs[REG_RBP]),
+                    reinterpret_cast<void*>(mcontext.gregs[REG_RSP]),
+                    reinterpret_cast<void*>(mcontext.gregs[REG_RIP]));
 #endif
     }
     exit(-1);
