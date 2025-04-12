@@ -1268,7 +1268,7 @@ void ContextCreateNode::gen() {
   Register context = Mapping::asRegister(resultLoc);
   if (_src == NULL) {
     assert(scope()->isMethodScope() || scope()->method()->block_info() == methodOopDesc::expects_nil, "inconsistency");
-    theMacroAssm->movl(Address(context, contextOopDesc::parent_byte_offset()), NULL);
+    theMacroAssm->movl(Address(context, contextOopDesc::parent_byte_offset()), nullptr);
     // NULL for now; the interpreter uses nil. However, some of the
     // context verification code called from compiled code checks for
     // parents that are either a frame pointer, NULL or a context.

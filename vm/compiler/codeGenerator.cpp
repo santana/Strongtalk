@@ -1244,7 +1244,7 @@ void CodeGenerator::aContextCreateNode(ContextCreateNode* node) {
   Register context_reg = use(node->dst());
   if (node->src() == NULL) {
     assert(node->scope()->isMethodScope() || node->scope()->method()->block_info() == methodOopDesc::expects_nil, "inconsistency");
-    _masm->movl(Address(context_reg, contextOopDesc::parent_byte_offset()), NULL);
+    _masm->movl(Address(context_reg, contextOopDesc::parent_byte_offset()), nullptr);
     // NULL for now; the interpreter uses nil. However, some of the
     // context verification code called from compiled code checks for
     // parents that are either a frame pointer, NULL or a context.
