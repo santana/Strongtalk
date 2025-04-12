@@ -2,6 +2,8 @@
 #include "memory/universe.hpp"
 #include "runtime/debug.hpp"
 
+#include <cstdio>
+
 using namespace easyunit;
 DECLARE(OldGeneration)
   void expandAndCheckCapacity(int expansionSize) {

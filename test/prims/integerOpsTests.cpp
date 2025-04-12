@@ -2,6 +2,8 @@
 #include "memory/allocation.hpp"
 #include "prims/integerOps.hpp"
 
+#include <cstdio>
+
 using namespace easyunit;
 
 DECLARE(IntegerOpsTest)

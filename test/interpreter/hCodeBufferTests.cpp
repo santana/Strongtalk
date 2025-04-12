@@ -6,6 +6,8 @@
 #include "oops/byteArrayOop.hpp"
 #include "oops/objArrayOop.hpp"
 
+#include <cstdio>
+
 using namespace easyunit;
 
 DECLARE(HCodeBufferTests)

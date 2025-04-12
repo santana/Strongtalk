@@ -7,6 +7,8 @@
 #include "oops/objArrayOop.hpp"
 #include "oops/symbolOop.hpp"
 
+#include <cstdio>
+
 class HeapResourceMark;
 
 using namespace easyunit;

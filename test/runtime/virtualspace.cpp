@@ -2,6 +2,8 @@
 #include "runtime/virtualspace.hpp"
 #include "runtime/os.hpp"
 
+#include <cstdio>
+
 using namespace easyunit;
 
 DECLARE(ReservedSpace)
