@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VFRAME_OOP_HPP
+#define _VFRAME_OOP_HPP
+
+#include "oops/memOop.hpp"
 
 // vframe objects are handles to process activations.
 
@@ -63,3 +67,4 @@ class vframeOopDesc: public memOopDesc {
 };
 inline vframeOop as_vframeOop(void* p) { return vframeOop(as_memOop(p)); }
 
+#endif // _VFRAME_OOP_HPP

@@ -21,8 +21,32 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_prettyPrinter.cpp.incl"
+#include "code/nameDesc.hpp"
+#include "code/scopeDesc.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/methodIterator.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/tempDecoder.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+
+#include <cstdio>
 
 // ToDo list for pretty printer
 // - convert the stream stuff to ostream.

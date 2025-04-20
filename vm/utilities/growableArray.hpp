@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _GROWABLE_ARRAY_HPP
+#define _GROWABLE_ARRAY_HPP
+
 // A growable array.
+
+#include "memory/iterator.hpp"
 
 #include <type_traits>
 
@@ -132,3 +137,4 @@ template<class E> class GrowableArray : public GenericGrowableArray {
   void sort(int f(E*,E*))                       { raw_sort((int (*)(const void *, const void *)) f); }
 };
 
+#endif // _GROWABLE_ARRAY_HPP

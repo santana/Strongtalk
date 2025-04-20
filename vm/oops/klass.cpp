@@ -21,8 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_klass.cpp.incl" 
+#include "interpreter/missingMethodBuilder.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassKlass.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/memOopKlass.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/bootstrap.hpp"
+#include "utilities/ostream.hpp"
 
 void Klass::initialize() {
   set_untagged_contents(false);

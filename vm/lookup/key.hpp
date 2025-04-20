@@ -36,6 +36,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   as dynamically allocated resource objects: used by the optimizing compiler.
 //      Use "LookupKey::allocate" for allocating a LookupKey in the resource area.
 
+#ifndef _KEY_HPP
+#define _KEY_HPP
+
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "memory/allocation.hpp"
+
 class LookupKey : ValueObj {
  protected:
   klassOop  _klass;
@@ -102,4 +109,4 @@ class LookupKey : ValueObj {
   // For resource allocation.
   static LookupKey* allocate(klassOop klass, oop selector_or_method);
 };
-
+#endif // _KEY_HPP

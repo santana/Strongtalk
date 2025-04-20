@@ -21,13 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RSCOPE_HPP
+#define _RSCOPE_HPP
 
 // RScopes represent the inlined scopes of a nmethod during recompilation.
 // Essentially, they are another view of the ScopeDesc information, in a
 // format more convenient for the (re)compiler and extended with additional
 // info from PICs and uncommon branches.
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
+
+#include "code/pcDesc.hpp"
+#include "utilities/growableArray.hpp"
 
 class RNonDummyScope;
 class RInterpretedScope;
@@ -298,4 +303,5 @@ class RUncommonBranch : public PrintableResourceObj {
   void print();
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _RSCOPE_HPP

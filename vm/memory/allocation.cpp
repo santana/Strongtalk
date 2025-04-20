@@ -21,8 +21,11 @@
 
  */
 
-# include "incls/_precompiled.incl"
-# include "incls/_allocation.cpp.incl"
+#include "memory/allocation.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/os.hpp"
+#include "topIncludes/std_includes.hpp"
 
 ResourceArea resource_area;
 

@@ -21,14 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_mixinOop.cpp.incl"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinKlass.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "runtime/bootstrap.hpp"
 
 int mixinOopDesc::inst_var_offset(symbolOop name, int non_indexable_size) const {
   objArrayOop array  = instVars();
   int         length = array->length(); 
   for (int index = 1; index <= length; index++) {
-    if (array->obj_at(index) == name) {
+    if (array->obj_at(index) == reinterpret_cast<oop>(name)) {
       return non_indexable_size - (length - index + 1);
     }
   }
@@ -100,10 +104,10 @@ void mixinOopDesc::add_instVar(symbolOop name) {
   // Find out if it already exists.
   for (int index = 1; index <= old_array->length(); index ++) {
     assert(old_array->obj_at(index)->is_symbol(), "must be symbol");
-    if (old_array->obj_at(index) == name) return;
+    if (old_array->obj_at(index) == reinterpret_cast<oop>(name)) return;
   }
   // Extend the array
-  set_instVars(old_array->copy_add(name));
+  set_instVars(old_array->copy_add(reinterpret_cast<oop>(name)));
 }
 
 symbolOop mixinOopDesc::remove_instVar_at(int index) {
@@ -137,7 +141,7 @@ void mixinOopDesc::add_classVar(symbolOop name) {
     if (elem == name) return;
   }
   // Extend the array
-  set_classVars(old_array->copy_add(name));
+  set_classVars(old_array->copy_add(reinterpret_cast<oop>(name)));
 }
 
 symbolOop mixinOopDesc::remove_classVar_at(int index) {

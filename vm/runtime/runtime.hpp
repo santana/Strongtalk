@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RUNTIME_HPP
+#define _RUNTIME_HPP
 
 /*
   Implementation of a function accessable from compiled code should
@@ -53,3 +55,4 @@ inline void Set_Byte_Map_Base(char* base) {byte_map_base = base;}
 
 inline void  setSPMax(char* m)        { MaxSP = m; }
 inline char* currentSPMax()           { return MaxSP; }
+#endif // _RUNTIME_HPP

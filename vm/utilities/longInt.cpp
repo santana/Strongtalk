@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_longInt.cpp.incl"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/longInt.hpp"
 
 inline long_int::long_int() {}
 

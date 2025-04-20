@@ -21,9 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_codeIterator.cpp.incl"
-
+#include "code/scopeDesc.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/interpreter.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
 
 bool InterpretedDLL_Cache::async() const {
   u_char* p = (u_char*)this;				// p point to first oop in DLL call

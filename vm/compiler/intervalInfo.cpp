@@ -21,10 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_intervalInfo.cpp.incl"
-
 #ifdef DELTA_COMPILER
+
+#include "compiler/intervalInfo.hpp"
+#include "interpreter/methodIterator.hpp"
 
 IntervalInfo::IntervalInfo(MethodInterval* interval, InlinedScope* scope) {
   _interval = interval; _scope = scope;
@@ -51,4 +51,4 @@ void IntervalInfo::print() {
   lprintf("((IntervalInfo*)%#x\n", this);
 }
 
-#endif
+#endif // DELTA_COMPILER

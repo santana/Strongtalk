@@ -21,10 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _COMP_UTILS_HPP
+#define _COMP_UTILS_HPP
+
 // helper functions / data structures for compiler support; e.g. compiler
 // parameters (inlining limits etc.)
 
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 // kinds of inlining limits
 enum InlineLimitType {
@@ -87,4 +94,5 @@ private:
   friend class Reporter;
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _COMP_UTILS_HPP

@@ -21,11 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_bitVector.cpp.incl"
+#include "compiler/bitVector.hpp"
 
   bool BitVector::unionWith(BitVector* other) {
     while (length < other->length) bits[length++] = 0;
@@ -134,4 +132,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     lprintf(" }");
   }
   
-# endif
+#endif // DELTA_COMPILER

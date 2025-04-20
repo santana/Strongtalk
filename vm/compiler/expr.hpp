@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _EXPR_HPP
+#define _EXPR_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "memory/universe.hpp"
+#include "utilities/growableArray.hpp"
 
 // Exprs denote the results of expressions in the compiler.  Their main
 // purpose is to annotate a PReg with type information.  
@@ -301,4 +307,5 @@ class ExprStack : public GrowableArray<Expr*> {
 # undef FLAG_DEF
 # undef PFLAG_DEF
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _EXPR_HPP

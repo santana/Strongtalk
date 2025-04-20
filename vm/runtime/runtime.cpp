@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_runtime.cpp.incl" 
+#include "oops/oop.hpp"
+#include "runtime/runtime.hpp"
 
 char* byte_map_base;
 char* MaxSP;

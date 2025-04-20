@@ -21,8 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_lprintf.cpp.incl"
+#include "runtime/debug.hpp"
+#include "runtime/os.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "topIncludes/types.hpp"
+#include "utilities/lprintf.hpp"
+
+#include <cstdio>
 #include <string.h>
 //#include <io.h> // for GCC's _unlink
 

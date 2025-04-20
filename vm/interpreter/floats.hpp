@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _FLOATS_HPP
+#define _FLOATS_HPP
+
+#include "asm/assembler.hpp"
+
 // Floats describes the floating point operations of the interpreter
 // and implements stub routines used to execute this operations.
 // Note: The Floats stub routines are *inside* the interpreter code.
@@ -102,10 +107,11 @@ class Floats: AllStatic {
   // Returns the selector for the float operation; NULL is there is no selector
   static symbolOop selector_for(Function f);
 
-  static oop magic_value() { return smiOop(magic); }
+  static oop magic_value() { return reinterpret_cast<oop>(smiOop(magic)); }
 
   // Initialization/debugging
   static bool  is_initialized()	{ return _is_initialized; }
   static void  init(MacroAssembler* masm);
   static void  print();
 };
+#endif // _FLOATS_HPP

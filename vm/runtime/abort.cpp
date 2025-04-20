@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_abort.cpp.incl"
+#include "code/stubRoutines.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/universe.hpp"
+#include "oops/smiOop.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/process.hpp"
 
 // The following variables are used to do NLRs through C code
 extern "C" bool       have_nlr_through_C;

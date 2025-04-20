@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SCOPE_DESC_RECORDER_HPP
+#define _SCOPE_DESC_RECORDER_HPP
 
 #ifdef DELTA_COMPILER
+
+#include "asm/location.hpp"
+#include "code/scopeDesc.hpp"
+#include "memory/allocation.hpp"
 
 // ScopeDescRecorder provides the interface to generate scopeDescs for
 // optimized methods (nmethods).
@@ -386,4 +392,5 @@ enum {
   NONINLINED_BLOCK_CODE
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _SCOPE_DESC_RECORDER_HPP

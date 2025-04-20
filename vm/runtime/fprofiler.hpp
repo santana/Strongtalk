@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _FPROFILER_HPP
+#define _FPROFILER_HPP
+
+#include "memory/allocation.hpp"
+#include "runtime/timer.hpp"
 
 // a simple flat profiler for Delta
 
@@ -78,3 +83,4 @@ class FlatProfiler: AllStatic {
 
   static DeltaProcess* process() { return proc; }
 };
+#endif // _FPROFILER_HPP

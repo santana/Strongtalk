@@ -21,12 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RFRAME_HPP
+#define _RFRAME_HPP
 
 // rframes ("recompiler frames") decorate stack frames with some extra information
 // needed by the recompiler.  The recompiler views the stack (at the time of recompilation) 
 // as a list of rframes.
 
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+#include "runtime/frame.hpp"
+
+template <class E> class GrowableArray;
 
 class RFrame : public PrintableResourceObj {
  protected:
@@ -126,4 +133,5 @@ class InterpretedRFrame : public RFrame {	// interpreter frame
   void print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _RFRAME_HPP

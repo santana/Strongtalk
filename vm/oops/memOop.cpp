@@ -21,8 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_memOop.cpp.incl"
+#include "memory/ageTable.hpp"
+#include "memory/iterator.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.inline.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/bootstrap.hpp"
+#include "utilities/objectIDTable.hpp"
+#include "utilities/ostream.hpp"
 
 void memOopDesc::layout_iterate_body(ObjectLayoutClosure* blk, int begin, int end) {
   oop* p = (oop*) addr();

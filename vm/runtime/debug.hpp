@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include <string.h>
+#ifndef _DEBUG_HPP
+#define _DEBUG_HPP
+
+#include "memory/util.hpp"
+
+#include <string.h>
+
+class outputStream;
 
 // Debug flags control various aspects of the VM and are
 // accessible by Delta programs.
@@ -339,3 +346,4 @@ extern "C" char* vmDate;
 // debug() is intended as a "start debugging" hook to be called from the
 // C++ debugger.It sets up everything for debugging.
 extern "C" void debug();
+#endif // _DEBUG_HPP

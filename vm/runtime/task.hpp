@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _TASK_HPP
+#define _TASK_HPP
+
+#include "memory/allocation.hpp"
+
 // A PeriodicTask has the sole purpose of executing its task
 // function with regular intervals.
 // Usage:
@@ -49,3 +54,4 @@ class PeriodicTask: public CHeapObj {
 
   virtual void task() = 0;
 };
+#endif // _TASK_HPP

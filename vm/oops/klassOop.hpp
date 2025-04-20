@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _KLASS_OOP_HPP
+#define _KLASS_OOP_HPP
+
+#include "oops/klass.hpp"
+
 // A klassOop is the C++ equivalent of a Delta class.
 // Part of a klassOopDesc is a Klass which handle the 
 // dispatching for the C++ method calls.
@@ -61,4 +66,4 @@ class klassOopDesc : public memOopDesc {
     return (intptr_t)(&klassOop(NULL)->klass_part()->_non_indexable_size);
   }
 };
-
+#endif // _KLASS_OOP_HPP

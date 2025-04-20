@@ -21,9 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_arguments.cpp.incl"
-# include <ctype.h>
+#include "runtime/arguments.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/types.hpp"
+
+#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
 
 // Recipe for setting flags for the VM:
 // 1. Read the file .deltarc

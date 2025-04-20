@@ -21,11 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_rscope.cpp.incl"
+#include "code/compiledIC.hpp"
+#include "code/compiledPIC.hpp"
+#include "code/nmethod.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/inliner.hpp"
+#include "compiler/rscope.hpp"
+#include "compiler/scope.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/symbolOop.hpp"
+#include "utilities/ostream.hpp"
+#include "topIncludes/std_includes.hpp"
 
 RScope::RScope(RNonDummyScope* s, int bci) : _senderBCI(bci) {
   _sender = s; 
@@ -689,4 +700,4 @@ void RInlinedScope::print_inlining_database_on(outputStream* st, GrowableArray<P
   }
 }
 
-# endif
+#endif // DELTA_COMPILER

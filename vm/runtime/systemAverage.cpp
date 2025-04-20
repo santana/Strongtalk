@@ -21,8 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_systemAverage.cpp.incl"
+#include "code/compiledPIC.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/compiler.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "runtime/systemAverage.hpp"
+#include "runtime/task.hpp"
 
 char         SlidingSystemAverage::buffer[buffer_size];
 unsigned int SlidingSystemAverage::stat[number_of_cases];

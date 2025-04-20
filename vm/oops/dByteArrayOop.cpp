@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dByteArrayOop.cpp.incl"
+#include "oops/dByteArrayOop.hpp"
+#include "runtime/bootstrap.hpp"
 
 bool doubleByteArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BLOCK_KLASS_HPP
+#define _BLOCK_KLASS_HPP
+
+#include "oops/blockOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class blockClosureKlass: public memOopKlass {
  public:
   // testers
@@ -114,4 +120,4 @@ class contextKlass: public memOopKlass {
 };
 void set_contextKlass_vtbl(Klass* k);
 
-
+#endif // _BLOCK_KLASS_HPP

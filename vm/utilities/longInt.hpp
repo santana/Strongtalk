@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LONG_INT_HPP
+#define _LONG_INT_HPP
+
 class long_int {
  private:
   unsigned int low;
@@ -37,3 +40,4 @@ class long_int {
 
   double as_double();
 };
+#endif // _LONG_INT_HPP

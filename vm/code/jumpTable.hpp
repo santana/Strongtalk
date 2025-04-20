@@ -31,7 +31,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // %implementation note:
 //   make jumpTable growable
 
+#ifndef _JUMP_TABLE_HPP
+#define _JUMP_TABLE_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+#include "oops/oop.hpp"
 
 #include <cstdint>
 
@@ -157,4 +163,5 @@ class jumpTableEntry : public ValueObj {
   friend class jumpTable;
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _JUMP_TABLE_HPP

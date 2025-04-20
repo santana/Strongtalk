@@ -21,8 +21,24 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_process_prims.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/dispatchTable.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "memory/universe.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/processOop.hpp"
+#include "prims/process_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/vframe.hpp"
+#include "runtime/process.hpp"
+#include "utilities/growableArray.hpp"
 
 TRACE_FUNC(TraceProcessPrims, "process")
 
@@ -263,13 +279,13 @@ PRIM_DECL_0(processOopPrimitives::yield_in_critical) {
 PRIM_DECL_1(processOopPrimitives::user_time, oop receiver) {
   PROLOGUE_1("enter_critical", receiver);
   ASSERT_RECEIVER;
-  return oopFactory::new_double(processOop(receiver)->user_time());
+  return reinterpret_cast<oop>(oopFactory::new_double(processOop(receiver)->user_time()));
 }
 
 PRIM_DECL_1(processOopPrimitives::system_time, oop receiver) {
   PROLOGUE_1("enter_critical", receiver);
   ASSERT_RECEIVER;
-  return oopFactory::new_double(processOop(receiver)->system_time());
+  return reinterpret_cast<oop>(oopFactory::new_double(processOop(receiver)->system_time()));
 }
 
 PRIM_DECL_2(processOopPrimitives::stack, oop receiver, oop limit) {
@@ -299,8 +315,8 @@ PRIM_DECL_2(processOopPrimitives::stack, oop receiver, oop limit) {
   vframe* vf = processOop(receiver)->process()->last_delta_vframe();
 
   for (int index = 1; index <= l && vf; index++) {
-    stack->push(oopFactory::new_vframe(process, index));
+    stack->push(reinterpret_cast<oop>(oopFactory::new_vframe(process, index)));
     vf = vf->sender();
   }
-  return oopFactory::new_objArray(stack);
+  return reinterpret_cast<oop>(oopFactory::new_objArray(stack));
 }

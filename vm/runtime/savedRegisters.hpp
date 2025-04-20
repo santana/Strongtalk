@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SAVED_REGISTERS_HPP
+#define _SAVED_REGISTERS_HPP
+
+#include "memory/allocation.hpp"
+
+class MacroAssembler;
 
 // SavedRegisters is used for storing the values of data registers
 // when entering the vm at special entry points like uncommon_trap
@@ -36,3 +42,4 @@ class SavedRegisters : AllStatic {
 //  static void save_registers();
   static void generate_save_registers(MacroAssembler* masm);
 };
+#endif // _SAVED_REGISTERS_HPP

@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NATIVE_INSTRUCTION_HPP
+#define _NATIVE_INSTRUCTION_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
 
 // The base class for differnt kinds of native instruction abstractions.
 // Provides the primitive operations to manipulate code relative to this.
@@ -194,3 +199,4 @@ inline IC_Info* ic_info_at(char* address)
 {
     return (IC_Info*)nativeTest_at(address);
 }
+#endif // _NATIVE_INSTRUCTION_HPP

@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _INLINER_HPP
+#define _INLINER_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "compiler/scope.hpp"
+#include "memory/allocation.hpp"
+
+class NodeBuilder;
 
 // The Inliner controls and performs method inlining in the compiler.  It contains 
 // all the code to set up the new scopes once a go-ahead decision has been made.
@@ -144,4 +152,5 @@ class RecompilerInliningPolicy : public InliningPolicy {
   	// would send be inlined by compiler?  returns NULL (--> yes) or rejection msg 
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _INLINER_HPP

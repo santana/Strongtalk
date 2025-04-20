@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DELTA_HPP
+#define _DELTA_HPP
+
+#include "lookup/key.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/allocation.hpp"
+
 // A DeltaCallCache caches methods for Delta calls.
 // They are primarily used to speed up performs.
 //
@@ -52,7 +59,7 @@ class DeltaCallCache: public AllStatic {
     if (!match(klass, selector)) {
       _result = interpreter_normal_lookup(klass, selector);
       if (!_result.is_empty()) {
-        _key.initialize(klass, selector);
+        _key.initialize(klass, reinterpret_cast<oop>(selector));
       }
     }
     return _result;
@@ -77,3 +84,4 @@ class Delta: public AllStatic {
 
   static oop does_not_understand(oop receiver, symbolOop selector, int nofArgs, oop* argArray);
 };
+#endif // _DELTA_HPP

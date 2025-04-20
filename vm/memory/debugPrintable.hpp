@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DEBUG_PRINTABLE_HPP
+#define _DEBUG_PRINTABLE_HPP
+
+#include "oops/klass.hpp"
+#include "oops/oop.hpp"
+
 // these printing functions are conveniently called from the debugger
 
 extern "C" {
@@ -35,3 +41,4 @@ extern "C" {
 #endif
 }
 
+#endif // _DEBUG_PRINTABLE_HPP

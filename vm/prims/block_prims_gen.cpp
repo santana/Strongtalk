@@ -20,8 +20,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_block_prims_gen.cpp.incl"
+#include "asm/assembler.hpp"
+#include "prims/generatedPrimitives.hpp"
 
 char* PrimitivesGenerator::allocateBlock(int n) {
 

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SNAPSHOT_HPP
+#define _SNAPSHOT_HPP
+
+#include "memory/allocation.hpp"
+
+#include <cstdio>
 
 // SnapshotDesc is the class handling readin and writing of snapshots
 
@@ -63,3 +69,4 @@ class SnapshotDesc : StackObj {
   friend class WriteClosure;
   friend class ReadClosure;
 };
+#endif // _SNAPSHOT_HPP

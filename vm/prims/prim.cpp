@@ -21,14 +21,34 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_prim.cpp.incl"
+#include "compiler/expr.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "prims/prim.hpp"
+#include "prims/behavior_prims.hpp"
+#include "prims/block_prims.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/callBack_prims.hpp"
+#include "prims/debug_prims.hpp"
+#include "prims/dByteArray_prims.hpp"
+#include "prims/dValueArray_prims.hpp"
+#include "prims/double_prims.hpp"
+#include "prims/method_prims.hpp"
+#include "prims/mixin_prims.hpp"
+#include "prims/objArray_prims.hpp"
+#include "prims/oop_prims.hpp"
+#include "prims/process_prims.hpp"
+#include "prims/proxy_prims.hpp"
+#include "prims/smi_prims.hpp"
+#include "prims/system_prims.hpp"
+#include "prims/vframe_prims.hpp"
+#include "runtime/process.hpp"
 
 // The primitive_table is generated from prims.src.
 // The output has the following format:
 //   static int size_of_primitive_table
 //   static primitive_desc* primitive_table;
-#include "prims.inc"
+#include "prims/prims.inc"
 
 // the typedefs below are necessary to ensure that args are passed correctly when calling a primitive
 // through a function pointer

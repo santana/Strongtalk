@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LOOKUP_CACHE_HPP
+#define _LOOKUP_CACHE_HPP
+
+#include "code/nmethod.hpp"
+#include "oops/methodOop.hpp"
+
 // The lookup cache is a 2-way associative cache mapping LookupKeys into LookupResult.
 // Called when the inline cache fails or when a compile takes place.
 
@@ -134,3 +140,4 @@ class lookupCache : AllStatic {
   friend class StubRoutines;
   friend class debugPrimitives;
 };
+#endif // _LOOKUP_CACHE_HPP

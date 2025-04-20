@@ -21,11 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_compUtils.cpp.incl"
+#include "compiler/compUtils.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/node.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/scope.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
+#include "topIncludes/std_includes.hpp"
 
 PerformanceDebugger::PerformanceDebugger(Compiler* c) {
   this->c = c; compileReported = false;
@@ -148,4 +157,4 @@ void PerformanceDebugger::report_block(Node* n, BlockPReg* blk, const char* what
   blocks->append(blk);
 }
 
-#endif
+#endif // DELTA_COMPILER

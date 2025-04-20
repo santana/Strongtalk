@@ -21,11 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER_unused
 
-# ifdef DELTA_COMPILER_unused
-
-# include "incls/_registerMask.cpp.incl"
+#include "code/registerMask.hpp"
 
 Location pick(RegisterMask& alloc, RegisterMask mask) {
   Unimplemented();
@@ -147,4 +145,4 @@ Location findFirstUnusedTemp(LongRegisterMask** masks, int len) {
   return Location();
 }
 
-# endif
+#endif // DELTA_COMPILER_unused

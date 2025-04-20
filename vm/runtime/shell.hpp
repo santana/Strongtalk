@@ -21,4 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SHELL_HPP
+#define _SHELL_HPP
+
 int vm_main(int argc, char* argv[]);
+#endif // _SHELL_HPP

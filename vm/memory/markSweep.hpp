@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MARK_SWEEP_HPP
+#define _MARK_SWEEP_HPP
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
+
 // MarkSweep takes care of garbage collection
 class OopRelocations;
 class MarkSweep : AllStatic {
@@ -55,3 +62,4 @@ class MarkSweep : AllStatic {
   static void deallocate();
   static void trace(char* msg);
 };
+#endif // _MARK_SWEEP_HPP

@@ -1,5 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_preemption.cpp.incl"
+#include "runtime/debug.hpp"
+#include "runtime/preemption.hpp"
+#include "runtime/process.hpp"
 
 void ProcessPreemptionTask::task() {
   if (EnableProcessPreemption)

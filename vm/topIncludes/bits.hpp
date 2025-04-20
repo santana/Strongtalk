@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BITS_HPP
+#define _BITS_HPP
+
+#include "memory/error.hpp"
+
 # define AllBits	~0
 # define NoBits		0
 # define OneBit		1
@@ -64,3 +69,4 @@ inline int set_unsigned_bitfield(int value, int start_bit_no, int field_length, 
   int mask = nthMask(field_length) << start_bit_no;
   return addBits(subBits(value, mask), maskBits(new_field_value << start_bit_no, mask));
 }
+#endif // _BITS_HPP

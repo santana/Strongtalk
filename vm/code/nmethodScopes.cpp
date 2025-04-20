@@ -21,11 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_nmethodScopes.cpp.incl"
+#include "code/nameDesc.hpp"
+#include "code/nmethod.hpp"
+#include "code/nmethodScopes.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "topIncludes/std_includes.hpp"
 
 ScopeDesc* nmethodScopes::at(int offset, char* pc) const {
   // Read the first byte and decode the ScopeDesc type at the location.
@@ -234,7 +238,7 @@ void nmethodScopes::switch_pointers(oop from, oop to,
   match (beyond just the method holder and method) we are safe.
 */
 
-# ifdef NOT_IMPLEMENTED
+#ifdef NOT_IMPLEMENTED
   if (my_nmethod()->isInvalid()) return;
   
   FOR_EACH_OOPADDR(addr) {
@@ -243,7 +247,7 @@ void nmethodScopes::switch_pointers(oop from, oop to,
 	return;
       }
   }
-# endif
+#endif
 }
 
 
@@ -296,4 +300,4 @@ void nmethodScopes::print_partition() {
                 p_size * 100/ total);
 }
 
-#endif
+#endif // DELTA_COMPILER

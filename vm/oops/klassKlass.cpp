@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_klassKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassKlass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
 void set_klassKlass_vtbl(Klass* k) {
   klassKlass o;

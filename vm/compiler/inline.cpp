@@ -23,11 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 /************* This file is not currently used and should not be in the build */
 
-# include "incls/_precompiled.incl"
+#ifdef COMPILER
 
-# ifdef COMPILER
-
-# include "incls/_inline.cpp.incl"
+#include "compiler/inline.hpp"
 
   static int msgCost = 0;  	// estimated cost of last inlining candidate
   
@@ -382,4 +380,4 @@ d135 1
 a135 1
       if (rcvr->findKlass(as_klassOop(Memory->falseObj->klass())) == NULL)
 d141 7
-# endif
+#endif // COMPILER

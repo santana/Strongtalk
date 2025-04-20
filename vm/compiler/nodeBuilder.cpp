@@ -21,10 +21,27 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_nodeBuilder.cpp.incl"
+#include "asm/x86_mapping.hpp"
+#include "code/nameDesc.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/inliner.hpp"
+#include "compiler/loopOpt.hpp"
+#include "compiler/nodeBuilder.hpp"
+#include "compiler/node.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/primInliner.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 // Class variables
 
@@ -1237,7 +1254,7 @@ void NodeBuilder::float_move(int to, int from) {
 
 void NodeBuilder::float_set(int to, doubleOop value) {
   // float(to) := value
-  ConstPReg* val = new_ConstPReg(_scope, value);
+  ConstPReg* val = new_ConstPReg(_scope, reinterpret_cast<oop>(value));
   append(NodeFactory::new_AssignNode(val, float_at(to)));
 }
 
@@ -1300,7 +1317,7 @@ void NodeBuilder::float_unaryToOop(Floats::Function f, int fno) {
   switch (f) {
     case Floats::is_zero: // fall through
     case Floats::is_not_zero:  
-      { ConstPReg* zero = new_ConstPReg(_scope, oopFactory::new_double(0.0));
+      { ConstPReg* zero = new_ConstPReg(_scope, reinterpret_cast<oop>(oopFactory::new_double(0.0)));
       NodeFactory::new_FloatArithRRNode(new NoPReg(_scope), src, fCmpArithOp, zero);
       BranchOpCode cond = f == Floats::is_zero ? EQBranchOp : NEBranchOp;
       _exprStack->push(PrimInliner::generate_cond(cond, this, res), scope(), scope()->bci());
@@ -1348,5 +1365,4 @@ void NodeBuilder::float_binaryToOop(Floats::Function f, int fno) {
   _exprStack->push(PrimInliner::generate_cond(cc2, this, res), scope(), scope()->bci());
 }
 
-
-# endif
+#endif // DELTA_COMPILER

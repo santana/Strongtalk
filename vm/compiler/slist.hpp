@@ -21,9 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SLIST_HPP
+#define _SLIST_HPP
+
 // Yet another version of lists, this one allowing efficient insert/delete in the middle.
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
   
 class GenericSListElem : public ResourceObj  {
  protected:
@@ -151,4 +156,5 @@ template <class T> class SList : public GenericSList {
   }
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _SLIST_HPP

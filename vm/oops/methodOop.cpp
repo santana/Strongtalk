@@ -21,8 +21,28 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_methodOop.cpp.incl"
+#include "compiler/costModel.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/methodIterator.hpp"
+#include "interpreter/methodPrinter.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
+#include "prims/prim.hpp"
+#include "runtime/bootstrap.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 void methodOopDesc::decay_invocation_count(double decay_factor) {
   double new_count = (double) invocation_count() / decay_factor;

@@ -21,9 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_symbolOop.cpp.incl"
+#include "memory/symbolTable.hpp"
+#include "oops/symbolOop.hpp"
+#include "topIncludes/std_includes.hpp"
 
 symbolOop symbolOopDesc::scavenge() {
   ShouldNotCallThis(); // shouldn't be scavenging canonical symbols

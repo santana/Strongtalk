@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RECOMPILER_HPP
+#define _RECOMPILER_HPP
 
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 // The RecompilationPolicy selects which method (if any) should be recompiled.    
 
@@ -59,4 +65,5 @@ class RecompilationPolicy : public ResourceObj {
 };
 
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _RECOMPILER_HPP

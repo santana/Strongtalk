@@ -21,7 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RELOC_INFO_HPP
+#define _RELOC_INFO_HPP
+
 # ifdef DELTA_COMPILER
+
+#include "code/compiledIC.hpp"
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
+#include "topIncludes/bits.hpp"
+#include "topIncludes/types.hpp"
+
+#include <cstdint>
+
 // These hold enough information to read or write a value embedded
 // in the instructions of an nmethod.  They're used to update:
 //   1) embedded oops     (isOop()          == true)
@@ -36,8 +48,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // A relocInfo is represented in 16 bits:
 //   3 bits indicating the relocation type
 //  13 bits indicating the byte offset from the previous relocInfo address
-
-#include <cstdint>
 
 const int reloc_type_width   =  3;
 const int reloc_offset_width = 13;
@@ -177,4 +187,5 @@ class relocIterator : StackObj {
   bool is_position_dependent() const;
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _RELOC_INFO_HPP

@@ -21,8 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_blockKlass.cpp.incl"
+#include "oops/blockKlass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
 klassOop blockClosureKlass::blockKlassFor(int numberOfArguments) {
   switch (numberOfArguments) {
@@ -246,4 +254,3 @@ void contextKlass::oop_print_on(oop obj, outputStream* st) {
     st->cr();
   }
 }
-

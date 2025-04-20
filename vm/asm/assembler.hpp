@@ -21,6 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ASSEMBLER_HPP
+#define _ASSEMBLER_HPP
+
+#include "code/relocInfo.hpp"
+#include "oops/oopsHierarchy.hpp"
+
+class CodeBuffer;
+
 const int nofRegisters = 8;	// total number of registers
 
 class Register: public ValueObj {
@@ -477,3 +485,4 @@ class MacroAssembler: public Assembler {
   static void inspector(oop edi, oop esi, oop ebp, oop esp, oop ebx, oop edx, oop ecx, oop eax, char* eip);
   void inspect(char* title = NULL);
 };
+#endif // _ASSEMBLER_HPP

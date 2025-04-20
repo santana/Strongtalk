@@ -21,10 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_double_prims.cpp.incl"
-# include <math.h>
-# include <float.h>
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/double_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/debug.hpp"
+
+#include <math.h>
+#include <float.h>
 
 TRACE_FUNC(TraceDoublePrims, "double")
 

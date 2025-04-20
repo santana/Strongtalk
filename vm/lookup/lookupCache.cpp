@@ -21,8 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_lookupCache.cpp.incl"
+#include "code/inliningdb.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/rscope.hpp"
+#include "lookup/lookupCache.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "runtime/process.hpp"
+#include "runtime/sweeper.hpp"
+#include "runtime/vmOperations.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
 
 int lookupCache::number_of_primary_hits;
 int lookupCache::number_of_secondary_hits;
@@ -331,7 +340,7 @@ LookupResult lookupCache::cache_miss_lookup(LookupKey* key, bool compile) {
 }
 
 methodOop lookupCache::compile_time_normal_lookup(klassOop receiver_klass, symbolOop selector) {
-  LookupKey key(receiver_klass, selector);
+  LookupKey key(receiver_klass, reinterpret_cast<oop>(selector));
   LookupResult res = lookup(&key, false);
   return res.method_or_null();
 }
@@ -345,7 +354,7 @@ methodOop lookupCache::compile_time_super_lookup(klassOop receiver_klass, symbol
 }
 
 methodOop lookupCache::method_lookup(klassOop receiver_klass, symbolOop selector) {
-  LookupKey key(receiver_klass, selector);
+  LookupKey key(receiver_klass, reinterpret_cast<oop>(selector));
   methodOop method = key.klass()->klass_part()->lookup(key.selector());
   return method;
 }
@@ -368,7 +377,7 @@ inline LookupResult lookupCache::ic_lookup(klassOop receiver_klass, oop selector
 }
 
 LookupResult lookupCache::ic_normal_lookup(klassOop receiver_klass, symbolOop selector) {
-  return lookupCache::ic_lookup(receiver_klass, selector);
+  return lookupCache::ic_lookup(receiver_klass, reinterpret_cast<oop>(selector));
 }
 
 LookupResult lookupCache::ic_super_lookup(klassOop receiver_klass, klassOop superKlass, symbolOop selector) {
@@ -377,7 +386,7 @@ LookupResult lookupCache::ic_super_lookup(klassOop receiver_klass, klassOop supe
 }
 
 LookupResult interpreter_normal_lookup(klassOop receiver_klass, symbolOop selector) {
-  LookupKey key(receiver_klass, selector);
+  LookupKey key(receiver_klass, reinterpret_cast<oop>(selector));
   return lookupCache::lookup(&key, true);
 }
 
@@ -420,7 +429,7 @@ LookupResult lookupCache::lookup(LookupKey* key) {
 
 oop lookupCache::normal_lookup(klassOop receiver_klass, symbolOop selector) {
   VerifyNoScavenge vna;
-  LookupKey key(receiver_klass, selector);
+  LookupKey key(receiver_klass, reinterpret_cast<oop>(selector));
   LookupResult result = ic_normal_lookup(receiver_klass, selector);
   assert(result.value() != NULL, "message not understood not implemented yet for compiled code");
   return result.value();

@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CALL_BACK_HPP
+#define _CALL_BACK_HPP
+
+#include "memory/allocation.hpp"
+
 class callBack : AllStatic {
  public:
   static void  initialize(oop receiver, symbolOop selector);
@@ -28,3 +33,4 @@ class callBack : AllStatic {
   static void* registerCCall(int index);
   static void  unregister(void* block);
 };
+#endif // _CALL_BACK_HPP

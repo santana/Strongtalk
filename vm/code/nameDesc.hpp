@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NAME_DESC_HPP
+#define _NAME_DESC_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "asm/location.hpp"
+#include "memory/allocation.hpp"
+#include "oops/smiOop.hpp"
 
 // A NameDesc describes the source-level value of a name in some Delta scope
 // (e.g. an argument, local, or expression stack entry).  NameDescs are usually
@@ -149,4 +156,5 @@ struct IllegalNameDesc: public NameDesc {
   void print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _NAME_DESC_HPP

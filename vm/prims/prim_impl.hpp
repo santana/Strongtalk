@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PRIM_IMPL_HPP
+#define _PRIM_IMPL_HPP
+
+#include "memory/vmSymbols.hpp"
+#include "oops/oop.hpp"
+
 // Macroes for the primitive implementation
 
 #define PRIM_NOT_IMPLEMENTED \
@@ -154,3 +160,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   TRACE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9)
 #define PROLOGUE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)\
   TRACE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+#endif // _PRIM_IMPL_HPP

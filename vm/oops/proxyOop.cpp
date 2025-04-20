@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_proxyOop.cpp.incl"
+#include "oops/proxyOop.hpp"
+#include "runtime/bootstrap.hpp"
 
 void proxyOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

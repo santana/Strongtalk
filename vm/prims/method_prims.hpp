@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _METHOD_PRIMS_HPP
+#define _METHOD_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for methods
 
 class methodOopPrimitives : AllStatic {
@@ -168,3 +174,4 @@ class methodOopPrimitives : AllStatic {
   //%
   static PRIM_DECL_1(inlining_info, oop receiver);
 };
+#endif // _METHOD_PRIMS_HPP

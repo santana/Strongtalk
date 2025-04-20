@@ -22,8 +22,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_spaceSize.cpp.incl"
+#include "memory/spaceSize.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
 
 static int scale_and_adjust(int value) {
   int result = roundTo(value * K, Universe::page_size());

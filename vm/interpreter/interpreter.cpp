@@ -21,10 +21,30 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_interpreter.cpp.incl"
-
+#include "asm/codeBuffer.hpp"
+#include "asm/x86_mapping.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/dispatchTable.hpp"
+#include "interpreter/floats.hpp"
+#include "interpreter/interpreter.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
+#include "prims/generatedPrimitives.hpp"
+#include "prims/prim.hpp"
+#include "recompiler/recompile.hpp"
+#include "runtime/disclaimer.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
 
 // Interpreter stack frame
 //

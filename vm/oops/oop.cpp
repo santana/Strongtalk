@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_oop.cpp.incl"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/markOop.hpp"
+#include "oops/oop.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
 
 // Called during bootstrapping for computing vtbl values see (create_*Klass)
 oopDesc::oopDesc() {

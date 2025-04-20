@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SYMBOL_TABLE_HPP
+#define _SYMBOL_TABLE_HPP
+
+#include "memory/markSweep.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/symbolKlass.hpp"
+#include "oops/symbolOop.hpp"
 
 // The symbol table (Memory->symbol_table) holds all canonical symbols.
 // It is implemented as an open hash table with a fixed number of buckets.
@@ -113,3 +120,4 @@ class symbolTable: public CHeapObj {
 
   friend class bootstrap;
 };
+#endif // _SYMBOL_TABLE_HPP

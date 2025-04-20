@@ -21,11 +21,34 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_compiledIC.cpp.incl"
-
+#include "code/compiledIC.hpp"
+#include "code/compiledPIC.hpp"
+#include "code/jumpTable.hpp"
+#include "code/nmethod.hpp"
+#include "code/pcDesc.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/interpreter.hpp"
+#include "lookup/key.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/evaluator.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vmOperations.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
 
 extern "C" void UncommonTrap() {
   ResourceMark rm;
@@ -139,7 +162,7 @@ char* CompiledIC::normalLookup(oop recv) {
     // msg->set_arguments(args);
     msg->raw_at_put(2, recv);
     msg->raw_at_put(3, selector());
-    msg->raw_at_put(4, args);
+    msg->raw_at_put(4, reinterpret_cast<oop>(args));
     symbolOop sel = oopFactory::new_symbol("doesNotUnderstand:");
     if (interpreter_normal_lookup(recv->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
@@ -635,4 +658,4 @@ extern "C" void icLookup(int a, int b) {}
 extern "C" void icNormalLookup(int a, int b) {}
 extern "C" void icSuperLookup(int a, int b) {}
 
-#endif
+#endif // DELTA_COMPILER

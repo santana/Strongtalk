@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VM_OPERATIONS_HPP
+#define _VM_OPERATIONS_HPP
+
+#include "lookup/key.hpp"
+#include "memory/allocation.hpp"
+#include "topIncludes/std_includes.hpp"
+
 // The following classes are used for operations
 // initiated by a delta process but must
 // take place in the vmProcess.
@@ -92,7 +99,7 @@ class VM_DeoptimizeStacks : public VM_Operation {
   char* name() { return "deoptimize stacks"; }
 };
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 class VM_OptimizeMethod : public VM_Operation {
  private:
@@ -139,4 +146,5 @@ class VM_OptimizeBlockMethod : public VM_Operation {
   char* name() { return "optimize block method"; }
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _VM_OPERATIONS_HPP

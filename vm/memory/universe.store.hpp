@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _UNIVERSE_STORE_HPP
+#define _UNIVERSE_STORE_HPP
 
 inline void Universe::store(oop* p, oop contents, bool cs) {
   assert(is_heap(p) || !cs, "Reference must be in object memory to mark card.");
@@ -29,3 +31,4 @@ inline void Universe::store(oop* p, oop contents, bool cs) {
   if (cs) remembered_set->record_store(p);
 }
 
+#endif // _UNIVERSE_STORE_HPP

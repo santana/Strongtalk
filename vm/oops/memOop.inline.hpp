@@ -21,6 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MEMOOP_INLINE_HPP
+#define _MEMOOP_INLINE_HPP
+
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/klass.hpp"
+
 inline smi memOopDesc::identity_hash() {
   // don't clean up the addr()->_mark below to mark(), 
   // since hash_markOop can modify its argument
@@ -129,3 +138,4 @@ inline int memOopDesc::gc_retrieve_size() {
     return Universe::remembered_set->get_size(this);
   return mark()->age();
 }
+#endif // _MEMOOP_INLINE_HPP

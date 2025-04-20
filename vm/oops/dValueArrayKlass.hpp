@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DVALUE_ARRAY_KLASS_HPP
+#define _DVALUE_ARRAY_KLASS_HPP
+
+#include "oops/dValueArrayOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class doubleValueArrayKlass: public memOopKlass {
  public:
   // allocation properties
@@ -70,3 +76,4 @@ class doubleValueArrayKlass: public memOopKlass {
   bool oop_is_indexable() const        { return true; }
 };
 void set_doubleValueArrayKlass_vtbl(Klass* k);
+#endif // _DVALUE_ARRAY_KLASS_HPP

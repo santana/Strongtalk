@@ -21,10 +21,32 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_codeGenerator.cpp.incl"
+#include "asm/codeBuffer.hpp"
+#include "asm/x86_mapping.hpp"
+#include "code/nameDesc.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/codeGenerator.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/loopOpt.hpp"
+#include "compiler/node.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "recompiler/recompiler.hpp"
+#include "runtime/process.hpp"
+#include "runtime/runtime.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
 
 
 // Sometimes a little stub has to be generated if a merge between two execution
@@ -2504,6 +2526,4 @@ void CodeGenerator::aFixedCodeNode(FixedCodeNode* node) {
 }
 
 
-# endif
-
-
+#endif // DELTA_COMPILER

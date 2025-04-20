@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _WEAK_ARRAY_KLASS_HPP
+#define _WEAK_ARRAY_KLASS_HPP
+
+#include "oops/objArrayKlass.hpp"
+
+template <class E> class GrowableArray;
+
 class weakArrayKlass: public objArrayKlass {
  public:   
   friend void set_weakArrayKlass_vtbl(Klass* k);
@@ -121,3 +128,4 @@ class NotificationQueue : AllStatic {
   static int last;
   static int succ(int index);
 };
+#endif // _WEAK_ARRAY_KLASS_HPP

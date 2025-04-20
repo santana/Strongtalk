@@ -21,10 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_mapConformance.cpp.incl"
+#include "code/mapConformance.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 void Variable::print() {
   if (in_register()) {
@@ -408,5 +409,4 @@ void MapConformance::process_tasks() {
     mappings->at(index)->process_task(this, NULL);
   }
 }
-
 #endif // DELTA_COMPILER

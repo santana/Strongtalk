@@ -21,10 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BASIC_BLOCK_HPP
+#define _BASIC_BLOCK_HPP
+
 // BBs (Basic Blocks) are used by the Compiler to perform local optimizations 
 // and code generation
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
+
+#include "asm/location.hpp"
+#include "compiler/defUse.hpp"
+#include "memory/allocation.hpp"
 
 class NodeVisitor;
 
@@ -268,4 +275,5 @@ class NodeVisitor: public ResourceObj {
 };
 
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _BASIC_BLOCK_HPP

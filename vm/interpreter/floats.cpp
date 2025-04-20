@@ -21,9 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_floats.cpp.incl"
-
+#include "asm/codeBuffer.hpp"
+#include "interpreter/floats.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/disclaimer.hpp"
+#include "topIncludes/std_includes.hpp"
 
 char* Floats::_function_table[max_number_of_functions];
 char* Floats::_function_names[] = {

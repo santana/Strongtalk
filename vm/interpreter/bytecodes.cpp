@@ -21,9 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_bytecodes.cpp.incl"
-
+#include "interpreter/bytecodes.hpp"
+#include "interpreter/floats.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/std_includes.hpp"
 
 char*			Bytecodes::_entry_point[number_of_codes];
 char*			Bytecodes::_name[number_of_codes];
@@ -1090,7 +1091,7 @@ static void generate_HTML_docu() {
   }
 }
 
-#endif
+#endif // PRODUCT
 
 
 void bytecodes_init() {

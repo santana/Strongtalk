@@ -21,7 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _COMPILER_PREG_HPP
+#define _COMPILER_PREG_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "asm/location.hpp"
+#include "compiler/compileTimeClosure.hpp"
+#include "code/scopeDesc.hpp"
+#include "utilities/growableArray.hpp"
+
+template <class T> class SList;
+class BB;
 
 // All intermediate language (IL) operations work on pseudo registers (PRegs).
 // In contrast to real registers, the number of available pseudo registers is
@@ -341,5 +352,5 @@ class SplitPReg : public SAPReg {
 #endif
 
 
-# endif
-  
+#endif // DELTA_COMPILER
+#endif // _COMPILER_PREG_HPP

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OBJ_ARRAY_KLASS_HPP
+#define _OBJ_ARRAY_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/objArrayOop.hpp"
+
 class objArrayKlass: public memOopKlass {
  public:
   // allocation properties
@@ -75,3 +81,4 @@ class objArrayKlass: public memOopKlass {
   int oop_header_size() const { return objArrayOopDesc::header_size(); }
 };
 void set_objArrayKlass_vtbl(Klass* k);
+#endif // _OBJ_ARRAY_KLASS_HPP

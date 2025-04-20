@@ -21,9 +21,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_vframe.cpp.incl"
+#include "code/nameDesc.hpp"
+#include "code/nmethod.hpp"
+#include "code/pcDesc.hpp"
+#include "code/scopeDesc.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/savedRegisters.hpp"
+#include "runtime/stackChunk.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 // Ideas:
 //   Maybe cache methodOop in deltaVFrame for faster argument access. (Lars 8/10/95)

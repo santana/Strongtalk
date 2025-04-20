@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_associationOop.cpp.incl"
+#include "oops/associationOop.hpp"
+#include "runtime/bootstrap.hpp"
 
 void associationOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

@@ -21,9 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_universe.more.cpp.incl"
+#include "memory/ageTable.hpp"
+#include "memory/universe.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/process.hpp"
+#include "runtime/timer.hpp"
+#include "runtime/vmOperations.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
 
 bool GCInProgress = false;
 

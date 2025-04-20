@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _METHOD_KLASS_HPP
+#define _METHOD_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/methodOop.hpp"
+
 class methodKlass : public memOopKlass {
  public:
   bool oop_is_method() const { return true; }
@@ -67,3 +73,4 @@ class methodKlass : public memOopKlass {
 			                byteArrayOop bytes, objArrayOop oops);
 };
 void set_methodKlass_vtbl(Klass* k);
+#endif // _METHOD_KLASS_HPP

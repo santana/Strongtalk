@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_objArrayOop.cpp.incl"
+#include "memory/oopFactory.hpp"
+#include "oops/objArrayOop.hpp"
+#include "runtime/bootstrap.hpp"
 
 bool objArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();

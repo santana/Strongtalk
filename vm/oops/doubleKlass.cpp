@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_doubleKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "oops/doubleKlass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "topIncludes/asserts.hpp"
+#include "utilities/ostream.hpp"
 
 oop doubleKlass::allocateObject(bool permit_scavenge, bool tenured) {
   assert(!can_inline_allocation(), "using nonstandard allocation");

@@ -21,8 +21,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_methodPrinter.cpp.incl"
+#include "interpreter/methodPrinter.hpp"
 
 MethodPrinterClosure::MethodPrinterClosure(outputStream* stream) {
   st = stream ? stream : mystd;

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DEBUG_PRIMS_HPP
+#define _DEBUG_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for debugging
 
 class debugPrimitives : AllStatic {
@@ -257,3 +263,4 @@ class debugPrimitives : AllStatic {
   //%
   static PRIM_DECL_0(verify);
 };
+#endif // _DEBUG_PRIMS_HPP

@@ -21,8 +21,38 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_process.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/dispatchTable.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/interpreter.hpp"
+#include "memory/handle.hpp"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/processOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/evaluator.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "runtime/stackChunk.hpp"
+#include "runtime/sweeper.hpp"
+#include "runtime/vframe.hpp"
+#include "runtime/vmOperations.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+
 
 // The tricky part is to restore the original return address of the primitive before
 // the delta call. This is necessary for a consistent stack during the delta call.

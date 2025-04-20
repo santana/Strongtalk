@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _INTERVAL_INFO_HPP
+#define _INTERVAL_INFO_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
 
 // A IntervalInfo contains compiler-related data/functionality that is associated
 // with a MethodInterval.  (It's not in MethodInterval itself to avoid cluttering
@@ -29,6 +34,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The main purpose of IntervalInfo is to exploit the method structure for optimization
 // (esp. to get a cheap "dominates" relationship).   
 // This code is only halfway finished -- not used yet.  -Urs 9/96
+
+class MethodInterval;
 
 class IntervalInfo: public PrintableResourceObj {
   MethodInterval* _interval;	  // my interval
@@ -48,4 +55,5 @@ class IntervalInfo: public PrintableResourceObj {
   void print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _INTERVAL_INFO_HPP

@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PROXY_OOP_HPP
+#define _PROXY_OOP_HPP
+
+#include "oops/memOop.hpp"
 
 // proxy objects are handles to external data.
 
@@ -104,3 +108,4 @@ class proxyOopDesc: public memOopDesc {
   friend class proxyKlass;
 };
 inline proxyOop as_proxyOop(void* p) { return proxyOop(as_memOop(p)); }
+#endif // _PROXY_OOP_HPP

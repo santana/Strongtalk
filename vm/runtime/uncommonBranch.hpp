@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _UNCOMMON_BRANCH_HPP
+#define _UNCOMMON_BRANCH_HPP
 
 #ifdef DELTA_COMPILER
 // Run-time system code to handle uncommon traps
@@ -38,4 +40,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 extern void uncommon_trap();
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _UNCOMMON_BRANCH_HPP

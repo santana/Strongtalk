@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_klassOop.cpp.incl" 
+#include "oops/klassOop.hpp"
+#include "utilities/ostream.hpp"
 
 void klassOopDesc::bootstrap_object(bootstrap* st) {
   klass_part()->bootstrap_klass_part_one(st);

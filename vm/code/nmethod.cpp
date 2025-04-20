@@ -21,12 +21,24 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_nmethod.cpp.incl"
-
+#include "asm/codeBuffer.hpp"
+#include "code/iCache.hpp"
+#include "code/nmethod.hpp"
+#include "code/pcDesc.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/rscope.hpp"
+#include "disasm/disassembler.hpp"
+#include "lookup/lookupCache.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "prims/prim.hpp"
+#include "recompiler/recompile.hpp"
+#include "utilities/eventLog.hpp"
 
 void nmFlags::clear() {
   assert(sizeof(nmFlags) == sizeof(int), "using more than one word for nmFlags");
@@ -251,7 +263,7 @@ klassOop nmethod::receiver_klass() const {
 
 
 void nmethod::moveTo(void* p, int size) {
-# ifdef NOT_IMPLEMENTED
+#ifdef NOT_IMPLEMENTED
   nmethod* to = (nmethod*)p;
   if (this == to) return;
   if (PrintCodeCompaction) {
@@ -285,7 +297,7 @@ void nmethod::moveTo(void* p, int size) {
   assert(size % oopSize == 0, "not a multiple of oopSize");
   copy_oops_overlapping((oop*) this, (oop*) to, size / oopSize);
   flushICacheRange(to->insts(), to->instsEnd());
-# endif
+#endif
 }
 
 
@@ -538,7 +550,7 @@ PcDesc* nmethod::containingPcDescOrNULL(char* pc, PcDesc* st) const {
   while (middle->pc >  offset && middle > start) middle--;
   
   assert(start <= middle && middle <= end, "should have found a pcDesc");
-# ifdef ASSERT
+#ifdef ASSERT
     PcDesc* d = st ? st : pcs();
     PcDesc* closest = d;
     for (; d <= end; d ++) {
@@ -547,7 +559,7 @@ PcDesc* nmethod::containingPcDescOrNULL(char* pc, PcDesc* st) const {
       }
     }
     assert(closest == middle, "found different pcDesc");
-# endif
+#endif
 
   if (middle->pc > offset) {
     assert( middle == start, "should be the first PcDesc");
@@ -984,4 +996,4 @@ void nmethod_init() {
   assert(sizeof(nmFlags) <= 4, "nmFlags occupies more than a word");
 }
 
-# endif
+#endif // DELTA_COMPILER

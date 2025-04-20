@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BOOTSTRAP_HPP
+#define _BOOTSTRAP_HPP
+
+#include "memory/allocation.hpp"
+
+#include <cstdio>
+
 // bootstrap parses and allocates memOops from a text file
 
 class bootstrap: CHeapObj {
@@ -70,3 +77,4 @@ class bootstrap: CHeapObj {
 
   bool is_byte() { return getc(stream) == '4'; }
 };
+#endif // _BOOTSTRAP_HPP

@@ -1,43 +1,38 @@
 ROOT_DIR	= $(HOME)/Strongtalk
-TEST_SRC_DIR 	= $(ROOT_DIR)/test
-VM_SRC_DIR 	= $(ROOT_DIR)/vm
-EASYUNIT_DIR	= $(ROOT_DIR)/easyunit
-TOOLS_SRC_DIR	= $(ROOT_DIR)/tools
-MAKE_DIR	= $(ROOT_DIR)/build.linux
-BUILD_DIR	= $(ROOT_DIR)/build
-BIN_DIR		= $(ROOT_DIR)/bin
-INCL_DIR	= $(BUILD_DIR)/incls
+TEST_SRC_DIR 	:= $(ROOT_DIR)/test
+VM_SRC_DIR 	:= $(ROOT_DIR)/vm
+EASYUNIT_DIR	:= $(ROOT_DIR)/easyunit
+MAKE_DIR	:= $(ROOT_DIR)/build.linux
+BUILD_DIR	:= $(ROOT_DIR)/build
+SRCS            := $(wildcard $(VM_SRC_DIR)/*/*.cpp)
+TEST_SRCS	:= $(wildcard $(TEST_SRC_DIR)/*/*.cpp)
+OBJS		:= $(SRCS:%.cpp=%.o)
+DEPFILES	:= $(SRCS:%.cpp=%.d)
 
-INCL_PATH	=                   \
-	-I$(BUILD_DIR)              \
-	-I$(VM_SRC_DIR)/asm         \
-	-I$(VM_SRC_DIR)/code        \
-	-I$(VM_SRC_DIR)/compiler    \
-	-I$(VM_SRC_DIR)/disasm      \
-	-I$(VM_SRC_DIR)/interpreter \
-	-I$(VM_SRC_DIR)/lookup      \
-	-I$(VM_SRC_DIR)/memory      \
-	-I$(VM_SRC_DIR)/oops        \
-	-I$(VM_SRC_DIR)/prims       \
-	-I$(VM_SRC_DIR)/recompiler  \
-	-I$(VM_SRC_DIR)/runtime     \
-	-I$(VM_SRC_DIR)/topIncludes \
-	-I$(VM_SRC_DIR)/utilities
+INCLUDES	= -I$(VM_SRC_DIR)
 
-TEST_INCL_PATH	=                   \
+TEST_INCLUDES	=                   \
 	-I$(EASYUNIT_DIR)/easyunit  \
 	-I$(TEST_SRC_DIR)/runtime   \
 	-I$(TEST_SRC_DIR)/utilities \
 	-I$(TEST_SRC_DIR)/memory
 
+ASM		= $(CC)
+
 DEFINES		= -DDELTA_COMPILER -DASSERT -DDEBUG -D__LINUX__
 CXXFLAGS	= -fno-rtti -Wno-write-strings -fno-operator-names \
 		  -O0 -fPIC -g \
-		  $(DEFINES) $(INCL_PATH) $(TEST_INCL_PATH)
+		  $(DEFINES)
+DEPFLAGS        = -MT $@ -MMD -MP -MF $*.d
 LDFLAGS		=
 
-ASM		= $(CC)
+COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDES) $(TARGET_ARCH) -c
 
-INCL_DB1	= $(VM_SRC_DIR)/deps/includeDB
-INCL_DB2	= $(VM_SRC_DIR)/deps/includeDB2
-INCL_PLATFORM	= $(MAKE_DIR)/makedeps-platform.txt
+%.o : %.cpp %.d
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+$(DEPFILES):
+
+objs: $(OBJS)
+
+include $(wildcard $(DEPFILES))

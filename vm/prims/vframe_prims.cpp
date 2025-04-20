@@ -21,9 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_vframe_prims.cpp.incl"
+#include "memory/handle.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/processOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/vframeOop.hpp"
+#include "prims/prim_impl.hpp"
+#include "prims/vframe_prims.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "runtime/tempDecoder.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/growableArray.hpp"
 
 TRACE_FUNC(TraceVframePrims, "vframe")
 
@@ -161,9 +174,9 @@ PRIM_DECL_1(vframeOopPrimitives::temporaries, oop receiver) {
   for (int offset = (method->activation_has_context() ? 1 : 0); offset < tempCount; offset++) {
     byteArrayOop name = find_stack_temp(method, df->bci(), offset);
     if (name)
-      temps->append(oopFactory::new_association(oopFactory::new_symbol(name),
+      temps->append(reinterpret_cast<oop>(oopFactory::new_association(oopFactory::new_symbol(name),
                                                 df->temp_at(offset),
-                                                false));
+                                                false)));
   }
   
   while(df) {
@@ -172,9 +185,9 @@ PRIM_DECL_1(vframeOopPrimitives::temporaries, oop receiver) {
       for (int offset = 0; offset < contextTempCount; offset++) {
         byteArrayOop name = find_heap_temp(method, df->bci(), offset);
         if (name)
-          temps->append(oopFactory::new_association(oopFactory::new_symbol(name),
+          temps->append(reinterpret_cast<oop>(oopFactory::new_association(oopFactory::new_symbol(name),
                                                     df->context_temp_at(offset),
-                                                    false));
+                                                    false)));
       }
     }
     df = df->parent();

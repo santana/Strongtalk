@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VM_SYMBOLS_HPP
+#define _VM_SYMBOLS_HPP
+
+#include "oops/symbolOop.hpp"
+
 #define VMSYMBOLS(template) \
   template(smi_overflow,                   "SmallIntegerOverflow")       \
   template(division_by_zero,               "DivisionByZero")             \
@@ -206,3 +211,4 @@ inline symbolOop unmarkSymbol(oop sym) {
   assert(res->is_symbol(), "must be symbol");
   return symbolOop(res);
 }
+#endif // _VM_SYMBOLS_HPP

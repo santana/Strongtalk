@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PRINT_LAYOUT_HPP
+#define _PRINT_LAYOUT_HPP
+
+#include "memory/iterator.hpp"
+
 class PrintObjectClosure : public ObjectLayoutClosure {
  private:
    memOop obj;
@@ -42,3 +47,4 @@ class PrintObjectClosure : public ObjectLayoutClosure {
   void do_indexable_long(int index, long* l);
 };
 
+#endif // _PRINT_LAYOUT_HPP

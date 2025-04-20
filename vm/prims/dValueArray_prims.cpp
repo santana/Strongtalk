@@ -21,8 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dValueArray_prims.cpp.incl"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/dValueArrayOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/dValueArray_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/debug.hpp"
 
 TRACE_FUNC(TraceDoubleValueArrayPrims, "doubleValueArray")
 

@@ -21,11 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_relocInfo.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/relocInfo.hpp"
+#include "code/stubRoutines.hpp"
+#include "prims/prim.hpp"
+#include "topIncludes/std_includes.hpp"
 
 relocInfo::relocInfo(int t, int off) {
   assert(0 <= t && t < (1 << reloc_type_width), "wrong type");
@@ -91,5 +93,4 @@ bool relocIterator::is_position_dependent() const {
 }
 
 
-#endif
-
+#endif // DELTA_COMPILER

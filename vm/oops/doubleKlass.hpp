@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DOUBLE_KLASS_HPP
+#define _DOUBLE_KLASS_HPP
+
+#include "oops/doubleOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class doubleKlass: public memOopKlass {
  public:
   // testers
@@ -63,3 +69,4 @@ class doubleKlass: public memOopKlass {
   friend void set_doubleKlass_vtbl(Klass* k);
 };
 void set_doubleKlass_vtbl(Klass* k);
+#endif // _DOUBLE_KLASS_HPP

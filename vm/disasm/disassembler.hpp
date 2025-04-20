@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DISASSEMBLER_HPP
+#define _DISASSEMBLER_HPP
+
 # ifdef DELTA_COMPILER
+
+#include "topIncludes/std_includes.hpp"
+
 // A disassembler prints out intel 386 code annotated
 // with delta specific information.
 // %note:
@@ -35,3 +41,4 @@ class Disassembler : AllStatic {
 };
 
 # endif
+#endif // _DISASSEMBLER_HPP

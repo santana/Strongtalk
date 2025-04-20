@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PRIM_HPP
+#define _PRIM_HPP
+
+#include "oops/symbolOop.hpp"
+
 // The file defines the interface to the internal primitives.
 
 // Primitives are divided into four categories:
@@ -207,3 +212,4 @@ class primitives : AllStatic {
   static primitive_desc* context_allocate1() { return _context_allocate1; }
   static primitive_desc* context_allocate2() { return _context_allocate2; }
 };
+#endif // _PRIM_HPP

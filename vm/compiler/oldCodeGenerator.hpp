@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OLD_CODE_GENERATOR_HPP
+#define _OLD_CODE_GENERATOR_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "compiler/basicBlock.hpp"
 
 // The OldCodeGenerator is the new interface to the gen() routines in x86_node.cpp.
 // It allows to call the old code generation routines via the new apply method.
@@ -89,4 +94,5 @@ class OldCodeGenerator: public NodeVisitor {
   void aCommentNode(CommentNode* node);
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _OLD_CODE_GENERATOR_HPP

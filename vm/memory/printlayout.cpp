@@ -21,9 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_printlayout.cpp.incl"
-# include <ctype.h>
+#include "memory/printlayout.hpp"
+#include "oops/markOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
+
+#include <ctype.h>
 
 const int indent_col =  3;
 const int value_col  = 16;
@@ -136,4 +143,3 @@ void PrintObjectClosure::do_indexable_long(int index, long* l) {
   st->fill_to(value_col);
   st->print_cr("0x%lx", *l);
 }
-

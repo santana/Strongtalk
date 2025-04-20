@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_handle.cpp.incl"
+#include "memory/handle.hpp"
+#include "memory/iterator.hpp"
+#include "runtime/process.hpp"
+#include "topIncludes/std_includes.hpp"
+
+#include <cstdio>
 
 PersistentHandle* PersistentHandle::first = NULL;
 int Handles::_top   = 0;
@@ -37,7 +41,7 @@ void BaseHandle::push() {
   if (next) {
     if (log) {
       char msg[200];
-      sprintf(msg, "unpopped StackHandle '%s->%s' : 0x%x->0x%x", label, 
+      std::sprintf(msg, "unpopped StackHandle '%s->%s' : 0x%x->0x%x", label, 
         next->label, this, next);
       assert((char*) this < (char*) next, msg);
     }

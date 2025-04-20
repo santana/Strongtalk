@@ -21,11 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
+#ifndef _TYPE_HPP
+#define _TYPE_HPP
 
 // This file contains some global types, plus many partial definitions
 // to reduce include file dependencies.  (If foo.h contains a bar* and
 // struct bar is defined here, foo.h need not depend on bar.h.)
+
+#include "oops/oopsHierarchy.hpp"
 
 #include <cstdint>
 
@@ -252,3 +255,4 @@ class outputStream;
 class StackChunkBuilder;
 
 #endif
+#endif // _TYPE_HPP

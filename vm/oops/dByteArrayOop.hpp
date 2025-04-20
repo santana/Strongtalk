@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DBYTE_ARRAY_OOP_HPP
+#define _DBYTE_ARRAY_OOP_HPP
+
+#include "oops/klass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/smiOop.hpp"
+
 // doubleByteArrays are arrays containing double bytes
 
 // memory layout:
@@ -91,3 +98,4 @@ class doubleByteArrayOopDesc: public memOopDesc {
 inline doubleByteArrayOop as_doubleByteArrayOop(void* p) {
     return doubleByteArrayOop(as_memOop(p)); }
 
+#endif // _DBYTE_ARRAY_OOP_HPP

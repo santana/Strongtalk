@@ -21,11 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_x86_mapping.cpp.incl"
-
+#include "asm/codeBuffer.hpp"
+#include "asm/x86_mapping.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/preg.hpp"
+#include "oops/blockOop.hpp"
 
 // stack mapping
 
@@ -288,4 +290,4 @@ void mapping_init() {
   Mapping::initialize();
 }
 
-# endif
+#endif // DELTA_COMPILER

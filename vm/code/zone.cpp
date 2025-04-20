@@ -21,11 +21,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_zone.cpp.incl"
+#include "code/compiledPIC.hpp"
+#include "code/iCache.hpp"
+#include "code/nmethod.hpp"
+#include "code/zone.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/iterator.hpp"
+#include "memory/universe.hpp"
+#include "oops/blockOop.hpp"
+#include "runtime/process.hpp"
+#include "runtime/timer.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+#include "topIncludes/std_includes.hpp"
 
 # define LRU_RESOLUTION     16	/* resolution (in secs) of LRU timer */
 
@@ -786,4 +796,4 @@ void printAllNMethods() {
   }
 }
 
-#endif
+#endif // DELTA_COMPILER

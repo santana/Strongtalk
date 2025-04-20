@@ -21,8 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_behavior_prims.cpp.incl"
+#include "code/zone.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/behavior_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/delta.hpp"
 
 TRACE_FUNC(TraceBehaviorPrims, "behavior")
 
@@ -109,7 +120,7 @@ PRIM_DECL_1(behaviorPrimitives::mixinOf, oop behavior) {
   if (!behavior->is_klass())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  return klassOop(behavior)->klass_part()->mixin();
+  return reinterpret_cast<oop>(klassOop(behavior)->klass_part()->mixin());
 }
 
 PRIM_DECL_1(behaviorPrimitives::headerSize, oop behavior) {
@@ -163,7 +174,7 @@ PRIM_DECL_2(behaviorPrimitives::classVariableAt, oop behavior, oop index) {
 
   int i = smiOop(index)->value();
   if (i > 0 && i <= klassOop(behavior)->klass_part()->number_of_classVars())
-    return klassOop(behavior)->klass_part()->classVar_at(i);
+    return reinterpret_cast<oop>(klassOop(behavior)->klass_part()->classVar_at(i));
   return markSymbol(vmSymbols::out_of_bounds());
 }
 
@@ -171,7 +182,7 @@ PRIM_DECL_1(behaviorPrimitives::classVariables, oop behavior) {
   PROLOGUE_1("classVariables", behavior);
   if (!behavior->is_klass())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return klassOop(behavior)->klass_part()->classVars();
+  return reinterpret_cast<oop>(klassOop(behavior)->klass_part()->classVars());
 }
 
 // OPERATIONS FOR METHODS 

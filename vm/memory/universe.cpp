@@ -22,8 +22,33 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_universe.cpp.incl"
+#include "code/inliningdb.hpp"
+#include "code/zone.hpp"
+#include "interpreter/interpreter.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/ageTable.hpp"
+#include "memory/handle.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/printlayout.hpp"
+#include "memory/symbolTable.hpp"
+#include "memory/universe.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/disclaimer.hpp"
+#include "runtime/process.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/objectIDTable.hpp"
 
 bool NeedScavenge  = false;
 bool bootstrapping = true;

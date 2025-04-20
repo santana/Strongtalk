@@ -21,6 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PROCESS_HPP
+#define _PROCESS_HPP
+
+#include "memory/allocation.hpp"
+
+class BaseHandle;
+template <class E> class GrowableArray;
+
 // unwindInfo is a wrapper calls allowing a primitive like unwindprotect
 // to call delta even though a non local return is in progress.
 
@@ -549,3 +557,4 @@ enum InterpreterErrorConstants {
 };
 
 void trace_stack(int thread_id);
+#endif // _PROCESS_HPP

@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_eventLog.cpp.incl"
+#include "runtime/debug.hpp"
+#include "utilities/eventLog.hpp"
 
 EventLog* eventLog;
 
@@ -82,4 +82,3 @@ void EventLog::printPartial(int n) {
     lprintf("Actual event nesting is %ld greater than shown.\n",
 	   nesting - indent);
 }
-

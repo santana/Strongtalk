@@ -25,7 +25,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // has a list of the defs and uses it contains, and a PReg has a list
 // of the BBs it is used/defined in.
 
-# ifdef DELTA_COMPILER
+#ifndef _DEF_USE_HPP
+#define _DEF_USE_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "compiler/slist.hpp"
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
+
+class BB;
 
   class DefUse : public PrintableResourceObj {		// abstract
    public:
@@ -113,4 +123,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   void forAllDefsDo(const GrowableArray<PRegBBIndex*>* l, Closure<Def*>* f);
   void forAllUsesDo(const GrowableArray<PRegBBIndex*>* l, Closure<Use*>* f);
   void printDefsAndUses(const GrowableArray<PRegBBIndex*>* l);	// for debugging
-# endif
+#endif // DELTA_COMPILER
+#endif // _DEF_USE_HPP

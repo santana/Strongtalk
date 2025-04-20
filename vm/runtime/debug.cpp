@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-#include "incls/_precompiled.incl"
-#include "incls/_debug.cpp.incl"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
 
 // definition of boolean flags

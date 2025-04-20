@@ -21,8 +21,34 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_bootstrap.cpp.incl"
+#include "memory/symbolTable.hpp"
+#include "oops/associationKlass.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/dByteArrayKlass.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "oops/doubleKlass.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/dValueArrayKlass.hpp"
+#include "oops/klassKlass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/methodKlass.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinKlass.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/processKlass.hpp"
+#include "oops/processOop.hpp"
+#include "oops/proxyKlass.hpp"
+#include "oops/smiKlass.hpp"
+#include "oops/symbolOop.hpp"
+#include "oops/vframeKlass.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "runtime/bootstrap.hpp"
+#include "runtime/os.hpp"
 
 //#include <io.h>
 

@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BYTE_ARRAY_KLASS_HPP
+#define _BYTE_ARRAY_KLASS_HPP
+
+#include "oops/klass.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class byteArrayKlass: public memOopKlass {
  public:
   // allocation properties
@@ -79,3 +86,4 @@ class byteArrayKlass: public memOopKlass {
 
 };
 void set_byteArrayKlass_vtbl(Klass* k);
+#endif // _BYTE_ARRAY_KLASS_HPP

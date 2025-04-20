@@ -21,7 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PREG_MAPPING_HPP
+#define _PREG_MAPPING_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "asm/assembler.hpp"
+#include "asm/location.hpp"
+#include "code/locations.hpp"
+#include "memory/allocation.hpp"
+#include "utilities/growableArray.hpp"
 
 // A PRegClosure is used when iterating over a PRegMapping.
 
@@ -188,4 +197,5 @@ class Temporary: StackObj {
 };
 
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _PREG_MAPPING_HPP

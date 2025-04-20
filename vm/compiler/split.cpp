@@ -24,11 +24,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 /************* This file is not currently used and should not be in the build */
 
-# include "incls/_precompiled.incl"
+#ifdef COMPILER
 
-# ifdef COMPILER
-
-# include "incls/_split.cpp.incl"
+#include "compiler/split.hpp"
 
   const uint32 SplitSig::LevelMask = 0xf;
 
@@ -336,4 +334,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     return r;
   }
 
-# endif
+#endif // COMPILER

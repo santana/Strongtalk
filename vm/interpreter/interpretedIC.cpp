@@ -21,10 +21,23 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_interpretedIC.cpp.incl"
-
+#include "interpreter/interpretedIC.hpp"
+#include "memory/allocation.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
 
 // Implementation of Interpreter_PICs
 //

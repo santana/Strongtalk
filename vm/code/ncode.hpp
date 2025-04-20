@@ -21,7 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NCODE_HPP
+#define _NCODE_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "memory/generation.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.hpp"
+
+template <class E> class GrowableArray;
 
 # define OOPNCODE_FROM(fieldName, p)					      \
     ((OopNCode*)((char*)p - (char*)&((OopNCode*)NULL)->fieldName))
@@ -81,4 +90,5 @@ class OopNCode : public NCodeBase {
 
 NCodeBase* findThing(void* addr);   // returns NULL if addr not in a zone
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _NCODE_HPP

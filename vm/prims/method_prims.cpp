@@ -21,8 +21,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_method_prims.cpp.incl"
+#include "interpreter/prettyPrinter.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodKlass.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/method_prims.hpp"
+#include "prims/prim_impl.hpp"
 
 TRACE_FUNC(TraceMethodPrims, "method")
 

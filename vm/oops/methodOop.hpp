@@ -21,7 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _METHOD_OOP_HPP
+#define _METHOD_OOP_HPP
+
+#include "interpreter/bytecodes.hpp"
+#include "oops/memOop.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/tag.hpp"
+
 #include <cstdint>
+
+template <class E> class GrowableArray;
 
 // A methodOop is a method with byte codes.
 
@@ -352,3 +363,4 @@ public:
                  bool &fl = StopInSelector::ignored,
                  bool stop = true);
 };
+#endif // _METHOD_OOP_HPP

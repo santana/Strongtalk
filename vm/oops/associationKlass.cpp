@@ -21,8 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_associationKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "oops/associationKlass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
 void set_associationKlass_vtbl(Klass* k) {
   associationKlass o;

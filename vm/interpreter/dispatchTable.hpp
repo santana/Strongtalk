@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DISPATCH_TABLE_HPP
+#define _DISPATCH_TABLE_HPP
+
+#include "memory/allocation.hpp"
+
 // The dispatchTable controls the dispatch of byte codes
 
 class dispatchTable: AllStatic {
@@ -53,3 +58,4 @@ class dispatchTable: AllStatic {
   static bool in_next_mode()    { return mode == next_mode; }
   static bool in_return_mode()  { return mode == return_mode; }
 };
+#endif // _DISPATCH_TABLE_HPP

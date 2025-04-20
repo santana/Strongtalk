@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _AGE_TABLE_HPP
+#define _AGE_TABLE_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/markOop.hpp"
+#include "oops/memOop.hpp"
+
 // Age table for feedback-mediated tenuring (generation scavenging).
 // Note: all sizes are in oopSize
 class ageTable: public CHeapObj {
@@ -42,3 +49,4 @@ class ageTable: public CHeapObj {
   int tenure_size(int age);
   int tenuring_threshold(int oop_size);
 };
+#endif // _AGE_TABLE_HPP

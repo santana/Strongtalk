@@ -21,9 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_vframeOop.cpp.incl"
+#include "oops/smiOop.hpp"
+#include "oops/vframeOop.hpp"
+#include "oops/processOop.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
 
 vframe* vframeOopDesc::get_vframe() {
   DeltaProcess* proc = process()->process();

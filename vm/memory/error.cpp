@@ -21,8 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_error.cpp.incl"
+#include "compiler/compiler.hpp"
+#include "memory/error.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/os.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
 
 void report_vm_state() {
 #ifdef DEBUG
@@ -54,7 +63,7 @@ void report_error(char* title, char* format, ...) {
   char buffer[2048];
   va_list ap;
   va_start(ap, format);
-  vsprintf(buffer, format, ap);
+  std::vsprintf(buffer, format, ap);
   va_end(ap);
 
   mystd->cr();
@@ -64,7 +73,7 @@ void report_error(char* title, char* format, ...) {
   if (!bootstrapping) report_vm_state();
 
   if (ShowMessageBoxOnError) {
-    strcat(buffer, "\n\nDo you want to debug the problem?");
+    std::strcat(buffer, "\n\nDo you want to debug the problem?");
     if (!os::message_box(title, buffer)) os::fatalExit(-1);
   }
 }
@@ -78,7 +87,7 @@ void report_fatal(char* file_name, int line_no, char* format, ...) {
   char buffer[2048];
   va_list ap;
   va_start(ap, format);
-  vsprintf(buffer, format, ap);
+  std::vsprintf(buffer, format, ap);
   va_end(ap);
   report_error("Fatal Error", "Fatal: %s\n%s, %d", buffer, file_name, line_no);
 }
@@ -101,4 +110,3 @@ void report_subclass_responsibility(char* file_name, int line_no) {
 void report_unimplemented(char* file_name, int line_no) {
   report_error("Unimplemented Error", "Unimplemented()\n%s, %d", file_name, line_no);
 }
-

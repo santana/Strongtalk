@@ -23,6 +23,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Output streams for printing
 
+#ifndef _OSTREAM_HPP
+#define _OSTREAM_HPP
+
+#include "memory/allocation.hpp"
+
+#include <cstdio>
+
 class outputStream : public ResourceObj {
  protected:
    int  _indentation;	    // current indentation
@@ -99,7 +106,4 @@ class fileStream : public outputStream {
   int is_open() const { return _file != NULL; }
   void put(char c);
 };
-
-
-
-
+#endif // _OSTREAM_HPP

@@ -21,9 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_byteArrayKlass.cpp.incl"
-# include <ctype.h>
+#include "memory/iterator.hpp"
+#include "oops/byteArrayKlass.hpp"
+#include "utilities/ostream.hpp"
+#include "memory/vmSymbols.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/asserts.hpp"
+
+#include <ctype.h>
 
 oop byteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
   assert(!can_inline_allocation(), "using nonstandard allocation");

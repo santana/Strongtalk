@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LOOKUP_TYPES_HPP
+#define _LOOKUP_TYPES_HPP
+
 #ifdef junk
 
 enum BaseLookupType {
@@ -75,4 +78,5 @@ extern "C" {
   void printLookupType(LookupType lookupType);
   char* lookupTypeName(LookupType lookupType);
 }
-#endif
+#endif // junk
+#endif // _LOOKUP_TYPES_HPP

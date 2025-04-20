@@ -21,11 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#include "asm/assembler.hpp"
+#include "asm/codeBuffer.hpp"
+#include "code/nativeInstruction.hpp"
+#include "code/stubRoutines.hpp"
+#include "memory/universe.hpp"
+#include "memory/error.hpp"
+#include "memory/util.hpp"
+#include "oops/oop.hpp"
+#include "oops/smiOop.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/process.hpp"
+#include "runtime/runtime.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
+
 #include <cstdint>
-
-#include "incls/_precompiled.incl"
-#include "incls/_assembler.cpp.incl"
-
 
 // A Displacement describes the 32bit immediate field of an instruction which
 // may be used together with a Label in order to refer to a yet unknown code

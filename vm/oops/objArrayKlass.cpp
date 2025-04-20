@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_objArrayKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "runtime/debug.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "topIncludes/asserts.hpp"
+#include "utilities/ostream.hpp"
 
 oop objArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool tenured) {
   klassOop k        = as_klassOop();

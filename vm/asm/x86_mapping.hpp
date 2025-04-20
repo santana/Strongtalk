@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _X86_MAPPING_HPP
+#define _X86_MAPPING_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "asm/location.hpp"
+#include "asm/assembler.hpp"
+#include "compiler/scope.hpp"
+#include "memory/allocation.hpp"
 
 // Register usage
 const int nofArgRegisters	= 0;			// max. number of arguments (excl. receiver) passed in registers
@@ -120,4 +128,5 @@ const Register temp2		= ecx;
 const Register temp3		= edx;
 
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _X86_MAPPING_HPP

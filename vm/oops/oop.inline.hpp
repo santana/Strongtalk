@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OOP_INLINE_HPP
+#define _OOP_INLINE_HPP
+
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
 
 inline klassOop oopDesc::klass() const {
   if (is_mem()) return memOop(this)->klass_field();
@@ -88,3 +93,4 @@ inline oop oopDesc::primitive_allocate_size(int size) {
 inline oop oopDesc::shallow_copy(bool tenured) {
   return blueprint()->oop_shallow_copy(this, tenured);
 }
+#endif // _OOP_INLINE_HPP

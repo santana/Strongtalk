@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _INTERPRETER_STATISTICS_HPP
+#define _INTERPRETER_STATISTICS_HPP
+
+#include "interpreter/bytecodes.hpp"
+#include "memory/allocation.hpp"
+
 // Collects statistical information on the interpreter.
 
 class InterpreterStatistics: AllStatic {
@@ -39,3 +45,4 @@ class InterpreterStatistics: AllStatic {
 
   static void initialize();
 };
+#endif // _INTERPRETER_STATISTICS_HPP

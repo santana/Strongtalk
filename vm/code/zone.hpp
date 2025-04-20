@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ZONE_HPP
+#define _ZONE_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/codeTable.hpp"
+#include "code/jumpTable.hpp"
+#include "code/zoneHeap.hpp"
 
 // The zone implements the code cache for optimized methods and contains:
 //   1) a lookup table:      "Lookup key -> nmethod"
@@ -161,4 +168,5 @@ class LRUcount : ValueObj {
 
 extern LRUcount* LRUtable;	// for optimized methods
 extern int* LRUflag;	// == LRUtable, just different type for convenience
-#endif
+#endif // DELTA_COMPILER
+#endif // _ZONE_HPP

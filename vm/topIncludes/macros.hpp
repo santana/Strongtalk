@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MACROS_HPP
+#define _MACROS_HPP
 /* 
  **  CONC(a,b)  Concatenates a and b (which are not macro-expanded)
  **  CONC3(a,b,c) Concatentates a, b, and c (which are not macro-expanded)
@@ -72,5 +74,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
       val = true;                                                             \
     else                                                                      \
       return prim_error(BADTYPEERROR);
-
-
+#endif // _MACROS_HPP

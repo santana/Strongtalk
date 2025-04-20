@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LPRINTF_HPP
+#define _LPRINTF_HPP
+
+#include <stdarg.h>
+
 // lprintf replaces printf -- never use printf in the VM!
 // output written by lprintf can easily be redirected, duplicated into a
 // log file, etc.
@@ -47,3 +52,4 @@ public:
   virtual void warning(char* m, va_list argptr) = 0;
   virtual void compiler_warning(char* m, va_list argptr) = 0;
 };
+#endif // _LPRINTF_HPP

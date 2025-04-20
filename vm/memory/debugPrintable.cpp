@@ -21,8 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_debugPrintable.cpp.incl"
+#include "code/nmethod.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/scope.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "memory/debugPrintable.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/objectIDTable.hpp"
 
 // ------ helper functions for debugging go here ------------
 

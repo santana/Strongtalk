@@ -21,11 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_jumpTable.cpp.incl"
+#include "code/jumpTable.hpp"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "disasm/disassembler.hpp"
+#include "memory/universe.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "runtime/os.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vmOperations.hpp"
+#include "topIncludes/std_includes.hpp"
 
 static const char halt_instruction = '\xF4';
 static const char jump_instruction = '\xE9';
@@ -387,4 +395,4 @@ void jumpTable::verify() {
 */
 }
 
-#endif
+#endif // DELTA_COMPILER

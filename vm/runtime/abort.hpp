@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ABORT_HPP
+#define _ABORT_HPP
+
+#include "memory/allocation.hpp"
+
 // The ErrorHandler takes care of error recovery
 
 class ErrorHandler : AllStatic {
@@ -41,3 +46,4 @@ class ErrorHandler : AllStatic {
   static int aborting_nlr_home_id() { return 0xcafebabe; }
 
 };
+#endif // _ABORT_HPP

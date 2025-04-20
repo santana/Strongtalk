@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _IC_ITERATOR_HPP
+#define _IC_ITERATOR_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
+
 // IC_Shape describes the (logical) shape in which an IC at a particular
 // call site apears; i.e. how many receivers have been registered in that
 // IC.
@@ -29,6 +35,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // correspond with the physical implementation of a call site; e.g.
 // a call site may contain a pic but nevertheless hold only one
 // receiver and therefore be monomorphic!
+
+template <class E> class GrowableArray;
 
 enum IC_Shape {
   anamorphic,	// send has never been executed => no type information	(size = 0)
@@ -126,3 +134,4 @@ class IC: public PrintableResourceObj {
   // Debugging
   void		print();
 };
+#endif // _IC_ITERATOR_HPP

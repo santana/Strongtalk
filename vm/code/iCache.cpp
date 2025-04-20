@@ -21,11 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_iCache.cpp.incl"
+#include "code/iCache.hpp"
 
 // On the x86, the I cache is consistent after the next branch or call,
 // so don't need to do any flushing.
@@ -34,4 +32,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
   void flushICacheRange(void* start, void* end) { }
 
-# endif
+#endif // DELTA_COMPILER

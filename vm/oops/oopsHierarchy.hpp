@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // This hierarchy is a representation hierarchy, i.e. if A is a superclass
 // of B, A's representation is a prefix of B's representation.
 
+#ifndef _OOPS_HIERARCHY_HPP
+#define _OOPS_HIERARCHY_HPP
+
 typedef class  oopDesc*                       oop;
 typedef class    markOopDesc*                 markOop;
 typedef class    memOopDesc*                  memOop;
@@ -73,6 +76,4 @@ class          processKlass;
 class          proxyKlass;
 class          vframeKlass;
 class        smiKlass;
-
-
-
+#endif // _OOPS_HIERARCHY_HPP

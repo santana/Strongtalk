@@ -21,11 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_slist.cpp.incl"
+#include "compiler/slist.hpp"
   
 GenericSListElem* GenericSList::findL(void* p) const {
   for (GenericSListElem* e = headL(); e; e = e->nextL()) {
@@ -100,4 +98,4 @@ void GenericSList::print() {
   ((GenericSList*)this)->applyL(print_them);
 }
 
-# endif
+#endif // DELTA_COMPILER

@@ -21,9 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_smi_prims.cpp.incl"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/prim_impl.hpp"
+#include "prims/smi_prims.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/objectIDTable.hpp"
 
 TRACE_FUNC(TraceSmiPrims, "smi")
 

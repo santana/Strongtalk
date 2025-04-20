@@ -21,10 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#include "oops/symbolKlass.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/asserts.hpp"
+#include "topIncludes/std_includes.hpp"
 
-# include "incls/_precompiled.incl"
-# include "incls/_symbolKlass.cpp.incl"
-# include <ctype.h>
+#include <ctype.h>
 
 symbolOop symbolKlass::allocateSymbol(char* value, int len) {
   symbolOop sym = as_symbolOop(Universe::allocate_tenured(object_size(len)));

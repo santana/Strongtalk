@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ITERATOR_HPP
+#define _ITERATOR_HPP
+
+#include "memory/allocation.hpp"
+
 // The following classes are C++ `closures` for iterating over
 // Objects, Roots, and Frames.
 
@@ -137,3 +142,4 @@ class klassOopClosure : StackObj {
   virtual void do_klass(klassOop klass) {}
 };
 
+#endif // _ITERATOR_HPP

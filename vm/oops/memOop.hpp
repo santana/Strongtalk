@@ -29,6 +29,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // should clean up order of member functions  -Urs
 
+#ifndef _MEM_OOP_HPP
+#define _MEM_OOP_HPP
+
+#include "memory/universe.hpp"
+#include "oops/markOop.hpp"
+
 #include <cstdint>
 
 class memOopDesc: public oopDesc {
@@ -193,3 +199,4 @@ inline memOop as_memOop(void* p)
     assert((intptr_t(p) & Tag_Mask) == 0, "not an aligned C pointer");
     return memOop(intptr_t(p) + Mem_Tag);
 }
+#endif // _MEM_OOP_HPP

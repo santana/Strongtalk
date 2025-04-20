@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _COST_MODEL_HPP
+#define _COST_MODEL_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "interpreter/bytecodes.hpp"
+#include "memory/allocation.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // CostModel holds the 'costs' for all bytecodes. These costs
 // are used to estimate the inline cost for a given methodOop.
@@ -42,4 +49,5 @@ class CostModel: AllStatic {
   static void print();
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _COST_MODEL_HPP

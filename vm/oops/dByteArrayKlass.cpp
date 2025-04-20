@@ -21,9 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dByteArrayKlass.cpp.incl"
-# include <ctype.h>
+#include "oops/dByteArrayKlass.hpp"
+#include "oops/klass.hpp"
+#include "memory/iterator.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/asserts.hpp"
+#include "utilities/ostream.hpp"
+
+#include <ctype.h>
 
 oop doubleByteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
   fatal("should never call allocateObject in doubleByteArrayKlass");

@@ -22,8 +22,34 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_reflection.cpp.incl"
+#include "code/zone.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/allocation.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/reflection.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "oops/dValueArrayOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/processOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "runtime/timer.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 // Converter hierarchy:
 // - memConverter

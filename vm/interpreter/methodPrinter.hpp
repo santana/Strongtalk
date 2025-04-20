@@ -21,6 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _METHOD_PRINTER_HPP
+#define _METHOD_PRINTER_HPP
+
+#include "interpreter/bytecodes.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/methodIterator.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
+
 // MethodPrinter dumps, on the console, all byte-codes of a method.
 // In addition blocks contained in the method are dumped at the
 // byte code pushing the block context.
@@ -88,3 +104,4 @@ class MethodPrinterClosure: public MethodClosure {
   void float_unaryToOop(Floats::Function f, int tof);
   void float_binaryToOop(Floats::Function f, int tof);
 };
+#endif // _METHOD_PRINTER_HPP

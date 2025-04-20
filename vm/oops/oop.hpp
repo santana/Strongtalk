@@ -21,6 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OOP_HPP
+#define _OOP_HPP
+
+#include "oops/oopsHierarchy.hpp"
+#include "topIncludes/tag.hpp"
+#include "topIncludes/types.hpp"
+
+#include <cstdint>
+
 // oopDesc is the top of the oop hierarchy.  The xxxDesc classes describe
 // the format of ST objects so the fields can be accessed from C++.
 // Caution: "oop" pointers to xxxDesc structures (e.g., oop, proxyOop) are
@@ -29,8 +38,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // work with the xxxDesc* pointer.
 // So, xxxOop pointers are tagged, but xxxDesc* pointers aren't.
 // NB: the above is true only for memOops
-
-#include <cstdint>
 
 extern "C" oop nilObj;
 
@@ -118,3 +125,4 @@ class oopDesc {
 
   friend class memOopKlass;
 };
+#endif // _OOP_HPP

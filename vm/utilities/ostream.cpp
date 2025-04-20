@@ -21,8 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_ostream.cpp.incl"
+#include "memory/oopFactory.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
 
 outputStream::outputStream(int width) {
   _width       = width;

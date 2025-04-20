@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BYTE_ARRAY_OOP_HPP
+#define _BYTE_ARRAY_OOP_HPP
+
+#include "oops/klass.hpp"
+#include "oops/smiOop.hpp"
+
 class Integer;
 
 // byteArrays are arrays containing bytes
@@ -137,3 +143,4 @@ inline byteArrayOop as_byteArrayOop(void* p)
 {
     return byteArrayOop(as_memOop(p));
 }
+#endif // _BYTE_ARRAY_OOP_HPP

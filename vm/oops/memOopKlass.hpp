@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MEM_OOP_KLASS_HPP
+#define _MEM_OOP_KLASS_HPP
+
+#include "oops/klass.hpp"
+
 // super class for all heap objects
 
 class memOopKlass: public Klass {
@@ -83,3 +88,4 @@ class memOopKlass: public Klass {
   int oop_header_size() const { return memOopDesc::header_size(); }
 };
 void set_memOopKlass_vtbl(Klass* k);
+#endif // _MEM_OOP_KLASS_HPP

@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_growableArray.cpp.incl"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 GenericGrowableArray::GenericGrowableArray(int initial_size, bool c_heap) {
   len = 0;

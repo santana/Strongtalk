@@ -21,11 +21,28 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_inliner.cpp.incl"
+#include "code/jumpTable.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "code/zone.hpp"
+#include "compiler/compUtils.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/inliner.hpp"
+#include "compiler/node.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/rscope.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassOop.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/rframe.hpp"
+#include "recompiler/rframe.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/ostream.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // ----------- inlining policy ---------------
 
@@ -1077,4 +1094,4 @@ Expr* Inliner::inlineBlockInvocation(SendInfo* info) {
   }
 }
 
-# endif
+#endif // DELTA_COMPILER

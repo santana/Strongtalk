@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NMETHOD_SCOPES_HPP
+#define _NMETHOD_SCOPES_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/scopeDesc.hpp"
 
 // UnpackClosure is used for iteration over a string of nameDescs with different pc values.
 
@@ -171,4 +176,5 @@ class nmethodScopes : public ValueObj {
 };
 
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _NMETHOD_SCOPES_HPP

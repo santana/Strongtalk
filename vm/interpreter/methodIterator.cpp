@@ -21,9 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_methodIterator.cpp.incl"
-
+#include "code/scopeDesc.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/methodIterator.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
+#include "prims/prim.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // MethodInterval
 

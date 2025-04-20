@@ -21,10 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# ifdef DELTA_COMPILER
-# include "incls/_pregMapping.cpp.incl"
+#ifdef DELTA_COMPILER
 
+#include "asm/x86_mapping.hpp"
+#include "code/mapConformance.hpp"
+#include "code/pregMapping.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/node.hpp"
+#include "disasm/disassembler.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // Implementation of PRegMapping
 //
@@ -1089,4 +1094,4 @@ Temporary::~Temporary() {
   _mapping->releaseTemporary(_regLoc);
 }
 
-# endif
+#endif // DELTA_COMPILER

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _STACK_CHUNK_HPP
+#define _STACK_CHUNK_HPP
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 // The StackChunkBuilder helps generate the canonical form
 // of vframes.
@@ -67,3 +73,4 @@ class StackChunkBuilder: public ResourceObj {
   static void       context_at_put(const compiledVFrame* frame, contextOop con);
   static contextOop context_at(const compiledVFrame* frame);
 };
+#endif // _STACK_CHUNK_HPP

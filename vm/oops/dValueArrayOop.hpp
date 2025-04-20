@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DVALUE_ARRAY_OOPS_HPP
+#define _DVALUE_ARRAY_OOPS_HPP
+
+#include "oops/klass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/smiOop.hpp"
+
 // doubleValueArrays are arrays containing double value [8 bytes each]
 
 // memory layout:
@@ -80,3 +87,4 @@ class doubleValueArrayOopDesc: public memOopDesc {
 };
 inline doubleValueArrayOop as_doubleValueArrayOop(void* p) {
     return doubleValueArrayOop(as_memOop(p)); }
+#endif // _DVALUE_ARRAY_OOPS_HPP

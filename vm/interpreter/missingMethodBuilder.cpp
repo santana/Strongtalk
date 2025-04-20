@@ -18,8 +18,13 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_missingMethodBuilder.cpp.incl"
+#include "interpreter/missingMethodBuilder.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOopKlass.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/methodKlass.hpp"
+#include "oops/symbolOop.hpp"
 
 void MissingMethodBuilder::build() {
   BlockScavenge bs;
@@ -28,16 +33,16 @@ void MissingMethodBuilder::build() {
   if (argCount > 0)
     buffer.pushByte(Bytecodes::allocate_temp_1);
   buffer.pushByte(Bytecodes::push_global);
-  buffer.pushOop(Universe::find_global_association("Message"));
+  buffer.pushOop(reinterpret_cast<oop>(Universe::find_global_association("Message")));
   buffer.pushByte(Bytecodes::push_self);
   buffer.pushByte(Bytecodes::push_literal);
   buffer.pushOop(selector);
   if (argCount == 0) {
     buffer.pushByte(Bytecodes::push_literal);
-    buffer.pushOop(oopFactory::new_objArray(0));
+    buffer.pushOop(reinterpret_cast<oop>(oopFactory::new_objArray(0)));
   } else {
     buffer.pushByte(Bytecodes::push_global);
-    buffer.pushOop(Universe::find_global_association("Array"));
+    buffer.pushOop(reinterpret_cast<oop>(Universe::find_global_association("Array")));
     buffer.pushByte(Bytecodes::push_succ_n);
     buffer.pushByte(argCount - 1);
     buffer.pushByte(Bytecodes::interpreted_send_1);

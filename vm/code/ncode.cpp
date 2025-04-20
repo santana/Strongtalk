@@ -21,11 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_ncode.cpp.incl"
+#include "code/ncode.hpp"
+#include "code/nmethod.hpp"
+#include "code/zone.hpp"
 
 void OopNCode::remember() {
 Unimplemented();//  if (rememberLink.isEmpty()) Memory->code->rememberLink.add(&rememberLink);
@@ -66,4 +66,4 @@ NCodeBase* findThing(void* addr) {
   }
 }  
 
-#endif
+#endif // DELTA_COMPILER

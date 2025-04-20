@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PROXY_KLASS_HPP
+#define _PROXY_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/proxyOop.hpp"
 
 class proxyKlass: public memOopKlass {
  public:
@@ -60,3 +65,4 @@ class proxyKlass: public memOopKlass {
   friend void set_proxyKlass_vtbl(Klass* k);
 };
 void set_proxyKlass_vtbl(Klass* k);
+#endif // _PROXY_KLASS_HPP

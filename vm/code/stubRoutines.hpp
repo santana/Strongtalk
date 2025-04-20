@@ -34,6 +34,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // 3. implement the stub code generator
 // 4. call the generator in init()
 
+#ifndef _STUB_ROUTINES_HPP
+#define _STUB_ROUTINES_HPP
+
+#include "asm/assembler.hpp"
+#include "runtime/os.hpp"
+
 class StubRoutines: AllStatic {
  private:
   enum { _code_size = 12000 };			// simply increase if too small (assembler will crash if too small)
@@ -168,3 +174,4 @@ class StubRoutines: AllStatic {
   static void init();				// must be called in system initialization phase
   static void setSingleStepHandler(void (*fn)()) { single_step_fn = fn; }
 };
+#endif // _STUB_ROUTINES_HPP

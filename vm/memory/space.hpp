@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SPACE_HPP
+#define _SPACE_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
 
 // A Water mark points into a space and is used during scavenge to 
 // keep track of progress.
@@ -287,3 +292,4 @@ public:
     theSpace->set_top(oldTop);
   }
 };
+#endif // _SPACE_HPP

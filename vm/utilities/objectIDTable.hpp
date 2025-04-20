@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OBJECT_ID_TABLE_HPP
+#define _OBJECT_ID_TABLE_HPP
+
+#include "memory/allocation.hpp"
+
 class objectIDTable : AllStatic {
  private:
   static objArrayOop array();
@@ -33,3 +38,4 @@ class objectIDTable : AllStatic {
   static void cleanup_after_bootstrap();
 };
 
+#endif // _OBJECT_ID_TABLE_HPP

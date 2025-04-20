@@ -21,8 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_mixinKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/mixinKlass.hpp"
 
 void set_mixinKlass_vtbl(Klass* k) {
   mixinKlass o;

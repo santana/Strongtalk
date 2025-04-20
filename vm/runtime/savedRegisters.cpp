@@ -21,10 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-#include "incls/_precompiled.incl"
-#include "incls/_savedRegisters.cpp.incl"
-
+#include "asm/assembler.hpp"
+#include "runtime/process.hpp"
+#include "runtime/savedRegisters.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // Need to be static so they can be accessed in assembly code
 // of SavedRegisters::save_registers() (compiler doesn't accept

@@ -21,11 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_pcDesc.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/pcDesc.hpp"
 
 PcDesc::PcDesc(int pc, uint16 scope, uint16 byteCode) {
   this->pc       = pc;
@@ -52,4 +51,4 @@ bool PcDesc::verify(nmethod* nm) {
   return true;
 }
 
-#endif
+#endif // DELTA_COMPILER

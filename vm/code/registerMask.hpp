@@ -21,10 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _REGISTER_MASK_HPP
+#define _REGISTER_MASK_HPP
+
 // A RegisterMask tells the scavenger which registers / stack locs are
 // live.  (One bit per location.)
 
-# ifdef DELTA_COMPILER_unused
+#ifdef DELTA_COMPILER_unused
 
 inline RegisterMask& allocate(RegisterMask& s1, RegisterMask s2) {
   setBits(s1, s2);
@@ -80,5 +83,6 @@ void printAllocated(RegisterMask r);
   };
 
   Location findFirstUnusedTemp(LongRegisterMask** masks, int len);
-# endif
-    
+#endif // DELTA_COMPILER_unused
+
+#endif // _REGISTER_MASK_HPP

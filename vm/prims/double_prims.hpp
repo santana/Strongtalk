@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DOUBLE_PRIMS_HPP
+#define _DOUBLE_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for doubles
 //
 //  alias PrimFailBlock : <[Symbol, ^BottomType]>
@@ -390,3 +396,4 @@ extern "C" oop PRIM_API double_add(oop receiver, oop argument);
 //%
 extern "C" oop PRIM_API double_multiply(oop receiver, oop argument);
   
+#endif // _DOUBLE_PRIMS_HPP

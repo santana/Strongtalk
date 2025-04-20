@@ -21,11 +21,24 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_scope.cpp.incl"
-# include <string.h>
+#include "asm/x86_mapping.hpp"
+#include "asm/location.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/loopOpt.hpp"
+#include "compiler/node.hpp"
+#include "compiler/rscope.hpp"
+#include "compiler/scope.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "utilities/ostream.hpp"
+#include "topIncludes/std_includes.hpp"
+
+#include <string.h>
 
 smi Scope::_currentScopeID;
 
@@ -1030,7 +1043,7 @@ void MethodScope::print() {
 void BlockScope::print() {
   print_short();
   InlinedScope::print();
-  if (parent()) { printf("\tparent: ");  parent()->print_short(); }
+  if (parent()) { lprintf("\tparent: ");  parent()->print_short(); }
   if (sender()) { lprintf("  sender: "); sender()->print_short(); }
   lprintf(" @ %ld\n", senderBCI());
   method()->pretty_print();
@@ -1067,4 +1080,4 @@ void OutlinedBlockScope::print() {
 
 void OutlinedBlockScope::print_short() { OutlinedScope::print_short("OutlinedMethodScope"); }
 
-# endif
+#endif // DELTA_COMPILER

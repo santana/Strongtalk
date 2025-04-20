@@ -21,9 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_weakArrayKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "utilities/growableArray.hpp"
 
 klassOop weakArrayKlass::create_subclass(mixinOop mixin, Format format) {
   if (format == mem_klass || format == weakArray_klass) {

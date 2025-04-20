@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SMI_KLASS_HPP
+#define _SMI_KLASS_HPP
+
+#include "oops/klass.hpp"
 
 class smiKlass: public Klass {
  public:
@@ -46,3 +50,4 @@ class smiKlass: public Klass {
   void oop_print_value(oop obj, outputStream* st);
 };
 void set_smiKlass_vtbl(Klass* k);
+#endif // _SMI_KLASS_HPP

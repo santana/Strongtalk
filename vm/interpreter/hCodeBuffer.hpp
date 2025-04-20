@@ -18,6 +18,12 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 */
 
+#ifndef _H_CODE_BUFFER_HPP
+#define _H_CODE_BUFFER_HPP
+
+#include "memory/allocation.hpp"
+#include "utilities/growableArray.hpp"
+
 class HCodeBuffer: public ResourceObj {
   GrowableArray<uintptr_t> *_bytes;
   GrowableArray<oop> *_oops;
@@ -35,3 +41,4 @@ public:
   byteArrayOop bytes();
   objArrayOop oops();
 };
+#endif // _H_CODE_BUFFER_HPP

@@ -22,11 +22,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-#include "incls/_recompile.cpp.incl"
+#include "code/compiledIC.hpp"
+#include "code/inliningdb.hpp"
+#include "interpreter/ic_iterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "oops/symbolOop.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/recompiler.hpp"
+#include "recompiler/rframe.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
 
 nmethod* recompilee = NULL;	    	// method being recompiled
 Recompilation* theRecompilation;
@@ -389,4 +399,4 @@ extern "C" void invocation_counter_overflow(oop receiver, methodOop method) {
   fatal("performance bug: shouldn't count invocations");
 }
 
-#endif
+#endif // DELTA_COMPILER

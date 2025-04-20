@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SYSTEM_AVERAGE_HPP
+#define _SYSTEM_AVERAGE_HPP
+
+#include "memory/allocation.hpp"
+
 // Keeps the sliding average of where the system spends the time
 class SlidingSystemAverage : AllStatic {
  public:
@@ -60,3 +65,4 @@ class SlidingSystemAverage : AllStatic {
   static unsigned int stat[number_of_cases];  // Results from buffer
   static unsigned int pos;                    // Current pos in buffer
 };
+#endif // _SYSTEM_AVERAGE_HPP

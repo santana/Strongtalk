@@ -24,8 +24,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 /************* This file is not currently used and should not be in the build */
 
+#ifndef _SPLIT_HPP
+#define _SPLIT_HPP
 
-# ifdef COMPILER
+#ifdef COMPILER
 
   // various Compiler functionality associated with splitting
 
@@ -55,4 +57,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     char* prefix(char* buf);
   };
 
-# endif
+#endif // COMPILER
+#endif // _SPLIT_HPP

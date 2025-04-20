@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-#include "incls/_precompiled.incl"
-#include "incls/_virtualspace.cpp.incl"
+#include "runtime/os.hpp"
+#include "runtime/virtualspace.hpp"
+#include "topIncludes/std_includes.hpp"
 
 ReservedSpace::ReservedSpace(int size) {
   assert((size % os::vm_page_size()) == 0, "size not page aligned");

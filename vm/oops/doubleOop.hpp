@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DOUBLE_OOP_HPP
+#define _DOUBLE_OOP_HPP
+
+#include "oops/memOop.hpp"
+
 // Layout format:
 //   [Header]
 //   [Klass ]
@@ -53,3 +58,4 @@ class doubleOopDesc: public memOopDesc {
   friend class doubleKlass;
 };
 inline doubleOop as_doubleOop(void* p) { return doubleOop(as_memOop(p)); }
+#endif // _DOUBLE_OOP_HPP

@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_markOop.cpp.incl"
+#include "oops/markOop.hpp"
+#include "runtime/process.hpp"
+#include "utilities/ostream.hpp"
 
 void markOopDesc::print_on(outputStream* st) {
   st->print("mark(%c,%c,", has_tagged_contents() ? 'U' : '_',

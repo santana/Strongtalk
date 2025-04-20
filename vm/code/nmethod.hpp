@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NMETHOD_HPP
+#define _NMETHOD_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/ncode.hpp"
+#include "code/zone.hpp"
+#include "code/nmethodScopes.hpp"
+#include "lookup/key.hpp"
 
 // nmethods (native methods) are the compiled code versions of Delta
 // methods.
@@ -319,4 +327,5 @@ inline nmethod* nmethod_from_insts(char* insts)
     return findNMethod(nm);
 }
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _NMETHOD_HPP

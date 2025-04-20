@@ -21,11 +21,15 @@
 
  */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
+#include "asm/assembler.hpp"
+#include "asm/location.hpp"
+#include "asm/x86_mapping.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
-# include "incls/_location.cpp.incl"
+#include <cstdio>
 
 static char
     * specialLocNames[nofSpecialLocations] = { "illegalLocation",
@@ -158,4 +162,4 @@ void IntFreeList::print() {
   _list->print();
 }
 
-# endif
+#endif // DELTA_COMPILER

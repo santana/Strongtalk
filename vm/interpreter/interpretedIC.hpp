@@ -45,6 +45,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // 4: 0/klass/objArray			<-----	second_word_addr()
 // 8: ...
 
+#ifndef _INTERPRETED_IC_HPP
+#define _INTERPRETED_IC_HPP
+
+#include "interpreter/ic_iterator.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/allocation.hpp"
+
 class InterpretedIC: ValueObj {
  public:
   enum {
@@ -168,3 +175,4 @@ class InterpretedIC_Iterator: public IC_Iterator {
   // Debugging
   void		print();
 };
+#endif // _INTERPRETED_IC_HPP

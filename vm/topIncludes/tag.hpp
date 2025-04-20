@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _TAG_HPP
+#define _TAG_HPP
+
+#include "topIncludes/bits.hpp"
 
 const int Int_Tag      = 0;
 const int Mem_Tag      = 1;
@@ -39,3 +43,4 @@ inline int byteOffset(int offset) {
   return offset * sizeof(oop) - Mem_Tag;
 }
 
+#endif // _TAG_HPP

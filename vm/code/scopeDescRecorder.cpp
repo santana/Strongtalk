@@ -21,11 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_scopeDescRecorder.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/nmethodScopes.hpp"
+#include "code/pcDesc.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/scope.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 // Todo list 
 // - Insert Logical addresses
@@ -582,7 +587,7 @@ class MethodScopeNode: public ScopeDescNode {
 void MethodScopeNode::generate(ScopeDescRecorder* rec,
 			       int senderScopeOffset, bool bigHeader) {
   ScopeDescNode::generate(rec,senderScopeOffset, bigHeader);
-  rec->genOop(key->klass());
+  rec->genOop(reinterpret_cast<oop>(key->klass()));
   rec->genOop(key->selector_or_method());
   receiver_location->generate(rec);
 }
@@ -608,7 +613,7 @@ class TopLevelBlockScopeNode: public ScopeDescNode {
   void generate(ScopeDescRecorder* rec, int senderScopeOffset, bool bigHeader) {
     ScopeDescNode::generate(rec, senderScopeOffset, bigHeader);
     receiver_location->generate(rec);
-    rec->genOop(receiver_klass);
+    rec->genOop(reinterpret_cast<oop>(receiver_klass));
   }
 
   void verify(ScopeDesc* sd) {
@@ -1024,4 +1029,4 @@ void ScopeDescRecorder::verify(nmethodScopes* scopes) {
   root->verifyBody();
 }
 
-#endif
+#endif // DELTA_COMPILER

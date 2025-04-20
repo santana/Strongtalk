@@ -22,10 +22,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
-# include "incls/_uncommonBranch.cpp.incl"
+
+#include "asm/assembler.hpp"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "oops/blockOop.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/recompiler.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "runtime/stackChunk.hpp"
+#include "runtime/uncommonBranch.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
 
 // Tells whether the call has been executed before
 // %note:
@@ -220,4 +232,4 @@ void uncommon_trap() {
   process->exit_uncommon();
 }
 
-#endif
+#endif // DELTA_COMPILER

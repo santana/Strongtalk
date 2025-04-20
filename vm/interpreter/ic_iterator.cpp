@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_ic_iterator.cpp.incl"
+#include "code/compiledPIC.hpp"
+#include "interpreter/ic_iterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "oops/klassOop.hpp"
+#include "utilities/growableArray.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // Implementation of IC
 

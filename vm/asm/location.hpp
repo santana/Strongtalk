@@ -21,13 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LOCATION_HPP
+#define _LOCATION_HPP
+
 # ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+
+#include <cstdint>
+
+template <class E> class GrowableArray;
 
 // Locations serve as abstractions for physical addresses. For each
 // physical location (register, stack position or context temporary),
 // there is a corresponding location and vice versa.
-
-#include <cstdint>
 
 enum Mode {
 // mode\bits		3...................31	describes
@@ -178,4 +185,5 @@ class IntFreeList : public PrintableResourceObj {
 };
 
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _LOCATION_HPP

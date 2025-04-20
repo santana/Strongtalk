@@ -21,6 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _INLINING_DB_HPP
+#define _INLINING_DB_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
+
+#include <cstddef>
+#include <cstdio>
+
+class LookupKey;
+class RScope;
+class nmethod;
+class outputStream;
+
 // Interface to the inlining database
 
 class InliningDatabaseKey;
@@ -104,3 +118,4 @@ class InliningDatabase : AllStatic {
   static inline unsigned int index_for(LookupKey* outer, LookupKey* inner);
   static inline unsigned int next_index(unsigned int index);
 };
+#endif // _INLINING_DB_HPP

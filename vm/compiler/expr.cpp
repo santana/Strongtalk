@@ -22,10 +22,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_expr.cpp.incl"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/node.hpp"
+#include "compiler/nodeBuilder.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/scope.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/klassOop.hpp"
 
 const int UnknownExpr::UnlikelyBit 	  = 1;
 const int MergeExpr::SplittableBit        = 2;
@@ -695,4 +701,4 @@ void ExprStack::print() {
 }
 
 
-# endif
+#endif // DELTA_COMPILER

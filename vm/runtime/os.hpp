@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OS_HPP
+#define _OS_HPP
+
+#include "utilities/longInt.hpp"
+
 // os defines the interface to operating system
 
 typedef void (*dll_func)(...);
@@ -139,3 +144,4 @@ class ThreadCritical {
   ThreadCritical();
   ~ThreadCritical();
 };
+#endif // _OS_HPP

@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CODE_BUFFER_HPP
+#define _CODE_BUFFER_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/relocInfo.hpp"
+#include "memory/allocation.hpp"
 
 class  MacroAssembler;
 extern MacroAssembler* theMacroAssm;
@@ -64,4 +70,5 @@ class CodeBuffer: public PrintableResourceObj {
   void  print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _CODE_BUFFER_HPP

@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LOOP_OPT_HPP
+#define _LOOP_OPT_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "compiler/opcode.hpp"
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 // Implementation of loop optimizations: moving type tests out of loops, finding candidates for register
 // allocation within a loop, plus integer-specific optimizations (removing tag checks and bound checks).
@@ -129,5 +137,5 @@ public:
   void print_test_on(outputStream* s);
 };
 
-#endif
-
+#endif // DELTA_COMPILER
+#endif // _LOOP_OPT_HPP

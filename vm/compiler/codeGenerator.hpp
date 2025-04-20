@@ -21,8 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CODE_GENERATOR_HPP
+#define _CODE_GENERATOR_HPP
+
 #ifdef DELTA_COMPILER
 
+#include "asm/assembler.hpp"
+#include "code/pregMapping.hpp"
+#include "compiler/basicBlock.hpp"
+#include "compiler/opcode.hpp"
+#include "utilities/growableArray.hpp"
+
+class AbstractBranchNode;
 class Stub;
 class DebugInfoWriter;
 
@@ -159,4 +169,5 @@ class CodeGenerator: public NodeVisitor {
   void aCommentNode(CommentNode* node) {}
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _CODE_GENERATOR_HPP

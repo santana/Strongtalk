@@ -22,8 +22,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_snapshot.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/snapshot.hpp"
+#include "memory/universe.hpp"
 
 void SnapshotDesc::read_header() {
   read_revision();

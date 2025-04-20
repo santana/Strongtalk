@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ASSOCIATION_KLASS_HPP
+#define _ASSOCIATION_KLASS_HPP
+
+#include "oops/associationOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 // associations are cons cells used in the Delta system dictionary.
 class associationKlass: public memOopKlass {
  public:
@@ -68,3 +74,4 @@ class associationKlass: public memOopKlass {
   int oop_header_size() const { return associationOopDesc::header_size(); }
 };
 void set_associationKlass_vtbl(Klass* k);
+#endif // _ASSOCIATION_KLASS_HPP

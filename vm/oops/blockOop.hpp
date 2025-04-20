@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BLOCK_OOP_HPP
+#define _BLOCK_OOP_HPP
+
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/smiOop.hpp"
+
 // A blockClosureOop is the oop of a block closure, i.e., the object created
 // when a block literal like [3 + 4] is evaluated.  Blocks can be "clean"
 // (have no free variables, like [3 + 4]), in which case their _lexical_scope
@@ -146,3 +153,4 @@ class contextOopDesc: public memOopDesc {
   friend class contextKlass;
 };
 inline contextOop as_contextOop(void* p) { return contextOop(as_memOop(p)); }
+#endif // _BLOCK_OOP_HPP

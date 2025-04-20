@@ -21,9 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dll.cpp.incl"
-
+#include "code/stubRoutines.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "oops/oop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
+#include "prims/prim_def.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/process.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // InterpretedDLL_Cache implementation
 
@@ -199,4 +208,3 @@ extern "C" {
     DLLs::exit_async_call(addr);
   }
 }
-

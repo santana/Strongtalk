@@ -18,8 +18,11 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_hCodeBuffer.cpp.incl"
+#include "interpreter/hCodeBuffer.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayOop.hpp"
+
 void HCodeBuffer::align() {
   while(!isAligned())
     _bytes->append(0xFF);

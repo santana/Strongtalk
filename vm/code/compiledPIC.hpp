@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _COMPILED_PIC_HPP
+#define _COMPILED_PIC_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/compiledIC.hpp"
+#include "interpreter/ic_iterator.hpp"
 
 // A PIC implements a Polymorphic Inline Cache for compiled code.
 // It may be megamorphic, in which case it may cache only the last
@@ -29,6 +35,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class PIC_Iterator;
 class PIC_contents;
+class LookupResult;
+
+template <class E> class GrowableArray;
 
 class PIC {
  public:
@@ -223,4 +232,5 @@ class CompiledIC_Iterator: public IC_Iterator {
 };
 
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _COMPILED_PIC_HPP

@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RSET_HPP
+#define _RSET_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/oopsHierarchy.hpp"
+
 #include <cstdint>
 
 // remembered set for GC, implemented as a card marking byte array with one byte / card
@@ -86,3 +92,4 @@ class rSet: public CHeapObj {
   rSet(rSet *old, char *start, char *end);
   bool has_page_dirty_objects(oldSpace* sp, char* page);
 };
+#endif // _RSET_HPP

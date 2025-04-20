@@ -21,8 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NODE_HPP
+#define _NODE_HPP
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
+
+#include "compiler/basicBlock.hpp"
+#include "compiler/bitVector.hpp"
+#include "compiler/opcode.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/scope.hpp"
+#include "runtime/os.hpp"
 
 // This file defines the intermediate language used by the Compiler.
 // For each node a code pattern is generated during code generation.
@@ -1861,4 +1870,5 @@ class NodeFactory : AllStatic {
 void printNodes(Node* n);   // print n and its successors
 #endif
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _NODE_HPP

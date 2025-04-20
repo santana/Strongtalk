@@ -21,8 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_proxyKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/proxyKlass.hpp"
 
 void set_proxyKlass_vtbl(Klass* k) {
   proxyKlass o;

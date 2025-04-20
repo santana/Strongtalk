@@ -21,10 +21,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _NODE_BUILDER_HPP
+#define _NODE_BUILDER_HPP
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
+
+#include "interpreter/methodIterator.hpp"
 
 // The NodeBuilder generates the intermediate representation for a method or block.
+
+template <class E> class GrowableArray;
 
 class AssignNode;
 class TypeTestNode;
@@ -144,4 +150,5 @@ class NodeBuilder: public CustomizedMethodClosure {
 };
 
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _NODE_BUILDER_HPP

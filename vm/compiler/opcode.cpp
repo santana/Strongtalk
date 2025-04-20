@@ -21,11 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_opcode.cpp.incl"
+#include "compiler/opcode.hpp"
+#include "memory/error.hpp"
 
 char* BranchOpName[] = {
   "B=",    "B#",
@@ -99,4 +98,4 @@ void opcode_init() {
   }
 }
 
-#endif
+#endif // DELTA_COMPILER

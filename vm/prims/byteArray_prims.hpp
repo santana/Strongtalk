@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BYTE_ARRAY_PRIMS_HPP
+#define _BYTE_ARRAY_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
 
 // Primitives for byte arrays
 
@@ -609,3 +614,4 @@ class byteArrayPrimitives : AllStatic {
   //%
   static PRIM_DECL_3(alienCallResultWithArguments, oop receiver, oop argument1, oop argument2);
 };
+#endif // _BYTE_ARRAY_PRIMS_HPP

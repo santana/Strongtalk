@@ -1,4 +1,11 @@
-#include "incls/_precompiled.incl"
+#include "asm/assembler.hpp"
+#include "code/nmethod.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/os.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/lprintf.hpp"
 
 void trace(vframe* from_frame, int start_frame, int number_of_frames){
   FlagSetting fs(ActivationShowCode, true);

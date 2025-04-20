@@ -21,11 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_regAlloc.cpp.incl"
+#include "asm/x86_mapping.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/regAlloc.hpp"
+#include "compiler/scope.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 RegisterAllocator* theAllocator;
 
@@ -94,5 +98,4 @@ void RegisterAllocator::allocate(GrowableArray<PReg*>* globals) {
   }
 }
 
-
-# endif // DELTA_COMPILER
+#endif // DELTA_COMPILER

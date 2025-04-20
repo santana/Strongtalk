@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VFRAME_HPP
+#define _VFRAME_HPP
+
+#include "asm/location.hpp"
+#include "memory/allocation.hpp"
+#include "runtime/frame.hpp"
 
 // vframes are virtual stack frames representing source level activations.
 // A deltaVFrame represents an activation of a Delta level method. A single
@@ -423,3 +429,4 @@ class cChunk: public cVFrame {
   // Virtual defined in vframe
   oop callee_argument_at(int index) const;
 };
+#endif // _VFRAME_HPP

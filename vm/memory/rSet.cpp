@@ -22,11 +22,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
+#include "memory/iterator.hpp"
+#include "memory/rSet.hpp"
+#include "memory/universe.hpp"
+#include "oops/memOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "runtime/runtime.hpp"
+#include "topIncludes/std_includes.hpp"
 
-# include <string.h>
-
-# include "incls/_rSet.cpp.incl"
+#include <string.h>
 
 // values of bytes in byte map: during normal operation (incl. scavenge),
 // bytes are either -1 (clean) or 0 (dirty); i.e., the interpreter / compiled code

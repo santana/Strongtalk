@@ -21,10 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_codeBuffer.cpp.incl"
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
+#include "asm/codeBuffer.hpp"
+#include "code/nmethod.hpp"
+#include "disasm/disassembler.hpp"
 
 MacroAssembler* theMacroAssm = NULL;
 
@@ -112,4 +113,4 @@ void CodeBuffer::print() {
 }
 
 
-# endif
+#endif // DELTA_COMPILER

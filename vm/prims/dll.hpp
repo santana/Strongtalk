@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef DLL_HPP
+#define DLL_HPP
+
 // Support routines for Dynamic Link Libraries (DLLs)
+
+#include "code/nativeInstruction.hpp"
+#include "memory/allocation.hpp"
+#include "runtime/os.hpp"
 
 #include <cstdint>
 
@@ -113,3 +120,4 @@ class DLLs: AllStatic {
   static void exit_async_call(DeltaProcess** addr);	// called after each asynchronous DLL call
   static void exit_sync_call(DeltaProcess** addr);	// called after each synchronous DLL call
 };
+#endif // DLL_HPP

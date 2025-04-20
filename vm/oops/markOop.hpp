@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MARK_OOP_HPP
+#define _MARK_OOP_HPP
+
 // Bit-format of markOop:
 //  sentinel:1 near_death:1 tagged_contents:1 age:7 hash:20 tag:2 = 32 bits
 //  - sentinel is needed during pointer reversal in garbage collection 
@@ -35,6 +38,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    PLEASE DO NOT CHANGE THE AGE FIELD since the garbage collector relies on the size.
 //  - hash contains the identity hash value.
 //  - tag contains the special mark tag
+
+#include "oops/oop.hpp"
+#include "topIncludes/config.hpp"
 
 #include <cstdint>
 
@@ -151,3 +157,4 @@ class markOopDesc: public oopDesc {
 // used during pointer reversal during GC.
 //inline bool is_oop_root(oop* p) { return !markOop(p)->has_sentinel(); }
 inline bool is_oop_root(oop* p) { return !markOop(p)->is_mark(); }
+#endif // _MARK_OOP_HPP

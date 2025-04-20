@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef  _ERROR_HPP
+#define  _ERROR_HPP
+
+#include "topIncludes/macros.hpp"
+
 #ifndef DEBUG_EXCEPTION
 #define DEBUG_EXCEPTION error_breakpoint();
 #endif
@@ -77,3 +82,4 @@ void report_should_not_reach_here(char* file_name, int line_no);
 void report_subclass_responsibility(char* file_name, int line_no);
 void report_unimplemented(char* file_name, int line_no);
 void report_vm_state();
+#endif // _ERROR_HPP

@@ -22,6 +22,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
+#ifndef  _UNIVERSE_HPP
+#define  _UNIVERSE_HPP
+
+#include "memory/allocation.hpp"
+#include "memory/generation.hpp"
+#include "memory/rSet.hpp"
+#include "memory/spaceSize.hpp"
+#include "oops/oop.hpp"
+
 extern bool NeedScavenge;       // set when eden overflows
 
 extern  bool GCInProgress;       // GC/scavenge in progress
@@ -435,3 +444,5 @@ class VerifyNoAllocation : public VerifyNoScavenge {
 
 # define SPACE_VERIFY_OOP_TEMPLATE(s)                                         \
     if (s->contains(p)) return true;
+
+#endif // _UNIVERSE_HPP

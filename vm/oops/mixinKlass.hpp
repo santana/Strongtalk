@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MIXIN_KLASS_HPP
+#define _MIXIN_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/mixinOop.hpp"
+
 class mixinKlass: public memOopKlass {
  public:
   // testers
@@ -60,3 +66,4 @@ class mixinKlass: public memOopKlass {
   friend void set_mixinKlass_vtbl(Klass* k);
 };
 void set_mixinKlass_vtbl(Klass* k);
+#endif // _MIXIN_KLASS_HPP

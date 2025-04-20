@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BYTECODES_HPP
+#define _BYTECODES_HPP
+
 // Bytecodes comprises the definition of all bytecodes
 // and provides utility functions working on bytecodes.
 //
@@ -50,6 +53,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // self		no receiver, arguments on stack, normal send
 // super	no receiver, arguments on stack, super  send
 
+#include "memory/allocation.hpp"
 
 class Bytecodes: AllStatic {
  public:
@@ -502,3 +506,4 @@ class Bytecodes: AllStatic {
   static void init();
   static void print();
 };
+#endif // _BYTECODES_HPP

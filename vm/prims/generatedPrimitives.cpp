@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_generatedPrimitives.cpp.incl"
+#include "asm/codeBuffer.hpp"
+#include "memory/vmSymbols.hpp"
+#include "prims/generatedPrimitives.hpp"
+#include "prims/prim.hpp"
+#include "runtime/os.hpp"
+#include "topIncludes/std_includes.hpp"
+
+#include <cstdio>
 
 // entry points
 char* GeneratedPrimitives::_allocateContext_var			= NULL;

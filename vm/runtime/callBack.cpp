@@ -21,8 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_callBack.cpp.incl"
+#include "code/stubRoutines.hpp"
+#include "memory/handle.hpp"
+#include "oops/oop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/dll.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/callBack.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "runtime/os.hpp"
+#include "topIncludes/std_includes.hpp"
 
 void callBack::initialize(oop receiver, symbolOop selector) {
   assert(selector->is_symbol(), "must be symbol");

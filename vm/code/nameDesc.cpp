@@ -21,11 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_nameDesc.cpp.incl"
+#include "code/nameDesc.hpp"
+#include "code/scopeDesc.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/stackChunk.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
 
 void LocationNameDesc::print() {
   mystd->print("@%s (%d)", location().name(), offset);
@@ -140,4 +146,4 @@ oop MemoizedBlockNameDesc::value(const frame* fr) const {
   }
 }
 
-#endif
+#endif // DELTA_COMPILER

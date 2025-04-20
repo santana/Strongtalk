@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PRETTY_PRINTER_HPP
+#define _PRETTY_PRINTER_HPP
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
+
 // This file contains the interface to the vm pretty printer.
 //    prettyPrintStream describes the output media.
 //    prettyPrinter     defined the interface for printing.
@@ -132,3 +139,4 @@ class prettyPrinter : AllStatic {
   					 klassOop  klass  = NULL,
   					 int       bci    = -1);
 };
+#endif // _PRETTY_PRINTER_HPP

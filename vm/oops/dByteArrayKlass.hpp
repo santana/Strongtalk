@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DBYTE_ARRAY_KLASS_HPP
+#define _DBYTE_ARRAY_KLASS_HPP
+
+#include "oops/dByteArrayOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class doubleByteArrayKlass: public memOopKlass {
  public:
   // allocation properties
@@ -70,3 +76,4 @@ class doubleByteArrayKlass: public memOopKlass {
   bool oop_is_indexable() const       { return true; }
 };
 void set_doubleByteArrayKlass_vtbl(Klass* k);
+#endif // _DBYTE_ARRAY_KLASS_HPP

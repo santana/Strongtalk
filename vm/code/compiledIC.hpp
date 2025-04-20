@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _COMPILED_IC_HPP
+#define _COMPILED_IC_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/nativeInstruction.hpp"
 
 // ICs describe the interface to a send in an nmethod.
 // A IC can either describe:
@@ -204,4 +209,5 @@ inline PrimitiveIC* PrimitiveIC_from_return_addr(char* return_addr)
     return (PrimitiveIC*)nativeCall_from_relocInfo(displacement_address);
 }
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _COMPILED_IC_HPP

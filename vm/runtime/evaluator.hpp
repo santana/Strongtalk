@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _EVALUATOR_HPP
+#define _EVALUATOR_HPP
+
+#include "memory/allocation.hpp"
+
 // The evaluator provides a read-eval-loop for simple vm debugging
 // See print_help() for documentation.
 
@@ -42,3 +47,4 @@ class evaluator : AllStatic {
   static void read_eval_loop();
   static void single_step(int* fr);
 };
+#endif // _EVALUATOR_HPP

@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_mixin_prims.cpp.incl"
+#include "memory/vmSymbols.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/mixin_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/debug.hpp"
 
 TRACE_FUNC(TraceMixinPrims, "mixin")
 
@@ -47,7 +51,7 @@ PRIM_DECL_2(mixinOopPrimitives::method_at, oop mixin, oop index) {
 
   int i = smiOop(index)->value();  
   if (i > 0 && i <= mixinOop(mixin)->number_of_methods()) 
-    return mixinOop(mixin)->method_at(i);
+    return reinterpret_cast<oop>(mixinOop(mixin)->method_at(i));
   return markSymbol(vmSymbols::out_of_bounds());
 }
 
@@ -84,7 +88,7 @@ PRIM_DECL_2(mixinOopPrimitives::remove_method_at, oop mixin, oop index) {
   BlockScavenge bs;
   int i = smiOop(index)->value(); 
   if (i > 0 && i <= mixinOop(mixin)->number_of_methods()) 
-    return mixinOop(mixin)->remove_method_at(i);
+    return reinterpret_cast<oop>(mixinOop(mixin)->remove_method_at(i));
   return markSymbol(vmSymbols::out_of_bounds());
 }
 
@@ -93,7 +97,7 @@ PRIM_DECL_1(mixinOopPrimitives::methods, oop mixin) {
   // Check parameters
   if (!mixin->is_mixin())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return mixinOop(mixin)->methods();
+  return reinterpret_cast<oop>(mixinOop(mixin)->methods());
 }
 
 PRIM_DECL_1(mixinOopPrimitives::number_of_instance_variables, oop mixin) {
@@ -161,7 +165,7 @@ PRIM_DECL_1(mixinOopPrimitives::instance_variables, oop mixin) {
   // Check parameters
   if (!mixin->is_mixin())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return mixinOop(mixin)->instVars();
+  return reinterpret_cast<oop>(mixinOop(mixin)->instVars());
 }
 
 PRIM_DECL_1(mixinOopPrimitives::number_of_class_variables, oop mixin) {
@@ -228,7 +232,7 @@ PRIM_DECL_1(mixinOopPrimitives::class_variables, oop mixin) {
   // Check parameters
   if (!mixin->is_mixin())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return mixinOop(mixin)->classVars();
+  return reinterpret_cast<oop>(mixinOop(mixin)->classVars());
 }
 
 PRIM_DECL_1(mixinOopPrimitives::primary_invocation, oop mixin) {
@@ -237,7 +241,7 @@ PRIM_DECL_1(mixinOopPrimitives::primary_invocation, oop mixin) {
   if (!mixin->is_mixin())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  return mixinOop(mixin)->primary_invocation();
+  return reinterpret_cast<oop>(mixinOop(mixin)->primary_invocation());
 }
 
 PRIM_DECL_2(mixinOopPrimitives::set_primary_invocation, oop mixin, oop klass) {

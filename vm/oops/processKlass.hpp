@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PROCESS_KLASS_HPP
+#define _PROCESS_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/processOop.hpp"
+
 class processKlass: public memOopKlass {
  public:
   friend void set_processKlass_vtbl(Klass* k);
@@ -61,3 +67,4 @@ class processKlass: public memOopKlass {
   int object_size() const;
 };
 void set_processKlass_vtbl(Klass* k);
+#endif // _PROCESS_KLASS_HPP

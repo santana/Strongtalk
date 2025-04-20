@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _KLASS_KLASS_HPP
+#define _KLASS_KLASS_HPP
+
+#include "oops/klassOop.hpp"
+#include "oops/memOopKlass.hpp"
+
 class klassKlass: public memOopKlass {
  public:
   friend void set_klassKlass_vtbl(Klass* k);
@@ -65,3 +71,4 @@ class klassKlass: public memOopKlass {
   int oop_header_size() const { return klassOopDesc::header_size(); }
 };
 void set_klassKlass_vtbl(Klass* k);
+#endif // _KLASS_KLASS_HPP

@@ -21,12 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_defUse.cpp.incl"
-
+#include "asm/x86_mapping.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/defUse.hpp"
+#include "compiler/node.hpp"
+#include "memory/iterator.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
   void DUInfo::propagateTo(BB* useBB, Use* use, const NonTrivialNode* fromNode, 
   			   PReg* src, NonTrivialNode* toNode, const bool global) {
@@ -275,4 +278,4 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     l->apply(doUsesFn);
   }
   
-# endif
+#endif // DELTA_COMPILER

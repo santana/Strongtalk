@@ -22,10 +22,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
 #ifdef DELTA_COMPILER
 
-#include "incls/_recompiler.cpp.incl"
+#include "code/nmethod.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/inliner.hpp"
+#include "interpreter/interpreter.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/recompiler.hpp"
+#include "recompiler/rframe.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/growableArray.hpp"
 
 RecompilationPolicy::RecompilationPolicy(RFrame* first) {
   stack = new GrowableArray<RFrame*>(50);

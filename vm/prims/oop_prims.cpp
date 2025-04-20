@@ -21,8 +21,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_oop_prims.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/oop_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "utilities/objectIDTable.hpp"
 
 TRACE_FUNC(TraceOopPrims, "oop")
 
@@ -158,12 +171,12 @@ PRIM_DECL_1(oopPrimitives::oop_size, oop receiver) {
 
 PRIM_DECL_1(oopPrimitives::klass, oop receiver) {
   PROLOGUE_1("klass", receiver)
-  return receiver->klass();
+  return reinterpret_cast<oop>(receiver->klass());
 }
 
 PRIM_DECL_1(oopPrimitives::klass_of, oop obj) {
   PROLOGUE_1("klass_of", obj)
-  return obj->klass();
+  return reinterpret_cast<oop>(obj->klass());
 }
 
 PRIM_DECL_1(oopPrimitives::print, oop receiver) {

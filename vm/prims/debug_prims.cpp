@@ -21,8 +21,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_debug_prims.cpp.incl"
+#include "code/nmethod.hpp"
+#include "interpreter/interpreter.hpp"
+#include "interpreter/prettyPrinter.hpp"
+#include "lookup/lookupCache.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/debug_prims.hpp"
+#include "prims/prim.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vmOperations.hpp"
+#include "utilities/growableArray.hpp"
 
 TRACE_FUNC(TraceDebugPrims, "debug")
 

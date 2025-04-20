@@ -22,11 +22,28 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-#include "incls/_rframe.cpp.incl"
+#include "code/compiledIC.hpp"
+#include "code/compiledPIC.hpp"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/ic_iterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/methodIterator.hpp"
+#include "lookup/key.hpp"
+#include "memory/universe.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/symbolOop.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/rframe.hpp"
+#include "runtime/process.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/growableArray.hpp"
 
 const RFrame* noCaller    = (RFrame*) 0x1;		// no caller (i.e., initial frame)
 const RFrame* noCallerYet = (RFrame*) 0x0;		// caller not yet computed
@@ -332,4 +349,4 @@ void InterpretedRFrame::print() {
   RFrame::print("int.");
 }
 
-#endif
+#endif // DELTA_COMPILER

@@ -21,8 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_fprofiler.cpp.incl"
+#include "code/compiledPIC.hpp"
+#include "code/nmethod.hpp"
+#include "code/relocInfo.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/compiler.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "runtime/fprofiler.hpp"
+#include "runtime/process.hpp"
+#include "runtime/task.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 pnode** FlatProfiler::table = NULL;
 int     FlatProfiler::table_size = 1024;

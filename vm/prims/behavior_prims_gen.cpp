@@ -20,8 +20,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_behavior_prims_gen.cpp.incl"
+#include "asm/assembler.hpp"
+#include "prims/generatedPrimitives.hpp"
+
 static bool stop = false;
 char* PrimitivesGenerator::primitiveNew(int n) {
   Address klass_addr =  Address(esp, +2 * oopSize);

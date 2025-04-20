@@ -20,6 +20,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _GENERATED_PRIMITIVES_HPP
+#define _GENERATED_PRIMITIVES_HPP
+
+#include "asm/assembler.hpp"
+#include "compiler/compiler.hpp"
+#include "memory/allocation.hpp"
+#include "memory/universe.hpp"
 
 // GeneratedPrimitives contains the assembly primitives.
 // Instead of relying on an assembler, they are generated
@@ -146,3 +153,4 @@ class GeneratedPrimitives: AllStatic {
   static void patch_primitiveValue();
   static void init();				// must be called in system initialization phase
 };
+#endif // _GENERATED_PRIMITIVES_HPP

@@ -21,8 +21,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_evaluator.cpp.incl"
+#include "interpreter/dispatchTable.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "lookup/key.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/smiOop.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/evaluator.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/vframe.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vmOperations.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/objectIDTable.hpp"
+
+#include <cstdio>
 
 // The single_step_handler is called from single_step_stub
 // when a single step has taken place
@@ -206,7 +224,7 @@ bool TokenStream::is_symbol(oop* addr) {
   char name[200];
   unsigned int length; 
   if (sscanf(current(), "#%[a-zA-Z0-9_]%n", name, &length) == 1 && strlen(current()) == length) {
-    *addr = oopFactory::new_symbol(name);
+    *addr = reinterpret_cast<oop>(oopFactory::new_symbol(name));
     return true;
   }
   return false;
@@ -238,7 +256,7 @@ bool evaluator::get_oop(TokenStream* st, oop* addr) {
 
 
 bool validate_lookup(oop receiver, symbolOop selector) {
- LookupKey key(receiver->klass(), selector);
+ LookupKey key(receiver->klass(), reinterpret_cast<oop>(selector));
  if (lookupCache::lookup(&key).is_empty()) {
    mystd->print_cr("Lookup error");
    key.print_on(mystd);
@@ -260,14 +278,14 @@ void evaluator::eval_message(TokenStream* st) {
   } else if (st->is_unary()) {
     symbolOop selector = oopFactory::new_symbol(st->current());
     if (!validate_lookup(receiver, selector)) return;
-    result = Delta::call(receiver, selector);
+    result = Delta::call(receiver, reinterpret_cast<oop>(selector));
   } else if (st->is_binary()) {
     selector = oopFactory::new_symbol(st->current());
     if (!validate_lookup(receiver, selector)) return;
     oop argument;
     st->advance();
     if (!get_oop(st, &argument)) return;
-    result = Delta::call(receiver, selector, argument);
+    result = Delta::call(receiver, reinterpret_cast<oop>(selector), argument);
   } else if (st->is_keyword()) {
     char name[100];
     oop  arguments[10];
@@ -283,7 +301,7 @@ void evaluator::eval_message(TokenStream* st) {
     selector = oopFactory::new_symbol(name);
     if (!validate_lookup(receiver, selector)) return;
     static DeltaCallCache cache;
-    result = Delta::call_generic(&cache, receiver, selector, nofArgs, arguments);
+    result = Delta::call_generic(&cache, receiver, reinterpret_cast<oop>(selector), nofArgs, arguments);
   }
   result->print_value();
   mystd->cr();

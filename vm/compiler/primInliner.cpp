@@ -21,10 +21,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_primInliner.cpp.incl"
+#include "compiler/compUtils.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/inliner.hpp"
+#include "compiler/primInliner.hpp"
+#include "compiler/rscope.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "topIncludes/std_includes.hpp"
 
 inline bool equal(char* s, char* t) { return strcmp(s, t) == 0; }
 
@@ -93,7 +103,7 @@ Expr* PrimInliner::tryConstantFold() {
   } else if (res->is_mem() && !res->is_old()) {
     // must tenure result because nmethods aren't scavenged
     if (res->is_double()) {
-      res = oopFactory::clone_double_to_oldspace(doubleOop(res));
+      res = reinterpret_cast<oop>(oopFactory::clone_double_to_oldspace(doubleOop(res)));
     } else {
       // don't know how to tenure non-doubles
       warning("const folding: primitive %s is returning non-tenured object", _pdesc->name());
@@ -995,4 +1005,4 @@ void PrimInliner::print() {
 }
 
 
-# endif
+#endif // DELTA_COMPILER

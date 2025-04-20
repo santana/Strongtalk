@@ -21,7 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _COMPILE_TIME_CLOSURE_HPP
+#define _COMPILE_TIME_CLOSURE_HPP
+
 # ifdef DELTA_COMPILER
+
+#include "code/jumpTable.hpp"
 
 // A CompileTimeClosure represents a block closure at compile time. It holds the noninlined
 // block method and a unique identification of the compiled & customized home method
@@ -69,7 +74,5 @@ class CompileTimeClosure: public PrintableResourceObj {
   virtual bool verify() const;
 };
 
-# endif
-
-
-
+#endif // DELTA_COMPILER
+#endif // _COMPILE_TIME_CLOSURE_HPP

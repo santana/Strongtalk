@@ -21,8 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CODE_ITERATOR_HPP
+#define _CODE_ITERATOR_HPP
+
 // CodeIterator is a simple but fast iterator for
 // scanning byte code instructions in a methodOop.
+
+#include "interpreter/bytecodes.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
 
 #include <cstdint>
 
@@ -102,3 +109,4 @@ class CodeIterator: public StackObj {
   // For byte code manipulation
   void set_code(u_char code) { *current = code; }
 };
+#endif // _CODE_ITERATOR_HPP

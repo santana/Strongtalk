@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _METHOD_ITERATOR_HPP
+#define _METHOD_ITERATOR_HPP
+
+#include "interpreter/floats.hpp"
+#include "memory/allocation.hpp"
+#include "runtime/os.hpp"
+
 // The MethodIterator iterates over the byte code structures of a methodOop
 // Usage:
 //    MethodIterator(method, &SomeMethodClosure);
@@ -495,3 +502,4 @@ class MethodIterator: StackObj {
   MethodIterator(MethodInterval* interval, MethodClosure* blk, AbstractMethodIntervalFactory* f = &defaultFactory);
   MethodInterval* interval() const { return _interval; }
 };
+#endif // _METHOD_ITERATOR_HPP

@@ -21,11 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_scopeDesc.cpp.incl"
+#include "code/nameDesc.hpp"
+#include "code/nmethod.hpp"
+#include "code/nmethodScopes.hpp"
+#include "code/scopeDesc.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "compiler/expr.hpp"
+#include "oops/symbolOop.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
 
 char* ScopeDesc::invalid_pc = (char*) -1;
 
@@ -543,6 +549,4 @@ Expr* ScopeDesc::selfExpr(PReg* p) const {
   return new KlassExpr(self_klass, p, NULL);
 }
 
-
-#endif
-
+#endif // DELTA_COMPILER

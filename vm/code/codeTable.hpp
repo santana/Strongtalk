@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CODE_TABLE_HPP
+#define _CODE_TABLE_HPP
+
 #ifdef DELTA_COMPILER
 
 // The code table is used to find nmethods in the zone.
@@ -28,6 +31,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 //%note
 // Should implement free list like symbolTable (Lars 2/10-95)
+
+#include "memory/allocation.hpp"
+#include "topIncludes/asserts.hpp"
 
 #include <cstdint>
 
@@ -106,4 +112,5 @@ class codeTable : public PrintableCHeapObj{
   friend class zone;
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _CODE_TABLE_HPP

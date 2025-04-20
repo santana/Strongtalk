@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DISCLAIMER_HPP
+#define _DISCLAIMER_HPP
+
+#include "memory/allocation.hpp"
+#include "topIncludes/std_includes.hpp"
+
 class Disclaimer: AllStatic {
  private:
   static char* _msg;
@@ -56,3 +62,4 @@ class Disclaimer: AllStatic {
   static void print_disclaimer(outputStream* s = mystd);
   static void initialize();
 };
+#endif // _DISCLAIMER_HPP

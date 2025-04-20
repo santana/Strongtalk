@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DVALUE_ARRAY_PRIMS_HPP
+#define _DVALUE_ARRAY_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for double value arrays
 
 class doubleValueArrayPrimitives : AllStatic {
@@ -70,3 +76,4 @@ class doubleValueArrayPrimitives : AllStatic {
 
 };
 
+#endif // _DVALUE_ARRAY_PRIMS_HPP

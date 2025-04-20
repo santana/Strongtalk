@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_init.cpp.incl"
+#include "memory/allocation.hpp"
+#include "runtime/init.hpp"
+#include "runtime/debug.hpp"
 
 // Add new initialization/finalization methods to the macro below; your
 // functions must be parameterless and must be named after the .c file

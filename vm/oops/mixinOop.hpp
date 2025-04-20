@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MIXIN_OOP_HPP
+#define _MIXIN_OOP_HPP
+
+#include "oops/memOop.hpp"
+
 // mixin objects holds the description of a class
 // All classes are results of mixin invocations.
 
@@ -112,3 +117,4 @@ class mixinOopDesc: public memOopDesc {
   friend class mixinKlass;
 };
 inline mixinOop as_mixinOop(void* p) { return mixinOop(as_memOop(p)); }
+#endif // _MIXIN_OOP_HPP

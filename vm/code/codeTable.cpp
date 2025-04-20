@@ -23,11 +23,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_codeTable.cpp.incl"
+#include "code/codeTable.hpp"
+#include "code/nmethod.hpp"
+#include "lookup/key.hpp"
 
 codeTable::codeTable(int size) {
   tableSize = size;
@@ -160,4 +160,4 @@ void codeTable::print_stats() {
 # endif
 }
 
-#endif
+#endif // DELTA_COMPILER

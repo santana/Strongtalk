@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VFRAME_PRIMS_HPP
+#define _VFRAME_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
 
 // Primitives for vframe
 
@@ -146,3 +151,4 @@ class vframeOopPrimitives : AllStatic {
   static PRIM_DECL_1(step_return, oop activation);
 
 };
+#endif // _VFRAME_PRIMS_HPP

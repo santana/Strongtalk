@@ -21,8 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_proxy_prims.cpp.incl"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/prim_impl.hpp"
+#include "prims/proxy_prims.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/os.hpp"
 
 TRACE_FUNC(TraceProxyPrims, "proxy")
 

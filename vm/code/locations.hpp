@@ -21,7 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _LOCATIONS_HPP
+#define _LOCATIONS_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "asm/assembler.hpp"
+#include "memory/allocation.hpp"
+#include "utilities/growableArray.hpp"
 
 // Locations manages register and stack locations. All locations are numbered. A fixed range
 // of indices >= 0 is assigned to arguments & registers and a growable range of indices >= 0
@@ -100,4 +107,5 @@ class Locations: public PrintableResourceObj {
   void verify();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _LOCATIONS_HPP

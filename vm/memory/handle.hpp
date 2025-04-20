@@ -21,12 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _HANDLE_HPP
+#define _HANDLE_HPP
+
 // Interface for preserving memOops across scavenge/gc in primitives.
 // ex.
 //    HandleMark hm;
 //    Handle saved_oop(obj);
 //    // call that might cause scavenge/gc
 //    saved_oop.as_klass()->foo();
+
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/objArrayOop.hpp"
 
 #include <cstdint>
 
@@ -147,3 +154,4 @@ class Handle : StackObj {
     return klassOop(Handles::oop_at(index));
   }
 };
+#endif // _HANDLE_HPP

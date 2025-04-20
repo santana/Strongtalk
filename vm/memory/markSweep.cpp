@@ -21,8 +21,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_markSweep.cpp.incl"
+#include "code/zone.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/rSet.hpp"
+#include "memory/rSet.inline.hpp"
+#include "memory/symbolTable.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.hpp"
+#include "oops/symbolOop.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "runtime/timer.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+
 typedef struct {
   oop anOop;
   oop* oopPointer;

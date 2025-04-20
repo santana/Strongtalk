@@ -21,9 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_sweeper.cpp.incl"
-# include <math.h>
+#include "code/nmethod.hpp"
+#include "code/zone.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "runtime/process.hpp"
+#include "runtime/sweeper.hpp"
+#include "runtime/task.hpp"
+#include "runtime/timer.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
+
+#include <math.h>
 
 // The sweeper run at real_time ticks. We only swep if the interrupted
 // Delta process is in a well-defined state (see SweeperTask).

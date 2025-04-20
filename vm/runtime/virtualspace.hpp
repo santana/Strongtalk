@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VIRTUAL_SPACE_HPP
+#define _VIRTUAL_SPACE_HPP
+
+#include "memory/allocation.hpp"
+
 // ReservedSpace is a data strucure for reserving a contiguous chunk of memory.
 
 class ReservedSpace : public ValueObj {
@@ -117,3 +122,4 @@ class VirtualSpaces : AllStatic {
   static void print();
   static void test();
 };
+#endif // _VIRTUAL_SPACE_HPP

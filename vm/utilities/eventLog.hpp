@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _EVENT_LOG_HPP
+#define _EVENT_LOG_HPP
+
+#include "memory/allocation.hpp"
+
 // The EL_Event log is used for debugging; it is a circular buffer containing
 // the last N events.  An EL_Event is represented by an identifying string
 // and up to EVENT_PARAMS parameters.
@@ -110,3 +115,4 @@ class EventMarker : StackObj {    // for events which have a duration
     }
   }
 };
+#endif // _EVENT_LOG_HPP

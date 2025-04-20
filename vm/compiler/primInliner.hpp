@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _PRIM_INLINER_HPP
+#define _PRIM_INLINER_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "compiler/node.hpp"
+#include "compiler/opcode.hpp"
+#include "memory/allocation.hpp"
+#include "prims/prim.hpp"
 
 // the PrimInliner inlines primitives (if possible) or generates a non-inlined call
 // there's one PrimInliner for each primitive call encountered
@@ -89,4 +97,5 @@ class PrimInliner: public PrintableResourceObj {
   void print();
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _PRIM_INLINER_HPP

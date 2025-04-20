@@ -21,8 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_block_prims.cpp.incl"
+#include "memory/handle.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/blockOop.hpp"
+#include "prims/block_prims.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
 
 TRACE_FUNC(TraceBlockPrims, "block")
 

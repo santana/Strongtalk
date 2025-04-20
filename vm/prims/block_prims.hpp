@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BLOCK_PRIMS_HPP
+#define _BLOCK_PRIMS_HPP
+
+#include "prims/prim_def.hpp"
+
 // Primitives for blocks
 
 // The following 9 primitives are implemented in the interpreter
@@ -280,3 +285,4 @@ PRIM_DECL_1(block_is_optimized, oop receiver);
 //     doc   = 'Tells whether the block has optimized code'
 //     name  = 'block_is_optimized' }
 //%
+#endif // _BLOCK_PRIMS_HPP

@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _UTIL_HPP
+#define _UTIL_HPP
+
+#include "oops/oopsHierarchy.hpp"
+#include "topIncludes/types.hpp"
 
 #include <cstdint>
+#include <cstdlib>
 
 // conveniences
 
@@ -95,3 +101,4 @@ inline int byte_size(void* from, void* to) {
   inline void Unused(int x) { x, 0; }
   inline void Unused(void *x) { x, 0; }
 
+#endif // _UTIL_HPP

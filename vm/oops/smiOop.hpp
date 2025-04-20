@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SMI_OOP_HPP
+#define _SMI_OOP_HPP
+
+#include "oops/oop.hpp"
+#include "topIncludes/tag.hpp"
 
 // 0, 1 in smiOop format
 
@@ -64,3 +69,4 @@ inline smiOop as_smiOop(smi value)
 {
     return smiOop((value << Tag_Size) + Int_Tag);
 }
+#endif // _SMI_OOP_HPP

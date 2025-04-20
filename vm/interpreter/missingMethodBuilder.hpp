@@ -18,6 +18,12 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 */
 
+#ifndef _MISSING_METHOD_BUILDER_HPP
+#define _MISSING_METHOD_BUILDER_HPP
+
+#include "interpreter/hCodeBuffer.hpp"
+#include "memory/allocation.hpp"
+
 class MissingMethodBuilder : public ResourceObj {
   HCodeBuffer buffer;
   symbolOop   selector;
@@ -31,3 +37,4 @@ public:
   objArrayOop oops();
   methodOop method() { return _method; };
 };
+#endif // _MISSING_METHOD_BUILDER_HPP

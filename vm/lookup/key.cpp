@@ -21,8 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_key.cpp.incl"
+#include "lookup/key.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/ostream.hpp"
 
 int LookupKey::hash() const {
   return klass()->identity_hash() ^ selector_or_method()->identity_hash();

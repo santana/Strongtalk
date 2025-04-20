@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OOP_PRIMS_HPP
+#define _OOP_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives applying to all objects
 
 class oopPrimitives : AllStatic {
@@ -202,3 +208,4 @@ class oopPrimitives : AllStatic {
   //%
   static PRIM_DECL_3(performArguments, oop receiver, oop selector, oop args);
 }; 
+#endif // _OOP_PRIMS_HPP

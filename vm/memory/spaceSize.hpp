@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SPACE_SIZE_HPP
+#define _SPACE_SIZE_HPP
+
+#include "memory/allocation.hpp"
 
 // default sizes for heaps & zone
 class spaceSizes : ValueObj {
@@ -41,4 +45,4 @@ public:
   // Reads debug variables for initial settings.
   void initialize();
 };
-
+#endif // _SPACE_SIZE_HPP

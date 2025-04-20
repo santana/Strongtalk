@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_smiKlass.cpp.incl"
+#include "oops/smiKlass.hpp"
+#include "utilities/ostream.hpp"
 
 klassOop smiKlass::create_subclass(mixinOop mixin, Format format) {
   return NULL;

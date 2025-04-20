@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_processOop.cpp.incl"
+#include "memory/vmSymbols.hpp"
+#include "oops/processOop.hpp"
+#include "runtime/process.hpp"
 
 void processOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

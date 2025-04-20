@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OBJ_ARRAY_OOP_HPP
+#define _OBJ_ARRAY_OOP_HPP
+
+#include "oops/klass.hpp"
+#include "oops/memOop.hpp"
+
 // objArrays are arrays containing oops
 
 // memory layout:
@@ -115,3 +121,4 @@ class weakArrayOopDesc: public objArrayOopDesc {
   void scavenge_contents_after_registration();
   void follow_contents_after_registration();
 };
+#endif // _OBJ_ARRAY_OOP_HPP

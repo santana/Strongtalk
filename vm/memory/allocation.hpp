@@ -21,7 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include <string.h>
+#ifndef _ALLOCATION_HPP
+#define _ALLOCATION_HPP
+
+#include "memory/util.hpp"
+#include "topIncludes/bits.hpp"
+#include "utilities/lprintf.hpp"
+
+#include <stdlib.h>
+#include <string.h>
 
 /*
   All classes in the virtual machine must be subclassed
@@ -299,4 +307,4 @@ class PrintableResourceObj : public ResourceObj {
   virtual void print() = 0;
   virtual void print_short();
 };
-
+#endif // _ALLOCATION_HPP

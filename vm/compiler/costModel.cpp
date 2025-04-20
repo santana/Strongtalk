@@ -21,9 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# ifdef DELTA_COMPILER
-# include "incls/_costModel.cpp.incl"
+#ifdef DELTA_COMPILER
+
+#include "compiler/costModel.hpp"
 
 
 int CostModel::_cost[Bytecodes::number_of_codes];
@@ -93,5 +93,4 @@ void costModel_init() {
   CostModel::set_default_costs();
 }
 
-
-# endif
+#endif // DELTA_COMPILER

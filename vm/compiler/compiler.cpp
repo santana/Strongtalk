@@ -18,16 +18,41 @@ THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENT
 INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-
-# include "incls/_compiler.cpp.incl"
+#include "asm/codeBuffer.hpp"
+#include "asm/x86_mapping.hpp"
+#include "code/inliningdb.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "compiler/basicBlock.hpp"
+#include "compiler/codeGenerator.hpp"
+#include "compiler/compUtils.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/inliner.hpp"
+#include "compiler/node.hpp"
+#include "compiler/oldCodeGenerator.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/regAlloc.hpp"
+#include "compiler/rscope.hpp"
+#include "compiler/scope.hpp"
+#include "disasm/disassembler.hpp"
+#include "interpreter/interpreter.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "oops/klassOop.hpp"
+#include "recompiler/recompile.hpp"
+#include "recompiler/recompiler.hpp"
+#include "runtime/process.hpp"
+#include "runtime/timer.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
 
 # ifdef ASSERT
+#include "runtime/debug.hpp"
     bool verifyOften = false;
 # else
     bool verifyOften = false;

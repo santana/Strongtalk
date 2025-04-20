@@ -25,7 +25,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the portion up to length bits is used.
 // SimpleBitVector: simple version that fits into a word (for speed)
 
-# ifdef DELTA_COMPILER
+#ifndef _BIT_VECTOR_HPP
+#define _BIT_VECTOR_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+#include "topIncludes/config.hpp"
 
   typedef void (*intDoFn)(int i);
   
@@ -128,4 +134,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     friend int findFirstUnused(LongRegisterMask** strings, int len, int start);
   };
   
-# endif
+#endif // DELTA_COMPILER
+#endif // _BIT_VECTOR_HPP

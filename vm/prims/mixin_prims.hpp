@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _MIXIN_PRIMS_HPP
+#define _MIXIN_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for mixins
 
 class mixinOopPrimitives : AllStatic {
@@ -219,3 +225,4 @@ class mixinOopPrimitives : AllStatic {
   static PRIM_DECL_1(set_uninstalled, oop mixin);
 
 };
+#endif // _MIXIN_PRIMS_HPP

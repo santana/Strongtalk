@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _REFLECTION_HPP
+#define _REFLECTION_HPP
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 class memConverter;
 class ClassChange;
@@ -80,3 +86,4 @@ class Reflection : AllStatic {
   // place forward pointer and 
   static void forward(memOop old_obj, memOop new_obj);
 };
+#endif // _REFLECTION_HPP

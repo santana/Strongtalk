@@ -21,8 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_oopFactory.cpp.incl"
+#include "memory/oopFactory.hpp"
+#include "memory/symbolTable.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/byteArrayKlass.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/processOop.hpp"
+#include "oops/vframeKlass.hpp"
+#include "oops/vframeOop.hpp"
+#include "runtime/process.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/growableArray.hpp"
+
 
 byteArrayOop oopFactory::new_byteArray(int size) {
   byteArrayKlass* bk =

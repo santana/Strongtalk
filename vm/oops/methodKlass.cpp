@@ -21,8 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_methodKlass.cpp.incl"
+#include "interpreter/codeIterator.hpp"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/methodKlass.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "utilities/ostream.hpp"
 
 void set_methodKlass_vtbl(Klass *k) {
   methodKlass o;

@@ -22,8 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_symbolTable.cpp.incl"
+#include "memory/symbolTable.hpp"
 
 # define FOR_ALL_ENTRIES(entry) \
   for (entry = firstBucket(); entry <= lastBucket(); entry ++)

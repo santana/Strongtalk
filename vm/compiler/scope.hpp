@@ -22,7 +22,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# ifdef DELTA_COMPILER
+#ifndef _SCOPE_HPP
+#define _SCOPE_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "code/scopeDesc.hpp"
+#include "compiler/nodeBuilder.hpp"
+#include "lookup/key.hpp"
+#include "oops/methodOop.hpp"
+#include "utilities/growableArray.hpp"
 
 // Scopes represent the source-level scopes compiled by the compiler.
 // Compilation starts with a method or a block. All subsequently in-
@@ -36,6 +45,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // up to the OutlinedScope representing the method enclosing the block method
 // may be in one or several stack frames.
 
+class IntFreeList;
 class Scope;
 class   InlinedScope;
 class     MethodScope;
@@ -406,4 +416,5 @@ class OutlinedBlockScope: public OutlinedScope {
 };
 
 
-# endif
+#endif // DELTA_COMPILER
+#endif // _SCOPE_HPP

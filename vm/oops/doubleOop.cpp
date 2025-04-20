@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_doubleOop.cpp.incl"
+#include "oops/doubleOop.hpp"
+#include "runtime/bootstrap.hpp"
   
 void doubleOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

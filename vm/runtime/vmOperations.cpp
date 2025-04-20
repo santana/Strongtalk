@@ -21,8 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_vmOperations.cpp.incl"
+#include "compiler/compiler.hpp"
+#include "memory/markSweep.hpp"
+#include "runtime/abort.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vmOperations.hpp"
+#include "utilities/eventLog.hpp"
 
 void VM_Operation::evaluate() {
   EventMarker  em("VM operation %s", name());
@@ -75,7 +79,7 @@ void VM_TerminateProcess::doit() {
   delete caller;
 }
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 void VM_OptimizeMethod::doit() {
   if (_method->is_blockMethod()) {
@@ -99,4 +103,4 @@ void VM_OptimizeBlockMethod::doit() {
   nm = c.compile();
 }
 
-# endif
+#endif // DELTA_COMPILER

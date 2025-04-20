@@ -36,7 +36,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // 30 bits signed offset
 // 2  bits describes type
 
+#ifndef _MAP_CONFORMANCE_HPP
+#define _MAP_CONFORMANCE_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "memory/allocation.hpp"
+
+template <class E> class GrowableArray;
 
 class Variable : ValueObj {
  private:
@@ -127,4 +134,5 @@ class MapConformance : public ResourceObj {
   void print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _MAP_CONFORMANCE_HPP

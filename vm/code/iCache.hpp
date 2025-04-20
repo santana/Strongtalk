@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _I_CACHE_HPP
+#define _I_CACHE_HPP
+
 #ifdef DELTA_COMPILER
 
 // Handle "self-modifying" code on processors with separate I-caches.
@@ -51,4 +54,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     Unused(start); Unused(end); }
 # endif
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _I_CACHE_HPP

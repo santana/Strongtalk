@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CONFIG_HPP
+#define _CONFIG_HPP
+
 const int BitsPerByte = 8;
 const int BytesPerWord = 4;
 const int BitsPerWord = BitsPerByte * BytesPerWord;
@@ -28,6 +31,4 @@ const int BitsPerWord = BitsPerByte * BytesPerWord;
 const int LogBitsPerByte = 3;
 const int LogBytesPerWord = 2;
 const int LogBitsPerWord = LogBitsPerByte + LogBytesPerWord;
-
-
-
+#endif // _CONFIG_HPP

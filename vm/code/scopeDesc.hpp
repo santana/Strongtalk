@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SCOPE_DESC_HPP
+#define _SCOPE_DESC_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "lookup/key.hpp"
+#include "oops/methodOop.hpp"
 
 class NameDescClosure {
  public:
@@ -279,4 +285,5 @@ class NonInlinedBlockScopeDesc : public PrintableResourceObj {
   void       print();
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _SCOPE_DESC_HPP

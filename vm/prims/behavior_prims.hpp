@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _BEHAVIOR_PRIMS_HPP
+#define _BEHAVIOR_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // primitives for classes
 
 class behaviorPrimitives : AllStatic {
@@ -262,3 +268,4 @@ extern "C" oop primitiveNew8(oop receiver, oop tenured);
 //              name  = 'primitiveNew9' }
 //%
 extern "C" oop primitiveNew9(oop receiver, oop tenured);
+#endif // _BEHAVIOR_PRIMS_HPP

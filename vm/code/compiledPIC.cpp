@@ -21,11 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_compiledPIC.cpp.incl"
+#include "code/compiledPIC.hpp"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "lookup/lookupCache.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+#include "topIncludes/std_includes.hpp"
 
 
 // A PIC implements a Polymorphic Inline Cache for compiled code.
@@ -890,4 +897,4 @@ void CompiledIC_Iterator::print() {
   lprintf("CompiledIC_Iterator for ((CompiledIC*)%#x) (%s)\n", _ic, selector()->as_string());
 }
 
-#endif
+#endif // DELTA_COMPILER

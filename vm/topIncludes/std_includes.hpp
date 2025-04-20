@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "utilities/ostream.hpp"
 
 
 #if defined(_MSC_VER)

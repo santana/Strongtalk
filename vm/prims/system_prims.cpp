@@ -21,9 +21,40 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_system_prims.cpp.incl"
+#include "code/inliningdb.hpp"
+#include "code/nmethod.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/rscope.hpp"
+#include "interpreter/dispatchTable.hpp"
+#include "memory/allocation.hpp"
+#include "memory/iterator.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/reflection.hpp"
+#include "memory/snapshot.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "prims/dll.hpp"
+#include "prims/integerOps.hpp"
+#include "prims/prim.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/process.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/processOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/system_prims.hpp"
+#include "runtime/fprofiler.hpp"
+#include "runtime/systemAverage.hpp"
+#include "runtime/vmOperations.hpp"
+#include "utilities/growableArray.hpp"
 
 TRACE_FUNC(TraceSystemPrims, "system")
 
@@ -211,14 +242,14 @@ PRIM_DECL_0(systemPrimitives::halt) {
 
 static oop fake_time() {
   static int time = 0;
-  return oopFactory::new_double((double) time++);
+  return reinterpret_cast<oop>(oopFactory::new_double((double) time++));
 }
 
 PRIM_DECL_0(systemPrimitives::userTime) {
   PROLOGUE_0("userTime")
   if (UseTimers) {
     os::updateTimes();
-    return oopFactory::new_double(os::userTime());
+    return reinterpret_cast<oop>(oopFactory::new_double(os::userTime()));
   } else {
     return fake_time();
   }
@@ -228,7 +259,7 @@ PRIM_DECL_0(systemPrimitives::systemTime) {
   PROLOGUE_0("systemTime")
   if (UseTimers) {
     os::updateTimes();
-    return oopFactory::new_double(os::systemTime());
+    return reinterpret_cast<oop>(oopFactory::new_double(os::systemTime()));
   } else {
     return fake_time();
   }
@@ -237,7 +268,7 @@ PRIM_DECL_0(systemPrimitives::systemTime) {
 PRIM_DECL_0(systemPrimitives::elapsedTime) {
   PROLOGUE_0("elapsedTime")
   if (UseTimers) {
-    return oopFactory::new_double(os::elapsedTime());
+    return reinterpret_cast<oop>(oopFactory::new_double(os::elapsedTime()));
   } else {
     return fake_time();
   }
@@ -957,7 +988,7 @@ PRIM_DECL_0(systemPrimitives::current_thread_id) {
 
 PRIM_DECL_0(systemPrimitives::object_memory_size) {
   PROLOGUE_0("object_memory_size");
-  return oopFactory::new_double(double(Universe::old_gen.used()) / Universe::old_gen.capacity());
+  return reinterpret_cast<oop>(oopFactory::new_double(double(Universe::old_gen.used()) / Universe::old_gen.capacity()));
 }
 
 PRIM_DECL_0(systemPrimitives::freeSpace) {

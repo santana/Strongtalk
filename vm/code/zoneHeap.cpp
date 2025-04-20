@@ -21,11 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-
 #ifdef DELTA_COMPILER
 
-# include "incls/_zoneHeap.cpp.incl"
+#include "code/zoneHeap.hpp"
 
 class HeapChunk : public ValueObj {	// a heap chunk is a consecutive sequence of blocks
  protected:
@@ -648,4 +646,4 @@ void Heap::print() const {
   lprintf("; %ld\n", bigList->length());
 }
 
-#endif
+#endif // DELTA_COMPILER

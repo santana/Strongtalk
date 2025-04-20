@@ -21,6 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SWEEPER_HPP
+#define _SWEEPER_HPP
+
+#include "memory/allocation.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
+
+class OldWaterMark;
+
 // This is where the dirty work takes places.
 
 // A Sweeper is an incremental cleaner for
@@ -125,3 +134,4 @@ class ZoneSweeper : public CodeSweeper {
   void  activate();
   char* name()     const { return "ZoneSweeper"; }
 };
+#endif // _SWEEPER_HPP

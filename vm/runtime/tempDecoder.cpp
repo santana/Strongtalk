@@ -21,8 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_tempDecoder.cpp.incl"
+#include "oops/byteArrayOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/smiOop.hpp"
+#include "runtime/tempDecoder.hpp"
+#include "topIncludes/asserts.hpp"
+#include "topIncludes/std_includes.hpp"
 
 #define NEXT                        \
   pos++;                            \

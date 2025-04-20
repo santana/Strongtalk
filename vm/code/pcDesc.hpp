@@ -21,7 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _PC_DESC_HPP
+#define _PC_DESC_HPP
+
 #ifdef DELTA_COMPILER
+
+#include "code/scopeDesc.hpp"
+#include "memory/allocation.hpp"
 
 // PcDescs map a physical PC (given as offset from start of nmethod) to
 // the corresponding source scope and byte code index.
@@ -60,4 +66,5 @@ class PcDesc : public ValueObj {
   bool verify(nmethod* nm);
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _PC_DESC_HPP

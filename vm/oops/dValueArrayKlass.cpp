@@ -21,9 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dValueArrayKlass.cpp.incl"
-# include <ctype.h>
+#include "memory/iterator.hpp"
+#include "oops/dValueArrayKlass.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/asserts.hpp"
+
+#include <ctype.h>
 
 oop doubleValueArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
   fatal("should never call allocateObject in doubleValueArrayKlass");

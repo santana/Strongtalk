@@ -21,11 +21,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef REG_ALLOC_HPP
+#define REG_ALLOC_HPP
+
 // register allocator for the Compiler
 // currently a simple usage count thing
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
+#include "asm/location.hpp"
+
+template <class E> class GrowableArray;
+
+class ConstPReg;
 class RegisterAllocator;
 extern RegisterAllocator* theAllocator;
 
@@ -64,4 +72,5 @@ class RegisterEqClass : public ResourceObj {
   void append(PReg* other);
 };
 
-# endif
+#endif // DELTA_COMPILER
+#endif // REG_ALLOC_HPP

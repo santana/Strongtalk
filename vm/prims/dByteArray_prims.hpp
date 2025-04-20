@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _DBYTE_ARRAY_PRIMS_HPP
+#define _DBYTE_ARRAY_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for byte arrays
 
 class doubleByteArrayPrimitives : AllStatic {
@@ -115,3 +121,4 @@ class doubleByteArrayPrimitives : AllStatic {
   static PRIM_DECL_1(hash, oop receiver);
 };
 
+#endif // _DBYTE_ARRAY_PRIMS_HPP

@@ -21,8 +21,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_memOopKlass.cpp.incl"
+#include "memory/printlayout.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/memOopKlass.hpp"
+#include "oops/byteArrayKlass.hpp"
+#include "oops/dByteArrayKlass.hpp"
+#include "oops/mixinKlass.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/objArrayKlass.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/processKlass.hpp"
+#include "oops/processOop.hpp"
+#include "oops/proxyKlass.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/weakArrayKlass.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/ostream.hpp"
 
 void set_memOopKlass_vtbl(Klass* k) {
   memOopKlass o;

@@ -21,6 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OPCODE_HPP
+#define _OPCODE_HPP
+
 #ifdef DELTA_COMPILER
 
 // opcodes used by the Compiler
@@ -65,4 +68,5 @@ extern char* BranchOpName[];		// indexed by BranchOpCode
 extern char* ArithOpName[];		// indexed by ArithOpCode
 extern bool  ArithOpIsCommutative[];	// indexed by ArithOpCode
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _OPCODE_HPP

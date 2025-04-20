@@ -22,9 +22,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 #ifndef __OS_LINUX__
 #define __OS_LINUX__
+
+#include "memory/allocation.hpp"
+#include "runtime/os.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/growableArray.hpp"
+
 #if defined(__LINUX__) || defined(__OpenBSD__)
 # include <pthread.h>
-# include "incls/_os.cpp.incl"
 # include <unistd.h>
 # include <semaphore.h>
 # include <sys/times.h>

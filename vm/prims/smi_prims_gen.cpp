@@ -20,8 +20,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_smi_prims_gen.cpp.incl"
+#include "prims/generatedPrimitives.hpp"
 
 char* PrimitivesGenerator::smiOopPrimitives_add() {
   Address argument = Address(esp, 4);

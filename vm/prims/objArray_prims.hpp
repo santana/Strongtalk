@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OBJ_ARRAY_PRIMS_HPP
+#define _OBJ_ARRAY_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for obj arrays
 
 class objArrayPrimitives : AllStatic {
@@ -115,3 +121,4 @@ class objArrayPrimitives : AllStatic {
 
 };
 
+#endif // _OBJ_ARRAY_PRIMS_HPP

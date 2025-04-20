@@ -22,8 +22,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_shell.cpp.incl"
+#include "code/inliningdb.hpp"
+#include "memory/allocation.hpp"
+#include "memory/vmSymbols.hpp"
+#include "runtime/arguments.hpp"
+#include "runtime/bootstrap.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/init.hpp"
+#include "runtime/os.hpp"
+#include "runtime/process.hpp"
+#include "runtime/shell.hpp"
+#include "runtime/timer.hpp"
+#include "utilities/ostream.hpp"
 
 extern "C" void load_image()   {
     ResourceMark rm;

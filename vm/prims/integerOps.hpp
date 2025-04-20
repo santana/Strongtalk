@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _INTEGER_OPS_HPP
+#define _INTEGER_OPS_HPP
+
+#include "memory/allocation.hpp"
 
 // Integer is the representation for arbitrary long integers. A non-
 // zero Integer x is represented by n Digits to a base B such that:
@@ -176,3 +180,4 @@ class IntegerOps: AllStatic {
   // testing/debugging
   static void self_test();
 };
+#endif // _INTEGER_OPS_HPP

@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-# include "incls/_precompiled.incl"
-# include "incls/_smiOop.cpp.incl"
+#include "oops/smiOop.hpp"
+#include "utilities/ostream.hpp"
 
 void smiOopDesc::print_on(outputStream* st) {
   st->print("%ld", (long) value());

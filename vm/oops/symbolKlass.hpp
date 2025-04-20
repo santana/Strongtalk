@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SYMBOL_KLASS_HPP
+#define _SYMBOL_KLASS_HPP
+
+#include "oops/byteArrayKlass.hpp"
 
 // symbolOops are canonical symbols; all symbolOops are registered in the
 // symbol table
@@ -64,3 +68,4 @@ class symbolKlass: public byteArrayKlass {
   friend void set_symbolKlass_vtbl(Klass* k);
 };
 void set_symbolKlass_vtbl(Klass* k);
+#endif // _SYMBOL_KLASS_HPP

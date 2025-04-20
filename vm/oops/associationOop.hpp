@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ASSOCIATION_OOP_HPP
+#define _ASSOCIATION_OOP_HPP
+
+#include "oops/memOop.hpp"
+
 // Associations are cons cells (key, value) used in the Delta system dictionary.
 //  - associationOops      are mutable.
 //  - constAssociationOops are immutable.
@@ -65,3 +70,4 @@ class associationOopDesc: public memOopDesc {
 inline associationOop as_associationOop(void* p) {
     return associationOop(as_memOop(p));
 }
+#endif // _ASSOCIATION_OOP_HPP

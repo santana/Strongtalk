@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _INTERPRETER_HPP
+#define _INTERPRETER_HPP
+
+#include "asm/assembler.hpp"
+#include "memory/allocation.hpp"
+
 class Interpreter: AllStatic {
  private:
   static bool  _is_initialized;		// true if Interpreter has been initialized
@@ -132,3 +138,4 @@ class Interpreter: AllStatic {
 
   friend class InterpreterGenerator;
 };
+#endif // _INTERPRETER_HPP

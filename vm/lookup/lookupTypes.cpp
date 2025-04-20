@@ -21,10 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_lookupTypes.cpp.incl"
+#include "lookup/lookupTypes.hpp"
 
-# include <string.h>
+#include <string.h>
 
 #ifdef junk
 
@@ -72,4 +71,4 @@ void kinds_init() {
   assert((LookupTypeMask >> LookupTypeSize) == 0, "wrong LookupTypeSize");
   assert((CountTypeMask >> CountTypeSize) == 0, "wrong CountTypeSize");
 }  
-#endif
+#endif // junk

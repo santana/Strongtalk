@@ -21,8 +21,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_frame.cpp.incl"
+#include "code/nmethod.hpp"
+#include "code/compiledIC.hpp"
+#include "code/compiledPIC.hpp"
+#include "code/stubRoutines.hpp"
+#include "interpreter/floats.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "interpreter/interpreter.hpp"
+#include "memory/iterator.hpp"
+#include "memory/markSweep.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "runtime/frame.hpp"
+#include "runtime/vframe.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 u_char* frame::hp() const { 
   // Lars, please check -- assertion fails

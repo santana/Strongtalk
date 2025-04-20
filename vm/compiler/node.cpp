@@ -21,10 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_node.cpp.incl"
+#include "asm/x86_mapping.hpp"
+#include "code/pregMapping.hpp"
+#include "compiler/compUtils.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/loopOpt.hpp"
+#include "compiler/node.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/behavior_prims.hpp"
+#include "prims/generatedPrimitives.hpp"
+#include "prims/prim.hpp"
+#include "prims/smi_prims.hpp"
+#include "utilities/ostream.hpp"
 
 int BasicNode::currentID;
 int BasicNode::currentCommentID;
@@ -3305,4 +3317,4 @@ void printNodes(Node* n) {
   }
 }
 
-# endif
+#endif // DELTA_COMPILER

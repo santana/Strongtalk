@@ -21,9 +21,35 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# ifdef DELTA_COMPILER
-# include "incls/_oldCodeGenerator.cpp.incl"
+#ifdef DELTA_COMPILER
+
+#include "asm/codeBuffer.hpp"
+#include "asm/x86_mapping.hpp"
+#include "code/nameDesc.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDescRecorder.hpp"
+#include "code/stubRoutines.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/node.hpp"
+#include "compiler/oldCodeGenerator.hpp"
+#include "compiler/loopOpt.hpp"
+#include "compiler/regAlloc.hpp"
+#include "memory/vmSymbols.hpp"
+#include "runtime/process.hpp"
+#include "runtime/vframe.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/smiOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/prim.hpp"
+#include "recompiler/recompiler.hpp"
+#include "topIncludes/std_includes.hpp"
+#include "utilities/eventLog.hpp"
 
 
 static bool bb_needs_jump;
@@ -2276,4 +2302,4 @@ void InlinedPrimitiveNode::gen() {
 }
 
 
-#endif
+#endif // DELTA_COMPILER

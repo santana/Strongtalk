@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _CALLBACK_PRIMS_HPP
+#define _CALLBACK_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
+
 // Primitives for call back
 
 class callBackPrimitives : AllStatic {
@@ -76,3 +82,4 @@ class callBackPrimitives : AllStatic {
   static PRIM_DECL_1(invokeC, oop proxy);
 
  }; 
+#endif // _CALLBACK_PRIMS_HPP

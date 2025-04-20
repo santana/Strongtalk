@@ -21,8 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_processKlass.cpp.incl"
+#include "memory/iterator.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/processKlass.hpp"
 
 void set_processKlass_vtbl(Klass* k) {
   processKlass o;

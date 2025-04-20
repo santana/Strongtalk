@@ -21,10 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# ifdef DELTA_COMPILER
-# include "incls/_locations.cpp.incl"
+#ifdef DELTA_COMPILER
 
+#include "code/locations.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // Implementation of Locations
 //
@@ -342,5 +343,4 @@ void Locations::verify() {
   if (_nofArguments + nofFreeRegisters + nofFreeStackTmps + nofUsedLocations != _freeList->length()) fatal("locations data structure is leaking");
 }
 
-
-# endif
+#endif // DELTA_COMPILER

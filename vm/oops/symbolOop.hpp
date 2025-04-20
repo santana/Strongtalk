@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SYMBOL_OOP_HPP
+#define _SYMBOL_OOP_HPP
+
+#include "oops/byteArrayOop.hpp"
 
 // symbols are immutable, canonicalized byteArrays.
 
@@ -35,3 +39,4 @@ class symbolOopDesc: public byteArrayOopDesc {
   void print_symbol_on(outputStream* st = NULL);
 };
 inline symbolOop as_symbolOop(void* p) { return symbolOop(as_byteArrayOop(p)); }
+#endif // _SYMBOL_OOP_HPP

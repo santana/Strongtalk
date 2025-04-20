@@ -21,8 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_dispatchTable.cpp.incl"
+#include "code/stubRoutines.hpp"
+#include "interpreter/bytecodes.hpp"
+#include "interpreter/dispatchTable.hpp"
+
+#include <cstdio>
 
 //
 // The following defines the dispatch table for the interpreter.

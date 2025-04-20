@@ -21,9 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_integerOps.cpp.incl"
-
+#include "oops/smiOop.hpp"
+#include "prims/integerOps.hpp"
+#include "topIncludes/config.hpp"
+#include "topIncludes/std_includes.hpp"
 
 static const int   maxD = 36;
 static const int   logB = sizeof(Digit)*8;

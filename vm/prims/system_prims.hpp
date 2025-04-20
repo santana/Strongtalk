@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SYSTEM_PRIMS_HPP
+#define _SYSTEM_PRIMS_HPP
+
+#include "prims/prim_def.hpp"
 
 // Misc. system primitives
 
@@ -631,3 +635,4 @@ class systemPrimitives : AllStatic {
   //%
   static PRIM_DECL_1(alienFree, oop address);
 };
+#endif // _SYSTEM_PRIMS_HPP

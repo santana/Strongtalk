@@ -21,8 +21,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_vmSymbols.cpp.incl"
+#include "memory/markSweep.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
 
 symbolOop vm_symbols[terminating_enum];
 

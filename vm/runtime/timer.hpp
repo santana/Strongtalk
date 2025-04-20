@@ -21,6 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _TIMER_HPP
+#define _TIMER_HPP
+
+#include "utilities/longInt.hpp"
 
 // Timers for simple measurements
 
@@ -78,4 +82,4 @@ class TraceTime {
   TraceTime(const char* title, bool doit = true);
   ~TraceTime();
 };
-
+#endif // _TIMER_HPP

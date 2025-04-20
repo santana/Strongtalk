@@ -21,10 +21,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_preg.cpp.incl"
+#include "code/scopeDescRecorder.hpp"
+#include "compiler/basicBlock.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/defUse.hpp"
+#include "compiler/expr.hpp"
+#include "compiler/node.hpp"
+#include "compiler/preg.hpp"
+#include "compiler/slist.hpp"
+#include "utilities/ostream.hpp"
 
 int PReg::currentNo = 0;
 int BlockPReg::_numBlocks = 0;

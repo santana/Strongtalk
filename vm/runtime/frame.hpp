@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _FRAME_HPP
+#define _FRAME_HPP
+
+#include "memory/allocation.hpp"
+
+class CompiledIC;
+
 // A frame represents a physical stack frame (an activation).  Frames can be
 // C or Delta frames, and the Delta frames can be interpreted or compiled.
 // In contrast, vframes represent source-level activations, so that one (Delta) frame 
@@ -223,3 +230,4 @@ class frame : ValueObj {
     return frame_return_addr_offset - frame_temp_offset + locals;
   }
 };
+#endif // _FRAME_HPP

@@ -21,6 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _UNIVERSE_INLINE_HPP
+#define _UNIVERSE_INLINE_HPP
 
 inline oop* Universe::allocate_in_survivor_space(memOop p,
 						 int size,
@@ -33,3 +35,4 @@ inline oop* Universe::allocate_in_survivor_space(memOop p,
     return old_gen.allocate(size);
   } 
 }
+#endif // _UNIVERSE_INLINE_HPP

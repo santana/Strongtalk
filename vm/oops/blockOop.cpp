@@ -21,8 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_blockOop.cpp.incl"
+#include "code/jumpTable.hpp"
+#include "code/nmethod.hpp"
+#include "code/scopeDesc.hpp"
+#include "oops/blockKlass.hpp"
+#include "oops/blockOop.hpp"
+#include "oops/blockOop.inline.hpp"
+#include "prims/block_prims.hpp"
+#include "runtime/stackChunk.hpp"
+#include "runtime/vframe.hpp"
+#include "utilities/eventLog.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 methodOop blockClosureOopDesc::method() const { 
   oop m = addr()->_methodOrJumpAddr;

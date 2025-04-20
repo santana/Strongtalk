@@ -21,8 +21,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_byteArray_prims.cpp.incl"
+#include "code/stubRoutines.hpp"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/symbolTable.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOopKlass.hpp"
+#include "oops/memOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/integerOps.hpp"
+#include "prims/prim_impl.hpp"
+#include "runtime/debug.hpp"
+#include "runtime/os.hpp"
+#include "runtime/process.hpp"
 
 TRACE_FUNC(TraceByteArrayPrims, "byteArray")
 

@@ -21,6 +21,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _OOP_FACTORY_HPP
+#define _OOP_FACTORY_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/smiOop.hpp"
+
+template <class E> class GrowableArray;
+
 // The oopFactory is a utility to create new objects.
 
 class oopFactory : AllStatic {
@@ -38,4 +46,4 @@ class oopFactory : AllStatic {
   static associationOop new_association(symbolOop key, oop value, bool is_constant);
   static vframeOop      new_vframe(processOop process, int index);
 };
-
+#endif // _OOP_FACTORY_HPP

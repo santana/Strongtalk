@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _SMI_PRIMS_HPP
+#define _SMI_PRIMS_HPP
+
+#include "memory/allocation.hpp"
+#include "prims/prim_def.hpp"
 
 // Primitives for small integers
 
@@ -207,3 +212,4 @@ extern "C" oop PRIM_API smiOopPrimitives_remainder(oop receiver, oop argument);
 //              name  = 'double_from_smi' }
 //%
 extern "C" oop PRIM_API double_from_smi(oop receiver);
+#endif // _SMI_PRIMS_HPP

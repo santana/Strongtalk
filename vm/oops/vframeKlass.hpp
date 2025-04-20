@@ -21,6 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _VFRAME_KLASS_HPP
+#define _VFRAME_KLASS_HPP
+
+#include "oops/memOopKlass.hpp"
+#include "oops/vframeOop.hpp"
 
 class vframeKlass: public memOopKlass {
  public:
@@ -60,3 +65,4 @@ class vframeKlass: public memOopKlass {
   friend void set_vframeKlass_vtbl(Klass* k);
 };
 void set_vframeKlass_vtbl(Klass* k);
+#endif // _VFRAME_KLASS_HPP

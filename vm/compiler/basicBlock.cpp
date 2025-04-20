@@ -21,10 +21,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
+#ifdef DELTA_COMPILER
 
-# ifdef DELTA_COMPILER
-# include "incls/_basicBlock.cpp.incl"
+#include "asm/x86_mapping.hpp"
+#include "compiler/basicBlock.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/regAlloc.hpp"
+#include "compiler/node.hpp"
+#include "utilities/ostream.hpp"
+#include "topIncludes/std_includes.hpp"
 
 int BB::genCounter = 0;
 
@@ -1077,5 +1082,4 @@ void BBIterator::verify() {
   }
 }
 
-
-# endif
+#endif // DELTA_COMPILER

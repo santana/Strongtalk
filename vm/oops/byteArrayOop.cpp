@@ -21,10 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_byteArrayOop.cpp.incl"
-# include <string.h>
-# include <errno.h>
+#include "oops/byteArrayOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "runtime/bootstrap.hpp"
+#include "topIncludes/asserts.hpp"
+
+#include <string.h>
+#include <errno.h>
 
 bool byteArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();

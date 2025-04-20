@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_nativeInstruction.cpp.incl"
-
+#include "code/nativeInstruction.hpp"
+#include "topIncludes/std_includes.hpp"
 
 // Implementation of NativeCall
 

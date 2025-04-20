@@ -1,5 +1,5 @@
-# include "incls/_precompiled.incl"
-# include "incls/_main.cpp.incl"
+#include "runtime/os.hpp"
+#include "runtime/shell.hpp"
 
 #ifdef _WINDOWS
 int CALLBACK WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdLine, int cmdShow) {

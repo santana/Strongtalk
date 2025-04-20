@@ -21,11 +21,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ZONE_HEAP_HPP
+#define _ZONE_HEAP_HPP
+
 #ifdef DELTA_COMPILER
 
 // Basic heap management
 // maintains a map of the heap + free lists to reduce fragmentation
 // allocations are in multiples of block size (2**k)
+
+#include "memory/allocation.hpp"
+#include "runtime/os.hpp"
+#include "runtime/debug.hpp"
 
 #include <cstdint>
 
@@ -121,4 +128,5 @@ class Heap: public CHeapObj {
   int combine(HeapChunk*& m);
 };
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _ZONE_HEAP_HPP

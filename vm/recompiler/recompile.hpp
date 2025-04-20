@@ -21,8 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _RECOMPILE_HPP
+#define _RECOMPILE_HPP
 
 #ifdef DELTA_COMPILER
+
+#include "code/nmethod.hpp"
+#include "runtime/vmOperations.hpp"
 
 // The recompilation system determines which interpreted methods should be compiled
 // by the native-code compiler, or which compiled methods need to be recompiled for
@@ -121,4 +126,5 @@ const int MaxRecompilationLevels = 4;	// max. # recompilation levels
 const int MaxVersions = 4 - 1;		// desired max. # nmethod recompilations
 
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _RECOMPILE_HPP

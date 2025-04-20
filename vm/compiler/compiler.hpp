@@ -21,13 +21,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# ifdef DELTA_COMPILER
+#ifndef _COMPILER_HPP
+#define _COMPILER_HPP
+
+#ifdef DELTA_COMPILER
+
+#include "code/jumpTable.hpp"
+#include "utilities/growableArray.hpp"
 
 extern int nofCompilations;
 extern Compiler* theCompiler;
 
+class BB;
+class CodeBuffer;
 class CodeGenerator;
 class NLRTestNode;
+class PerformanceDebugger;
 
 class Compiler : public PrintableResourceObj {
   // A Compiler holds all the global state required for a single compilation.
@@ -152,4 +161,5 @@ void print_cout();		// prints hidden messages of current compilation
 #define cout(flag)  if (flag) mystd
 #endif
 
-#endif
+#endif // DELTA_COMPILER
+#endif // _COMPILER_HPP

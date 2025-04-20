@@ -21,7 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _ARGUMENTS_HPP
+#define _ARGUMENTS_HPP
+
 // parse_arguments parses the command line arguments.
 extern char* boot_filename;
 void parse_arguments(int argc, char* argv[]);
 void process_settings_file(char* file_name, bool quiet = false);
+#endif // _ARGUMENTS_HPP

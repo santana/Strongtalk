@@ -21,8 +21,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-# include "incls/_precompiled.incl"
-# include "incls/_generation.cpp.incl"
+#include "memory/generation.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/std_includes.hpp"
 
 void generation::print() {
   mystd->print(" total %6dK, %d%% used ", capacity()/K, (100 * used())/capacity());

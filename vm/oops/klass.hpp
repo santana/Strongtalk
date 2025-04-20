@@ -21,6 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _KLASS_HPP
+#define _KLASS_HPP
+
+#include "memory/allocation.hpp"
+#include "oops/memOop.hpp"
+#include "oops/smiOop.hpp"
+
 // A Klass is the the part of the klassOop that provides:
 //  1: language level class object (method dictionary etc.)
 //  2: provide vm dispatch behavior for the object
@@ -277,3 +284,4 @@ inline klassOop as_klassOop(void* p)
 {
 	return klassOop(as_memOop(p));
 }
+#endif // _KLASS_HPP

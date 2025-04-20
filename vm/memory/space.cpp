@@ -22,8 +22,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-# include "incls/_precompiled.incl"
-# include "incls/_space.cpp.incl"
+#include "memory/iterator.hpp"
+#include "memory/universe.hpp"
+#include "memory/space.hpp"
+#include "oops/memOop.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.hpp"
+#include "oops/oop.inline.hpp"
+#include "runtime/debug.hpp"
+#include "topIncludes/std_includes.hpp"
 
 oop* OldWaterMark::pseudo_allocate(int size) {
   oop* p = _point;

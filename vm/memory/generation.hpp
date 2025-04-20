@@ -21,6 +21,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#ifndef _GENERATION_HPP
+#define _GENERATION_HPP
+
+#include "memory/space.hpp"
+#include "runtime/virtualspace.hpp"
+
 // A generation is a bunch of spaces of similarly-aged objects
 
 class generation: ValueObj {
@@ -185,5 +191,4 @@ class oldGeneration: public generation {
        s != NULL;                                               \
        s= s->next_space)
 
-
-
+#endif // _GENERATION_HPP

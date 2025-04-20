@@ -21,9 +21,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-#include "incls/_precompiled.incl"
 #ifdef DELTA_COMPILER
-#include "incls/_disassembler.cpp.incl"
+
+#include "code/nmethod.hpp"
+#include "code/pcDesc.hpp"
+#include "code/relocInfo.hpp"
+#include "disasm/disassembler.hpp"
+#include "prims/prim.hpp"
 
 //#include <inttypes.h>
 
