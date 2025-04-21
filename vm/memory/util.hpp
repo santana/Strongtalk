@@ -60,7 +60,10 @@ inline void copy_words(int* from, int* to, int count) {
   copy_oops((oop*) from, (oop*) to, count);
 }
 inline void set_words(int* from, int count, int value = 0) {
-  set_oops((oop*) from, count, (oop) value);
+  // set_oops((oop*) from, count, (oop) value);
+  while(count--) {
+    *from++ = value;
+  }
 }
 
 inline int min(int a, int b)		{ return a < b ? a : b; }
