@@ -53,7 +53,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/eventLog.hpp"
 #include "utilities/growableArray.hpp"
 
-
 // The tricky part is to restore the original return address of the primitive before
 // the delta call. This is necessary for a consistent stack during the delta call.
 extern "C" char*  C_frame_return_addr;
