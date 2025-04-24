@@ -22,9 +22,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "code/inliningdb.hpp"
+#include "code/jumpTable.hpp"
 #include "compiler/compiler.hpp"
 #include "compiler/rscope.hpp"
 #include "lookup/lookupCache.hpp"
+#include "memory/universe.hpp"
 #include "oops/klass.hpp"
 #include "oops/klassOop.hpp"
 #include "runtime/process.hpp"
@@ -91,14 +93,14 @@ class cacheElement { // : ValueObj {
  public:
   LookupKey    key;
   LookupResult result;
-  int          filler;
+  long          filler;
 
   cacheElement() : key(), result() {}
 
   void verify() {
-    assert(sizeof(cacheElement) == 16, 		"checking structure layout");
-    assert((intptr_t)&this->key - (intptr_t)this == 0,  	"checking structure layout");
-    assert((intptr_t)&this->result - (intptr_t)this == 8,  	"checking structure layout");
+    assert(sizeof(cacheElement) == 32, "checking structure layout");
+    assert(reinterpret_cast<intptr_t>(&this->key) - reinterpret_cast<intptr_t>(this) == 0, "checking structure layout");
+    assert(reinterpret_cast<intptr_t>(&this->result) - reinterpret_cast<intptr_t>(this) == 16, "checking structure layout");
 
     if (key.klass() || key.selector_or_method()) {
       if (result.is_empty()) {
