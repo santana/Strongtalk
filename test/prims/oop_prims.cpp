@@ -1,7 +1,12 @@
-# include "incls/_precompiled.incl"
-# include "incls/_oop_prims.cpp.incl"
-#include "rSet.inline.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/markSweep.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "prims/oop_prims.hpp"
 
 using namespace easyunit;
 

@@ -1,5 +1,5 @@
-# include "incls/_precompiled.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/universe.hpp"
 
 using namespace easyunit;
 DECLARE(UniverseTests)

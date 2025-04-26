@@ -1,7 +1,7 @@
-# include "incls/_precompiled.incl"
-# include "incls/_mixinKlass.cpp.incl"
-//#include "handle.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/markSweep.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/mixinOop.hpp"
 
 using namespace easyunit;
 
@@ -25,7 +25,7 @@ TEARDOWN(MixinKlassTests){
 
 TESTF(MixinKlassTests, allocateShouldFailWhenAllowedAndNoSpace) {
   eden_top = eden_end;
-  ASSERT_EQUALS((int)NULL, (int)(theClass->klass_part()->allocateObject(false)));
+  ASSERT_EQUALS((intptr_t)NULL, (intptr_t)(theClass->klass_part()->allocateObject(false)));
 }
 
 TESTF(MixinKlassTests, allocateShouldAllocateTenuredWhenRequired) {

@@ -1,3 +1,5 @@
+#include "memory/allocation.hpp"
+
 extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 

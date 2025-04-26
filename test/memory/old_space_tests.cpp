@@ -1,7 +1,8 @@
-# include "incls/_precompiled.incl"
-# include "incls/_behavior_prims.cpp.incl"
-//#include "handle.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
 
 using namespace easyunit;
 

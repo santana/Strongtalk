@@ -1,3 +1,6 @@
+#ifndef _TEST_PROCESS_HPP
+#define _TEST_PROCESS_HPP
+
 extern void addTestToProcesses();
 extern void removeTestFromProcesses();
 
@@ -10,3 +13,4 @@ public:
     removeTestFromProcesses();
   }
 };
+#endif // _TEST_PROCESS_HPP

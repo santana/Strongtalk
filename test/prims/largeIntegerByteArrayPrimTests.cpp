@@ -1,8 +1,13 @@
-# include "incls/_precompiled.incl"
-# include "incls/_byteArray_prims.cpp.incl"
-#include "test.h"
-//#include "delta.hpp"
-#include "testUtils.hpp"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/integerOps.hpp"
+#include "prims/prim_def.hpp"
+#include "utilities/testUtils.hpp"
 
 using namespace easyunit;
 

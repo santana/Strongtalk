@@ -20,7 +20,7 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "simplestring.h"
+#include "easyunit/simplestring.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

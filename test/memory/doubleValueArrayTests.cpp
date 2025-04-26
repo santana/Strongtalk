@@ -1,6 +1,4 @@
-# include "incls/_precompiled.incl"
-# include "incls/_dValueArrayKlass.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
 
 using namespace easyunit;
 

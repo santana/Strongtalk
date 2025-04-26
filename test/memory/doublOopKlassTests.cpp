@@ -1,7 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_doubleKlass.cpp.incl"
-//#include "handle.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/markSweep.hpp"
+#include "oops/klassOop.hpp"
 
 using namespace easyunit;
 
@@ -30,7 +29,7 @@ TESTF(DoubleKlassTests, floatShouldBeDoubleC) {
 TESTF(DoubleKlassTests, allocateShouldFailWhenAllowedAndNoSpace) {
   eden_top = eden_end;
   ASSERT_TRUE(Universe::new_gen.eden()->free() < 4 * oopSize);
-  ASSERT_EQUALS((int)NULL, (int)(theClass->klass_part()->allocateObject(false)));
+  ASSERT_EQUALS((intptr_t)NULL, (intptr_t)(theClass->klass_part()->allocateObject(false)));
 }
 
 TESTF(DoubleKlassTests, allocateShouldAllocateTenuredWhenRequired) {

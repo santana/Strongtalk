@@ -1,7 +1,11 @@
-# include "incls/_precompiled.incl"
-# include "incls/_oop_prims.cpp.incl"
-#include "rSet.inline.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/markSweep.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/memOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "prims/oop_prims.hpp"
 
 using namespace easyunit;
 
@@ -23,27 +27,27 @@ TEARDOWN(OopPrimitivesPerformTest){
 TESTF(OopPrimitivesPerformTest, noArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
 {
 	symbolOop selector = oopFactory::new_symbol("unknown", 7);
-	oop result = oopPrimitives::perform(selector, fixture);
+	oop result = oopPrimitives::perform(reinterpret_cast<oop>(selector), fixture);
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
-  ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(selector, memOop(result)->raw_at(3), "message should contain selector");
+  ASSERT_EQUALS_M(fixture, reinterpret_cast<oop>(memOop(result)->raw_at(2)), "message should contain receiver");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
 }
 
 TESTF(OopPrimitivesPerformTest, oneArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
 {
   symbolOop selector = oopFactory::new_symbol("unknown:", 8);
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
-  oop result = oopPrimitives::performWith(arg1, selector, fixture);
+  oop result = oopPrimitives::performWith(reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
   ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(selector, memOop(result)->raw_at(3), "message should contain selector");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
   oop args = memOop(result)->raw_at(4);
   ASSERT_TRUE_M(args->is_objArray(), "args should be object array");
-  ASSERT_EQUALS_M(arg1, objArrayOop(args)->obj_at(1), "message should contain argument 1");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg1), objArrayOop(args)->obj_at(1), "message should contain argument 1");
 }
 
 TESTF(OopPrimitivesPerformTest, twoArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
@@ -52,19 +56,19 @@ TESTF(OopPrimitivesPerformTest, twoArgPerformWithUnknownShouldInvokeDoesNotUnder
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
   symbolOop arg2 = oopFactory::new_symbol("arg2", 4);
 
-  oop result = oopPrimitives::performWithWith(arg2, arg1, selector, fixture);
+  oop result = oopPrimitives::performWithWith(reinterpret_cast<oop>(arg2), reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
 
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
 
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
   ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(selector, memOop(result)->raw_at(3), "message should contain selector");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
   oop args = memOop(result)->raw_at(4);
   ASSERT_TRUE_M(args->is_objArray(), "args should be object array");
   ASSERT_EQUALS_M(2, objArrayOop(args)->length(), "wrong number of arguments");
-  ASSERT_EQUALS_M(arg1, objArrayOop(args)->obj_at(1), "message should contain argument 1");
-  ASSERT_EQUALS_M(arg2, objArrayOop(args)->obj_at(2), "message should contain argument 2");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg1), objArrayOop(args)->obj_at(1), "message should contain argument 1");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg2), objArrayOop(args)->obj_at(2), "message should contain argument 2");
 }
 
 TESTF(OopPrimitivesPerformTest, threeArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
@@ -74,20 +78,20 @@ TESTF(OopPrimitivesPerformTest, threeArgPerformWithUnknownShouldInvokeDoesNotUnd
   symbolOop arg2 = oopFactory::new_symbol("arg2", 4);
   symbolOop arg3 = oopFactory::new_symbol("arg3", 4);
 
-  oop result = oopPrimitives::performWithWithWith(arg3, arg2, arg1, selector, fixture);
+  oop result = oopPrimitives::performWithWithWith(reinterpret_cast<oop>(arg3), reinterpret_cast<oop>(arg2), reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
 
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
 
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
   ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(selector, memOop(result)->raw_at(3), "message should contain selector");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
   oop args = memOop(result)->raw_at(4);
   ASSERT_TRUE_M(args->is_objArray(), "args should be object array");
   ASSERT_EQUALS_M(3, objArrayOop(args)->length(), "wrong number of arguments");
-  ASSERT_EQUALS_M(arg1, objArrayOop(args)->obj_at(1), "message should contain argument 1");
-  ASSERT_EQUALS_M(arg2, objArrayOop(args)->obj_at(2), "message should contain argument 2");
-  ASSERT_EQUALS_M(arg3, objArrayOop(args)->obj_at(3), "message should contain argument 3");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg1), objArrayOop(args)->obj_at(1), "message should contain argument 1");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg2), objArrayOop(args)->obj_at(2), "message should contain argument 2");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg3), objArrayOop(args)->obj_at(3), "message should contain argument 3");
 }
 
 TESTF(OopPrimitivesPerformTest, varArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
@@ -99,23 +103,23 @@ TESTF(OopPrimitivesPerformTest, varArgPerformWithUnknownShouldInvokeDoesNotUnder
   symbolOop arg4 = oopFactory::new_symbol("arg4", 4);
 
   objArrayOop inputArgs = oopFactory::new_objArray(4);
-  inputArgs->obj_at_put(1, arg1);
-  inputArgs->obj_at_put(2, arg2);
-  inputArgs->obj_at_put(3, arg3);
-  inputArgs->obj_at_put(4, arg4);
-  oop result = oopPrimitives::performArguments(inputArgs, selector, fixture);
+  inputArgs->obj_at_put(1, reinterpret_cast<oop>(arg1));
+  inputArgs->obj_at_put(2, reinterpret_cast<oop>(arg2));
+  inputArgs->obj_at_put(3, reinterpret_cast<oop>(arg3));
+  inputArgs->obj_at_put(4, reinterpret_cast<oop>(arg4));
+  oop result = oopPrimitives::performArguments(inputArgs, reinterpret_cast<oop>(selector), fixture);
 
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
 
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
   ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(selector, memOop(result)->raw_at(3), "message should contain selector");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
   oop args = memOop(result)->raw_at(4);
   ASSERT_TRUE_M(args->is_objArray(), "args should be object array");
   ASSERT_EQUALS_M(4, objArrayOop(args)->length(), "wrong number of arguments");
-  ASSERT_EQUALS_M(arg1, objArrayOop(args)->obj_at(1), "message should contain argument 1");
-  ASSERT_EQUALS_M(arg2, objArrayOop(args)->obj_at(2), "message should contain argument 2");
-  ASSERT_EQUALS_M(arg3, objArrayOop(args)->obj_at(3), "message should contain argument 3");
-  ASSERT_EQUALS_M(arg4, objArrayOop(args)->obj_at(4), "message should contain argument 4");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg1), objArrayOop(args)->obj_at(1), "message should contain argument 1");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg2), objArrayOop(args)->obj_at(2), "message should contain argument 2");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg3), objArrayOop(args)->obj_at(3), "message should contain argument 3");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(arg4), objArrayOop(args)->obj_at(4), "message should contain argument 4");
 }

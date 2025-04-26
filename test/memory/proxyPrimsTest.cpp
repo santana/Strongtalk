@@ -1,8 +1,13 @@
-# include "incls/_precompiled.incl"
-# include "incls/_proxy_prims.cpp.incl"
-#include "test.h"
-//#include "handle.hpp"
-#include "testUtils.hpp"
+#include "easyunit/test.h"
+#include "memory/allocation.hpp"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/proxyOop.hpp"
+#include "oops/smiOop.hpp"
+#include "prims/proxy_prims.hpp"
+#include "utilities/testUtils.hpp"
 
 using namespace easyunit;
 

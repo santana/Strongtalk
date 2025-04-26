@@ -1,6 +1,5 @@
-# include "incls/_precompiled.incl"
-# include "incls/_longInt.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "utilities/longInt.hpp"
 
 using namespace easyunit;
  

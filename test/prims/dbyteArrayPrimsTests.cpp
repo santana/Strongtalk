@@ -1,7 +1,12 @@
-# include "incls/_precompiled.incl"
-# include "incls/_dByteArray_prims.cpp.incl"
-#include "test.h"
-//#include "handle.hpp"
+#include "easyunit/test.h"
+#include "memory/allocation.hpp"
+#include "memory/handle.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/dByteArrayOop.hpp"
+#include "prims/dByteArray_prims.hpp"
 
 using namespace easyunit;
 

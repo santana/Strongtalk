@@ -20,9 +20,8 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "defaulttestprinter.h"
-
-#include "testpartresult.h"
+#include "easyunit/defaulttestprinter.h"
+#include "easyunit/testpartresult.h"
 
 #include <stdio.h>
 

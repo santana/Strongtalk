@@ -1,12 +1,13 @@
 #include <cstdint>
 
-# include "incls/_precompiled.incl"
-# include "incls/_system_prims.cpp.incl"
-//#include "handle.hpp"
-#include "behavior_prims.hpp"
-#include "byteArray_prims.hpp"
-#include "test.h"
-#include "testUtils.hpp"
+#include "easyunit/test.h"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "prims/behavior_prims.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/system_prims.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/testUtils.hpp"
 
 using namespace easyunit;
 

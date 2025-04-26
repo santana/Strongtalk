@@ -1,7 +1,8 @@
-# include "incls/_precompiled.incl"
-# include "incls/_associationKlass.cpp.incl"
 //#include "handle.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/markSweep.hpp"
+#include "oops/associationKlass.hpp"
 
 using namespace easyunit;
 
@@ -30,7 +31,7 @@ TESTF(AssociationKlassTests, allocateShouldFailWhenAllowedAndNoSpace) {
     int freeSpace = Universe::old_gen.free();
     Universe::allocate_tenured(freeSpace/oopSize - 1);
     ASSERT_TRUE(Universe::old_gen.free() < 5 * oopSize);
-    ASSERT_EQUALS((int)NULL, (int)((associationKlass*)objectClass.as_klass()->klass_part())->allocateObject(false));
+    ASSERT_EQUALS((intptr_t)NULL, (intptr_t)((associationKlass*)objectClass.as_klass()->klass_part())->allocateObject(false));
   }
 }
 

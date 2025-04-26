@@ -20,9 +20,9 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "testcase.h"
-#include "test.h"
-#include "testresult.h"
+#include "easyunit/testcase.h"
+#include "easyunit/test.h"
+#include "easyunit/testresult.h"
 
 #ifndef ECPP
 #include <exception>

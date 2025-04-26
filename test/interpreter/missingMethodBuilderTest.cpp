@@ -1,8 +1,13 @@
-# include "incls/_precompiled.incl"
-# include "incls/_missingMethodBuilder.cpp.incl"
-//# include "stubRoutines.hpp"
+#include "code/stubRoutines.hpp"
+#include "easyunit/test.h"
+#include "interpreter/bytecodes.hpp"
+#include "interpreter/missingMethodBuilder.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/objArrayOop.hpp"
+#include "oops/symbolOop.hpp"
 
-#include "test.h"
+class HeapResourceMark;
 
 using namespace easyunit;
 
@@ -15,7 +20,7 @@ DECLARE(missingMethodBuilderTests)
     oop actual = oops->obj_at(index + 1);\
     sprintf(msg, "Incorrect oop at %d. Expected: 0x%x, but was: 0x%x",\
       index, expected, actual);\
-    ASSERT_EQUALS_M(int(expected), int(actual), msg)
+    ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
   int instVarIndex(klassOop targetClass, char* instVarName) {
     symbolOop varNameSymbol = oopFactory::new_symbol(instVarName);
@@ -79,7 +84,7 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectOops) {
   objArrayOop oops = builder.oops();
   oop expectedOops[13] = {
     as_smiOop(0),
-    Universe::find_global_association("Message"),
+    reinterpret_cast<oop>(Universe::find_global_association("Message")),
     as_smiOop(0),
     selector,
     as_smiOop(0),
@@ -301,11 +306,11 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectOops) 
 
   oop expectedOops[20] = {
     as_smiOop(0),
-    Universe::find_global_association("Message"),
+    reinterpret_cast<oop>(Universe::find_global_association("Message")),
     as_smiOop(0),
     selector,
     as_smiOop(0),
-    Universe::find_global_association("Array"),
+    reinterpret_cast<oop>(Universe::find_global_association("Array")),
     as_smiOop(0),
     oopFactory::new_symbol("new:"),
     as_smiOop(0),

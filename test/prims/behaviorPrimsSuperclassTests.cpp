@@ -1,7 +1,13 @@
-# include "incls/_precompiled.incl"
-# include "incls/_behavior_prims.cpp.incl"
-#include "system_prims.hpp"
-#include "test.h"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/symbolOop.hpp"
+#include "prims/behavior_prims.hpp"
+#include "prims/system_prims.hpp"
+#include "runtime/delta.hpp"
+#include "easyunit/test.h"
 
 using namespace easyunit;
 
@@ -52,10 +58,10 @@ DECLARE(BehaviorPrimitivesSuperclassTests)
       strcpy(name, className->as_string());
     }
 
-    PersistentHandle classNameHandle(className);
+    PersistentHandle classNameHandle(reinterpret_cast<oop>(className));
     symbolOop format = oopFactory::new_symbol("Oops");
     mixinOop mixin = createEmptyMixin();
-    return klassOop(systemPrimitives::createNamedInvocation(format,
+    return klassOop(systemPrimitives::createNamedInvocation(reinterpret_cast<oop>(format),
                                                             superclassHandle.as_oop(),
                                                             trueObj, 
                                                             className,

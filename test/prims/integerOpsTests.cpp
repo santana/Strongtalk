@@ -1,6 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_integerOps.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/allocation.hpp"
+#include "prims/integerOps.hpp"
 
 using namespace easyunit;
 

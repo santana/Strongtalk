@@ -1,8 +1,13 @@
-# include "incls/_precompiled.incl"
-# include "incls/_byteArray_prims.cpp.incl"
-#include "test.h"
-//#include "delta.hpp"
-#include "testUtils.hpp"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/integerOps.hpp"
+#include "prims/prim_def.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/testUtils.hpp"
+
 #include <time.h>
 #include <stdlib.h>
 
@@ -51,10 +56,10 @@ char address[8];
 
 void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize, void* ptr = NULL) {
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
-  byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
+  byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), reinterpret_cast<oop>(alien));
   if (ptr)
-    byteArrayPrimitives::alienSetAddress(as_smiOop((intptr_t)ptr), alien);
-  alienHandle = new PersistentHandle(alien);
+    byteArrayPrimitives::alienSetAddress(as_smiOop(reinterpret_cast<intptr_t>(ptr)), reinterpret_cast<oop>(alien));
+  alienHandle = new PersistentHandle(reinterpret_cast<oop>(alien));
   handles->append(&alienHandle);
 }
 void checkMarkedSymbol(char* message, oop result, symbolOop expected) {

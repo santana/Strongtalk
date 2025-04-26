@@ -1,3 +1,9 @@
+#ifndef _TEST_NOTIFIER_HPP
+#define _TEST_NOTIFIER_HPP
+
+#include "topIncludes/std_includes.hpp"
+#include "utilities/growableArray.hpp"
+
 #define BUFLEN 2048
 
 class TestNotifier: public Notifier, public ResourceObj {
@@ -44,3 +50,4 @@ public:
     compilerWarnings->append(buffer);
   }
 };
+#endif // _TEST_NOTIFIER_HPP

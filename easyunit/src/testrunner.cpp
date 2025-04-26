@@ -20,7 +20,7 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "testrunner.h"
+#include "easyunit/testrunner.h"
 
 using namespace easyunit;
 

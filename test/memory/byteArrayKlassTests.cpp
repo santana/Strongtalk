@@ -1,6 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_byteArrayKlass.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/markSweep.hpp"
+#include "oops/klassOop.hpp"
 
 using namespace easyunit;
 
@@ -28,7 +28,7 @@ TESTF(ByteArrayKlassTests, shouldBeDoubleByteArray) {
 }
 TESTF(ByteArrayKlassTests, allocateShouldFailWhenAllowedAndNoSpace) {
   eden_top = eden_end;
-  ASSERT_EQUALS((int)NULL, (int)(theClass->klass_part()->allocateObjectSize(100, false)));
+  ASSERT_EQUALS((intptr_t)NULL, (intptr_t)(theClass->klass_part()->allocateObjectSize(100, false)));
 }
 
 TESTF(ByteArrayKlassTests, allocateShouldAllocateTenuredWhenRequired) {

@@ -1,10 +1,13 @@
 #include <cstdint>
 
-# include "incls/_precompiled.incl"
-# include "incls/_byteArray_prims.cpp.incl"
-#include "test.h"
-//#include "delta.hpp"
-#include "testUtils.hpp"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/doubleOop.hpp"
+#include "oops/klassOop.hpp"
+#include "prims/byteArray_prims.hpp"
+#include "prims/integerOps.hpp"
+#include "utilities/testUtils.hpp"
 
 using namespace easyunit;
 

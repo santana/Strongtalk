@@ -20,8 +20,8 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "testregistry.h"
-#include "defaulttestprinter.h"
+#include "easyunit/testregistry.h"
+#include "easyunit/defaulttestprinter.h"
 
 using namespace easyunit;
 

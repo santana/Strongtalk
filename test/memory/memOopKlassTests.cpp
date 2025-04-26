@@ -1,7 +1,8 @@
-# include "incls/_precompiled.incl"
-# include "incls/_mixinOop.cpp.incl"
-//#include "handle.hpp"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/klassOop.hpp"
+#include "oops/mixinOop.hpp"
 
 using namespace easyunit;
 

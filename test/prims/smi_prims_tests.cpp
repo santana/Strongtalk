@@ -1,6 +1,9 @@
-# include "incls/_precompiled.incl"
-# include "incls/_smi_prims.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/oopFactory.hpp"
+#include "memory/vmSymbols.hpp"
+#include "prims/prim.hpp"
+#include "oops/smiOop.hpp"
+#include "topIncludes/std_includes.hpp"
 
 using namespace easyunit;
 

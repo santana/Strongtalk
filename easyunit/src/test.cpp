@@ -20,8 +20,8 @@ Barthelemy Dagenais
 barthelemy@prologique.com
 */
 
-#include "test.h"
-#include "testregistry.h"
+#include "easyunit/test.h"
+#include "easyunit/testregistry.h"
 
 using namespace easyunit;
 

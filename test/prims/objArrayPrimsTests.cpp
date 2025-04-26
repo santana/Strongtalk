@@ -1,6 +1,10 @@
-# include "incls/_precompiled.incl"
-# include "incls/_objArray_prims.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/markSweep.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/klassOop.hpp"
+#include "prims/objArray_prims.hpp"
 
 using namespace easyunit;
 

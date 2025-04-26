@@ -1,8 +1,9 @@
-# include "incls/_precompiled.incl"
-# include "incls/_node.cpp.incl"
-
-#include "test.h"
-#include "testNotifier.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/node.hpp"
+#include "easyunit/test.h"
+#include "lookup/lookupCache.hpp"
+#include "memory/oopFactory.hpp"
+#include "utilities/testNotifier.hpp"
 
 using namespace easyunit;
 
@@ -28,7 +29,7 @@ SETUP(UncommonSendNodeTests) {
   notifier = new TestNotifier;
   Notifier::current = notifier;
 
-  LookupKey key(klassOop(Universe::find_global("Object")), oopFactory::new_symbol("="));
+  LookupKey key(klassOop(Universe::find_global("Object")), reinterpret_cast<oop>(oopFactory::new_symbol("=")));
   LookupResult result = lookupCache::lookup(&key);
   
   theCompiler = new Compiler(&key, result.method());

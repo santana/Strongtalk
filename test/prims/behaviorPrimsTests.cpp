@@ -1,8 +1,10 @@
-# include "incls/_precompiled.incl"
-# include "incls/_behavior_prims.cpp.incl"
-//#include "handle.hpp"
-#include "test.h"
-#include "edenMark.hpp"
+#include "easyunit/test.h"
+#include "memory/edenMark.hpp"
+#include "memory/handle.hpp"
+#include "memory/universe.hpp"
+#include "memory/vmSymbols.hpp"
+#include "oops/memOop.hpp"
+#include "prims/behavior_prims.hpp"
 
 using namespace easyunit;
 

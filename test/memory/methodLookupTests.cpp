@@ -1,7 +1,7 @@
-# include "incls/_precompiled.incl"
-# include "incls/_klassOop.cpp.incl"
-
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/methodOop.hpp"
 
 using namespace easyunit;
 

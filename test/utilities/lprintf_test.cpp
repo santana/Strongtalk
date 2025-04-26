@@ -1,7 +1,5 @@
-# include "incls/_precompiled.incl"
-# include "incls/_lprintf.cpp.incl"
-
-#include "test.h"
+#include "easyunit/test.h"
+#include "runtime/debug.hpp"
 #include "testNotifier.hpp"
 
 using namespace easyunit;

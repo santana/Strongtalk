@@ -1,6 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_virtualspace.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "runtime/virtualspace.hpp"
+#include "runtime/os.hpp"
 
 using namespace easyunit;
 

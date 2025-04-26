@@ -1,6 +1,6 @@
-# include "incls/_precompiled.incl"
-# include "incls/_generation.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "memory/universe.hpp"
+#include "runtime/debug.hpp"
 
 using namespace easyunit;
 DECLARE(OldGeneration)

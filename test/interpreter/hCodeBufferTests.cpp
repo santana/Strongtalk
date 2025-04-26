@@ -1,6 +1,10 @@
-#include "incls/_precompiled.incl"
-#include "incls/_hCodeBuffer.cpp.incl"
-#include "test.h"
+#include "easyunit/test.h"
+#include "interpreter/bytecodes.hpp"
+#include "interpreter/hCodeBuffer.hpp"
+#include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
+#include "oops/byteArrayOop.hpp"
+#include "oops/objArrayOop.hpp"
 
 using namespace easyunit;
 
@@ -23,7 +27,7 @@ DECLARE(HCodeBufferTests)
 
 #define checkOop(expected, actual)\
     sprintf(msg, "Expected: %d, but was: %d", expected, actual);\
-    ASSERT_EQUALS_M(int(expected), int(actual), msg)
+    ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
 END_DECLARE
 
@@ -47,27 +51,27 @@ TESTF(HCodeBufferTests, pushingByteShouldAddByteToBytesArray) {
   objArrayOop args = objArrayOop(oopFactory::new_objArray(0));
 
   code->pushByte(Bytecodes::push_literal);
-  code->pushOop(messageClass);
+  code->pushOop(reinterpret_cast<oop>(messageClass));
   checkByteLength(8, "Message");
   checkOopLength(2, "Message");
   code->pushByte(Bytecodes::push_self);
   checkByteLength(9, "self");
   code->pushByte(Bytecodes::push_literal);
-  code->pushOop(errorSelector);
+  code->pushOop(reinterpret_cast<oop>(errorSelector));
   checkByteLength(16, "selector");
   checkOopLength(4, "selector");
   code->pushByte(Bytecodes::push_literal);
-  code->pushOop(args);
+  code->pushOop(reinterpret_cast<oop>(args));
   checkByteLength(24, "args");
   checkOopLength(6, "args");
   code->pushByte(Bytecodes::interpreted_send_n);
   code->pushByte(2);
-  code->pushOop(selector);
+  code->pushOop(reinterpret_cast<oop>(selector));
   code->pushOop(as_smiOop(0));
   checkByteLength(36, "constructor");
   checkOopLength(9, "constructor");
   code->pushByte(Bytecodes::interpreted_send_self);
-  code->pushOop(dnuSelector);
+  code->pushOop(reinterpret_cast<oop>(dnuSelector));
   code->pushOop(as_smiOop(0));
   checkByteLength(48, "DNU");
   checkOopLength(12, "DNU");

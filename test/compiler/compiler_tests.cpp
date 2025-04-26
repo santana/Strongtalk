@@ -1,11 +1,16 @@
-# include "incls/_precompiled.incl"
-# include "incls/_blockOop.cpp.incl"
-# include "incls/_vmOperations.cpp.incl"
-# include "incls/_delta.cpp.incl"
+#include "code/nmethod.hpp"
+#include "easyunit/test.h"
+#include "interpreter/methodIterator.hpp"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/blockOop.hpp"
+#include "runtime/vmOperations.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/process.hpp"
+#include "runtime/testProcess.hpp"
+#include "utilities/growableArray.hpp"
 //# include "recompile.hpp"
 //#include "handle.hpp"
-#include "test.h"
-#include "testProcess.hpp"
 
 using namespace easyunit;
 
@@ -30,7 +35,7 @@ DECLARE(CompilerTests)
     nm = (nmethod*) heap->allocate(size);
     if (!nm) return NULL;
     *((void**)nm) = *((void**)seed); // ugly hack to copy the vftable
-    nm->initForTesting(size - sizeof nmethod, key);
+    nm->initForTesting(size - sizeof(nmethod), key);
     nm->makeZombie(false);
     return nm;
   }
@@ -68,7 +73,7 @@ DECLARE(CompilerTests)
   }
   nmethod* compile(char* className, char* selectorName) {
     HandleMark mark;
-    Handle toCompile(oopFactory::new_symbol(selectorName));
+    Handle toCompile(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
     Handle varClass(Universe::find_global(className));
     return compile(varClass,  toCompile);
   }
@@ -77,7 +82,7 @@ DECLARE(CompilerTests)
     symbolOop selector = symbolOop(selectorHandle.as_oop());
 
     LookupResult result = interpreter_normal_lookup(klass, selector);
-    LookupKey key(klass, selector);
+    LookupKey key(klass, reinterpret_cast<oop>(selector));
 
     VM_OptimizeMethod op(&key, result.method());
     VMProcess::execute(&op);
@@ -89,7 +94,7 @@ DECLARE(CompilerTests)
   void clearICs(char* className, char* selectorName) {
     HandleMark mark;
     Handle varClass(Universe::find_global(className));
-    Handle setup(oopFactory::new_symbol(selectorName));
+    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
     clearICs(varClass, setup);
   }
   void clearICs(Handle& klassHandle, Handle& selectorHandle) {
@@ -102,18 +107,18 @@ DECLARE(CompilerTests)
   nmethod* lookup(char* className, char* selectorName) {
     HandleMark mark;
     Handle classHandle(Universe::find_global(className));
-    Handle selectorHandle(oopFactory::new_symbol(selectorName));
+    Handle selectorHandle(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
 
     klassOop  klass    = classHandle.as_klass();
     symbolOop selector = symbolOop(selectorHandle.as_oop());
 
-    LookupKey key(klass, selector);
+    LookupKey key(klass, reinterpret_cast<oop>(selector));
     return Universe::code->lookup(&key);
   }
   void call(char* className, char* selectorName) {
     HandleMark mark;
-    Handle _new(oopFactory::new_symbol("new"));
-    Handle setup(oopFactory::new_symbol(selectorName));
+    Handle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
+    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
     Handle testClass(Universe::find_global(className));
 
     Handle newTest(Delta::call(testClass.as_klass(), _new.as_oop()));
@@ -152,10 +157,10 @@ TESTF(CompilerTests, uncommonTrap) {
     HandleMark mark;
     initializeSmalltalkEnvironment();
 
-    Handle _new(oopFactory::new_symbol("new"));
-    Handle setup(oopFactory::new_symbol("populatePIC"));
-    Handle toCompile(oopFactory::new_symbol("type"));
-    Handle triggerTrap(oopFactory::new_symbol("testTriggerUncommonTrap"));
+    Handle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
+    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol("populatePIC")));
+    Handle toCompile(reinterpret_cast<oop>(oopFactory::new_symbol("type")));
+    Handle triggerTrap(reinterpret_cast<oop>(oopFactory::new_symbol("testTriggerUncommonTrap")));
     Handle testClass(Universe::find_global("DeltaParameterTest"));
     Handle varClass(Universe::find_global("DeltaParameter"));
 
@@ -229,7 +234,7 @@ TESTF(CompilerTests, recompileZombieForcingFlush) {
     HandleMark mark;
     initializeSmalltalkEnvironment();
 
-    Handle setup(oopFactory::new_symbol("testSetup2"));
+    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol("testSetup2")));
     Handle varClass(Universe::find_global("NonInlinedBlockTest"));
 
     Universe::code->flush();

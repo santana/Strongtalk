@@ -1,13 +1,20 @@
-#include "incls/_precompiled.incl"
-#include "incls/_delta.cpp.incl"
-#include "incls/_shell.cpp.incl"
 #ifdef WIN32
 //#include "processOop.hpp"
 #include <windows.h>
 #endif
 //#include "handle.hpp"
-#include "testharness.h"
-#include "testProcess.hpp"
+#include "easyunit/testharness.h"
+#include "memory/allocation.hpp"
+#include "memory/handle.hpp"
+#include "memory/oopFactory.hpp"
+#include "oops/associationOop.hpp"
+#include "oops/processOop.hpp"
+#include "runtime/arguments.hpp"
+#include "runtime/delta.hpp"
+#include "runtime/init.hpp"
+#include "runtime/process.hpp"
+#include "runtime/testProcess.hpp"
+
 void ostream_init();
 
 using namespace easyunit;
@@ -51,7 +58,7 @@ void TestDeltaProcess::removeFromProcesses() {
   Processes::remove(this);
 }
 oop newProcess() {
-  return Delta::call(Universe::find_global("Process"), oopFactory::new_symbol("new"));
+  return Delta::call(Universe::find_global("Process"), reinterpret_cast<oop>(oopFactory::new_symbol("new")));
 }
 
 void TestDeltaProcess::addToProcesses() {
@@ -96,13 +103,13 @@ void setProcessRefs(DeltaProcess* process, processOop processObj) {
 }
 void initializeSmalltalkEnvironment() {
   AddTestProcess ap;
-  PersistentHandle _new(oopFactory::new_symbol("new"));
-  PersistentHandle initialize(oopFactory::new_symbol("initialize"));
-  PersistentHandle runBase(oopFactory::new_symbol("runBaseClassInitializers"));
+  PersistentHandle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
+  PersistentHandle initialize(reinterpret_cast<oop>(oopFactory::new_symbol("initialize")));
+  PersistentHandle runBase(reinterpret_cast<oop>(oopFactory::new_symbol("runBaseClassInitializers")));
   PersistentHandle processorScheduler(Universe::find_global("ProcessorScheduler"));
   PersistentHandle smalltalk(Universe::find_global("Smalltalk"));
   PersistentHandle systemInitializer(Universe::find_global("SystemInitializer"));
-  PersistentHandle forSeconds(oopFactory::new_symbol("forSeconds:"));
+  PersistentHandle forSeconds(reinterpret_cast<oop>(oopFactory::new_symbol("forSeconds:")));
   
   PersistentHandle processor(Delta::call(processorScheduler.as_oop(), _new.as_oop()));
 
