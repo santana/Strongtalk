@@ -191,7 +191,7 @@ class DeltaProcess: public Process {
   processOop    _processObj;         // the Delta level process object.
   ProcessState  _state;              // process state.
 
-  int*          _last_Delta_fp;
+  void**        _last_Delta_fp;
   oop*          _last_Delta_sp;
   char*         _last_Delta_pc;      // For now only used for stack overflow
 
@@ -253,8 +253,8 @@ class DeltaProcess: public Process {
   void inc_time_stamp()  { _time_stamp++; }
 
   // last_Delta_fp
-  int* last_Delta_fp() const;
-  void set_last_Delta_fp(int* fp);
+  void** last_Delta_fp() const;
+  void   set_last_Delta_fp(void** fp);
 
   // last_Delta_sp
   oop* last_Delta_sp() const;
@@ -527,8 +527,8 @@ class Processes: AllStatic {
 // "semaphore" to protect some vm critical sections (process transfer etc.)
 extern "C" bool processSemaphore; 
 
-extern "C" int* last_Delta_fp;
-extern "C" oop* last_Delta_sp;
+extern "C" void** last_Delta_fp;
+extern "C" oop*   last_Delta_sp;
 
 extern int CurrentHash;
 

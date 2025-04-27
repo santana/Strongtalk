@@ -40,7 +40,7 @@ class StackChunkBuilder: public ResourceObj {
   // size of the corresponding deoptimized interpreter stack.
   int number_of_vframes;    // Number of vframes collected
   int number_of_locals;     // Sum of all temporaries and expressions in colleced vframes
-  static int* frame_pointer;// Frame pointer of the resulting frame
+  static void** frame_pointer;// Frame pointer of the resulting frame
 
   static int header_size() { return 2; }
   static bool _is_deoptimizing;
@@ -48,7 +48,7 @@ class StackChunkBuilder: public ResourceObj {
   GrowableArray<oop>* array;
  public:
   // Constructor
-  StackChunkBuilder(int* fp, int size = 100);
+  StackChunkBuilder(void** fp, int size = 100);
   ~StackChunkBuilder();
 
   // Adds a frame

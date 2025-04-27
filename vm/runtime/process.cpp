@@ -102,7 +102,7 @@ void unwindInfo::update_nlr_targets(compiledVFrame* f, contextOop con) {
   // Convert the nlr information if:
   //    nlr_home     is the frame pointer of f
   // && nlr_home_id  is the offset of f's scope
-  if (f->fr().fp() == (int*) nlr_home() && f->scope()->offset() == nlr_home_id()) {
+  if (static_cast<void*>(f->fr().fp()) == reinterpret_cast<void*>(nlr_home()) && f->scope()->offset() == nlr_home_id()) {
     _nlr_home_context = con;
   }
 }
@@ -111,15 +111,15 @@ bool processSemaphore = false;
 
 // For current Delta process, the last FP/Sp is stored in these global vars, not
 // the instance vars of the process
-int* last_Delta_fp = NULL;
+void** last_Delta_fp = NULL;
 oop* last_Delta_sp = NULL;
 
 // last_Delta_fp
-int* DeltaProcess::last_Delta_fp() const {
+void** DeltaProcess::last_Delta_fp() const {
   return this == _active_delta_process ? ::last_Delta_fp : _last_Delta_fp;
 }
 
-void DeltaProcess::set_last_Delta_fp(int* fp) {
+void DeltaProcess::set_last_Delta_fp(void** fp) {
   if (this == _active_delta_process) {
     ::last_Delta_fp = fp;
   } else {
@@ -744,11 +744,11 @@ void DeltaProcess::exit_uncommon() {
 
 static oop*        old_sp;
 static oop*        new_sp;
-static int*        old_fp;
-static int*        cur_fp;
+static void**      old_fp;
+static void**      cur_fp;
 static objArrayOop frame_array;
 
-extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, int* old_fp, objArrayOop frame_array, int* current_frame) {
+extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_fp, objArrayOop frame_array, void** current_frame) {
   ResourceMark rm;
 
   // Save all parameters for later use (check unpack_frame_array)
@@ -1354,7 +1354,7 @@ void trace_stack_at_exception(int* sp, int* fp, char* pc) {
   DeltaProcess::trace_stack_from(vf);
 }
 
-void suspend_process_at_stack_overflow(int *sp, int* fp, char* pc) {
+void suspend_process_at_stack_overflow(int *sp, void** fp, char* pc) {
   DeltaProcess* proc = DeltaProcess::active();
 
   proc->set_last_Delta_pc(pc);

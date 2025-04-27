@@ -34,9 +34,9 @@ GrowableArray<const compiledVFrame*>*  frames;
 GrowableArray<contextOop>*       contexts;
 
 bool StackChunkBuilder::_is_deoptimizing = false;
-int* StackChunkBuilder::frame_pointer    = NULL;
+void** StackChunkBuilder::frame_pointer  = nullptr;
 
-StackChunkBuilder::StackChunkBuilder(int* fp, int size) {
+StackChunkBuilder::StackChunkBuilder(void** fp, int size) {
   number_of_vframes = 0;
   number_of_locals  = 0;
   array             = new GrowableArray<oop>(size);

@@ -67,36 +67,36 @@ const int minimum_size_for_deoptimized_frame   = 4;
 class frame : ValueObj {
  private:
   oop*  _sp; // stack pointer
-  int*  _fp; // frame pointer - %TODO should be void** or similar to allow for 64 bit
+  void**  _fp; // frame pointer
   char* _pc; // program counter
 
  public:
   // Constructors
   frame() {}
-  frame(oop* sp, int* fp, char* pc) { 
-    _sp = sp; _fp = fp; _pc = pc;
+  frame(oop* sp, void* fp, char* pc) {
+    _sp = sp; _fp = static_cast<void**>(fp); _pc = pc;
   }
 
-  frame(oop* sp, int* fp) { 
+  frame(oop* sp, void* fp) {
     _sp = sp;
-    _fp = fp;
+    _fp = static_cast<void**>(fp);
     _pc = (char*) sp[-1];
   }
 
   // accessors for the instance variables
-  oop*  sp() const 			{ return _sp; }
-  int*  fp() const 			{ return _fp; } // should return void**
-  char* pc() const 			{ return _pc; }
+  oop*    sp() const 			{ return _sp; }
+  void**  fp() const 			{ return _fp; }
+  char*   pc() const 			{ return _pc; }
 
   // patching operations
-  void patch_pc(char* pc); // patch the return address of the frame below.
-  void patch_fp(int*  fp); // patch the link of the frame below.
+  void patch_pc(char*   pc); // patch the return address of the frame below.
+  void patch_fp(void**  fp); // patch the link of the frame below.
 
-  int*   addr_at(int index) const 	{ return &fp()[index];    } // should return void**
-  int    at(int index) const      	{ return *addr_at(index); } // should really return void*
+  void**   addr_at(int index) const 	{ return &fp()[index];    }
+  void*    at(int index) const      	{ return *addr_at(index); }
 
  private:
-  int**  link_addr() const        	{ return (int**) addr_at(frame_link_offset); }
+  void** link_addr() const        	{ return addr_at(frame_link_offset); }
   char** return_addr_addr() const 	{ return (char**) addr_at(frame_return_addr_offset); }
 
   // support for interpreter frames
@@ -109,8 +109,8 @@ class frame : ValueObj {
   oop* sender_sp() const 		{ return (oop*)  addr_at(frame_sender_sp_offset); }
 
   // Link
-  int*     link() const            	{ return *link_addr(); }
-  void set_link(int* addr) 		{ *link_addr() = addr; }
+  void*     link() const            	{ return *link_addr(); }
+  void set_link(void* addr) 		{ *link_addr() = addr; }
 
   // Return address
   char*    return_addr() const          { return *return_addr_addr(); }
@@ -177,7 +177,7 @@ class frame : ValueObj {
   // tells whether there is another chunk of Delta stack above (entry frames only)
   bool has_next_Delta_fp() const;
   // returns the next C entry frame (entry frames only)
-  int* next_Delta_fp()     const;
+  void** next_Delta_fp()   const;
   oop* next_Delta_sp()     const;
 
   bool is_first_frame() const;			// oldest frame? (has no sender)

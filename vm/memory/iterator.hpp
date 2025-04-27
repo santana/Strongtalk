@@ -114,7 +114,7 @@ class FrameLayoutClosure : StackObj {
   // Called for the receiver 
   virtual void do_receiver(oop* o) {}
   // Called for the link 
-  virtual void do_link(int** fp) {}
+  virtual void do_link(void** fp) {}
   // Called for the return address 
   virtual void do_return_addr(char** pc) {}
 };

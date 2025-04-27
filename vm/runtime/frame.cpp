@@ -74,7 +74,7 @@ oop** frame::real_sender_sp_addr() const {
   return (oop**) addr_at(frame_real_sender_sp_offset);
 }
 
-void frame::patch_fp(int* fp) {
+void frame::patch_fp(void** fp) {
   frame previous(NULL, ((int*) sp()) - frame_sender_sp_offset, NULL);
   previous.set_link(fp);
 }
@@ -168,8 +168,8 @@ bool frame::has_next_Delta_fp() const {
   return at(frame_next_Delta_fp_offset) != 0;
 }
 
-int* frame::next_Delta_fp() const	{
-  return (int*) at(frame_next_Delta_fp_offset);
+void** frame::next_Delta_fp() const	{
+  return addr_at(frame_next_Delta_fp_offset);
 }
 
 oop* frame::next_Delta_sp() const	{
