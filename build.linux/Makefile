@@ -11,11 +11,6 @@ strongtalk_LDLIBS = -lpthread -ldl -lrt
 
 WRK=$(shell pwd)
 
-#ifneq ($(WRK),$(BUILD_DIR))
-#$(warning "Running in $(WRK)")
-#$(error "Must be run from build directory: $(BUILD_DIR)")
-#endif
-
 .PHONY: vm
 vm: strongtalk
 

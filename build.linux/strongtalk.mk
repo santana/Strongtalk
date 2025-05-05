@@ -26,6 +26,7 @@ $(1)_INCLUDES	:= $$($(1)_INCLUDEDIRS:%=-I%)
 
 INCLUDES += $$($(1)_INCLUDES)
 
+.PHONY: $(1)-objs
 $(1)-objs: $$($(1)_OBJS)
 
 $(1).so: $$($(1)_OBJS)
@@ -45,11 +46,10 @@ endef
 
 $(foreach prog,$(PROGRAMS),$(eval $(call PROGRAM_template,$(prog))))
 
+.PHONY: clean
 clean:
 	rm -f $(ALL_OBJS) $(ALL_SHLIBS) $(PROGRAMS)
 
+.PHONY: pristine
 pristine:
 	rm -f $(ALL_DEPFILES)
-
-echo.%:
-	@echo $($*)
