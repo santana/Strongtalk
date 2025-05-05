@@ -124,14 +124,14 @@ class Address: public ValueObj {
   Register		_base;
   Register		_index;
   ScaleFactor		_scale;
-  int			_disp;
+  intptr_t		_disp;
   relocInfo::relocType	_rtype;
 
  public:
   Address();
-  Address(int disp, relocInfo::relocType rtype);
-  Address(Register base, int disp = 0, relocInfo::relocType rtype = relocInfo::none);
-  Address(Register base, Register index, ScaleFactor scale, int disp = 0, relocInfo::relocType rtype = relocInfo::none);
+  Address(intptr_t disp, relocInfo::relocType rtype);
+  Address(Register base, intptr_t disp = 0, relocInfo::relocType rtype = relocInfo::none);
+  Address(Register base, Register index, ScaleFactor scale, intptr_t disp = 0, relocInfo::relocType rtype = relocInfo::none);
 
   friend class Assembler;
 };
@@ -172,7 +172,7 @@ class Assembler: public ResourceObj {
   void emit_arith(int op1, int op2, Register dst, oop obj);
   void emit_arith(int op1, int op2, Register dst, Register src);
 
-  void emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, int disp, relocInfo::relocType rtype);
+  void emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, intptr_t disp, relocInfo::relocType rtype);
   void emit_operand(Register reg, Address adr);
 
   void emit_farith(int b1, int b2, int i);
@@ -423,8 +423,8 @@ class Assembler: public ResourceObj {
   void fwait();
 
   // For compatibility with old assembler only - should be removed at some point
-  void Load (Register base, int disp, Register dst) { movl(dst, Address(base, disp)); }
-  void Store(Register src, Register base, int disp) { movl(Address(base, disp), src); }
+  void Load (Register base, intptr_t disp, Register dst) { movl(dst, Address(base, disp)); }
+  void Store(Register src, Register base, intptr_t disp) { movl(Address(base, disp), src); }
 };
 
 

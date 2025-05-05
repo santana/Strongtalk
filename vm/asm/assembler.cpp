@@ -151,7 +151,7 @@ Address::Address() {
 }
 
 
-Address::Address(int disp, relocInfo::relocType rtype) {
+Address::Address(intptr_t disp, relocInfo::relocType rtype) {
   _base  = noreg;
   _index = noreg;
   _scale = no_scale;
@@ -160,7 +160,7 @@ Address::Address(int disp, relocInfo::relocType rtype) {
 }
 
 
-Address::Address(Register base, int disp, relocInfo::relocType rtype) {
+Address::Address(Register base, intptr_t disp, relocInfo::relocType rtype) {
   _base  = base;
   _index = noreg;
   _scale = no_scale;
@@ -169,7 +169,7 @@ Address::Address(Register base, int disp, relocInfo::relocType rtype) {
 }
 
 
-Address::Address(Register base, Register index, ScaleFactor scale, int disp, relocInfo::relocType rtype) {
+Address::Address(Register base, Register index, ScaleFactor scale, intptr_t disp, relocInfo::relocType rtype) {
   assert((index == noreg) == (scale == Address::no_scale), "inconsistent address");
   _base  = base;
   _index = index;
@@ -261,7 +261,7 @@ void Assembler::emit_arith(int op1, int op2, Register dst, Register src) {
 }
 
 
-void Assembler::emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, int disp, relocInfo::relocType rtype) {
+void Assembler::emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, intptr_t disp, relocInfo::relocType rtype) {
   if (base.isValid()) {
     if (index.isValid()) {
       assert(scale != Address::no_scale, "inconsistent address");
