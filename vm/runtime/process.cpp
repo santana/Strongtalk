@@ -292,12 +292,12 @@ void DebugInfo::interceptForStep() {
   frameBreakpoint = NULL;
 }
 
-void DebugInfo::interceptForNext(int* fr) {
+void DebugInfo::interceptForNext(void** fr) {
   interceptorEntryPoint = &dispatchTable::intercept_for_next;
   frameBreakpoint = fr;
 }
 
-void DebugInfo::interceptForReturn(int* fr) {
+void DebugInfo::interceptForReturn(void** fr) {
   interceptorEntryPoint = &dispatchTable::intercept_for_return;
   frameBreakpoint = fr;
 }

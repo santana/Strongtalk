@@ -165,13 +165,13 @@ enum ProcessState {
 
 class DebugInfo: public ValueObj {
  private:
-  void (*interceptorEntryPoint)(int*); // entry point of the dispatch table entry point
-  int* frameBreakpoint;                // pointer to the target frame for stepping, if any
+  void (*interceptorEntryPoint)(void**); // entry point of the dispatch table entry point
+  void** frameBreakpoint;              // pointer to the target frame for stepping, if any
  public:
   DebugInfo() : interceptorEntryPoint(NULL), frameBreakpoint(NULL) {};
   void interceptForStep();
-  void interceptForNext(int*fr);
-  void interceptForReturn(int*fr);
+  void interceptForNext(void** fr);
+  void interceptForReturn(void** fr);
   void apply();
   void reset();
   void resetInterceptor() {
@@ -219,10 +219,10 @@ class DeltaProcess: public Process {
   void setupSingleStep() {
     debug.interceptForStep();
   }
-  void setupStepNext(int* fr) {
+  void setupStepNext(void** fr) {
     debug.interceptForNext(fr);
   }
-  void setupStepReturn(int* fr) {
+  void setupStepReturn(void** fr) {
     debug.interceptForReturn(fr);
   }
   void resetStep() {

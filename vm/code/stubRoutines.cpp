@@ -846,7 +846,7 @@ extern "C" int	    nlr_home_id;
 
 extern "C" char*    C_frame_return_addr;
 
-extern "C" int*	    last_Delta_fp;	// ebp of the last Delta frame before a C call
+extern "C" void**   last_Delta_fp;	// ebp of the last Delta frame before a C call
 extern "C" oop*	    last_Delta_sp;	// esp of the last Delta frame before a C call
 extern "C" void popStackHandles(char* nextFrame);
 
@@ -883,7 +883,7 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->enter();
 
   // last_Delta_fp & last_Delta_sp must be the first two words in
-  // the stack frame; i.e. at ebp - 4 and ebp - 8. See also frame.hpp.
+  // the stack frame; i.e. at ebp - sizeof(intptr_t) and ebp - 2*sizeof(intptr_t). See also frame.hpp.
   masm->pushl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
   masm->pushl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type));
 
@@ -983,7 +983,7 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->movl(Address((intptr_t)&nlr_home,		  relocInfo::external_word_type), edi);
   masm->movl(Address((intptr_t)&nlr_home_id,		  relocInfo::external_word_type), esi);
   masm->jmp(_return);
-  
+
   return entry_point;
 }
 
@@ -1161,7 +1161,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
 }
 
 char* StubRoutines::generate_provoke_nlr_at(MacroAssembler* masm) {
-  // extern "C" void provoke_nlr_at(int* frame_pointer, oop* stack_pointer);
+  // extern "C" void provoke_nlr_at(void** frame_pointer, oop* stack_pointer);
   Address old_ret_addr    = Address(esp, -1*oopSize);
   Address frame_pointer   = Address(esp, +1*oopSize);
   Address stack_pointer   = Address(esp, +2*oopSize);
@@ -1189,7 +1189,7 @@ char* StubRoutines::generate_provoke_nlr_at(MacroAssembler* masm) {
 }
 
 char* StubRoutines::generate_continue_nlr_in_delta(MacroAssembler* masm) {
-  // extern "C" void continue_nlr_in_delta(int* frame_pointer, oop* stack_pointer);
+  // extern "C" void continue_nlr_in_delta(void** frame_pointer, oop* stack_pointer);
   Address old_ret_addr    = Address(esp, -1*oopSize);
   Address frame_pointer   = Address(esp, +1*oopSize);
   Address stack_pointer   = Address(esp, +2*oopSize);

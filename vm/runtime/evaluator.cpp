@@ -50,9 +50,9 @@ extern "C" void single_step_handler() {
   evaluator::single_step(DeltaProcess::active()->last_Delta_fp());
 }
 
-int* saved_frame;
+void** saved_frame;
 
-bool patch_last_delta_frame(int* fr, int* dist) {
+bool patch_last_delta_frame(void** fr, int* dist) {
   // change the current to next bci;
   frame v(NULL, fr, NULL);
 
@@ -72,14 +72,14 @@ bool patch_last_delta_frame(int* fr, int* dist) {
   return true;
 }
 
-void restore_hp(int* fr, int dist) {
+void restore_hp(void** fr, int dist) {
   frame v(NULL, fr, NULL);
   v.set_hp(v.hp() - dist);
 }
 
 static bool is_aborting = false;
 
-void evaluator::single_step(int* fr) {
+void evaluator::single_step(void** fr) {
   int dist;
   if (!patch_last_delta_frame(fr, &dist)) return;
   

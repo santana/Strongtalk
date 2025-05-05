@@ -45,6 +45,6 @@ class evaluator : AllStatic {
   static void print_status();
  public:
   static void read_eval_loop();
-  static void single_step(int* fr);
+  static void single_step(void** fr);
 };
 #endif // _EVALUATOR_HPP

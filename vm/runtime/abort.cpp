@@ -45,7 +45,7 @@ void ErrorHandler::abort_compilation() {
   Unimplemented();
 }
 
-typedef oop (xxx_nlr_at_func)(int* frame_pointer, oop* stack_pointer);
+typedef oop (xxx_nlr_at_func)(void** frame_pointer, oop* stack_pointer);
 
 void ErrorHandler::abort_current_process() {
   xxx_nlr_at_func* provoke_nlr_at = (xxx_nlr_at_func*)StubRoutines::provoke_nlr_at();

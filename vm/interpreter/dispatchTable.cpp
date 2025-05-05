@@ -126,7 +126,7 @@ doFn original_table[Bytecodes::number_of_codes];
 
 #endif
 
-extern "C" int* frame_breakpoint = (int*) -1;
+extern "C" void** frame_breakpoint = (void**) -1;
 
 dispatchTable::Mode dispatchTable::mode;
 
@@ -155,20 +155,20 @@ void dispatchTable::patch_with_sst_stub() {
 }
 
 
-void dispatchTable::intercept_for_step(int* fr) {
+void dispatchTable::intercept_for_step(void** fr) {
   if (!in_step_mode()) {
     patch_with_sst_stub();
     mode = step_mode;
 //slr mod - the original value depends on the memory addresses of method bytecodes 
 //    being < 0x80000000 as in 32 bit Windows
 //    frame_breakpoint = (int*) -1;
-    frame_breakpoint = (int*) 0x80000000;
+    frame_breakpoint = (void**) 0x80000000;
 //end slr mod
   }
 }
 
 
-void dispatchTable::intercept_for_next(int* fr) {
+void dispatchTable::intercept_for_next(void** fr) {
   frame_breakpoint = fr;
   if (!in_next_mode()) {
     patch_with_sst_stub();
@@ -196,7 +196,7 @@ static Bytecodes::Code return_codes[] = {
 };
 
 
-void dispatchTable::intercept_for_return(int* fr)  {
+void dispatchTable::intercept_for_return(void** fr)  {
   frame_breakpoint = fr;
   if (!in_return_mode()) {
     reset();

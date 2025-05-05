@@ -342,7 +342,7 @@ PRIM_DECL_1(vframeOopPrimitives::step_return, oop activation) {
     deoptimize(proc);
 
     vframe* vf = vframeOop(activationHandle.as_oop())->get_vframe();
-    int* framePointer = vf->fr().fp();
+    void** framePointer = vf->fr().fp();
     
     proc->setupStepReturn(framePointer);
 

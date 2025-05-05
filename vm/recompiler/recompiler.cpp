@@ -295,7 +295,7 @@ RFrame* RecompilationPolicy::parentOfBlock(blockClosureOop blk) {
   contextOop ctx = blk->lexical_scope();
   assert(ctx->is_context(), "make sure we have a context");
 
-  int* fp = ctx->parent_fp();
+  void** fp = ctx->parent_fp();
   if (fp == NULL) {
     return NULL;	// non-LIFO block
   } 

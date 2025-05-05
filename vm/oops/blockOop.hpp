@@ -113,7 +113,7 @@ class contextOopDesc: public memOopDesc {
   bool has_parent_fp() const;
   bool has_outer_context() const;
 
-  int* parent_fp() const		{ return has_parent_fp() ? (int*) parent() : NULL; }
+  void** parent_fp() const		{ return has_parent_fp() ? (void**) parent() : NULL; }
   void set_home_fp(void** fp) {
     assert(oop(fp)->is_smi(), "checking alignment");
     set_parent(oop(fp));
