@@ -2,7 +2,6 @@ ROOT_DIR	= $(HOME)/Strongtalk
 TEST_DIR 	:= $(ROOT_DIR)/test
 VM_DIR 		:= $(ROOT_DIR)/vm
 EASYUNIT_DIR	:= $(ROOT_DIR)/easyunit
-MAKE_DIR	:= $(ROOT_DIR)/build.linux
 BUILD_DIR	:= $(ROOT_DIR)/build
 
 ASM		= $(CC)
