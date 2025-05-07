@@ -28,7 +28,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/debug.hpp"
 #include "utilities/growableArray.hpp"
 
-#if defined(__LINUX__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__OpenBSD__)
 # include <pthread.h>
 # include <unistd.h>
 # include <semaphore.h>

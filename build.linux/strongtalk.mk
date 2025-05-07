@@ -7,7 +7,7 @@ BUILD_DIR	:= $(ROOT_DIR)/build
 
 ASM		= $(CC)
 
-DEFINES		= -DDELTA_COMPILER -DASSERT -DDEBUG -D__LINUX__
+DEFINES		= -DDELTA_COMPILER -DASSERT -DDEBUG
 DEPFLAGS        = -MT $@ -MMD -MP -MF $*.d
 CXXFLAGS	= -fno-rtti -Wno-write-strings -fno-operator-names \
 		  -O0 -fPIC -g \
