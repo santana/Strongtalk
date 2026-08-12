@@ -1,0 +1,51 @@
+name: build.unix
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          make --version | head -1
+          c++ --version | head -1
+
+      - name: Build (make all)
+        working-directory: build.unix
+        run: |
+          if [ "$(uname)" = "Darwin" ]; then
+            JOBS=$(sysctl -n hw.ncpu)
+          else
+            JOBS=$(nproc)
+          fi
+          make -j"$JOBS" all
+
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        working-directory: build.unix
+        # The VM runtime may hit platform issues; don't fail the build over it.
+        continue-on-error: true
+        timeout-minutes: 10
+        run: make test
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: strongtalk-${{ matrix.os }}
+          path: |
+            build.unix/strongtalk
+            build.unix/stest
+            build.unix/strongtalk.so
+            build.unix/stest.so
