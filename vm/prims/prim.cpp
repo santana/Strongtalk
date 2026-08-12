@@ -72,6 +72,9 @@ oop primitive_desc::eval(oop* a) {
   // %hack: see below
 #ifndef __GNUC__
   __asm mov rbx_on_stack, rbx
+#elif defined(__aarch64__)
+  // x19 is the arm64 callee-saved counterpart of RBX
+  __asm__ volatile("mov %0, x19" : "=r"(rbx_on_stack));
 #else
   __asm__("pushq %%rax;"
           "movq %%rbx, %%rax;"
@@ -114,6 +117,9 @@ oop primitive_desc::eval(oop* a) {
 #ifndef __GNUC__
   __asm mov rbx_now, rbx
   __asm mov rbx, rbx_on_stack
+#elif defined(__aarch64__)
+  __asm__ volatile("mov %0, x19" : "=r"(rbx_now));
+  __asm__ volatile("mov x19, %0" : : "r"(rbx_on_stack));
 #else
   __asm__("pushq %%rax;"
           "movq %%rbx, %%rax;"

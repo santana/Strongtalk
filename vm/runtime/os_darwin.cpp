@@ -24,8 +24,11 @@
 #define __OS_DARWIN__
 #ifdef __APPLE__
 #define _XOPEN_SOURCE
+# include "memory/allocation.hpp"
+# include "runtime/os.hpp"
+# include "runtime/debug.hpp"
+# include "utilities/growableArray.hpp"
 # include <pthread.h>
-# include "incls/_os.cpp.incl"
 # include <unistd.h>
 # include <semaphore.h>
 # include <sys/time.h>
@@ -210,7 +213,11 @@ bool os::check_directory(char* dir_name) {
 
 // 1 reference (memory/util.cpp)
 void os::breakpoint() {
+#if defined(__aarch64__)
+	__builtin_trap();
+#else
 	asm("int3");
+#endif
 }
 
 // 1 reference process.cpp
@@ -231,7 +238,11 @@ static Event* threadCreated = NULL;
 
 char* calcStackLimit() {
   char* stackptr;
+#if defined(__aarch64__)
+  __asm__ volatile("mov %0, sp" : "=r"(stackptr));
+#else
   asm("movl %%esp, %0;" : "=a"(stackptr));
+#endif
   stackptr = (char*) align(stackptr, os::vm_page_size());
   
   int stackHeadroom = 2 * os::vm_page_size();
@@ -635,7 +646,7 @@ void trace_stack(int thread_id);
 static void handler(int signum, siginfo_t* info, void* context) {
 	//	install_dummy_handler();
 	//	trace_stack(os::current_thread_id());
-    printf("\nsignal: %d\ninfo: %x\ncontext: %x", signum, (int) info, (int) context);
+    printf("\nsignal: %d\ninfo: %lx\ncontext: %lx", signum, reinterpret_cast<intptr_t>(info), reinterpret_cast<intptr_t>(context));
 	os_dump_context2((ucontext_t*) context);
     exit(-1);
 }

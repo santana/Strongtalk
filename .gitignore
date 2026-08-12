@@ -9,5 +9,9 @@ strongtalk-main.pdb
 .DS_Store
 *.mach
 build.osx/strongtalk/build
+build.unix/strongtalk
+build.unix/stest
+build.unix/*.so
 *.o
+*.d
 

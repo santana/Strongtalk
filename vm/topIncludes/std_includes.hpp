@@ -38,7 +38,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
   #ifndef _WIN32 // mingw 
     #define _isnan(n) isnan(n)
-    #define _finite(n) finite(n)
+    #if defined(__APPLE__)
+      // Apple's math.h has no finite(); use the C99 isfinite()
+      #define _finite(n) isfinite(n)
+    #else
+      #define _finite(n) finite(n)
+    #endif
   #endif
 
   #define _vsnprintf   vsnprintf
