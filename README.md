@@ -1,5 +1,7 @@
 # Strongtalk
 
+[![Build status](https://github.com/santana/Strongtalk/actions/workflows/build-unix.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build-unix.yml)
+
 An optionally-typed Smalltalk with a high-performance optimizing JIT, developed
 by LongView Technologies LLC (1994-1997) and open-sourced by Sun Microsystems in
 2006. The VM is written in C++ and self-hosts its own optimizing compiler and
