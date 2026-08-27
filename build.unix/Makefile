@@ -82,10 +82,10 @@ INCLUDES += $$($(1)_INCLUDES)
 $(1)-objs: $$($(1)_OBJS)
 
 $(1).so: $$($(1)_OBJS)
-	$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$$$(find $($(1)_DIRS) -name "*.o"|grep -v main.o) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
+	$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$(filter-out %/main.o,$$($(1)_OBJS)) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
 
 $(1): $$($(1)_SO)
-	$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$$$(find $($(1)_DIRS) -name main.o) $$($(1)_SO)
+	$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$(filter %/main.o,$$($(1)_OBJS)) $$($(1)_SO)
 
 $$($(1)_DEPFILES):
 

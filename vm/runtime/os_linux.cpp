@@ -190,6 +190,15 @@ static Thread* main_thread;
 
 extern void intercept_for_single_step();
 
+// No-op on Linux/x86-64 (no W^X enforcement)
+static bool jit_write_protected_state = false;
+void os::jit_write_protect(bool protect) {
+  jit_write_protected_state = protect;
+}
+bool os::jit_write_protect_enabled() {
+  return jit_write_protected_state;
+}
+
 // No references in VM
 int os::getenv(char* name,char* buffer,int len) {
  return 0;
