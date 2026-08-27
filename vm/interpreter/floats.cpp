@@ -120,7 +120,45 @@ void Floats::generate_cmp(MacroAssembler* masm, Assembler::Condition cc) {
 }
 
 
+// Number of double operands each function pops from the float stack at
+// runtime (the depth the caller's fld_d sequence pushed). Used on the aarch64
+// backend to set the generation-time float stack depth so that st(i) maps to
+// the d-register the caller actually wrote the operand into.
+static int float_function_args(Floats::Function f) {
+  switch (f) {
+    case Floats::zero:
+    case Floats::one:				return 0;
+    case Floats::abs:
+    case Floats::negated:
+    case Floats::squared:
+    case Floats::sqrt:
+    case Floats::sin:
+    case Floats::cos:
+    case Floats::tan:
+    case Floats::exp:
+    case Floats::ln:
+    case Floats::is_zero:
+    case Floats::is_not_zero:
+    case Floats::oopify:			return 1;
+    case Floats::add:
+    case Floats::subtract:
+    case Floats::multiply:
+    case Floats::divide:
+    case Floats::modulo:
+    case Floats::is_equal:
+    case Floats::is_not_equal:
+    case Floats::is_less:
+    case Floats::is_less_equal:
+    case Floats::is_greater:
+    case Floats::is_greater_equal:		return 2;
+  }
+  ShouldNotReachHere();
+  return 0;
+}
+
+
 void Floats::generate(MacroAssembler* masm, Function f) {
+  masm->set_float_depth(float_function_args(f));	// no-op on x86
   char* entry_point = masm->pc();
   switch (f) {
     // nullary functions
@@ -185,6 +223,12 @@ void Floats::init(MacroAssembler* masm) {
     fatal("Floats: number of _functions_names not equal number_of_functions");
   }
 
+  // Each function is a self-contained float-stack fragment; save and restore
+  // the generation-time depth so the interpreter bytecode generators that
+  // follow start from their own (depth 0) baseline. No-op on x86.
+  int saved_float_depth = masm->float_depth();
+  masm->set_float_depth(0);
+
   // pre-initialize whole table
   // (make sure there's an entry for each index so that illegal indices
   // can be caught during execution without additional index range check)
@@ -231,6 +275,7 @@ void Floats::init(MacroAssembler* masm) {
   generate(masm, is_greater);
   generate(masm, is_greater_equal);
   
+  masm->set_float_depth(saved_float_depth);
   _is_initialized = true;
 }
 

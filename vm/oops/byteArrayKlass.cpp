@@ -42,7 +42,7 @@ oop byteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 oop byteArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool permit_tenured) {
   klassOop k        = as_klassOop();
   int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size, oopSize) / oopSize;
+  int      obj_size = ni_size + 1 + roundTo(size, image_oop_size) / image_oop_size;
   // allocate
   oop* result = permit_tenured ?
     Universe::allocate_tenured(obj_size, false):

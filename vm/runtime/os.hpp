@@ -80,6 +80,12 @@ class os {
   static bool  release_memory(char* addr, int size);
   static bool  guard_memory(char* addr, int size);
   static char* exec_memory(int size);
+
+  // MAP_JIT write-protect toggle (Apple Silicon). Generated code regions are
+  // writable in the "unprotected" state and executable in the "protected"
+  // state; no-ops on other platforms.
+  static void  jit_write_protect(bool protect);
+  static bool  jit_write_protect_enabled();
   
   // OS interface to C memory routines - used for small allocations
   static void* malloc(int size);

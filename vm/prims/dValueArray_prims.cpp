@@ -54,7 +54,7 @@ PRIM_DECL_2(doubleValueArrayPrimitives::allocateSize, oop receiver, oop argument
 
   klassOop k        = klassOop(receiver);
   int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(length * sizeof(double), oopSize) / oopSize;
+  int      obj_size = ni_size + 1 + roundTo(length * sizeof(double), image_oop_size) / image_oop_size;
   // allocate
   doubleValueArrayOop obj = as_doubleValueArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header

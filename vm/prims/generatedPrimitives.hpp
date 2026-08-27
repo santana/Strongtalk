@@ -94,7 +94,17 @@ class PrimitivesGenerator: StackObj {
 
 class GeneratedPrimitives: AllStatic {
  private:
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  // AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
+  // bytes), so the generated primitives need a larger code buffer.
+  enum { _code_size = 40000 };
+#elif DELTA_X86_64
+  // x86-64 allocation stubs use 64-bit (REX.W) instructions throughout,
+  // making them ~30% larger than the x86-32 versions.
+  enum { _code_size = 16384 };
+#else
   enum { _code_size = 8192 };			// simply increase if too small (assembler will crash if too small)
+#endif
   static bool _is_initialized;			// true if GeneratedPrimitives has been initialized
 //  static char _code[_code_size];		// the code buffer for the primitives
   static char* _code;		// the code buffer for the primitives

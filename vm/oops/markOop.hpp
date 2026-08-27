@@ -64,23 +64,25 @@ class markOopDesc: public oopDesc {
          near_death_shift      = tagged_contents_bits  + tagged_contents_shift,
          sentinel_shift        = near_death_bits       + near_death_shift };
 
-  enum { hash_mask                     = nthMask(hash_bits),
-         hash_mask_in_place            = hash_mask << hash_shift,
-         age_mask                      = nthMask(age_bits),
-         age_mask_in_place             = age_mask << age_shift,
-         tagged_contents_mask          = nthMask(tagged_contents_bits),
-         tagged_contents_mask_in_place = tagged_contents_mask << tagged_contents_shift,
-         near_death_mask               = nthMask(near_death_bits),
-         near_death_mask_in_place      = near_death_mask << near_death_shift,
-         sentinel_mask                 = nthMask(sentinel_bits),
-	 sentinel_mask_in_place        = sentinel_mask << sentinel_shift };
+  // On 64-bit these shifts exceed 31, so use uintptr_t to avoid
+  // signed-int overflow.  Computed directly (not via nthMask) so
+  // the compiler sees them as constant expressions.
+  static const uintptr_t hash_mask                     = ((uintptr_t)1 << hash_bits) - 1;
+  static const uintptr_t hash_mask_in_place            = hash_mask << hash_shift;
+  static const uintptr_t age_mask                      = ((uintptr_t)1 << age_bits) - 1;
+  static const uintptr_t age_mask_in_place             = age_mask << age_shift;
+  static const uintptr_t tagged_contents_mask          = ((uintptr_t)1 << tagged_contents_bits) - 1;
+  static const uintptr_t tagged_contents_mask_in_place = tagged_contents_mask << tagged_contents_shift;
+  static const uintptr_t near_death_mask               = ((uintptr_t)1 << near_death_bits) - 1;
+  static const uintptr_t near_death_mask_in_place      = near_death_mask << near_death_shift;
+  static const uintptr_t sentinel_mask                 = ((uintptr_t)1 << sentinel_bits) - 1;
+  static const uintptr_t sentinel_mask_in_place        = sentinel_mask << sentinel_shift;
 
+  static const uintptr_t no_hash_in_place           = no_hash     << hash_shift;
+  static const uintptr_t first_hash_in_place        = first_hash  << hash_shift;
+  static const uintptr_t untagged_contents_in_place = (uintptr_t)1 << tagged_contents_shift;
 
-  enum { no_hash_in_place           = no_hash     << hash_shift,
-         first_hash_in_place        = first_hash  << hash_shift,
-         untagged_contents_in_place = 1           << tagged_contents_shift };
-
-  enum { sentinel_is_place = 1 << sentinel_shift } ;
+  static const uintptr_t sentinel_is_place = (uintptr_t)1 << sentinel_shift;
  public:
   enum { max_age = age_mask };
   // accessors

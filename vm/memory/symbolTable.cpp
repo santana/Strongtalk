@@ -49,7 +49,7 @@ int hash(char* name, int len) {
  
   // hashpjw from Dragon book (ASU p. 436), except increment differently
  
-  assert(BitsPerByte * BytesPerWord == 32, "assumes 32-bit words");
+  assert(BitsPerByte * BytesPerWord >= 32, "assumes at least 32-bit words");
   long unsigned h = 0;
   long unsigned g;
   char* s = name;
@@ -78,11 +78,16 @@ bool symbolTable::is_present(symbolOop sym) {
   int   len  = sym->length();
   int hashValue = hash(name, len);
   symbolTableEntry* bucket = bucketFor(hashValue);
-  if (bucket->is_empty()) return false;
-  if (bucket->is_symbol())
-    return bucket->get_symbol()->equals(name, len);
-  for (symbolTableLink* l = bucket->get_link(); l; l = l->next)
-    if (l->symbol->equals(name, len)) return true;
+  if (!bucket->is_empty()) {
+    if (bucket->is_symbol()) {
+      symbolOop bs = bucket->get_symbol();
+      return bs->equals(name, len);
+    } else {
+      for (symbolTableLink* l = bucket->get_link(); l; l = l->next) {
+        if (l->symbol->equals(name, len)) return true;
+      }
+    }
+  }
   return false;
 }
 

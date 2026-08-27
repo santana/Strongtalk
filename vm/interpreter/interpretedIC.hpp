@@ -55,9 +55,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 class InterpretedIC: ValueObj {
  public:
   enum {
-    size               = 8,			// inline cache size in words
+    size               = 2*oopSize,		// inline cache size in bytes
     first_word_offset  = 0,			// layout info: first word
-    second_word_offset = 4,			// layout info: second word
+    second_word_offset = oopSize,		// layout info: second word
   } InterpretedICConstants;
 
   // Conversion (Bytecode* -> InterpretedIC*)

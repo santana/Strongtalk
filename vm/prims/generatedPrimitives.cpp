@@ -59,9 +59,17 @@ extern "C" void scavenge_and_allocate(int size);
 
 void PrimitivesGenerator::scavenge(int size) {
   masm->set_last_Delta_frame_after_call();
+#if DELTA_X86_64
+  masm->movl(edi, size);				// x86-64 SysV: first argument in rdi
+  masm->call_C((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
+#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  masm->movl(edx, size);			// pass argument in x0 (AAPCS64)
+  masm->call_C((char*)&scavenge_and_allocate, edx);	// result copied back to eax
+#else
   masm->pushl(size);
   masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-  masm->addl(esp, 4);
+  masm->addl(esp, oopSize);
+#endif
   masm->reset_last_Delta_frame();
   masm->addl(eax, size * oopSize);
 }
@@ -88,27 +96,37 @@ void PrimitivesGenerator::error_jumps() {
   
 #undef  VMSYMBOL_POSTFIX
 #undef  VMSYMBOL_ENUM_NAME
-  
+
+  // The failure marker is a marked symbol oop (bit 2 set) in eax; on AArch64
+  // the result must be left in x0 since call_C copies x0 -> eax afterwards.
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#  define ERROR_RETURN()  { masm->mov(x0, eax); masm->ret(0); }
+#else
+#  define ERROR_RETURN()  { masm->ret(2 * oopSize); }
+#endif
+
   masm->bind(error_receiver_has_wrong_type);
   masm->movl(eax, _receiver_has_wrong_type);
   masm->addl(eax, 2);
-  masm->ret(2 * oopSize);
+  ERROR_RETURN();
   masm->bind(error_first_argument_has_wrong_type);
   masm->movl(eax, _first_argument_has_wrong_type);
   masm->addl(eax, 2);
-  masm->ret(2 * oopSize);
+  ERROR_RETURN();
   masm->bind(error_overflow);
   masm->movl(eax, _smi_overflow);
   masm->addl(eax, 2);
-  masm->ret(2 * oopSize);
+  ERROR_RETURN();
   masm->bind(error_division_by_zero);
   masm->movl(eax, _division_by_zero);
   masm->addl(eax, 2);
-  masm->ret(2 * oopSize);
+  ERROR_RETURN();
   masm->bind(allocation_failure);
   masm->movl(eax, _allocation_failure);
   masm->addl(eax, 2);
-  masm->ret(2 * oopSize);
+  ERROR_RETURN();
+
+#undef ERROR_RETURN
 }
 
 // generators are in xxx_prims_gen.cpp files

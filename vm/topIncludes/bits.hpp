@@ -26,9 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "memory/error.hpp"
 
-# define AllBits	~0
-# define NoBits		0
-# define OneBit		1
+# define AllBits	~0UL
+# define NoBits		0UL
+# define OneBit		1UL
 
 # define addBits(x, m)	((x) | (m))
 # define setBits(x, m)	((x) |= (m))
@@ -42,7 +42,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # define clearNth(x, n)	clearBits((x), nthBit(n))
 # define subNth(x, n)	subBits((x), nthBit(n))
 # define isSet(x, n)	anySet((x), nthBit(n))
-# define nthMask(n)	(n == 32 ? AllBits : (nthBit(n) - OneBit))
+# define nthMask(n)	((n) >= (int)(sizeof(AllBits) * 8) ? AllBits : (nthBit(n) - OneBit))
 # define lowerBits(x, n) maskBits((x), nthMask(n))
 
 # define roundMask(x, m) (((x) + (m)) & ~(m))

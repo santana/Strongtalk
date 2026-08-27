@@ -38,7 +38,7 @@ oop doubleByteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 oop doubleByteArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool tenured) {
   klassOop k        = as_klassOop();
   int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size * 2, oopSize) / oopSize;
+  int      obj_size = ni_size + 1 + roundTo(size * 2, image_oop_size) / image_oop_size;
   // allocate
   oop* result = tenured ?
     Universe::allocate_tenured(obj_size, permit_scavenge) :

@@ -35,7 +35,7 @@ class doubleValueArrayKlass: public memOopKlass {
   // Return the oop size for a doubleValueArrayOop
   int object_size(int number_of_doubleValues) const {
     return   non_indexable_size() + 1
-           + roundTo(number_of_doubleValues * sizeof(double), oopSize) / oopSize;
+           + roundTo(number_of_doubleValues * sizeof(double), image_oop_size) / image_oop_size;
   }
  
   // creation operations

@@ -87,6 +87,25 @@ const int M = K * K;
 const int oopSize   = sizeof(oop);
 const int floatSize = sizeof(double);
 
+// Granularity for rounding byte content in byte-indexed objects (byteArray,
+// symbol, doubleByteArray, doubleValueArray).  Must match oopSize so that
+// the size computed for a loaded or newly-created object is consistent with
+// the allocation formula.  On 64-bit this is 8, matching the original 32-bit
+// design where it was 4.
+const int image_oop_size = oopSize;
+
+// Delta stack slot size. On AArch64 the delta stack slots are 16 bytes so
+// that the stack pointer stays 16-byte aligned for every sp-based load/store
+// (AAPCS64 requires SP alignment and macOS raises EXC_ARM_SP_ALIGN on any
+// access that uses a misaligned sp). On x86 the slots are one word.
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+const int slotSize  = 2 * oopSize;
+#else
+const int slotSize  = oopSize;
+#endif
+// Number of oop-sized words per delta stack slot (used to step stack scans).
+const int oopsPerSlot = slotSize / oopSize;
+
 inline int byte_size(void* from, void* to) {
   return (char*) to - (char*) from;
 }

@@ -35,7 +35,7 @@ class doubleByteArrayKlass: public memOopKlass {
   // Return the oop size for a doubleByteArrayOop
   int object_size(int number_of_doubleBytes) const {
     return   non_indexable_size() + 1
-           + roundTo(number_of_doubleBytes * 2, oopSize) / oopSize;
+           + roundTo(number_of_doubleBytes * 2, image_oop_size) / image_oop_size;
   }
  
   // creation operations

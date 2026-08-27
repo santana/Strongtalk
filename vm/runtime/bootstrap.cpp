@@ -55,6 +55,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 bootstrap::bootstrap(char* name) {
   file_name = name;
   _has_error = false;
+  _oop_replacement = NULL;
   open_file();
   if (!has_error()) {
     //    initialize_tables(file_size > 0 ? (file_size / 32) : (10 * K));
@@ -79,7 +80,10 @@ bootstrap::~bootstrap() {
 oop bootstrap::at(int index) {
   if (index < 0 || index > number_of_oops)
     error("bootstrap oop table overflow");
-  return oop_table[index];
+  oop o = oop_table[index];
+  if ((intptr_t)o != 0 && (intptr_t)o < 64)
+    lprintf("SUSPICIOUS at(%d) = 0x%lx (n_oops=%d)\n", index, (long) o, number_of_oops);
+  return o;
 }
 
 void bootstrap::add(oop obj) {
@@ -211,6 +215,19 @@ oop bootstrap::get_object() {
   }
 
   int    size = get_integer();
+
+  // The .bst file was written on 32-bit where image_oop_size was 4.
+  // For byte-like objects the data portion is packed into oops; on 64-bit
+  // each oop holds 8 bytes instead of 4, so fewer oops are needed.
+  // Recompute the correct 64-bit oop count before allocating.
+  if (type == 'd' || type == 'g' || type == 'e') {
+    int ni = 2;  // non_indexable_size for memOop-based byte containers
+    int data_oops_32 = size - ni - 1;
+    int data_bytes   = data_oops_32 * 4;      // each 32-bit oop held 4 bytes
+    int data_oops_64 = (data_bytes + oopSize - 1) / oopSize;
+    size = ni + 1 + data_oops_64;
+  }
+
   memOop m    = as_memOop(Universe::allocate_tenured(size));
 
   // Clear eventual padding area for byteArray, symbol, doubleByteArray.
@@ -219,6 +236,7 @@ oop bootstrap::get_object() {
   // if (TraceBootstrap) lprintf("%c %d = 0x%lx\n", type, size, m);
 
   add(m);
+  int my_index = number_of_oops - 1;
   switch (type) {
     // Classes
     case 'A': KLASS_CASE(set_klassKlass_vtbl)
@@ -249,14 +267,23 @@ oop bootstrap::get_object() {
     case 'g': SYMBOL_CASE(symbolOop);
     case 'h': OBJECT_CASE(doubleOop);
     case 'i': OBJECT_CASE(associationOop);
-    case 'j': OBJECT_CASE(methodOop);
+    case 'j':
+      methodOop(m)->bootstrap_object(this);
+      if (_oop_replacement) {
+        m = (memOop) _oop_replacement;
+        oop_table[my_index] = m;
+        _oop_replacement = NULL;
+      }
+      break;
     case 'k': OBJECT_ERROR("blockClosure")
     case 'l': OBJECT_ERROR("context")
     case 'm': OBJECT_ERROR("proxy")
     case 'n': OBJECT_CASE(mixinOop)
     case 'o': OBJECT_ERROR("weakArrayOop")
     case 'p': OBJECT_CASE(processOop)
-    default: fatal("unknown object type");
+    default: lprintf("DBG bad obj type 0x%02x ftell=%ld next: ", (u_char)type, (long)ftell(stream));
+             for (int i = 0; i < 12; i++) lprintf("%02x ", (u_char)getc(stream));
+             lprintf("\n"); fatal("unknown object type");
   }
 
   return m;

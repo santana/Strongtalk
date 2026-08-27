@@ -24,7 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifdef DELTA_COMPILER
 
 #include "asm/codeBuffer.hpp"
-#include "asm/x86_mapping.hpp"
+#include "asm/mapping.hpp"
 #include "code/nameDesc.hpp"
 #include "code/nmethod.hpp"
 #include "code/scopeDescRecorder.hpp"

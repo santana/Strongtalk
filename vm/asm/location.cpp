@@ -25,7 +25,7 @@
 
 #include "asm/assembler.hpp"
 #include "asm/location.hpp"
-#include "asm/x86_mapping.hpp"
+#include "asm/mapping.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
 

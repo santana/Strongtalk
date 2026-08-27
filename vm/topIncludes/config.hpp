@@ -25,10 +25,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define _CONFIG_HPP
 
 const int BitsPerByte = 8;
+
+#if defined(__LP64__) || defined(_WIN64)
+const int BytesPerWord = 8;
+const int LogBytesPerWord = 3;
+#else
 const int BytesPerWord = 4;
+const int LogBytesPerWord = 2;
+#endif
+
 const int BitsPerWord = BitsPerByte * BytesPerWord;
 
 const int LogBitsPerByte = 3;
-const int LogBytesPerWord = 2;
 const int LogBitsPerWord = LogBitsPerByte + LogBytesPerWord;
 #endif // _CONFIG_HPP

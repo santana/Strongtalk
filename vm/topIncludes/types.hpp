@@ -148,7 +148,6 @@ class outputStream;
 
   class Compiler;
   class OldAssembler;
-  class Assembler;
   class Register;
   class Inliner;
   class CompiledLoop;

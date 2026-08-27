@@ -1,30 +1,27 @@
-/* Copyright 1994, 1995 LongView Technologies L.L.C. $Revision: 1.30 $ */
-/* Copyright (c) 2006, Sun Microsystems, Inc.
-All rights reserved.
+/*
+Copyright (c) 2026, Gerardo Santana Gomez Garrido.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
-following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following 
-	  disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of Sun Microsystems nor the names of its contributors may be used to endorse or promote products derived 
-	  from this software without specific prior written permission.
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT 
-NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL 
-THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
-OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef DELTA_COMPILER
+// AArch64 implementation of the Mapping interface (see asm/mapping.hpp).
+// This is the sibling of asm/mapping_x86.cpp; the register conventions are
+// documented in asm/mapping_aarch64.hpp.
+//
+// This file is inert unless the AArch64 backend is selected with
+// -DDELTA_ASSEMBLER_BACKEND_AARCH64, so that the default (x86) VM build
+// (which compiles every vm/*/*.cpp) is unaffected.
+
+#if defined(DELTA_COMPILER) && defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
 
 #include "asm/codeBuffer.hpp"
-#include "asm/x86_mapping.hpp"
+#include "asm/mapping.hpp"
 #include "compiler/compiler.hpp"
 #include "compiler/preg.hpp"
 #include "oops/blockOop.hpp"
@@ -32,9 +29,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // stack mapping
 
 void Mapping::initialize() {
-  _localRegisters[0] = asLocation(eax);
-  _localRegisters[1] = asLocation(edi);
-  _localRegisters[2] = asLocation(esi);
+  _localRegisters[0] = asLocation(x21);
+  _localRegisters[1] = asLocation(x22);
+  _localRegisters[2] = asLocation(x23);
   int i;
   for (i = 0; i < nofRegisters     ; i++) _localRegisterIndex[i] = -1;
   for (i = 0; i < nofLocalRegisters; i++) _localRegisterIndex[_localRegisters[i].number()] = i;
@@ -66,15 +63,25 @@ int Mapping::localRegisterIndex(Location l) {
 
 
 // parameter passing
+// AAPCS64: the receiver is passed in x0 and the first 7 arguments in x1..x7;
+// further arguments are passed on the stack (below the caller's frame).
+// The stack offsets are a first proposal to be validated during the JIT
+// retarget phase.
 Location Mapping::incomingArg(int i, int nofArgs) {
   assert((0 <= i) && (i < nofArgs), "illegal arg number");
-  return Location::stackLocation(nofArgs - i + 1);
+  if (i < nofArgRegisters - 1) {
+    return Location::registerLocation(i + 1);	// x1, x2, ..., x7
+  }
+  return Location::stackLocation(i - (nofArgRegisters - 2));
 }
 
 
 Location Mapping::outgoingArg(int i, int nofArgs) {
   assert((0 <= i) && (i < nofArgs), "illegal arg number");
-  return topOfStack;
+  if (i < nofArgRegisters - 1) {
+    return Location::registerLocation(i + 1);	// x1, x2, ..., x7
+  }
+  return Location::stackLocation(i - (nofArgRegisters - 2));
 }
 
 
@@ -100,7 +107,7 @@ Location Mapping::floatTemporary(int scope_id, int i) {
   assert(scope->firstFloatIndex() >= 0, "firstFloatIndex not computed yet");
   // Floats must be 8byte aligned in order to a void massive time penalties.
   // They're accessed via a base register which holds the 8byte aligned value
-  // of ebp. The byte-offset of the first float must be a multiple of floatSize
+  // of x29. The byte-offset of the first float must be a multiple of floatSize
   // => need an extra filler word besides the Floats::magic value.
   //
   // base - 1: Floats::magic
@@ -155,7 +162,7 @@ void Mapping::load(Location src, Register dst) {
     case specialLoc: {
       if (src == resultOfNLR) {
         // treat as NLR_result_reg
-	if (NLR_result_reg != dst) theMacroAssm->movl(dst, NLR_result_reg);
+	if (NLR_result_reg != dst) theMacroAssm->mov(dst, NLR_result_reg);
       } else {
         ShouldNotReachHere();
       }
@@ -163,18 +170,18 @@ void Mapping::load(Location src, Register dst) {
     }
     case registerLoc: {
       Register s = asRegister(src);
-      if (s != dst) theMacroAssm->movl(dst, s);
+      if (s != dst) theMacroAssm->mov(dst, s);
       break;
     }
     case stackLoc: {
       assert(isNormalTemporary(src), "must be a normal temporary location");
-      theMacroAssm->Load(ebp, src.offset() * oopSize, dst);
+      theMacroAssm->ldr(dst, Address(frame_reg, src.offset() * oopSize));
       break;
     }
     case contextLoc1: {
       PReg* base = theCompiler->contextList->at(src.contextNo())->context();
       load(base->loc, dst);
-      theMacroAssm->Load(dst, contextOffset(src.tempNo()), dst);
+      theMacroAssm->ldr(dst, Address(dst, contextOffset(src.tempNo())));
       break;
     }
     default: {
@@ -190,7 +197,7 @@ void Mapping::store(Register src, Location dst, Register temp1, Register temp2, 
   switch (dst.mode()) {
     case specialLoc: {
       if (dst == topOfStack) {
-	theMacroAssm->pushl(src);
+	theMacroAssm->push(src);
       } else {
         ShouldNotReachHere();
       }
@@ -198,18 +205,18 @@ void Mapping::store(Register src, Location dst, Register temp1, Register temp2, 
     }
     case registerLoc: {
       Register d = asRegister(dst);
-      if (d != src) theMacroAssm->movl(d, src);
+      if (d != src) theMacroAssm->mov(d, src);
       break;
     }
     case stackLoc: {
       assert(isNormalTemporary(dst), "must be a normal temporary location");
-      theMacroAssm->Store(src, ebp, dst.offset()*oopSize);
+      theMacroAssm->str(src, Address(frame_reg, dst.offset()*oopSize));
       break;
     }
     case contextLoc1: {
       PReg* base = theCompiler->contextList->at(dst.contextNo())->context();
       load(base->loc, temp1);
-      theMacroAssm->Store(src, temp1, contextOffset(dst.tempNo()));
+      theMacroAssm->str(src, Address(temp1, contextOffset(dst.tempNo())));
       if (needsStoreCheck) theMacroAssm->store_check(temp1, temp2);
       break;
     }
@@ -226,25 +233,28 @@ void Mapping::storeO(oop obj, Location dst, Register temp1, Register temp2, bool
   switch (dst.mode()) {
     case specialLoc: {
       if (dst == topOfStack) {
-	theMacroAssm->pushl(obj);
+	theMacroAssm->mov(temp1, (intptr_t)obj);
+	theMacroAssm->push(temp1);
       } else {
         ShouldNotReachHere();
       }
       break;
     }
     case registerLoc: {
-      theMacroAssm->movl(asRegister(dst), obj);
+      theMacroAssm->mov(asRegister(dst), (intptr_t)obj);
       break;
     }
     case stackLoc: {
       assert(isNormalTemporary(dst), "must be a normal temporary location");
-      theMacroAssm->movl(Address(ebp, dst.offset()*oopSize), obj);
+      theMacroAssm->mov(temp1, (intptr_t)obj);
+      theMacroAssm->str(temp1, Address(frame_reg, dst.offset()*oopSize));
       break;
     }
     case contextLoc1: {
       PReg* base = theCompiler->contextList->at(dst.contextNo())->context();
       load(base->loc, temp1);
-      theMacroAssm->movl(Address(temp1, contextOffset(dst.tempNo())), obj);
+      theMacroAssm->mov(temp2, (intptr_t)obj);
+      theMacroAssm->str(temp2, Address(temp1, contextOffset(dst.tempNo())));
       if (needsStoreCheck) theMacroAssm->store_check(temp1, temp2);
       break;
     }
@@ -266,7 +276,7 @@ void Mapping::fload(Location src, Register base) {
   } else {
     assert(isFloatTemporary(src), "must be a float location");
     assert((src.offset()*oopSize) % floatSize == 0, "float is not aligned");
-    theMacroAssm->fld_d(Address(base, src.offset()*oopSize));
+    theMacroAssm->ldr(float_scratch_reg, Address(base, src.offset()*oopSize));
   }
 }
 
@@ -281,7 +291,7 @@ void Mapping::fstore(Location dst, Register base) {
   } else {
     assert(isFloatTemporary(dst), "must be a float location");
     assert((dst.offset()*oopSize) % floatSize == 0, "float is not aligned");
-    theMacroAssm->fstp_d(Address(base, dst.offset()*oopSize));
+    theMacroAssm->str(float_scratch_reg, Address(base, dst.offset()*oopSize));
   }
 }
 
@@ -290,4 +300,4 @@ void mapping_init() {
   Mapping::initialize();
 }
 
-#endif // DELTA_COMPILER
+#endif // DELTA_COMPILER && DELTA_ASSEMBLER_BACKEND_AARCH64

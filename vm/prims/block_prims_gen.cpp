@@ -71,8 +71,17 @@ char* PrimitivesGenerator::allocateContext_var() {
   Label _loop, _loop_end;
     
   char* entry_point = masm->pc();
-  
-  masm->movl(ecx, Address(esp, +oopSize));	// load length  (remember this is a smiOop)
+
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // install_context passes the length in the top stack slot: the interpreter
+  // calls this prim with a direct call (blr), so the return address lives in
+  // x30 rather than on the stack. On x86 the return address occupies [esp],
+  // hence the +oopSize below.
+  Address length_addr = Address(esp, 0);
+#else
+  Address length_addr = Address(esp, +oopSize);
+#endif
+  masm->movl(ecx, length_addr);			// load length  (remember this is a smiOop)
   masm->movl(eax, Address((intptr_t)&eden_top, relocInfo::external_word_type));
   masm->movl(edx, ecx);
   masm->addl(edx, 3*oopSize);
@@ -85,7 +94,7 @@ char* PrimitivesGenerator::allocateContext_var() {
  masm->bind(fill_object);
   masm->movl(ebx, contextKlass_addr());
   masm->addl(ecx, 4);
-  masm->addl(ecx, 0x80000003);				// obj->init_mark()
+  masm->orl(ecx, 0x80000003);				// obj->init_mark()
   masm->movl(Address(eax), ecx);
   masm->movl(ecx, nil_addr());
 
@@ -109,11 +118,18 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->set_last_Delta_frame_after_call();
   masm->shrl(ecx, Tag_Size); 			// smiOop->value()
   masm->addl(ecx, 3);
+#if DELTA_X86_64
+  masm->movl(edi, ecx);				// x86-64 SysV: first argument in rdi
+  masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
+#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  masm->call_C((char*)&scavenge_and_allocate, ecx);
+#else
   masm->pushl(ecx);
   masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-  masm->addl(esp, 4);
+  masm->addl(esp, oopSize);
+#endif
   masm->reset_last_Delta_frame();
-  masm->movl(ecx, Address(esp, +oopSize));	// reload length  (remember this is a smiOop)
+  masm->movl(ecx, length_addr);		// reload length  (remember this is a smiOop)
   masm->movl(edx, ecx);
   masm->addl(edx, 3 * oopSize);
   masm->addl(edx, eax);

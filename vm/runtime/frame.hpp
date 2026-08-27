@@ -47,11 +47,23 @@ class CompiledIC;
 //    [old frame                 ]   <- fp	// old frame may skip real frames deoptimized away.
 //    [return pc                 ]
 
+// On AArch64 the delta stack slots are 16 bytes (slotSize = 2*oopSize) so the
+// offsets below ebp/above ebp are doubled with respect to the x86 layout; the
+// link/return pair at fp[0]/fp[1] (pushed by enter as a 16-byte stp) is
+// unchanged.
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+const int frame_temp_offset          = -6; // For interpreter frames only
+const int frame_hp_offset            = -4; // For interpreter frames only
+const int frame_receiver_offset      = -2; // For interpreter frames only
+const int frame_next_Delta_fp_offset = -2; // For entry frames only; see call_delta in interpreter_asm.asm
+const int frame_next_Delta_sp_offset = -4; // For entry frames only; see call_delta in interpreter_asm.asm
+#else
 const int frame_temp_offset          = -3; // For interpreter frames only
 const int frame_hp_offset            = -2; // For interpreter frames only
 const int frame_receiver_offset      = -1; // For interpreter frames only
 const int frame_next_Delta_fp_offset = -1; // For entry frames only; see call_delta in interpreter_asm.asm
 const int frame_next_Delta_sp_offset = -2; // For entry frames only; see call_delta in interpreter_asm.asm
+#endif
 const int frame_link_offset          =  0;
 const int frame_return_addr_offset   =  1;
 const int frame_arg_offset           =  2;
@@ -100,9 +112,15 @@ class frame : ValueObj {
   char** return_addr_addr() const 	{ return (char**) addr_at(frame_return_addr_offset); }
 
   // support for interpreter frames
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  oop*   receiver_addr() const    	{ return (oop*) addr_at(frame_receiver_offset); }
+  u_char** hp_addr() const          	{ return (u_char**) addr_at(frame_hp_offset); }
+  oop*   arg_addr(int off) const  	{ return (oop*) addr_at(frame_arg_offset + 2*off); }
+#else
   oop*   receiver_addr() const    	{ return (oop*) addr_at(frame_receiver_offset); }
   u_char** hp_addr() const          	{ return (u_char**) addr_at(frame_hp_offset); }
   oop*   arg_addr(int off) const  	{ return (oop*) addr_at(frame_arg_offset + off); }
+#endif
 
  public:
   // returns the stack pointer of the calling frame
@@ -123,14 +141,24 @@ class frame : ValueObj {
   // Temporaries
   oop       temp(int offset) const	{ return *temp_addr(offset); }
   void  set_temp(int offset, oop obj)	{ *temp_addr(offset) = obj; }
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  oop* temp_addr(int offset) const 	{ return (oop*) addr_at(frame_temp_offset - 2*offset); }
+#else
   oop* temp_addr(int offset) const 	{ return (oop*) addr_at(frame_temp_offset - offset); }
+#endif
 
   // Arguments
   oop      arg(int offset) const	{ return *arg_addr(offset); }
   void set_arg(int offset, oop obj)	{ *arg_addr(offset) = obj; }
 
   // Expressions
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // delta stack slots are 16 bytes (slotSize = 2*oopSize) on AArch64, so the
+  // oops live at even 8-byte indices
+  oop      expr(int index) const	{ return ((oop*)sp())[2*index]; }
+#else
   oop      expr(int index) const	{ return ((oop*)sp())[index]; }
+#endif
 
   // Hybrid Code Pointer (interpreted frames only); corresponds to "current PC", not return address
   u_char*   hp() const;

@@ -36,7 +36,7 @@ class byteArrayKlass: public memOopKlass {
   // Return the oop size for a byteArrayOop
   int object_size(int number_of_bytes) const {
     return   non_indexable_size() + 1
-           + roundTo(number_of_bytes, oopSize) / oopSize;
+           + roundTo(number_of_bytes, image_oop_size) / image_oop_size;
   }
 
   // Layout

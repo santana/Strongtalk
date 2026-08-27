@@ -33,8 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 # define smiOop_one   smiOop((1L << Tag_Size) + Int_Tag)
 
 // minimum and maximum smiOops
-# define smi_min  (-(1 << (BitsPerWord - 3)))      // -2^29
-# define smi_max  ( (1 << (BitsPerWord - 3)) - 1)  // +2^29 - 1
+# define smi_min  (-(1L << (BitsPerWord - 3)))
+# define smi_max  ( (1L << (BitsPerWord - 3)) - 1)
 
 # define smiOop_min   smiOop((smi_min << Tag_Size) + Int_Tag)
 # define smiOop_max   smiOop((smi_max << Tag_Size) + Int_Tag)

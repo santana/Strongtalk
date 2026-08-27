@@ -529,6 +529,7 @@ extern "C" bool processSemaphore;
 
 extern "C" void** last_Delta_fp;
 extern "C" oop*   last_Delta_sp;
+extern "C" char*  last_Delta_pc;
 
 extern int CurrentHash;
 

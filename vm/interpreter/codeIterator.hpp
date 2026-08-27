@@ -40,7 +40,7 @@ class CodeIterator: public StackObj {
   u_char*   end;
 
   inline void    align();
-  inline u_char* align(u_char* p) const			{ return (u_char*) (((intptr_t) p + 3) & (~3)); }
+  inline u_char* align(u_char* p) const			{ return (u_char*) (((intptr_t) p + oopSize - 1) & (~(oopSize - 1))); }
 
  public:
   // Constructor

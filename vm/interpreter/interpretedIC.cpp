@@ -111,7 +111,7 @@ void InterpretedIC::set(Bytecodes::Code send_code, oop first_word, oop second_wo
 
 u_char* InterpretedIC::findStartOfSend(u_char* sel_addr) {
   u_char* p = sel_addr;			// start of inline cache
-  while (*--p == Bytecodes::halt) ;	// skip alignment bytes if there - this works only if the nofArgs byte != halt ! FIX THIS!
+  while (*--p == Bytecodes::halt || *p == 0) ;	// skip alignment bytes (0x00 pads in the expanded layout, or halt)
   if (*p < 128) --p;			// skip nofArgs byte if there - this works only for sends with less than 128 args
   // and assumes that no send bytecodes is smaller than 128. FIX THIS!!!
   if (!Bytecodes::is_send_code(Bytecodes::Code(*p))) {

@@ -75,9 +75,8 @@ cd build.unix
 
 ## Continuous integration
 
-`.github/workflows/build-unix.yml` builds `build.unix` on `ubuntu-latest` and
-`macos-latest` for every push and pull request, and uploads the binaries as
-build artifacts.
+`.github/workflows/build-unix.yml` builds on `ubuntu-latest` (x86-64) and
+`macos-latest` (arm64) for every push and pull request.
 
 ## Documentation
 

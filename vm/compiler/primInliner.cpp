@@ -36,7 +36,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "topIncludes/std_includes.hpp"
 
-inline bool equal(char* s, char* t) { return strcmp(s, t) == 0; }
+inline bool str_equal(char* s, char* t) { return strcmp(s, t) == 0; }
 
 
 void PrimInliner::assert_failure_block() {
@@ -76,8 +76,8 @@ Expr* PrimInliner::tryConstantFold() {
   // always.
   if (!_pdesc->can_be_constant_folded()) {
     // check for Symbol>>at: before declaring failure
-    if ((equal(_pdesc->name(), "primitiveIndexedByteAt:ifFail:") ||
-         equal(_pdesc->name(), "primitiveIndexedByteCharacterAt:ifFail:")) &&
+    if ((str_equal(_pdesc->name(), "primitiveIndexedByteAt:ifFail:") ||
+         str_equal(_pdesc->name(), "primitiveIndexedByteCharacterAt:ifFail:")) &&
         parameter(0)->hasKlass() && parameter(0)->klass() == Universe::symbolKlassObj()) {
       // the at: primitive can be constant-folded for symbols
       // what if the receiver is a constant string? unfortunately, Smalltalk has
@@ -845,27 +845,27 @@ Expr* PrimInliner::tryInline() {
       if (number_of_parameters() == 2) {
         Expr* x = parameter(0);
         Expr* y = parameter(1);
-        if (equal(name, "primitiveAdd:ifFail:"))			{ res = smi_ArithmeticOp(tAddArithOp, x, y);	break; }
-        if (equal(name, "primitiveSubtract:ifFail:"))			{ res = smi_ArithmeticOp(tSubArithOp, x, y);	break; }
-        if (equal(name, "primitiveMultiply:ifFail:"))			{ res = smi_ArithmeticOp(tMulArithOp, x, y);	break; }
-        if (equal(name, "primitiveDiv:ifFail:"))			{ res = smi_Div(x, y);				break; }
-        if (equal(name, "primitiveMod:ifFail:"))			{ res = smi_Mod(x, y);				break; }
-        if (equal(name, "primitiveBitAnd:ifFail:"))			{ res = smi_BitOp(tAndArithOp, x, y);		break; }
-        if (equal(name, "primitiveBitOr:ifFail:"))			{ res = smi_BitOp(tOrArithOp , x, y);		break; }
-        if (equal(name, "primitiveBitXor:ifFail:"))			{ res = smi_BitOp(tXOrArithOp, x, y);		break; }
-        if (equal(name, "primitiveRawBitShift:ifFail:"))		{ res = smi_Shift(x, y);			break; }
+        if (str_equal(name, "primitiveAdd:ifFail:"))			{ res = smi_ArithmeticOp(tAddArithOp, x, y);	break; }
+        if (str_equal(name, "primitiveSubtract:ifFail:"))			{ res = smi_ArithmeticOp(tSubArithOp, x, y);	break; }
+        if (str_equal(name, "primitiveMultiply:ifFail:"))			{ res = smi_ArithmeticOp(tMulArithOp, x, y);	break; }
+        if (str_equal(name, "primitiveDiv:ifFail:"))			{ res = smi_Div(x, y);				break; }
+        if (str_equal(name, "primitiveMod:ifFail:"))			{ res = smi_Mod(x, y);				break; }
+        if (str_equal(name, "primitiveBitAnd:ifFail:"))			{ res = smi_BitOp(tAndArithOp, x, y);		break; }
+        if (str_equal(name, "primitiveBitOr:ifFail:"))			{ res = smi_BitOp(tOrArithOp , x, y);		break; }
+        if (str_equal(name, "primitiveBitXor:ifFail:"))			{ res = smi_BitOp(tXOrArithOp, x, y);		break; }
+        if (str_equal(name, "primitiveRawBitShift:ifFail:"))		{ res = smi_Shift(x, y);			break; }
       }
       break;
     case IntComparisonPrimitive:
       if (number_of_parameters() == 2) {
         Expr* x = parameter(0);
         Expr* y = parameter(1);
-        if (equal(name, "primitiveSmallIntegerEqual:ifFail:"))		{ res = smi_Comparison(EQBranchOp, x, y);	break; }
-        if (equal(name, "primitiveSmallIntegerNotEqual:ifFail:"))	{ res = smi_Comparison(NEBranchOp, x, y);	break; }
-        if (equal(name, "primitiveLessThan:ifFail:"))			{ res = smi_Comparison(LTBranchOp, x, y);	break; }
-        if (equal(name, "primitiveLessThanOrEqual:ifFail:"))		{ res = smi_Comparison(LEBranchOp, x, y);	break; }
-        if (equal(name, "primitiveGreaterThan:ifFail:"))		{ res = smi_Comparison(GTBranchOp, x, y);	break; }
-        if (equal(name, "primitiveGreaterThanOrEqual:ifFail:"))		{ res = smi_Comparison(GEBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveSmallIntegerEqual:ifFail:"))		{ res = smi_Comparison(EQBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveSmallIntegerNotEqual:ifFail:"))	{ res = smi_Comparison(NEBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveLessThan:ifFail:"))			{ res = smi_Comparison(LTBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveLessThanOrEqual:ifFail:"))		{ res = smi_Comparison(LEBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveGreaterThan:ifFail:"))		{ res = smi_Comparison(GTBranchOp, x, y);	break; }
+        if (str_equal(name, "primitiveGreaterThanOrEqual:ifFail:"))		{ res = smi_Comparison(GEBranchOp, x, y);	break; }
       }
       break;
     case FloatArithmeticPrimitive:
@@ -873,34 +873,34 @@ Expr* PrimInliner::tryInline() {
     case FloatComparisonPrimitive:
       break;
     case ObjArrayPrimitive:
-      if (equal(name, "primitiveIndexedObjectSize"))			{ res = array_size();						break; }
-      if (equal(name, "primitiveIndexedObjectAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::object_at);		break; }
-      if (equal(name, "primitiveIndexedObjectAt:put:ifFail:"))		{ res = array_at_put_ifFail(ArrayAtPutNode::object_at_put);	break; }
+      if (str_equal(name, "primitiveIndexedObjectSize"))			{ res = array_size();						break; }
+      if (str_equal(name, "primitiveIndexedObjectAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::object_at);		break; }
+      if (str_equal(name, "primitiveIndexedObjectAt:put:ifFail:"))		{ res = array_at_put_ifFail(ArrayAtPutNode::object_at_put);	break; }
       break;
     case ByteArrayPrimitive:
-      if (equal(name, "primitiveIndexedByteSize"))			{ res = array_size();						break; }
-      if (equal(name, "primitiveIndexedByteAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::byte_at);			break; }
-      if (equal(name, "primitiveIndexedByteAt:put:ifFail:"))		{ res = array_at_put_ifFail(ArrayAtPutNode::byte_at_put);	break; }
+      if (str_equal(name, "primitiveIndexedByteSize"))			{ res = array_size();						break; }
+      if (str_equal(name, "primitiveIndexedByteAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::byte_at);			break; }
+      if (str_equal(name, "primitiveIndexedByteAt:put:ifFail:"))		{ res = array_at_put_ifFail(ArrayAtPutNode::byte_at_put);	break; }
       break;
     case DoubleByteArrayPrimitive:
-      if (equal(name, "primitiveIndexedDoubleByteSize"))		{ res = array_size();						break; }
-      if (equal(name, "primitiveIndexedDoubleByteAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::double_byte_at);		break; }
-      if (equal(name, "primitiveIndexedDoubleByteCharacterAt:ifFail:"))	{ res = array_at_ifFail(ArrayAtNode::character_at);		break; }
-      if (equal(name, "primitiveIndexedDoubleByteAt:put:ifFail:"))	{ res = array_at_put_ifFail(ArrayAtPutNode::double_byte_at_put);break; }
+      if (str_equal(name, "primitiveIndexedDoubleByteSize"))		{ res = array_size();						break; }
+      if (str_equal(name, "primitiveIndexedDoubleByteAt:ifFail:"))		{ res = array_at_ifFail(ArrayAtNode::double_byte_at);		break; }
+      if (str_equal(name, "primitiveIndexedDoubleByteCharacterAt:ifFail:"))	{ res = array_at_ifFail(ArrayAtNode::character_at);		break; }
+      if (str_equal(name, "primitiveIndexedDoubleByteAt:put:ifFail:"))	{ res = array_at_put_ifFail(ArrayAtPutNode::double_byte_at_put);break; }
       break;
     case BlockPrimitive:
       if (strncmp(name, "primitiveValue", 14) == 0) 			{ res = block_primitiveValue();		break; }
       break;
     case NormalPrimitive:
       if (strncmp(name, "primitiveNew", 12) == 0) 			{ res = obj_new();			break; }
-      if (equal(name, "primitiveShallowCopyIfFail:ifFail:"))		{ res = obj_shallowCopy();		break; }
-      if (equal(name, "primitiveEqual:"))				{ res = obj_equal();			break; }
-      if (equal(name, "primitiveClass"))				{ res = obj_class(true);		break; }
-      if (equal(name, "primitiveClassOf:"))				{ res = obj_class(false);		break; }
-      if (equal(name, "primitiveHash"))					{ res = obj_hash(true);			break; }
-      if (equal(name, "primitiveHashOf:"))				{ res = obj_hash(false);		break; }
-      if (equal(name, "primitiveProxyByteAt:ifFail:"))			{ res = proxy_byte_at();		break; }
-      if (equal(name, "primitiveProxyByteAt:put:ifFail:"))		{ res = proxy_byte_at_put();		break; }
+      if (str_equal(name, "primitiveShallowCopyIfFail:ifFail:"))		{ res = obj_shallowCopy();		break; }
+      if (str_equal(name, "primitiveEqual:"))				{ res = obj_equal();			break; }
+      if (str_equal(name, "primitiveClass"))				{ res = obj_class(true);		break; }
+      if (str_equal(name, "primitiveClassOf:"))				{ res = obj_class(false);		break; }
+      if (str_equal(name, "primitiveHash"))					{ res = obj_hash(true);			break; }
+      if (str_equal(name, "primitiveHashOf:"))				{ res = obj_hash(false);		break; }
+      if (str_equal(name, "primitiveProxyByteAt:ifFail:"))			{ res = proxy_byte_at();		break; }
+      if (str_equal(name, "primitiveProxyByteAt:put:ifFail:"))		{ res = proxy_byte_at_put();		break; }
       break;
    default:
       fatal1("bad primitive group %d", _pdesc->group());

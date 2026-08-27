@@ -6,14 +6,22 @@
 #include "easyunit/testharness.h"
 #include "memory/allocation.hpp"
 #include "memory/handle.hpp"
+#include "memory/iterator.hpp"
 #include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
 #include "oops/associationOop.hpp"
+#include "oops/klass.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/mixinOop.hpp"
 #include "oops/processOop.hpp"
+#include "oops/symbolOop.hpp"
 #include "runtime/arguments.hpp"
 #include "runtime/delta.hpp"
 #include "runtime/init.hpp"
 #include "runtime/process.hpp"
 #include "runtime/testProcess.hpp"
+#include <unistd.h>
+#include "utilities/ostream.hpp"
 
 void ostream_init();
 
@@ -69,10 +77,10 @@ void TestDeltaProcess::addToProcesses() {
   Processes::add(this);
 }
 
-TestDeltaProcess::TestDeltaProcess(): DeltaProcess(NULL, NULL) {
+TestDeltaProcess::TestDeltaProcess(): DeltaProcess(NULL, NULL, false) {
   int ignore;
   Processes::remove(this);
-  os::terminate_thread(_thread); // don't want to launch delta!
+  // no launch_delta thread is created by the base class; we run our own
   _thread = os::create_thread((int (*)(void*)) &launch_tests, this, &ignore);
   _stack_limit = (char*)os::stack_limit(_thread);
 
@@ -81,10 +89,10 @@ TestDeltaProcess::TestDeltaProcess(): DeltaProcess(NULL, NULL) {
   set_processObj(processOop(process));
   processOop(process)->set_process(this);
 }
-TestDeltaProcess::TestDeltaProcess(fn launchfn): DeltaProcess(NULL, NULL) {
+TestDeltaProcess::TestDeltaProcess(fn launchfn): DeltaProcess(NULL, NULL, false) {
   int ignore;
   Processes::remove(this);
-  os::terminate_thread(_thread); // don't want to launch delta!
+  // no launch_delta thread is created by the base class; we run our own
   _thread = os::create_thread((osfn) launchfn, this, &ignore);
   _stack_limit = (char*)os::stack_limit(_thread);
   
@@ -101,6 +109,7 @@ void setProcessRefs(DeltaProcess* process, processOop processObj) {
   processObj->set_process(process);
   process->set_processObj(processObj);
 }
+
 void initializeSmalltalkEnvironment() {
   AddTestProcess ap;
   PersistentHandle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
@@ -109,8 +118,6 @@ void initializeSmalltalkEnvironment() {
   PersistentHandle processorScheduler(Universe::find_global("ProcessorScheduler"));
   PersistentHandle smalltalk(Universe::find_global("Smalltalk"));
   PersistentHandle systemInitializer(Universe::find_global("SystemInitializer"));
-  PersistentHandle forSeconds(reinterpret_cast<oop>(oopFactory::new_symbol("forSeconds:")));
-  
   PersistentHandle processor(Delta::call(processorScheduler.as_oop(), _new.as_oop()));
 
   associationOop processorAssoc = Universe::find_global_association("Processor");
@@ -150,8 +157,8 @@ void start_vm_process(TestDeltaProcess* testProcess) {
   int threadId;
   vmProcess = new VMProcess();
   DeltaProcess::initialize_async_dll_event();
-  vmThread = os::create_thread((int(*)(void*))&vmLoopLauncher, testProcess, &threadId);
   ::testProcess = testProcess;
+  vmThread = os::create_thread((int(*)(void*))&vmLoopLauncher, testProcess, &threadId);
 }
 void stop_vm_process() {
   os::terminate_thread(vmThread);

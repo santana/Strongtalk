@@ -32,6 +32,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/markSweep.hpp"
 #include "memory/oopFactory.hpp"
 #include "memory/vmSymbols.hpp"
+#include "runtime/os.hpp"
 #include "oops/associationOop.hpp"
 #include "oops/blockOop.hpp"
 #include "oops/klassOop.hpp"
@@ -113,6 +114,7 @@ bool processSemaphore = false;
 // the instance vars of the process
 void** last_Delta_fp = NULL;
 oop* last_Delta_sp = NULL;
+char* last_Delta_pc = NULL;
 
 // last_Delta_fp
 void** DeltaProcess::last_Delta_fp() const {
@@ -142,12 +144,15 @@ void DeltaProcess::set_last_Delta_sp(oop* sp) {
 
 // last_Delta_pc
 char* DeltaProcess::last_Delta_pc() const {
-  if (this == NULL) return NULL;
-  return _last_Delta_pc;
+  return this == _active_delta_process ? ::last_Delta_pc : _last_Delta_pc;
 }
 
 void DeltaProcess::set_last_Delta_pc(char* pc) {
-  _last_Delta_pc = pc;
+  if (this == _active_delta_process) {
+    ::last_Delta_pc = pc;
+  } else {
+    _last_Delta_pc = pc;
+  }
 }
 
 int CurrentHash = 23;
@@ -168,6 +173,10 @@ void Process::basic_transfer(Process* target) {
     mystd->print(" -> "); target->print();
     mystd->cr();
   }
+  // Entering the target process may start executing generated code, which
+  // requires the MAP_JIT regions to be in the executable (write-protected)
+  // state (no-op on other platforms / architectures).
+  os::jit_write_protect(true);
   os::transfer(_thread, _event, target->_thread, target->_event);
   applyStepping();
 }

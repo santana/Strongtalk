@@ -30,6 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/objArrayOop.hpp"
 #include "oops/symbolOop.hpp"
 #include "runtime/delta.hpp"
+#include "runtime/os.hpp"		// os::jit_write_protect (Apple Silicon)
 #include "runtime/process.hpp"
 #include "topIncludes/std_includes.hpp"
 
@@ -64,6 +65,11 @@ void DeltaCallCache::clearAll() {
 typedef oop (call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
 
 oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofArgs, oop* args) {
+  // On Apple Silicon the MAP_JIT code regions must be executable (not just
+  // writable) before generated code runs; code generation leaves them
+  // write-enabled, so switch to the exec state here (no-op on x86 / when the
+  // state is already correct).
+  os::jit_write_protect(true);
   call_delta_func* _call_delta = (call_delta_func*)StubRoutines::call_delta();
 
   if (ic->match(receiver->klass(), symbolOop(selector))) {
@@ -87,7 +93,13 @@ oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofA
     return does_not_understand(receiver, symbolOop(selector), nofArgs, args);
     //fatal("lookup failure - not treated");
   }
-  return _call_delta(result.value(), receiver, nofArgs, args);
+  {
+    oop m = result.value();
+    methodOop meth = methodOop(m);
+    assert(meth->is_method(), "not a method");
+  }
+  oop res = _call_delta(result.value(), receiver, nofArgs, args);
+  return res;
 }
 
 oop Delta::does_not_understand(oop receiver, symbolOop selector, int nofArgs, oop* argArray) {

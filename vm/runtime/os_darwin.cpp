@@ -42,17 +42,28 @@
 # include <errno.h>
 
 void os_dump_context2(ucontext_t *context) {
-#ifdef __slr_ignore__
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef __APPLE__
     mcontext_t mcontext = context->uc_mcontext;
-    printf("\nEAX: %x", mcontext.gregs[REG_EAX]);
-    printf("\nEBX: %x", mcontext.gregs[REG_EBX]);
-    printf("\nECX: %x", mcontext.gregs[REG_ECX]);
-    printf("\nEDX: %x", mcontext.gregs[REG_EDX]);
-    printf("\nEIP: %x", mcontext.gregs[REG_EIP]);
-    printf("\nESP: %x", mcontext.gregs[REG_ESP]);
-    printf("\nEBP: %x", mcontext.gregs[REG_EBP]);
-    printf("\nEDI: %x", mcontext.gregs[REG_EDI]);
-    printf("\nESI: %x", mcontext.gregs[REG_ESI]);
+    printf("\n");
+    for (int r = 0; r < 29; r++)
+      if (r == 11 || r == 12 || r == 13 || r == 14 || r == 15 || r == 27)
+        printf("x%d=0x%llx ", r, mcontext->__ss.__x[r]);
+    printf("fp=0x%llx lr=0x%llx sp=0x%llx pc=0x%llx\n",
+        mcontext->__ss.__fp, mcontext->__ss.__lr, mcontext->__ss.__sp, mcontext->__ss.__pc);
+#endif
+#endif
+#if defined(__APPLE__) && !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+    _STRUCT_MCONTEXT *mcontext = context->uc_mcontext;
+    printf("\nrax=0x%llx rbx=0x%llx rcx=0x%llx rdx=0x%llx\n",
+        mcontext->__ss.__rax, mcontext->__ss.__rbx, mcontext->__ss.__rcx, mcontext->__ss.__rdx);
+    printf("rsi=0x%llx rdi=0x%llx rbp=0x%llx rsp=0x%llx\n",
+        mcontext->__ss.__rsi, mcontext->__ss.__rdi, mcontext->__ss.__rbp, mcontext->__ss.__rsp);
+    printf("r8 =0x%llx r9 =0x%llx r10=0x%llx r11=0x%llx\n",
+        mcontext->__ss.__r8, mcontext->__ss.__r9, mcontext->__ss.__r10, mcontext->__ss.__r11);
+    printf("r12=0x%llx r13=0x%llx r14=0x%llx r15=0x%llx\n",
+        mcontext->__ss.__r12, mcontext->__ss.__r13, mcontext->__ss.__r14, mcontext->__ss.__r15);
+    printf("rip=0x%llx\n", mcontext->__ss.__rip);
 #endif
 }
 void os_dump_context() {
@@ -241,7 +252,7 @@ char* calcStackLimit() {
 #if defined(__aarch64__)
   __asm__ volatile("mov %0, sp" : "=r"(stackptr));
 #else
-  asm("movl %%esp, %0;" : "=a"(stackptr));
+  asm("movq %%rsp, %0;" : "=r"(stackptr));
 #endif
   stackptr = (char*) align(stackptr, os::vm_page_size());
   
@@ -438,7 +449,38 @@ bool os::release_memory(char* addr, int size) {
 }
 
 char* os::exec_memory(int size) {
+#if defined(__arm64__)
+  // On Apple Silicon, W+X pages require the MAP_JIT flag and the region is
+  // subject to the W^X enforcement of pthread_jit_write_protect_np: writes
+  // fault while protection is on, execution faults while it is off. Map the
+  // region and leave it writable so code generation can proceed;
+  // os::jit_write_protect(true) must be called before executing generated
+  // code (see Process::basic_transfer).
+  void* p = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_JIT, 0, 0);
+  if (p == MAP_FAILED) return (char*) -1;
+  jit_write_protect(false);
+  return (char*) p;
+#else
   return (char*) mmap(0, size, PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
+#endif
+}
+
+// Toggle the write-protect state of all MAP_JIT regions (no-op on other
+// platforms / architectures). The VM keeps generated code write-enabled while
+// it is emitting code and re-enables the exec state before running it.
+// MAP_JIT write-protect state (Apple Silicon). Kept here so the toggle state
+// can be queried; pthread_jit_write_protect_np returns void on some SDKs.
+static bool jit_write_protected_state = false;
+
+void os::jit_write_protect(bool protect) {
+  jit_write_protected_state = protect;
+#if defined(__arm64__)
+  pthread_jit_write_protect_np(protect ? 1 : 0);
+#endif
+}
+
+bool os::jit_write_protect_enabled() {
+  return jit_write_protected_state;
 }
 
 // No references
@@ -644,16 +686,149 @@ void install_dummy_handler() {
 void trace_stack(int thread_id);
 
 static void handler(int signum, siginfo_t* info, void* context) {
-	//	install_dummy_handler();
-	//	trace_stack(os::current_thread_id());
-    printf("\nsignal: %d\ninfo: %lx\ncontext: %lx", signum, reinterpret_cast<intptr_t>(info), reinterpret_cast<intptr_t>(context));
+    printf("\nsignal: %d  fault_addr: %p\n", signum, info->si_addr);
 	os_dump_context2((ucontext_t*) context);
-    exit(-1);
+#if defined(__APPLE__) && !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+    {
+        unsigned char* rip_ptr = (unsigned char*) ((ucontext_t*)context)->uc_mcontext->__ss.__rip;
+        printf("  bytes at rip: ");
+        for (int i = 0; i < 15; i++) printf("%02x ", rip_ptr[i]);
+        printf("\n");
+    }
+#endif
+    fflush(stdout);
+    _exit(1);
 }
 
 void handleTerminate(int signum) {
     pthread_exit(NULL);
 }
+
+#if defined(__x86_64__)
+extern "C" intptr_t diag_truncated_oop_value;
+extern "C" intptr_t diag_truncated_oop_pc;
+extern "C" intptr_t diag_truncated_oop_check_id;
+extern "C" intptr_t diag_last_eax_writer_pc;
+extern "C" intptr_t diag_last_eax_writer_id;
+extern "C" intptr_t diag_last_eax_writer_value;
+extern "C" intptr_t diag_pre_check_eax;
+extern "C" intptr_t diag_pre_check_id;
+
+static void trap_handler(int signum, siginfo_t* info, void* context) {
+    ucontext_t* uc = (ucontext_t*) context;
+    mcontext_t mc = uc->uc_mcontext;
+    if (diag_truncated_oop_check_id != 0) {
+    printf("\n** SIGTRAP: Truncated pointer detected!\n");
+    printf("   truncated_oop_value = 0x%llx\n", (unsigned long long)diag_truncated_oop_value);
+    printf("   bytecode_pc         = 0x%llx\n", (unsigned long long)diag_truncated_oop_pc);
+    printf("   check_id            = %lld\n", (long long)diag_truncated_oop_check_id);
+    printf("   last_eax_writer_pc  = 0x%llx\n", (unsigned long long)diag_last_eax_writer_pc);
+    printf("   last_eax_writer_id  = %lld\n", (unsigned long long)diag_last_eax_writer_id);
+    printf("   last_eax_writer_val = 0x%llx\n", (unsigned long long)diag_last_eax_writer_value);
+    printf("   pre_check_eax       = 0x%llx (at check_id=%lld)\n", (unsigned long long)diag_pre_check_eax, (long long)diag_pre_check_id);
+    printf("   rax=0x%llx rbx=0x%llx rcx=0x%llx rdx=0x%llx\n",
+           (unsigned long long)mc->__ss.__rax, (unsigned long long)mc->__ss.__rbx,
+           (unsigned long long)mc->__ss.__rcx, (unsigned long long)mc->__ss.__rdx);
+    printf("   rsi=0x%llx rdi=0x%llx rbp=0x%llx rsp=0x%llx\n",
+           (unsigned long long)mc->__ss.__rsi, (unsigned long long)mc->__ss.__rdi,
+           (unsigned long long)mc->__ss.__rbp, (unsigned long long)mc->__ss.__rsp);
+    printf("   rip=0x%llx\n", (unsigned long long)mc->__ss.__rip);
+    // rbp is the current frame pointer - dump frame words
+    intptr_t rbp = (intptr_t)mc->__ss.__rbp;
+    printf("   frame at rbp=0x%llx:\n", (unsigned long long)rbp);
+    for (int i = -6; i <= 6; i++) {
+        intptr_t* addr = (intptr_t*)(rbp + i * sizeof(intptr_t));
+        printf("     [%+d] = 0x%llx  (addr %p)\n", i, (unsigned long long)*addr, (void*)addr);
+    }
+    // Dump stack at rsp
+    intptr_t rsp = (intptr_t)mc->__ss.__rsp;
+    printf("   stack at rsp=0x%llx:\n", (unsigned long long)rsp);
+    for (int i = 0; i < 8; i++) {
+        intptr_t* addr = (intptr_t*)(rsp + i * sizeof(intptr_t));
+        printf("     [rsp%+d] = 0x%llx\n", i*8, (unsigned long long)*addr);
+    }
+    // Dump bytecodes: esi (from truncation check) = send opcode address (before advance_aligned)
+    // We need bytecodes BEFORE esi (push bytecodes) AND at/after esi (send opcode + IC)
+    intptr_t esi = (intptr_t)mc->__ss.__rsi;
+    printf("   bytecodes before esi=0x%llx (push bytecodes that loaded values):\n", (unsigned long long)esi);
+    unsigned char* bc_before = (unsigned char*)(esi - 48);
+    for (int i = 0; i < 48; i++) {
+        if (i % 16 == 0) printf("     [%+3d]: ", i - 48);
+        printf("%02x ", bc_before[i]);
+        if (i % 16 == 15) printf("\n");
+    }
+    // Dump bytecodes AT esi (send opcode) and after (IC data follows)
+    // BOO format: [opcode 1B] [padding 0-7B] [IC_method 8B] [IC_klass 8B]
+    printf("   bytecodes AT/after esi (send opcode + IC):\n");
+    unsigned char* bc_at = (unsigned char*)esi;
+    for (int i = 0; i < 32; i++) {
+        if (i % 16 == 0) printf("     [%+3d]: ", i);
+        printf("%02x ", bc_at[i]);
+        if (i % 16 == 15) printf("\n");
+    }
+    // Interpret: opcode byte, nargs byte (if BBOO), IC first_word, IC second_word
+    unsigned char opcode = bc_at[0];
+    printf("   send opcode = 0x%02x", opcode);
+    // Check if it's a recognized send code
+    if (opcode >= 0x80 && opcode <= 0x8f) {
+        const char* name = "unknown_send";
+        switch(opcode) {
+            case 0x80: name = "interpreted_send_0"; break;
+            case 0x81: name = "interpreted_send_1"; break;
+            case 0x82: name = "interpreted_send_2"; break;
+            case 0x83: name = "interpreted_send_n"; break;
+            case 0x84: name = "compiled_send_0"; break;
+            case 0x85: name = "compiled_send_1"; break;
+            case 0x86: name = "compiled_send_2"; break;
+            case 0x87: name = "compiled_send_n"; break;
+            case 0x88: name = "polymorphic_send_0"; break;
+            case 0x89: name = "polymorphic_send_1"; break;
+            case 0x8a: name = "polymorphic_send_2"; break;
+            case 0x8b: name = "polymorphic_send_n"; break;
+            case 0x8c: name = "megamorphic_send_0"; break;
+            case 0x8d: name = "megamorphic_send_1"; break;
+            case 0x8e: name = "megamorphic_send_2"; break;
+            case 0x8f: name = "megamorphic_send_n"; break;
+        }
+        printf(" (%s)", name);
+    } else if (opcode >= 0x90 && opcode <= 0x9f) {
+        const char* name = "unknown_pred";
+        switch(opcode) {
+            case 0x90: name = "smi_add"; break;
+            case 0x91: name = "smi_sub"; break;
+            case 0x92: name = "smi_mul"; break;
+            case 0x93: name = "smi_div"; break;
+            case 0x94: name = "smi_mod"; break;
+            case 0x95: name = "smi_equal"; break;
+            case 0x96: name = "smi_not_equal"; break;
+            case 0x97: name = "smi_less"; break;
+            case 0x98: name = "smi_less_equal"; break;
+            case 0x99: name = "smi_greater"; break;
+            case 0x9a: name = "smi_greater_equal"; break;
+            case 0x9b: name = "smi_bitAnd"; break;
+            case 0x9c: name = "smi_bitOr"; break;
+            case 0x9d: name = "smi_bitXor"; break;
+            case 0x9e: name = "smi_bitShift"; break;
+        }
+        printf(" (%s)", name);
+    }
+    printf("\n");
+    // Dump IC: for BOO format, IC first_word at esi+8, second_word at esi+16
+    // For BBOO format (nargs byte), IC is at same offsets
+    intptr_t cur_ic_method = (intptr_t)*(intptr_t*)(esi + 8);
+    intptr_t cur_ic_klass = (intptr_t)*(intptr_t*)(esi + 16);
+    printf("   current IC: first_word(method/selector)=0x%llx  second_word(klass/0)=0x%llx\n",
+           (unsigned long long)cur_ic_method, (unsigned long long)cur_ic_klass);
+    fflush(stdout);
+    _exit(1);
+    } else {
+        // Non-truncation SIGTRAP (e.g., should_not_reach_here, StopInterpreterAt)
+        printf("** SIGTRAP (non-truncation) at rip=0x%llx\n", (unsigned long long)mc->__ss.__rip);
+        fflush(stdout);
+        _exit(1);
+    }
+}
+#endif
 
 void install_signal_handlers() {
 	struct sigaction sa;
@@ -673,6 +848,14 @@ void install_signal_handlers() {
 	sa.sa_sigaction = handler;
 	if (sigaction(SIGSEGV, &sa, NULL) == -1)
         /* Handle error */;
+
+#if defined(__x86_64__)
+	// Install SIGTRAP handler for truncated pointer detection
+	sa.sa_flags = SA_SIGINFO | SA_RESTART;
+	sa.sa_sigaction = trap_handler;
+	if (sigaction(SIGTRAP, &sa, NULL) == -1)
+        /* Handle error */;
+#endif
 }
 
 void os_init() {

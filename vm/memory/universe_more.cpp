@@ -76,13 +76,13 @@ oop* Universe::scavenge_and_allocate(int size, oop* p) {
   return allocate_without_scavenge(size);
 }
 
-void Universe::scavenge_oop(oop* p) { *p = (*p)->scavenge(); }
+void Universe::scavenge_oop(oop* p) {
+  *p = (*p)->scavenge();
+}
 
 bool Universe::needs_garbage_collection() {
   return old_gen.free() < new_gen.to()->capacity();
 }
-
-void os_dump_context();
 
 void Universe::scavenge(oop* p) {
   // %note

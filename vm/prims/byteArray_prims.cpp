@@ -60,7 +60,7 @@ PRIM_DECL_2(byteArrayPrimitives::allocateSize, oop receiver, oop argument) {
 
   klassOop k        = klassOop(receiver);
   int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(smiOop(argument)->value(), oopSize) / oopSize;
+  int      obj_size = ni_size + 1 + roundTo(smiOop(argument)->value(), image_oop_size) / image_oop_size;
   // allocate
   byteArrayOop obj = as_byteArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header

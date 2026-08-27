@@ -191,7 +191,12 @@ oop interpretedVFrame::expression_at(int index) const {
 }
 
 oop* interpretedVFrame::expression_addr(int offset) const {
-  return (oop*) &((oop*) _fr.sp())[offset]; 
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // delta stack slots are 16 bytes (slotSize = 2*oopSize) on AArch64
+  return (oop*) &((oop*) _fr.sp())[2*offset];
+#else
+  return (oop*) &((oop*) _fr.sp())[offset];
+#endif
 }
 
 GrowableArray<oop>* interpretedVFrame::expression_stack() const {

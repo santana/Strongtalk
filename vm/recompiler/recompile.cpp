@@ -78,6 +78,15 @@ char* Recompilation::methodOop_invocation_counter_overflow(oop rcvr, methodOop m
       return NULL;
     }
   } else {
+    ResourceMark rm;
+    static int dbg_n = 0;
+    if (dbg_n++ < 20) {
+      stringStream buf;
+      method->selector()->print_symbol_on(&buf);
+      fprintf(stderr, "DBG overflow rcvr=%#lx method=%#lx counters=%#x sel=%s\n",
+              (long)rcvr, (long)method, method->counters(), buf.as_string());
+      fflush(stderr);
+    }
     method->set_invocation_count(0);
     return NULL;
   }

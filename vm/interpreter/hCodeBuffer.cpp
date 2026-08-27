@@ -37,11 +37,8 @@ void HCodeBuffer::pushByte(unsigned char op) {
 }
 void HCodeBuffer::pushOop(oop arg) {
   align();
-  _bytes->append(0);
-  _bytes->append(0);
-  _bytes->append(0);
-  _bytes->append(0);
-
+  for (int i = 0; i < oopSize; i++)
+    _bytes->append(0);
   _oops->append(arg);
 }
 byteArrayOop HCodeBuffer::bytes() {

@@ -93,7 +93,7 @@ class relocInfo : ValueObj {
   // is internal word reference?
   bool isInternalWord() const { return type() == internal_word_type; }
   // is external word reference?
-  bool isExternalWord() const { return type() == internal_word_type; }
+  bool isExternalWord() const { return type() == external_word_type; }
   // is external word reference?
   bool isDLL()          const { return type() == dll_type; }
 

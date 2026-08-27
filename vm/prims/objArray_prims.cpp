@@ -33,6 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/objArray_prims.hpp"
 #include "prims/prim_impl.hpp"
 #include "runtime/debug.hpp"
+#include "runtime/vmOperations.hpp"
+#include "runtime/process.hpp"
 
 TRACE_FUNC(TraceObjArrayPrims, "objArray")
 

@@ -23,7 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifdef DELTA_COMPILER
 
-#include "asm/x86_mapping.hpp"
+#include "asm/mapping.hpp"
 #include "code/mapConformance.hpp"
 #include "code/pregMapping.hpp"
 #include "compiler/compiler.hpp"

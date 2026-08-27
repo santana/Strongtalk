@@ -38,6 +38,11 @@ class bootstrap: CHeapObj {
   int max_number_of_oops;
   bool _new_format;
 
+  // A method that grew past its image-sized codes area during bootstrap.
+  // methodOopDesc::bootstrap_object reallocates it and records the new oop
+  // here so get_object returns the replacement to the caller.
+  oop _oop_replacement;
+
   void initialize_tables(int initial_table_size);
 
   void add(oop obj);
@@ -68,6 +73,9 @@ class bootstrap: CHeapObj {
   void read_mark(markOop* mark_addr);
   void read_oop(oop* oop_addr) { *oop_addr = get_object(); }
 
+  void set_oop_replacement(oop m) { _oop_replacement = m; }
+  oop get_oop_replacement()       { return _oop_replacement; }
+
   char       read_byte()       { return get_char(); }
   doubleByte read_doubleByte() { return (doubleByte) get_integer(); }
   long       read_long()       { return get_integer(); } 
@@ -76,5 +84,7 @@ class bootstrap: CHeapObj {
   bool new_format() const { return _new_format; }
 
   bool is_byte() { return getc(stream) == '4'; }
+
+  long file_pos() { return ftell(stream); }
 };
 #endif // _BOOTSTRAP_HPP

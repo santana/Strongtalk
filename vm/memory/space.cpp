@@ -29,6 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 #include "oops/oop.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/byteArrayOop.hpp"
 #include "runtime/debug.hpp"
 #include "topIncludes/std_includes.hpp"
 
@@ -218,7 +219,9 @@ void oldSpace::initialize_threshold() {
 oldSpace::oldSpace(char *name, int &size) {
   next_space= NULL;
 
-  offset_array = NEW_C_HEAP_ARRAY(u_char, Universe::old_gen.virtual_space.reserved_size()/card_size);
+  int offset_array_size = Universe::old_gen.virtual_space.reserved_size()/card_size;
+  offset_array = NEW_C_HEAP_ARRAY(u_char, offset_array_size);
+  memset(offset_array, 0, offset_array_size);
   set_name(name);
   set_bottom((oop*) Universe::old_gen.virtual_space.low());
   set_top((oop*)    Universe::old_gen.virtual_space.low());

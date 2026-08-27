@@ -85,8 +85,9 @@ bool relocIterator::is_position_dependent() const {
     case relocInfo::prim_type:
     case relocInfo::uncommon_type:
     case relocInfo::runtime_call_type:
-    case relocInfo::internal_word_type: 
-    case relocInfo::dll_type: 
+    case relocInfo::internal_word_type:
+    case relocInfo::external_word_type:
+    case relocInfo::dll_type:
       return true;
   }
   return false;

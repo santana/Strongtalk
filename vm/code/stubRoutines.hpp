@@ -42,7 +42,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class StubRoutines: AllStatic {
  private:
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  // AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
+  // bytes), so the stub routines need a larger code buffer.
+  enum { _code_size = 60000 };
+#elif DELTA_X86_64
+  // x86-64 stubs use REX.W prefixes on all pointer operations, growing ~30%.
+  enum { _code_size = 24000 };
+#else
   enum { _code_size = 12000 };			// simply increase if too small (assembler will crash if too small)
+#endif
   static bool _is_initialized;			// true if StubRoutines has been initialized
 //  static char _code[_code_size];		// the code buffer for the stub routines
   static char* _code;		// the code buffer for the stub routines

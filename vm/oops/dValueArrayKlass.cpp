@@ -36,7 +36,7 @@ oop doubleValueArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 oop doubleValueArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool permit_tenured) {
   klassOop k        = as_klassOop();
   int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size * sizeof(double), oopSize) / oopSize;
+  int      obj_size = ni_size + 1 + roundTo(size * sizeof(double), image_oop_size) / image_oop_size;
   // allocate
   doubleValueArrayOop obj = as_doubleValueArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header

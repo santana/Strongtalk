@@ -343,10 +343,7 @@ void frame::oop_iterate(OopClosure* blk) {
     if (has_interpreted_float_marker() && oop_iterate_interpreted_float_frame(blk)) return;
  
     // lprintf("Frame: fp = %#lx, sp = %#lx]\n", fp(), sp());
-    for (oop* p = sp(); p <= temp_addr(0); p++) {
-      // lprintf("\t[%#lx]: ", p);
-      // (*p)->short_print();
-      // lprintf("\n");
+    for (oop* p = sp(); p <= temp_addr(0); p += oopsPerSlot) {
       blk->do_oop(p);
     }
     // lprintf("\t{%#lx}: ", receiver_addr());
@@ -369,7 +366,7 @@ void frame::oop_iterate(OopClosure* blk) {
   if (is_entry_frame()) {
     // Need to iterate over the arguments passed to the frame called by the entry frame,
     // but not the rest of the cruft (esi, edi, last sp and last fp) - slr 09/08.
-    for (oop* p = sp(); p < (oop*)fp() - 4; p++) {
+    for (oop* p = sp(); p < (oop*)fp() - 4*oopsPerSlot; p += oopsPerSlot) {
       blk->do_oop(p);
     }
     return;
@@ -422,7 +419,7 @@ void frame::follow_roots() {
     if (has_interpreted_float_marker() && follow_roots_interpreted_float_frame()) return;
 
     // Follow the roots of the frame
-    for (oop* p = sp(); p <= temp_addr(0); p++) {
+    for (oop* p = sp(); p <= temp_addr(0); p += oopsPerSlot) {
       MarkSweep::follow_root(p);
     }
     MarkSweep::follow_root((oop*)hp_addr());
@@ -444,7 +441,7 @@ void frame::follow_roots() {
     //}
     // Should be the following to match oop_iterate() (used by scavenge) slr - 11/09
     // %TODO how to test?
-    for (oop* p = sp(); p < (oop*)fp() - 4; p++) {
+    for (oop* p = sp(); p < (oop*)fp() - 4*oopsPerSlot; p += oopsPerSlot) {
       MarkSweep::follow_root(p);
     }
     return;

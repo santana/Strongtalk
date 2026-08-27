@@ -22,7 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 
-#include "asm/x86_mapping.hpp"
+#include "asm/mapping.hpp"
 #include "asm/codeBuffer.hpp"
 #include "code/compiledPIC.hpp"
 #include "code/jumpTable.hpp"
@@ -204,10 +204,8 @@ char* StubRoutines::generate_zombie_nmethod(MacroAssembler* masm) {
   masm->set_last_Delta_frame_after_call();
   masm->movl(ebx, Address(esp));		// get return address (= ic address) - don't pop! (needed for correct Delta frame)
   masm->pushl(eax);				// save receiver
-  masm->pushl(ebx);				// pass ic
-  masm->call((char*)zombie_nmethod, relocInfo::runtime_call_type);	// eax = zombie_nmethod(return_address)
+  masm->call_C((char*)zombie_nmethod, ebx);	// eax = zombie_nmethod(return_address)
   masm->movl(ecx, eax);				// ecx = entry point to redo send
-  masm->popl(ebx);				// get rid of ic argument
   masm->popl(eax);				// restore receiver
   masm->popl(ebx);				// get rid of return address
   masm->reset_last_Delta_frame();
@@ -323,10 +321,7 @@ char* StubRoutines::generate_zombie_block_nmethod(MacroAssembler* masm) {
   char* entry_point = masm->pc();
 
   masm->set_last_Delta_frame_after_call();
-  masm->pushl(self_reg); // pass argument (C calling convention)
-  masm->call((char*)deoptimize_context_and_patch_block, relocInfo::runtime_call_type);
-  masm->movl(ebx, eax);
-  masm->popl(self_reg);
+  masm->call_C((char*)deoptimize_context_and_patch_block, self_reg); // pass argument (C calling convention)
   masm->reset_last_Delta_frame();
   masm->addl(esp, 4);
   masm->movl(edx, Address((intptr_t)Interpreter::restart_primitiveValue(), relocInfo::external_word_type));
@@ -434,12 +429,8 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   masm->bind(do_lookup);
   masm->set_last_Delta_frame_after_call();
   masm->pushl(eax);				// save receiver
-  masm->pushl(edx);				// pass 2nd argument: selector
-  masm->pushl(ecx);				// pass 1st argument: receiver klass
-  masm->call((char*)lookupCache::normal_lookup, relocInfo::runtime_call_type);
+  masm->call_C((char*)lookupCache::normal_lookup, ecx, edx);	// lookupCache::normal_lookup(klass, selector)
   masm->movl(ecx, eax);				// ecx: method
-  masm->popl(ebx);				// pop 1st argument
-  masm->popl(ebx);				// pop 2nd argument
   masm->popl(eax);				// restore receiver
   masm->reset_last_Delta_frame();
   masm->testl(ecx, ecx);			// test if method has been found in lookup cache
@@ -474,16 +465,16 @@ char* StubRoutines::generate_compile_block(MacroAssembler* masm) {
   char* entry_point = masm->pc();
   masm->set_last_Delta_frame_after_call();
   masm->pushl(eax);				// save receiver
-  masm->pushl(eax);				// pass receiver
-  masm->call((char*)jumpTable::compile_new_block, relocInfo::runtime_call_type);	// eax = block_closure_compile(receiver)
+  masm->call_C((char*)jumpTable::compile_new_block, eax);	// eax = block_closure_compile(receiver)
   masm->movl(ebx, eax);				// ebx = block code
-  masm->popl(eax);				// get rid of receiver argument
-  masm->popl(eax);				// restore receiver (don't use argument, might be overwritten)
+  masm->popl(eax);				// restore receiver
   masm->reset_last_Delta_frame();
   masm->jmp(ebx);				// jump to target
   return entry_point;
 }
 
+
+extern "C" char* nlr_testpoint_entry;	// set by InterpreterGenerator::generate_nonlocal_return_code
 
 char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
 // Entry point jumped to from compiled code. Initiates (or continues an ongoing) NLR.
@@ -493,6 +484,18 @@ char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
   Register offset   = temp2;
 
   char* entry_point = masm->pc();
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // On AArch64 there is no pushed return address on the stack (and no ic_info
+  // descriptor to decode): the return address lives in x30. Unwind one frame
+  // and re-enter the interpreter's NLR testpoint, which re-checks whether the
+  // home frame (edi/x27, preserved by the leave() since it is callee-saved)
+  // now matches the current frame and otherwise unwinds one more frame. The
+  // NLR result (eax/x13) and argument count (esi/x14) are also callee-saved
+  // and survive the leave().
+  masm->leave();						// remove stack frame
+  masm->load_absolute_value(ret_addr, Address((intptr_t)&nlr_testpoint_entry, relocInfo::external_word_type));
+  masm->br(ret_addr);						// do NLR
+#else
   masm->leave();						// remove stack frame
   masm->popl(ret_addr);						// get (local) return address
   masm->movl(offset, Address(ret_addr, IC_Info::info_offset));	// get ic info
@@ -501,6 +504,7 @@ char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
   }
   masm->addl(ret_addr, offset);					// compute non-local return address
   masm->jmp(ret_addr);						// do NLR
+#endif
   return entry_point;
 }
 
@@ -546,6 +550,9 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->pushl(esp);				// to check that the right no. of arguments is used
   if (TraceDLLCalls) {				// call trace routine (C to C call, no special setup required)
     masm->pushl(esi);				// save DLL state address
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+    masm->call_C((char*)trace_DLL_call_1, edx, ecx, ebx);	// trace_DLL_call_1(function, last_argument, nof_arguments)
+#else
     masm->pushl(ebx);				// pass arguments in reverse order
     masm->pushl(ecx);
     masm->pushl(edx);
@@ -553,6 +560,7 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
     masm->popl(edx);				// restore registers
     masm->popl(ecx);
     masm->popl(ebx);
+#endif
     masm->popl(esi);				// restore DLL state address
   }
   //slr mod: push a fake stack frame to support cdecl calls
@@ -579,9 +587,7 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->bind(no_arguments);
   if (async) {
     masm->pushl(edx);
-    masm->pushl(esi);				// pass DLL state address
-    masm->call((char*)DLLs::enter_async_call, relocInfo::runtime_call_type);
-    masm->popl(esi);				// discard argument
+    masm->call_C((char*)DLLs::enter_async_call, esi);	// pass DLL state address
     masm->popl(edx);				// restore registers
   }
 
@@ -600,16 +606,12 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   // top of stack contains DLL state
   masm->movl(ebx, esp);				// get DLL state address
   masm->pushl(eax);				// save result
-  masm->pushl(ebx);				// pass DLL state address
   char* exit_dll = (char*)(async ? DLLs::exit_async_call : DLLs::exit_sync_call);
-  masm->call(exit_dll, relocInfo::runtime_call_type);
-  masm->popl(ebx);				// discard argument
+  masm->call_C(exit_dll, ebx);			// pass DLL state address
   masm->popl(eax);				// restore result
 
   if (TraceDLLCalls) {				// call trace routine (C to C call, no special setup required)
-    masm->pushl(eax);				// pass result
-    masm->call((char*)trace_DLL_call_2, relocInfo::runtime_call_type);
-    masm->popl(eax);				// restore result
+    masm->call_C((char*)trace_DLL_call_2, eax);	// pass result
   }
   masm->popl(ebx);				// discard DLL state word
   masm->reset_last_Delta_frame();
@@ -683,12 +685,8 @@ char* StubRoutines::generate_recompile_stub(MacroAssembler* masm) {
   SavedRegisters::generate_save_registers(masm);
   masm->movl(ebx, Address(esp));		// get return address (trigger nmethod)
   masm->pushl(eax);				// save receiver
-  masm->pushl(ebx);				// pass 2nd argument (pc)
-  masm->pushl(eax);				// pass 1st argument (recv)
-  masm->call((char*)Recompilation::nmethod_invocation_counter_overflow, relocInfo::runtime_call_type);	// eax = nmethod_invocation_counter_overflow(receiver, pc)
+  masm->call_C((char*)Recompilation::nmethod_invocation_counter_overflow, eax, ebx);	// eax = nmethod_invocation_counter_overflow(receiver, pc)
   masm->movl(ecx, eax);				// save continuation address in ecx
-  masm->popl(eax);				// pop 1st argument
-  masm->popl(ebx);				// pop 2nd argument
   masm->popl(eax);				// restore receiver
   masm->reset_last_Delta_frame();
   masm->leave();				// remove trigger nmethod's stack frame
@@ -754,12 +752,8 @@ char* StubRoutines::generate_verify_context_chain(MacroAssembler* masm) {
 
   char* entry_point = masm->pc();
   masm->set_last_Delta_frame_after_call();
-  masm->pushl(self_reg); // save self (argument can get corrupted in called function)
-  masm->pushl(self_reg); // pass argument (C calling convention)
-  masm->call((char*)validateContextChain, relocInfo::runtime_call_type);
+  masm->call_C((char*)validateContextChain, self_reg); // pass argument (C calling convention)
   masm->movl(ebx, eax);
-  masm->popl(self_reg);
-  masm->popl(self_reg);
   masm->reset_last_Delta_frame();
   masm->testl(ebx,ebx);
   masm->jcc(MacroAssembler::zero, deoptimize);
@@ -813,9 +807,7 @@ char* StubRoutines::generate_deoptimize_block(MacroAssembler* masm) {
   // tos: callee nmethod return address (returning to caller)
   char* entry_point = masm->pc();
   masm->set_last_Delta_frame_after_call();	// nmethod is treated as C routine
-  masm->pushl(self_reg);			// pass argument
-  masm->call((char*)deoptimize_block, relocInfo::runtime_call_type);	// eax := deoptimize_block(self_reg)
-  masm->popl(ebx);				// get rid of argument
+  masm->call_C((char*)deoptimize_block, self_reg);	// eax := deoptimize_block(self_reg)
   masm->reset_last_Delta_frame();		// return & restart the primitive (eax must contain the block)
   masm->jmp((char*)Interpreter::restart_primitiveValue(), relocInfo::runtime_call_type);
   return entry_point;
@@ -871,11 +863,32 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   Label _loop, _no_args, _is_compiled, _return, _nlr_test, _nlr_setup, _stack_ok;
 
   // extern "C" oop call_delta(void* method, oop receiver, int nofArgs, oop* args)
+#ifdef DELTA_X86_64
+  // On x86-64 the arguments arrive in registers (rdi/rsi/rdx/rcx) rather than
+  // on the stack. They are spilled below the standard four pushed words below
+  // ebp, so the rest of this stub (written for the 32-bit stack-based cdecl
+  // convention) can keep reading them via ebp-relative addresses.
+  Address method	= Address(ebp, -8*oopSize);
+  Address receiver	= Address(ebp, -7*oopSize);
+  Address nofArgs	= Address(ebp, -6*oopSize);
+  Address args		= Address(ebp, -5*oopSize);
+#elif DELTA_ASSEMBLER_BACKEND_AARCH64
+  // On AArch64 the arguments arrive in x0..x3 and are spilled into the four
+  // reserved delta-stack slots below the four pushed words below ebp (see the
+  // code after the pushes below). After enter() ebp = S-16; the four 16-byte
+  // pushes put sp at ebp-64 and sub sp,4*slotSize brings it to ebp-128, so the
+  // spills live at ebp-128..-80, i.e. slot indices -8 (method) through -5 (args).
+  Address method	= Address(ebp, -8*slotSize);
+  Address receiver	= Address(ebp, -7*slotSize);
+  Address nofArgs	= Address(ebp, -6*slotSize);
+  Address args		= Address(ebp, -5*slotSize);
+#else
   // incoming arguments
   Address method	= Address(ebp, +2*oopSize);
   Address receiver	= Address(ebp, +3*oopSize);
   Address nofArgs	= Address(ebp, +4*oopSize);
   Address args		= Address(ebp, +5*oopSize);
+#endif
   
   char* entry_point = masm->pc();
 
@@ -889,7 +902,27 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
 
   masm->pushl(edi);	// save registers for C calling convetion
   masm->pushl(esi);
+#ifdef DELTA_X86_64
+  // save the register-passed arguments into the reserved argument area
+  masm->subq(esp, 4*oopSize);
+  masm->movq(Address(esp, 0),            edi);	// method (rdi)
+  masm->movq(Address(esp, oopSize),      esi);	// receiver (rsi)
+  masm->movl(Address(esp, 2*oopSize),    edx);	// nofArgs
+  masm->movq(Address(esp, 3*oopSize),    ecx);	// args (rcx)
+  masm->movl(edi, Address(ebp, -oopSize));
+#elif DELTA_ASSEMBLER_BACKEND_AARCH64
+  // save the register-passed arguments into the reserved delta-stack slots
+  // (16 bytes each) below the four pushed words below ebp
+  masm->addq(esp, -4*slotSize);
+  masm->movq(Address(esp, 0),            x0);	// method
+  masm->movq(Address(esp, slotSize),     x1);	// receiver
+  masm->movl(Address(esp, 2*slotSize),   x2);	// nofArgs
+  masm->movq(Address(esp, 3*slotSize),   x3);	// args
+  // read the old last_Delta_fp (pushed below) for the stack corruption test
+  masm->movl(edi, Address(ebp, -2*oopSize));
+#else
   masm->movl(edi, Address(esp, 12));
+#endif
 
   // reset last Delta frame
   masm->reset_last_Delta_frame();
@@ -904,26 +937,26 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->bind(_stack_ok);      
   // setup calling stack frame with arguments
   masm->movl(ebx, nofArgs);	// get no. of arguments
-  masm->movl(ecx, args);	// pointer to first argument
+  masm->movq(ecx, args);	// pointer to first argument
   masm->testl(ebx, ebx);
   masm->jcc(Assembler::zero, _no_args);
 
  masm->bind(_loop);		    
-  masm->movl(edx, Address(ecx));	// get argument
-  masm->addl(ecx, oopSize);		// advance to next argument
-  masm->pushl(edx);			// push argument on stack
+  masm->movq(edx, Address(ecx));	// get argument
+  masm->addq(ecx, oopSize);		// advance to next argument
+  masm->pushq(edx);			// push argument on stack
   masm->decl(ebx);			// decrement argument counter
   masm->jcc(Assembler::notZero, _loop);	// until no arguments
   
   // call Delta method
  masm->bind(_no_args);
-  masm->movl(eax, receiver);
+  masm->movq(eax, receiver);
   masm->xorl(ebx, ebx);		    // _restore_ebx
-  masm->movl(edx, method);
+  masm->movq(edx, method);
   masm->test(edx, Mem_Tag);
   masm->jcc(Assembler::zero, _is_compiled);
-  masm->movl(ecx, edx);
-  masm->movl(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+  masm->movq(ecx, edx);
+  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
 
   // eax: receiver
   // ebx: 0
@@ -937,31 +970,51 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->movl(Address((intptr_t)&have_nlr_through_C, relocInfo::external_word_type), 0);
 
  masm->bind(_return);
+#ifdef DELTA_X86_64
+  masm->leaq(esp, Address(ebp, -4*oopSize));
+  masm->popq(esi);	// restore registers for C calling convetion
+  masm->popq(edi);
+  masm->popl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
+  masm->popl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
+  masm->popq(ebp);
+#elif DELTA_ASSEMBLER_BACKEND_AARCH64
+  // discard the four argument slots below ebp and restore the four pushed
+  // words; enter() saved link/return as one 16-byte pair at ebp, so leave()
+  // restores ebp and the C return address in one go
+  masm->leaq(esp, Address(ebp, -4*slotSize));
+  masm->popl(esi);	// restore registers for C calling convetion
+  masm->popl(edi);
+  masm->popl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
+  masm->popl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
+  masm->mov(x0, eax);	// return value in x0 for the C caller (eax is x13 on AArch64)
+  masm->leave();
+  masm->ret(0);	// return to C caller
+#else
   masm->leal(esp, Address(ebp, -4*oopSize));
   masm->popl(esi);	// restore registers for C calling convetion
   masm->popl(edi);
   masm->popl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
   masm->popl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
   masm->popl(ebp);
+#endif
   masm->ret(0);	// remove stack frame & return
 
   // When returning from Delta to C via a NLR, the following code
   // sets up the global NLR variables and patches the return address
   // of the first C frame in the last_C_chunk of the stack (see below).
- masm->bind(_nlr_test);
-  masm->movl(ecx, Address(ebp, -2*oopSize));	// get pushed value of _last_Delta_sp
+  masm->bind(_nlr_test);
+  masm->movq(ecx, Address(ebp, -2*slotSize));	// get pushed value of _last_Delta_sp
   masm->testl(ecx, ecx);
   masm->jcc(Assembler::zero, _nlr_setup);
 
-  masm->movl(edx, Address(ecx, -oopSize)); // get return address of the first C function called
+  masm->movq(edx, Address(ecx, -oopSize)); // get return address of the first C function called
   // store return address for nlr_return_from_Delta
-  masm->movl(Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type), edx);
+  masm->movq(Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type), edx);
 //  masm->hlt();
 
 //  char* nlr_return_from_Delta_addr = StubRoutines::nlr_return_from_Delta();
 //  assert(nlr_return_from_Delta_addr, "nlr_return_from_Delta not initialized yet");
-//  masm->movl(Address(ecx, -oopSize), (intptr_t)nlr_return_from_Delta_addr);  // patch return address
-  masm->movl(Address(ecx, -oopSize), (intptr_t)nlr_return_from_Delta_entry);  // patch return address
+  // patch return address (after popStackHandles, using edx to load the full 64-bit address)
   masm->pushl(eax);
   masm->pushl(ebx);
   masm->pushl(edx);
@@ -975,11 +1028,13 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->popl(edx);
   masm->popl(ebx);
   masm->popl(eax);
+  masm->movq(edx, (intptr_t)nlr_return_from_Delta_entry);
+  masm->movq(Address(ecx, -oopSize), edx);
 
- masm->bind(_nlr_setup);
+  masm->bind(_nlr_setup);
   // setup global NLR variables
   masm->movl(Address((intptr_t)&have_nlr_through_C,    relocInfo::external_word_type), 1);
-  masm->movl(Address((intptr_t)&nlr_result,		  relocInfo::external_word_type), eax);
+  masm->movq(Address((intptr_t)&nlr_result,		  relocInfo::external_word_type), eax);
   masm->movl(Address((intptr_t)&nlr_home,		  relocInfo::external_word_type), edi);
   masm->movl(Address((intptr_t)&nlr_home_id,		  relocInfo::external_word_type), esi);
   masm->jmp(_return);
@@ -997,15 +1052,15 @@ char* StubRoutines::generate_nlr_return_from_Delta(MacroAssembler* masm) {
   char* entry_point = masm->pc();
   
   masm->reset_last_Delta_frame();
-  masm->movl(eax, Address((intptr_t)&nlr_result,	relocInfo::external_word_type));
+  masm->movq(eax, Address((intptr_t)&nlr_result,	relocInfo::external_word_type));
   masm->movl(edi, Address((intptr_t)&nlr_home,	relocInfo::external_word_type));
   masm->movl(esi, Address((intptr_t)&nlr_home_id,	relocInfo::external_word_type));
   
   // get return address
-  masm->movl(ebx, Address((intptr_t)&C_frame_return_addr,	relocInfo::external_word_type));
+  masm->movq(ebx, Address((intptr_t)&C_frame_return_addr,	relocInfo::external_word_type));
   masm->movl(ecx, Address(ebx, IC_Info::info_offset));	    // get nlr_offset
   masm->sarl(ecx, IC_Info::number_of_flags);		    // shift ic info flags out
-  masm->addl(ebx, ecx);			    		    // compute NLR test point address
+  masm->addq(ebx, ecx);			    		    // compute NLR test point address
   masm->jmp(ebx);			    		    // return to nlr test point
   
   return entry_point;
@@ -1043,7 +1098,8 @@ char* StubRoutines::generate_single_step_stub(MacroAssembler* masm) {
 	masm->xorl(ebx, ebx);
 	masm->movb(ebx, Address(esi));
 	// execute bytecode
-	masm->jmp(Address(noreg, ebx, Address::times_4, (intptr_t)original_table));
+	masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
+	masm->jmp(Address(edx, ebx, Address::times_8));
 
 //   then the calling stub
 // end slr mod
@@ -1059,7 +1115,8 @@ char* StubRoutines::generate_single_step_stub(MacroAssembler* masm) {
 //  masm->int3();
   masm->cmpl(ebp, Address((intptr_t)&frame_breakpoint, relocInfo::external_word_type));
   masm->jcc(Assembler::greaterEqual, is_break);	
-  masm->jmp(Address(noreg, ebx, Address::times_4, (intptr_t)original_table));
+  masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
+  masm->jmp(Address(edx, ebx, Address::times_8));
 
  masm->bind(is_break);
   masm->movl(Address(ebp, -2*oopSize), esi);	// save esi
@@ -1130,13 +1187,23 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   Label common_unpack_unoptimized_frames;
 
  masm->bind(common_unpack_unoptimized_frames);
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // AArch64: pass the four arguments in x0-x3 (AAPCS64), loaded from the
+  // caller's frame. No stack arguments.
+  masm->movl(edx, ebp);				// 4th arg: old frame pointer
+  masm->movl(ecx, frame_array);		// 3rd arg: array with the packed frames
+  masm->movl(ebx, real_fp);			// 2nd arg: frame pointer link
+  masm->movl(eax, real_sender_sp);		// 1st arg: stack pointer of the calling activation
+  masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, ecx, edx);
+#else
   masm->pushl(ebp);			// Push the old   frame pointer
   masm->pushl(frame_array);		// Push the array with the packed frames
-  masm->pushl(real_fp);		// Push the frame pointer link
+  masm->pushl(real_fp);			// Push the frame pointer link
   masm->pushl(real_sender_sp);	// Push the stack pointer of the calling activation
 
   // Compute the new stack pointer
   masm->call((char*)setup_deoptimization_and_return_new_sp, relocInfo::runtime_call_type);
+#endif
   masm->movl(esp, eax);			// Set the new stack pointer
   masm->movl(ebp, real_fp);	    		// Set the frame pointer to the link
   masm->pushl(-1);				// Push invalid return address
@@ -1241,10 +1308,14 @@ char* StubRoutines::generate_handle_pascal_callback_stub(MacroAssembler* masm) {
   masm->addl(edx, 24); 		// (esi, edi, ebx, edx, fp, return address)
   
   // eax = handleCallBack(index, &params)
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  masm->call_C((char*)handleCallBack, ecx, edx);	// handleCallBack(index, &params)
+#else
   masm->pushl(edx); 		// &params
   masm->pushl(ecx); 		// index
   masm->call((char*)handleCallBack, relocInfo::runtime_call_type);
   masm->addl(esp, 2*oopSize); 	// pop the arguments
+#endif
 
   // restore number of bytes in parameter list
   masm->popl(edx);
@@ -1329,6 +1400,9 @@ char* StubRoutines::generate_oopify_float(MacroAssembler* masm) {
  // masm->int3();
  // masm->hlt();
  // masm->call((char*)::oopify_float, relocInfo::runtime_call_type);
+  // The stub is entered with the float value on the float stack; set the
+  // generation-time depth for the aarch64 backend (no-op on x86).
+  masm->set_float_depth(1);
   masm->enter();
   masm->subl(esp, 8);
   masm->fstp_d(Address(esp));

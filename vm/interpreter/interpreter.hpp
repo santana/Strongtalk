@@ -66,7 +66,7 @@ class Interpreter: AllStatic {
   static char* _illegal;
 
   // Run-time routines
-  static void trace_bytecode();
+  static void trace_bytecode(intptr_t tos);
   static void warning_illegal(int ebx, int esi);
   static void wrong_eax();		// called in debug mode only
   static void wrong_esp();		// called in debug mode only

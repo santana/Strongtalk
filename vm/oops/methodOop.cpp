@@ -86,6 +86,121 @@ void methodOopDesc::dec_sharing_count() {
   }
 }
 
+// Per-instruction state captured while decoding the compact 32-bit code stream
+// of a method.  The 64-bit layout (inline oops 8-byte aligned) is computed
+// iteratively: if a byte-form branch distance no longer fits a single byte the
+// branch is upgraded to its word form, which grows the instruction, so all
+// following positions are recomputed until the layout is stable.
+struct bootstrap_instr {
+  Bytecodes::Code code;         // opcode (possibly upgraded to a word form)
+  Bytecodes::Format fmt;        // current format of code
+  int  w32, n32;                // 32-bit positions, 1-based
+  int  w64, n64;                // 64-bit positions, 0-based codes offsets
+  int  nargs;
+  u_char args[3];               // non-offset argument bytes
+  int  noops;
+  intptr_t oops[2];             // inline oop slot values (real oops/small ints)
+  bool oop_is_offset[2];        // oop slot holds a raw offset to relocate
+  u_char trailing;
+  bool has_trailing;
+  int  noff;                    // number of offsets (0, 1, or 2 for jump_loop)
+  int  off[2];                  // raw 32-bit offset values
+  int  new_off[2];              // relocated offsets (final layout)
+  int  off_arg[2];              // byte form: arg index holding each offset (-1)
+  int  off_slot[2];             // word form: oop slot holding each offset (-1)
+  int  off_mode[2];             // 0 = next + off; 1 = w - off (while); 2 = jump_loop end
+  int  bs_start, bs_count;      // BBS data
+};
+
+// Maps a 32-bit instruction position back to its 64-bit position.
+static int bootstrap_w64_of(int w32, const int* rec_w32, const int* rec_w64, int n) {
+  for (int i = 0; i < n; i++)
+    if (rec_w32[i] == w32) return rec_w64[i];
+  fatal("bootstrap: branch target not found");
+  return 0;
+}
+
+// Recomputes the 64-bit distance of the j'th offset of 'it'.  The image stores
+// forward branch distances referenced from the next instruction and while-test
+// distances referenced from the opcode; the jump_loop end distance is
+// referenced from the cond jump destination.
+static int bootstrap_instr_offset(const bootstrap_instr* it, int j, const int* rec_w32, const int* rec_w64, int n) {
+  if (it->off_mode[j] == 1) {
+    int target32 = it->w32 - it->off[j];           // backward from the opcode
+    int target64 = bootstrap_w64_of(target32, rec_w32, rec_w64, n);
+    return it->w64 - target64;
+  }
+  if (it->off_mode[j] == 2) {                      // jump_loop end offset
+    int end32  = it->n32 + it->off[0] + it->off[1];
+    int end64  = bootstrap_w64_of(end32, rec_w32, rec_w64, n);
+    int cond32 = it->n32 + it->off[0];
+    int cond64 = bootstrap_w64_of(cond32, rec_w32, rec_w64, n);
+    return end64 - cond64;                         // referenced from the cond destination
+  }
+  int target32 = it->n32 + it->off[j];             // forward from the next instruction
+  int target64 = bootstrap_w64_of(target32, rec_w32, rec_w64, n);
+  return target64 - it->n64;
+}
+
+// Upgrades a byte-form branch that overflows a single byte to its word form,
+// moving the offset from an argument byte into an inline oop slot.
+static void bootstrap_upgrade(bootstrap_instr* it) {
+  switch (it->code) {
+    case Bytecodes::ifTrue_byte:
+      it->code = Bytecodes::ifTrue_word;   it->nargs = 1; goto bl1;
+    case Bytecodes::ifFalse_byte:
+      it->code = Bytecodes::ifFalse_word;  it->nargs = 1; goto bl1;
+    case Bytecodes::and_byte:
+      it->code = Bytecodes::and_word;      it->nargs = 0; goto bl1;
+    case Bytecodes::or_byte:
+      it->code = Bytecodes::or_word;       it->nargs = 0; goto bl1;
+    case Bytecodes::whileTrue_byte:
+      it->code = Bytecodes::whileTrue_word;  it->nargs = 0; goto bl1;
+    case Bytecodes::whileFalse_byte:
+      it->code = Bytecodes::whileFalse_word; it->nargs = 0; goto bl1;
+    case Bytecodes::jump_else_byte:
+      it->code = Bytecodes::jump_else_word;  it->nargs = 0; goto bl1;
+    case Bytecodes::jump_loop_byte:
+      it->code = Bytecodes::jump_loop_word; it->nargs = 0;
+      it->noops = 2;
+      it->oop_is_offset[0] = true;  it->oop_is_offset[1] = true;
+      it->off_arg[0] = -1;          it->off_arg[1] = -1;
+      it->off_slot[0] = 1;          it->off_slot[1] = 0;   // cond at slot 1, end at slot 0
+      goto done;
+    default: ShouldNotReachHere();
+  bl1:
+    it->noops = 1;
+    it->oop_is_offset[0] = true;
+    it->off_arg[0] = -1;
+    it->off_slot[0] = 0;
+  done:
+    it->fmt = Bytecodes::format(it->code);
+  }
+}
+
+// Computes the 64-bit byte offset of the first inline oop of an instruction
+// whose opcode sits at byte offset 'w' within the codes area, along with the
+// offset of the next instruction.  These reproduce the positions the
+// interpreter computes via skip_words/advance_aligned (inline oops are
+// 8-byte aligned and each oop occupies oopSize bytes).
+static void oop_instr_offsets(Bytecodes::Format f, int w, int& base, int& next) {
+  switch (f) {
+    case Bytecodes::BO:
+    case Bytecodes::BL:    base = (w + 16) & -oopSize; base -= oopSize;     next = base + oopSize;             break;
+    case Bytecodes::BBO:
+    case Bytecodes::BBL:   base = (w + 17) & -oopSize; base -= oopSize;     next = base + oopSize;             break;
+    case Bytecodes::BOO:
+    case Bytecodes::BLO:
+    case Bytecodes::BOL:
+    case Bytecodes::BLL:   base = (w + 24) & -oopSize; base -= 2*oopSize;   next = base + 2*oopSize;           break;
+    case Bytecodes::BBOO:
+    case Bytecodes::BBLO:  base = (w + 25) & -oopSize; base -= 2*oopSize;   next = base + 2*oopSize;           break;
+    case Bytecodes::BLB:   base = (w + 1)  & -oopSize;                      next = base + oopSize + 1;         break;
+    case Bytecodes::BOOLB: base = (w + 32) & -oopSize; base -= 3*oopSize;   next = base + 3*oopSize + 1;       break;
+    default: ShouldNotReachHere();
+  }
+}
+
 void methodOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);
   st->read_oop((oop*)&addr()->_debugInfo);
@@ -93,16 +208,306 @@ void methodOopDesc::bootstrap_object(bootstrap* st) {
   set_counters(0, 0);
   st->read_oop((oop*)&addr()->_size_and_flags);
 
-  for(int index = 1; index <= size_of_codes() * 4; )
-    if (st->is_byte()) {
-      byte_at_put(index, st->read_byte());
-      index++;
-    } else {
-      st->read_oop((oop*) codes(index));
-      index += 4;
-    }
-}
+  // The image stores code in the compact layout used by the 32-bit VM: byte
+  // items advance the stream by 1, oop items by 4.  In this VM oops are 8
+  // bytes and the interpreter 8-byte aligns inline oops, so each instruction
+  // must be expanded in place.  The stream is decoded once into per
+  // instruction records; the 64-bit layout is then computed iteratively,
+  // upgrading byte-form branches that overflow, and finally the codes area is
+  // written with the relocated branch and failure-block offsets.
+  int max = size_of_codes() * 4 + 8;
+  int* rec_w32 = NEW_C_HEAP_ARRAY(int, max);
+  int* rec_w64 = NEW_C_HEAP_ARRAY(int, max);
+  bootstrap_instr* instrs = NEW_C_HEAP_ARRAY(bootstrap_instr, max);
+  u_char* bs_data = NEW_C_HEAP_ARRAY(u_char, size_of_codes() * 4 + 1);
+  int n_instrs = 0, bs_total = 0;
 
+  int index = 1;                 // 32-bit stream position
+  while (index <= size_of_codes() * 4) {
+    if (!st->is_byte()) fatal("expected bytecode");
+    Bytecodes::Code code = Bytecodes::Code((u_char) st->read_byte());
+    index++;
+    int w32 = index - 1;         // 32-bit position of the opcode
+    Bytecodes::Format f = Bytecodes::format(code);
+
+    bootstrap_instr* it = &instrs[n_instrs++];
+    memset(it, 0, sizeof(*it));
+    it->code = code;
+    it->fmt  = f;
+    it->w32  = w32;
+    it->off_arg[0] = it->off_arg[1] = -1;
+    it->off_slot[0] = it->off_slot[1] = -1;
+
+    int args = 0, oops = 0, trailing = 0;
+    switch (f) {
+      case Bytecodes::B:    break;
+      case Bytecodes::BB:   args = 1; break;
+      case Bytecodes::BBB:  args = 2; break;
+      case Bytecodes::BBBB: args = 3; break;
+      case Bytecodes::BBS:  args = 1; break;
+      case Bytecodes::BBO:
+      case Bytecodes::BBL:  args = 1; oops = 1; break;
+      case Bytecodes::BO:
+      case Bytecodes::BL:   oops = 1; break;
+      case Bytecodes::BLB:  oops = 1; trailing = 1; break;
+      case Bytecodes::BOO:
+      case Bytecodes::BLO:
+      case Bytecodes::BOL:
+      case Bytecodes::BLL:  oops = 2; break;
+      case Bytecodes::BBOO:
+      case Bytecodes::BBLO: args = 1; oops = 2; break;
+      case Bytecodes::BOOLB: oops = 3; trailing = 1; break;
+      default: fatal("undefined bytecode in method");
+    }
+    it->nargs = args;
+    it->noops = oops;
+    it->has_trailing = (trailing != 0);
+
+    // Inline word slots that hold raw 32-bit offsets (branch distances,
+    // primitive failure-block sizes) rather than oops.  The offsets must be
+    // relocated for the 64-bit layout.
+    bool slot_is_offset[2] = { false, false };
+    switch (code) {
+      case Bytecodes::jump_loop_word:
+        slot_is_offset[0] = true;
+        slot_is_offset[1] = true;
+        break;
+      case Bytecodes::ifTrue_word:
+      case Bytecodes::ifFalse_word:
+      case Bytecodes::and_word:
+      case Bytecodes::or_word:
+      case Bytecodes::whileTrue_word:
+      case Bytecodes::whileFalse_word:
+      case Bytecodes::jump_else_word:
+        slot_is_offset[0] = true;
+        break;
+      case Bytecodes::prim_call_failure_lookup:
+      case Bytecodes::predict_prim_call_failure_lookup:
+      case Bytecodes::prim_call_self_failure_lookup:
+      case Bytecodes::prim_call_failure:
+      case Bytecodes::predict_prim_call_failure:
+      case Bytecodes::prim_call_self_failure:
+        slot_is_offset[1] = true;
+        break;
+      default: break;
+    }
+    for (int i = 0; i < oops; i++) it->oop_is_offset[i] = slot_is_offset[i];
+
+    // Where each branch offset lives and how it is referenced.
+    switch (code) {
+      case Bytecodes::ifTrue_byte:
+      case Bytecodes::ifFalse_byte:
+        it->noff = 1; it->off_arg[0] = 1; it->off_mode[0] = 0; break;
+      case Bytecodes::and_byte:
+      case Bytecodes::or_byte:
+      case Bytecodes::jump_else_byte:
+        it->noff = 1; it->off_arg[0] = 0; it->off_mode[0] = 0; break;
+      case Bytecodes::whileTrue_byte:
+      case Bytecodes::whileFalse_byte:
+        it->noff = 1; it->off_arg[0] = 0; it->off_mode[0] = 1; break;
+      case Bytecodes::jump_loop_byte:
+        it->noff = 2; it->off_arg[0] = 1; it->off_mode[0] = 0;  // cond
+        it->off_arg[1] = 0; it->off_mode[1] = 2;                // end
+        break;
+      case Bytecodes::ifTrue_word:
+      case Bytecodes::ifFalse_word:
+      case Bytecodes::and_word:
+      case Bytecodes::or_word:
+      case Bytecodes::jump_else_word:
+        it->noff = 1; it->off_slot[0] = 0; it->off_mode[0] = 0; break;
+      case Bytecodes::whileTrue_word:
+      case Bytecodes::whileFalse_word:
+        it->noff = 1; it->off_slot[0] = 0; it->off_mode[0] = 1; break;
+      case Bytecodes::jump_loop_word:
+        it->noff = 2; it->off_slot[0] = 1; it->off_mode[0] = 0;  // cond
+        it->off_slot[1] = 0; it->off_mode[1] = 2;                // end
+        break;
+      case Bytecodes::prim_call_failure_lookup:
+      case Bytecodes::predict_prim_call_failure_lookup:
+      case Bytecodes::prim_call_self_failure_lookup:
+      case Bytecodes::prim_call_failure:
+      case Bytecodes::predict_prim_call_failure:
+      case Bytecodes::prim_call_self_failure:
+        it->noff = 1; it->off_slot[0] = 1; it->off_mode[0] = 0; break;
+      default: break;
+    }
+
+    // argument bytes
+    for (int i = 0; i < args; i++) {
+      if (!st->is_byte()) fatal("expected byte");
+      it->args[i] = st->read_byte();
+      index++;
+    }
+    for (int j = 0; j < it->noff; j++)
+      if (it->off_arg[j] >= 0) it->off[j] = it->args[it->off_arg[j]];
+
+    // inline oops / raw inline words
+    if (oops) {
+      for (int s = 0; s < oops; s++) {
+        // skip the 32-bit alignment padding preceding each oop: '4'-marked
+        // items whose value is 0xff.  The stream then either holds a raw
+        // 32-bit oop word (each byte stored as a '4'-marked item, e.g. instVar
+        // indices and control offsets) or a '5'-encoded object.
+        while (st->is_byte()) {
+          u_char v = (u_char) st->read_byte();
+          index++;
+          if (v != 0xff) {
+            int32_t word = v;
+            for (int j = 1; j < 4; j++) {
+              if (!st->is_byte()) fatal("expected byte in raw inline oop word");
+              word |= ((int32_t)((u_char) st->read_byte()) << (8 * j));
+              index++;
+            }
+            if (slot_is_offset[s]) {
+              int k = (it->off_slot[0] == s) ? 0 : 1;
+              it->off[k] = (int) (int32_t) word;   // raw 32-bit offset
+            } else {
+              if ((word & 3) != Int_Tag) {
+                fatal("raw inline oop word must be a small integer");
+              }
+              it->oops[s] = (intptr_t) as_smiOop(word >> 2);
+            }
+            goto next_oop;
+          }
+        }
+        { oop o;
+          st->read_oop(&o);
+          index += 4;
+          if (slot_is_offset[s]) {
+            int k = (it->off_slot[0] == s) ? 0 : 1;
+            if (o->is_smi()) it->off[k] = smiOop(o)->value();
+            else fatal("inline offset is not a small integer");
+          } else {
+            it->oops[s] = (intptr_t) o;
+          }
+        }
+      next_oop:;
+      }
+      for (int i = 0; i < trailing; i++) {
+        if (!st->is_byte()) fatal("expected byte");
+        it->trailing = st->read_byte();
+        it->has_trailing = true;
+        index++;
+      }
+    }
+
+    if (f == Bytecodes::BBS) {
+      int count = it->args[0];
+      if (count == 0) count = 256;
+      it->bs_count = count;
+      it->bs_start = bs_total;
+      for (int i = 0; i < count; i++) {
+        if (!st->is_byte()) fatal("expected byte");
+        bs_data[bs_total++] = st->read_byte();
+        index++;
+      }
+    }
+
+    it->n32 = index;
+    rec_w32[n_instrs - 1] = w32;
+    rec_w64[n_instrs - 1] = 0; // filled during layout
+  }
+
+  // Iteratively compute the 64-bit layout.  A byte-form branch whose distance
+  // no longer fits a byte is upgraded to its word form, growing the
+  // instruction; this loop terminates because each upgrade only grows the
+  // layout and only shrinks the set of byte-form branches.
+  bool upgraded = true;
+  int w64 = 0;
+  while (upgraded) {
+    upgraded = false;
+    w64 = 0;
+    for (int i = 0; i < n_instrs; i++) {
+      bootstrap_instr* it = &instrs[i];
+      it->w64 = w64;
+      if (it->noops > 0) {
+        int base, next;
+        oop_instr_offsets(it->fmt, w64, base, next);
+        it->n64 = next;
+      } else {
+        int extra = 1 + it->nargs + (it->has_trailing ? 1 : 0);
+        if (it->fmt == Bytecodes::BBS) extra += it->bs_count;
+        it->n64 = w64 + extra;
+      }
+      rec_w64[i] = it->w64;
+      w64 = it->n64;
+    }
+    for (int i = 0; i < n_instrs; i++) {
+      bootstrap_instr* it = &instrs[i];
+      if (it->noff == 0) continue;
+      bool overflows = false;
+      for (int j = 0; j < it->noff; j++) {
+        it->new_off[j] = bootstrap_instr_offset(it, j, rec_w32, rec_w64, n_instrs);
+        if (it->off_arg[j] >= 0 && (it->new_off[j] < 0 || it->new_off[j] > 255))
+          overflows = true;
+      }
+      if (overflows) {
+        bootstrap_upgrade(it);
+        upgraded = true;
+      }
+    }
+  }
+  // The 64-bit layout of some methods (mostly those with branch upgrades) no
+  // longer fits the codes area sized for the 32-bit image.  Reallocate the
+  // method with enough room, copying the header fields and registering the
+  // replacement so get_object returns the new oop.
+  methodOop m = this;
+  if (w64 > size_of_codes() * oopSize) {
+    int new_codes = (w64 + oopSize - 1) / oopSize;
+    int new_size  = methodOopDesc::header_size() + new_codes;
+    methodOop nm = as_methodOop(Universe::allocate_tenured(new_size));
+    for (int i = 0; i < methodOopDesc::header_size(); i++)
+      nm->raw_at_put(i, raw_at(i));
+    nm->set_size_and_flags(new_codes, nofArgs(), flags());
+    st->set_oop_replacement(nm);
+    m = nm;
+  }
+
+  // Zero the codes area so the padding between an opcode and its 8-byte
+  // aligned inline oops is well defined.
+  for (int i = 0; i < m->size_of_codes() * oopSize; i++)
+    m->codes()[i] = 0;
+
+  // Write the final layout: opcodes, argument bytes, inline oops, and the
+  // relocated branch and failure-block offsets.
+  for (int i = 0; i < n_instrs; i++) {
+    bootstrap_instr* it = &instrs[i];
+    int w64 = it->w64;
+    m->byte_at_put(w64 + 1, it->code);
+    for (int a = 0; a < it->nargs; a++) {
+      int v = it->args[a];
+      for (int j = 0; j < it->noff; j++)
+        if (it->off_arg[j] == a) v = it->new_off[j];
+      if (v < 0 || v > 255) {
+        fatal("byte branch offset does not fit the 64-bit layout");
+      }
+      m->byte_at_put(w64 + 2 + a, (u_char) v);
+    }
+    if (it->noops > 0) {
+      int base, next;
+      oop_instr_offsets(it->fmt, w64, base, next);
+      for (int s = 0; s < it->noops; s++) {
+        intptr_t v;
+        if (it->oop_is_offset[s]) {
+          int j = (it->off_slot[0] == s) ? 0 : 1;
+          v = it->new_off[j];
+        } else {
+          v = it->oops[s];
+        }
+        *(intptr_t*) m->codes(base + s*oopSize + 1) = v;
+      }
+      if (it->has_trailing) m->byte_at_put(base + it->noops*oopSize + 1, it->trailing);
+    } else if (it->fmt == Bytecodes::BBS) {
+      for (int k = 0; k < it->bs_count; k++)
+        m->byte_at_put(w64 + 3 + k, bs_data[it->bs_start + k]);
+    }
+  }
+
+  FreeHeap(rec_w32);
+  FreeHeap(rec_w64);
+  FreeHeap(instrs);
+  FreeHeap(bs_data);
+}
 int methodOopDesc::next_bci_from(u_char* hp) const {
   // Computes the next bci
   // hp is the interpreter 'ip' kept in the activation
@@ -795,7 +1200,7 @@ methodOop methodOopDesc::methodOop_from_hcode(u_char* hp) {
 
 
 int methodOopDesc::end_bci() const {
-  int last_entry = this->size_of_codes() * 4;
+  int last_entry = this->size_of_codes() * oopSize;
   for (int index = 0; index < 4; index++)
     if (byte_at(last_entry-index) != Bytecodes::halt) return last_entry+1-index;
   fatal("should never reach the point");

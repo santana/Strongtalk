@@ -26,11 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifdef DELTA_COMPILER
 
+#include "asm/assembler.hpp"
 #include "code/relocInfo.hpp"
 #include "memory/allocation.hpp"
-
-class  MacroAssembler;
-extern MacroAssembler* theMacroAssm;
 
 
 class CodeBuffer: public PrintableResourceObj {
