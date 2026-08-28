@@ -70,6 +70,11 @@ FORMAT_SRCS	:= $(sort $(wildcard $(VM_DIR)/*/*.cpp $(VM_DIR)/*/*.hpp \
 						$(EASYUNIT_DIR)/easyunit/*.h \
 						$(sort $(wildcard $(EASYUNIT_DIR)/src/*.hpp))))
 
+# Hand-aligned / generated tables that clang-format cannot reproduce and must
+# not rewrite. Excluded from both `make format` and `make format-check`.
+FORMAT_EXCLUDES	:= $(VM_DIR)/interpreter/dispatchTable.cpp
+FORMAT_SRCS	:= $(filter-out $(FORMAT_EXCLUDES),$(FORMAT_SRCS))
+
 CLANG_FORMAT	:= $(shell command -v clang-format 2>/dev/null)
 CLANG_FORMAT_STYLE := $(ROOT_DIR)/.clang-format
 

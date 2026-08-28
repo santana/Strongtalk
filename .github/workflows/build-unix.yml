@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Keep in sync with the clang-format version used by developers
+# (see `clang-format --version` locally).
+env:
+  CLANG_FORMAT_VERSION: '23.1.0'
+
 jobs:
   format:
     name: Format check
@@ -12,6 +17,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Pin clang-format to the same release developers use, via the PyPI
+      # package. The default clang-format on ubuntu-latest lags upstream, and
+      # .clang-format relies on recent options (SpacesInParens, DeriveLineEnding,
+      # ...). Installing an exact version keeps the check reproducible and
+      # identical to the local toolchain.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install clang-format ${{ env.CLANG_FORMAT_VERSION }}
+        run: pip install -q "clang-format==$CLANG_FORMAT_VERSION"
 
       - name: Show clang-format version
         run: clang-format --version
