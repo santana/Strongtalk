@@ -22,6 +22,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/byteArrayOop.hpp"
 #include "oops/klassOop.hpp"
 #include "oops/objArrayOop.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void HCodeBuffer::align() {
   while(!isAligned())

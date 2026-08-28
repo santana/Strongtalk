@@ -34,6 +34,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/task.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 pnode** FlatProfiler::table = NULL;
 int     FlatProfiler::table_size = 1024;
@@ -118,7 +122,7 @@ class pnode : public CHeapObj {
     _next = NULL;
   }
 
-  ~pnode() {
+  virtual ~pnode() {
     if (_next)
       delete _next;
   }

@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.hpp"
 #include "oops/objArrayOop.hpp"
 #include "utilities/objectIDTable.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // Memory->objectIDTable[1.. numberOfIDs] contains the valid entries
 

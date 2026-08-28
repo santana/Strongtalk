@@ -41,6 +41,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 // Ideas:
 //   Maybe cache methodOop in deltaVFrame for faster argument access. (Lars 8/10/95)

@@ -30,6 +30,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/iterator.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
   void DUInfo::propagateTo(BB* useBB, Use* use, const NonTrivialNode* fromNode, 
   			   PReg* src, NonTrivialNode* toNode, const bool global) {

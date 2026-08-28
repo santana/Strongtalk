@@ -37,6 +37,7 @@ namespace easyunit {
 class TestPrinter: public CHeap
 {
 	public:
+	virtual ~TestPrinter() {}
 	/**
 	 * Print the details of a given TestResult instance. This
 	 * method must be overridden by subclasses since it is

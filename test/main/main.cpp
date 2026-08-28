@@ -22,6 +22,10 @@
 #include "runtime/testProcess.hpp"
 #include <unistd.h>
 #include "utilities/ostream.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void ostream_init();
 

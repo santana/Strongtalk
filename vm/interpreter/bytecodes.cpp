@@ -446,9 +446,8 @@ char* Bytecodes::format_as_string(Format format) {
     case BOOLB: return "BOOLB";
     case BBS  : return "BBS";
     case UNDEF: return "UNDEF";
+    default: ShouldNotReachHere(); return NULL;
   }
-  ShouldNotReachHere();
-  return NULL;
 }
 
 
@@ -462,9 +461,8 @@ char* Bytecodes::send_type_as_string(SendType send_type) {
     case accessor_send   : return "accessor send";
     case primitive_send  : return "primitive_send";
     case no_send         : return "no_send";
+    default: ShouldNotReachHere(); return NULL;
   }
-  ShouldNotReachHere();
-  return NULL;
 }
 
 
@@ -484,9 +482,8 @@ char* Bytecodes::code_type_as_string(CodeType code_type) {
     case dll_call       : return "dll_call";
     case float_operation: return "float_operation";
     case miscellaneous  : return "miscellaneous";
+    default: ShouldNotReachHere(); return NULL;
   }
-  ShouldNotReachHere();
-  return NULL;
 }
 
 
@@ -498,9 +495,8 @@ char* Bytecodes::argument_spec_as_string(ArgumentSpec argument_spec) {
     case recv_n_args: return "recv_n_args";
     case args_only  : return "args_only";
     case no_args    : return "no_args";
+    default: ShouldNotReachHere(); return NULL;
   }
-  ShouldNotReachHere();
-  return NULL;
 }
 
 
@@ -509,9 +505,8 @@ char* Bytecodes::loop_type_as_string(LoopType loop_type) {
     case loop_start: return "loop_start";
     case loop_end  : return "loop_end";
     case no_loop   : return "no_loop";
+    default: ShouldNotReachHere(); return NULL;
   }
-  ShouldNotReachHere();
-  return NULL;
 }
 
 

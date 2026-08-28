@@ -80,7 +80,7 @@ class PrintableCHeapObj : public CHeapObj {
 // Calling new or delete will result in fatal error.
 class StackObj {
  public:
-  void* operator new(size_t size);
+  void* operator new(size_t size) noexcept;
   void  operator delete(void* p);
 };
 
@@ -96,7 +96,7 @@ class PrintableStackObj : StackObj {
 // Calling new or delete will result in fatal error.
 class ValueObj {
  public:
-  void* operator new(size_t size);
+  void* operator new(size_t size) noexcept;
   void operator delete(void* p);
 };
 

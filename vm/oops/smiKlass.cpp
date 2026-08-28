@@ -23,6 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "oops/smiKlass.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 klassOop smiKlass::create_subclass(mixinOop mixin, Format format) {
   return NULL;

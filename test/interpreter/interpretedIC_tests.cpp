@@ -4,6 +4,10 @@
 #include "oops/klassOop.hpp"
 #include "oops/oop.hpp"
 #include "runtime/delta.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

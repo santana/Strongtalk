@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/byteArrayOop.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 outputStream::outputStream(int width) {
   _width       = width;
@@ -43,10 +46,7 @@ void outputStream::print(const char* format, ...) {
   char buffer[BUFLEN];
   va_list ap;
   va_start(ap, format);
-  if (_vsnprintf(buffer, BUFLEN, format, ap) < 0) {
-    warning("increase BUFLEN in ostream.cpp -- output truncated");
-    buffer[BUFLEN] = 0;
-  }
+  _vsnprintf(buffer, BUFLEN, format, ap);
   va_end(ap);
   basic_print(buffer);
 }
@@ -55,10 +55,7 @@ void outputStream::print_cr(const char* format, ...) {
   char buffer[BUFLEN];
   va_list ap;
   va_start(ap, format);
-  if (_vsnprintf(buffer, BUFLEN, format, ap) < 0) {
-    warning("increase BUFLEN in ostream.cpp -- output truncated");
-    buffer[BUFLEN] = 0;
-  }
+  _vsnprintf(buffer, BUFLEN, format, ap);
   va_end(ap);
   basic_print(buffer);
   cr();
@@ -66,10 +63,7 @@ void outputStream::print_cr(const char* format, ...) {
 
 void outputStream::vprint(const char *format, va_list argptr) {
   char buffer[BUFLEN];
-  if (_vsnprintf(buffer, BUFLEN, format, argptr) < 0) {
-    warning("increase BUFLEN in ostream.cpp -- output truncated");
-    buffer[BUFLEN] = 0;
-  }
+  _vsnprintf(buffer, BUFLEN, format, argptr);
   basic_print(buffer);
 }
 

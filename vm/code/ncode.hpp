@@ -27,7 +27,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifdef DELTA_COMPILER
 
 #include "memory/generation.hpp"
-#include "memory/generation.inline.hpp"
 #include "memory/universe.hpp"
 
 template <class E> class GrowableArray;
@@ -42,7 +41,11 @@ class NCodeBase : public PrintableCHeapObj {
   int _instsLen;			// instruction length in bytes
  public:
   void* operator new(size_t size) {
-    Unused(size); SubclassResponsibility(); return NULL; }
+    // placeholder never used for real allocation (subclasses override);
+    // abort() is noreturn so clang won't flag this as an operator new
+    // that can return NULL.
+    Unused(size); SubclassResponsibility(); abort();
+  }
   
   virtual char* insts() const = 0;	// beginning of instructions part
   virtual int size() const = 0;		// size in bytes

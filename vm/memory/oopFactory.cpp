@@ -36,6 +36,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 
 byteArrayOop oopFactory::new_byteArray(int size) {

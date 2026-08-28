@@ -62,11 +62,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
     int   endIndex = indexFromNumber(last);
     if (startIndex == endIndex) {
       assert(last - first < BitsPerWord, "oops");
-      int mask = nthMask(last - first + 1);
+      int mask = (int) nthMask(last - first + 1);
       bits[startIndex] |= mask << offsetFromNumber(first);
     } else {
-      bits[startIndex] |= AllBits << offsetFromNumber(first);
-      for (int i = startIndex + 1; i < endIndex; i++) bits[i] = AllBits;
+      bits[startIndex] |= (int) (AllBits << offsetFromNumber(first));
+      for (int i = startIndex + 1; i < endIndex; i++) bits[i] = (int) AllBits;
       bits[endIndex] |= nthMask(offsetFromNumber(last) + 1);
     }
 #   ifdef ASSERT

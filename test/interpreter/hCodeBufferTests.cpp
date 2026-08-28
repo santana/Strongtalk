@@ -7,6 +7,9 @@
 #include "oops/objArrayOop.hpp"
 
 #include <cstdio>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -15,20 +18,20 @@ DECLARE(HCodeBufferTests)
   HeapResourceMark *rm;
   char msg[200];
   void checkByteLength(int expected, char* message) {
-    sprintf(msg, "Wrong byte length for %s, expected: %d, but was: %d", message, expected, code->byteLength());
+    snprintf(msg, sizeof(msg), "Wrong byte length for %s, expected: %d, but was: %d", message, expected, code->byteLength());
     ASSERT_EQUALS_M(expected, code->byteLength(), msg);
   }
   void checkOopLength(int expected, char* message) {
-    sprintf(msg, "Wrong oop length for %s, expected: %d, but was: %d", message, expected, code->oopLength());
+    snprintf(msg, sizeof(msg), "Wrong oop length for %s, expected: %d, but was: %d", message, expected, code->oopLength());
     ASSERT_EQUALS_M(expected, code->oopLength(), msg);
   }
 
 #define checkByte(expected, actual)\
-    sprintf(msg, "Expected: %d, but was: %d", expected, actual);\
+    snprintf(msg, sizeof(msg), "Expected: %d, but was: %d", expected, actual);\
     ASSERT_EQUALS_M(expected, actual, msg)
 
 #define checkOop(expected, actual)\
-    sprintf(msg, "Expected: %d, but was: %d", expected, actual);\
+    snprintf(msg, sizeof(msg), "Expected: %ld, but was: %ld", (intptr_t)expected, (intptr_t)actual);\
     ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
 END_DECLARE

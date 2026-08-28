@@ -37,6 +37,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.hpp"
 #include "runtime/vframe.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 RecompilationPolicy::RecompilationPolicy(RFrame* first) {
   stack = new GrowableArray<RFrame*>(50);

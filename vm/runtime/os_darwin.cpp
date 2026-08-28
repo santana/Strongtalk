@@ -371,7 +371,7 @@ private:
     void checkHandle(void* handle, const char* format) {
 		if (handle == NULL) {
 			char* message = (char*) malloc(200);
-			sprintf(message, format, dlerror());
+			snprintf(message, 200, format, dlerror());
 			assert(handle != NULL, message);
 			free(message);
 		}

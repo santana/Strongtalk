@@ -23,6 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "oops/klassOop.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void klassOopDesc::bootstrap_object(bootstrap* st) {
   klass_part()->bootstrap_klass_part_one(st);

@@ -27,6 +27,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/weakArrayKlass.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 klassOop weakArrayKlass::create_subclass(mixinOop mixin, Format format) {
   if (format == mem_klass || format == weakArray_klass) {

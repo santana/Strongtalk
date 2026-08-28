@@ -23,6 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 
 #include "memory/symbolTable.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 # define FOR_ALL_ENTRIES(entry) \
   for (entry = firstBucket(); entry <= lastBucket(); entry ++)
@@ -56,7 +59,7 @@ int hash(char* name, int len) {
   char* end = s + len;
   for (; s < end; s = s + increment) {
     h = (h << 4) + (long unsigned) *s;
-    if (g = h & 0xf0000000) h ^= g | (g >> 24);
+    if ((g = h & 0xf0000000) != 0) h ^= g | (g >> 24);
   }
   return h;
 }

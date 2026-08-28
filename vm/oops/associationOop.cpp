@@ -23,6 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "oops/associationOop.hpp"
 #include "runtime/bootstrap.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void associationOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

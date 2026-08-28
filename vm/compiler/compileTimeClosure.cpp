@@ -30,6 +30,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/scope.hpp"
 #include "oops/methodOop.hpp"
 #include "memory/universe.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool CompileTimeClosure::verify() const {
   bool ok;

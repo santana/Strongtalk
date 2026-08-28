@@ -94,7 +94,7 @@ bool easyunit::operator!= (const SimpleString& left, const SimpleString& right)
 SimpleString easyunit::StringFrom (bool value)
 {
 	char buffer [sizeof ("false") + 1];
-	sprintf (buffer, "%s", value ? "true" : "false");
+	snprintf (buffer, sizeof (buffer), "%s", value ? "true" : "false");
 	return SimpleString(buffer);
 }
 
@@ -106,7 +106,7 @@ SimpleString easyunit::StringFrom (const char *value)
 SimpleString easyunit::StringFrom (long value)
 {
 	char buffer [DEFAULT_SIZE];
-	sprintf (buffer, "%ld", value);
+	snprintf (buffer, sizeof (buffer), "%ld", value);
 
 	return SimpleString(buffer);
 }
@@ -114,7 +114,7 @@ SimpleString easyunit::StringFrom (long value)
 SimpleString easyunit::StringFrom (int value)
 {
 	char buffer [DEFAULT_SIZE];
-	sprintf (buffer, "%d", value);
+	snprintf (buffer, sizeof (buffer), "%d", value);
 
 	return SimpleString(buffer);
 }
@@ -122,7 +122,7 @@ SimpleString easyunit::StringFrom (int value)
 SimpleString easyunit::StringFrom (double value)
 {
 	char buffer [DEFAULT_SIZE];
-	sprintf (buffer, "%lf", value);
+	snprintf (buffer, sizeof (buffer), "%lf", value);
 
 	return SimpleString(buffer);
 }

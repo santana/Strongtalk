@@ -25,6 +25,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.hpp"
 #include "oops/memOop.inline.hpp"
 #include "runtime/bootstrap.hpp"
+#include "oops/oop.inline.hpp"
 
 bool doubleValueArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();

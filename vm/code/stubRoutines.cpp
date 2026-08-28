@@ -49,6 +49,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/uncommonBranch.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 const int max_fast_allocate_size = 9;
 const int max_fast_alien_call_size = 7;

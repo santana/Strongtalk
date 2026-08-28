@@ -3,6 +3,9 @@
 #include "memory/markSweep.hpp"
 #include "memory/universe.hpp"
 #include "runtime/debug.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

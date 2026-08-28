@@ -9,6 +9,8 @@
 #include "runtime/process.hpp"
 #include "runtime/testProcess.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 //# include "recompile.hpp"
 //#include "handle.hpp"
 

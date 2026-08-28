@@ -26,6 +26,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/ncode.hpp"
 #include "code/nmethod.hpp"
 #include "code/zone.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void OopNCode::remember() {
 Unimplemented();//  if (rememberLink.isEmpty()) Memory->code->rememberLink.add(&rememberLink);

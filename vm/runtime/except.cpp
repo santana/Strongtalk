@@ -6,6 +6,10 @@
 #include "runtime/vframe.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/lprintf.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void trace(vframe* from_frame, int start_frame, int number_of_frames){
   FlagSetting fs(ActivationShowCode, true);

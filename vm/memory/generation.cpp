@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.hpp"
 #include "runtime/debug.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void generation::print() {
   mystd->print(" total %6dK, %d%% used ", capacity()/K, (100 * used())/capacity());

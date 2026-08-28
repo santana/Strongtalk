@@ -35,6 +35,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
 #include "utilities/objectIDTable.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // ------ helper functions for debugging go here ------------
 
@@ -42,9 +46,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #  ifdef ASSERT
    // NOTE: don't turn the lines below into a comment -- if you're getting
    // a compile error here, change the settings to define DEBUG
-   DEBUG should be defined when ASSERT is defined.  It's intended to be used for debugging
-   functions that don't slow down the system too much and thus can be left in optimized code.
-   On the other hand, the code shouldn't be included in a production version.
+   DEBUG should be defined when ASSERT is defined.  It is intended to be used for debugging
+   functions that do not slow down the system too much and thus can be left in optimized code.
+   On the other hand, the code should not be included in a production version.
 #  endif
 #endif
 
@@ -92,7 +96,7 @@ void pp(void* p) {
 }
 
 // pv: print vm-printable object
-void pv(int p)   { ((PrintableResourceObj*) p)->print(); }
+void pv(int p)   { ((PrintableResourceObj*)(intptr_t) p)->print(); }
 
 void pp_short(void* p) {
   Command c("pp_short");
@@ -232,26 +236,26 @@ void events() {
 
 nmethod* find(int addr) {
   Command c("find");
-  return findNMethod((void*)addr);
+  return findNMethod((void*)(intptr_t)addr);
 }
 
 methodOop findm(int hp) { 
   Command c("findm");
-  return methodOopDesc::methodOop_from_hcode((u_char*)hp); 
+  return methodOopDesc::methodOop_from_hcode((u_char*)(intptr_t)hp); 
 }
 
 // int versions of all methods to avoid having to type casts in the debugger
 
 void pp(int p) {
-  pp((void*)p);
+  pp((void*)(intptr_t)p);
 }
 
 void pp_short(int p) {
-  pp_short((void*)p);
+  pp_short((void*)(intptr_t)p);
 }
 
 void pk(int p) {
-  pk((Klass*)p);
+  pk((Klass*)(intptr_t)p);
 }
 
 void ph(int hp)	{ 
@@ -261,7 +265,7 @@ void ph(int hp)	{
 
 void pm(int m) { 
   Command c("pm");
-  methodOop(m)->pretty_print(); 
+  methodOop((intptr_t)m)->pretty_print(); 
 }
 
 void print_codes(char* class_name, char* selector) { 

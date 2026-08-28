@@ -28,6 +28,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <string.h>
 #include <errno.h>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool byteArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();
@@ -144,8 +147,8 @@ int byteArrayOopDesc::compare(byteArrayOop arg) {
   const unsigned int* b = (unsigned int*) arg->length_addr();
 
   // Get the word sizes of the arays
-  int a_size = roundTo(smiOop(*a++)->value() * sizeof(char), sizeof(int)) / sizeof(int);
-  int b_size = roundTo(smiOop(*b++)->value() * sizeof(char), sizeof(int)) / sizeof(int);
+  int a_size = roundTo(smiOop((intptr_t)(*a++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
+  int b_size = roundTo(smiOop((intptr_t)(*b++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
 
   const unsigned int* a_end = a + min(a_size, b_size);
   while(a < a_end) {

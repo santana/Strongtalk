@@ -15,6 +15,8 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -62,7 +64,7 @@ void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize,
 void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
   char text[200];
   ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-  sprintf(text,"Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+  snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
   ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
 }
 void checkIntResult(char* message, int expected, PersistentHandle* alien) {
@@ -70,7 +72,7 @@ void checkIntResult(char* message, int expected, PersistentHandle* alien) {
   bool ok;
   int actual = asInt(ok, byteArrayPrimitives::alienSignedLongAt(smi1, alien->as_oop()));
   ASSERT_TRUE_M(ok, "not an integer result");
-  sprintf(text,"Should be: %d, was: %d", expected, actual);
+  snprintf(text, sizeof(text), "Should be: %d, was: %d", expected, actual);
   ASSERT_TRUE_M(actual == expected, text);
 }
 int asInt(bool &ok, oop intOop) {
@@ -214,7 +216,7 @@ TESTF(AlienIntegerCallout1Tests, alienCallResult1WithScavengeShouldReturnCorrect
   byteArrayPrimitives::alienCallResult1(directAlien->as_oop(), resultAlien->as_oop(), functionAlien->as_oop());
 
   bool ok;
-  oop result = (oop) asInt(ok, byteArrayPrimitives::alienUnsignedLongAt(smi1,
+  oop result = (oop)(intptr_t) asInt(ok, byteArrayPrimitives::alienUnsignedLongAt(smi1,
                                                                         resultAlien->as_oop()));
 
   ASSERT_TRUE_M(ok, "unsigned long at failed");

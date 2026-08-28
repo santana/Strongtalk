@@ -35,9 +35,9 @@ const int EVENT_PARAMS = 3;       // number of params per EL_Event
 // helper macros
 
 #define LOG_EVENT(name)           eventLog->log(name)
-#define LOG_EVENT1(name,p1)       eventLog->log(name, (void*)(p1))
-#define LOG_EVENT2(name,p1,p2)    eventLog->log(name, (void*)(p1), (void*)(p2))
-#define LOG_EVENT3(name,p1,p2,p3) eventLog->log(name, (void*)(p1), (void*)(p2), (void*)(p3))
+#define LOG_EVENT1(name,p1)       eventLog->log(name, (void*)(intptr_t)(p1))
+#define LOG_EVENT2(name,p1,p2)    eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2))
+#define LOG_EVENT3(name,p1,p2,p3) eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2), (void*)(intptr_t)(p3))
 
 enum EL_EventStatus { starting, ending, atomic };
 

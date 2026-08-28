@@ -26,6 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/processOop.hpp"
 #include "runtime/process.hpp"
 #include "runtime/vframe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 vframe* vframeOopDesc::get_vframe() {
   DeltaProcess* proc = process()->process();

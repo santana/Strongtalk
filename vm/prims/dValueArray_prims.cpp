@@ -33,6 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/dValueArray_prims.hpp"
 #include "prims/prim_impl.hpp"
 #include "runtime/debug.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceDoubleValueArrayPrims, "doubleValueArray")
 

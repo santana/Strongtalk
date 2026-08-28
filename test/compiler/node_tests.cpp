@@ -4,6 +4,10 @@
 #include "lookup/lookupCache.hpp"
 #include "memory/oopFactory.hpp"
 #include "utilities/testNotifier.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -91,7 +95,7 @@ TESTF(UncommonSendNodeTests, verifyShouldCallErrorWhenMoreArgsThanExpressions) {
   nop->append(node);
 
   char buffer[2048];
-  sprintf(buffer, "Too few expressions on stack for 0x%x: required %d, but got %d", node, 1, 0);
+  snprintf(buffer, sizeof(buffer), "Too few expressions on stack for %p: required %d, but got %d", (void*)node, 1, 0);
   BB* bb = new BB(nop, node, 0);
   node->setBB(bb);
 
@@ -114,7 +118,7 @@ TESTF(UncommonSendNodeTests, print_stringShouldReturnFormattedStringWithAddress)
   node = NodeFactory::new_UncommonSendNode(exprStack, 1, 1);
 
   char expected[100];
-  sprintf(expected, "UncommonSend(1 arg)                     ((UncommonSendNode*)%#lx)", node);
+  snprintf(expected, sizeof(expected), "UncommonSend(1 arg)                     ((UncommonSendNode*)%p)", (void*)node);
   char buffer[100];
   node->print_string(buffer);
 

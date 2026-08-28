@@ -32,6 +32,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void report_vm_state() {
 #ifdef DEBUG
@@ -63,7 +66,7 @@ void report_error(char* title, char* format, ...) {
   char buffer[2048];
   va_list ap;
   va_start(ap, format);
-  std::vsprintf(buffer, format, ap);
+  std::vsnprintf(buffer, sizeof(buffer), format, ap);
   va_end(ap);
 
   mystd->cr();
@@ -87,7 +90,7 @@ void report_fatal(char* file_name, int line_no, char* format, ...) {
   char buffer[2048];
   va_list ap;
   va_start(ap, format);
-  std::vsprintf(buffer, format, ap);
+  std::vsnprintf(buffer, sizeof(buffer), format, ap);
   va_end(ap);
   report_error("Fatal Error", "Fatal: %s\n%s, %d", buffer, file_name, line_no);
 }

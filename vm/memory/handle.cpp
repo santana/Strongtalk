@@ -27,6 +27,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 
 #include <cstdio>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 PersistentHandle* PersistentHandle::first = NULL;
 int Handles::_top   = 0;
@@ -41,8 +44,8 @@ void BaseHandle::push() {
   if (next) {
     if (log) {
       char msg[200];
-      std::sprintf(msg, "unpopped StackHandle '%s->%s' : 0x%x->0x%x", label, 
-        next->label, this, next);
+      std::snprintf(msg, sizeof(msg), "unpopped StackHandle '%s->%s' : %p->%p", label, 
+        next->label, (void*)this, (void*)next);
       assert((char*) this < (char*) next, msg);
     }
     next->prev = this;

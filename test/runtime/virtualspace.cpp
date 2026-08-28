@@ -10,13 +10,13 @@ DECLARE(ReservedSpace)
 void checkAlignment(int size, int expected_alignment) {
   char message[100];
   int adjustment = ReservedSpace::page_align_size(size);
-  sprintf(message, "adjustment for %d: %d", size, adjustment);
+  snprintf(message, sizeof(message), "adjustment for %d: %d", size, adjustment);
   ASSERT_EQUALS_M(expected_alignment, adjustment, message);
 }
 void checkArbitraryAlignment(int size, int expected_alignment, int page_size) {
   char message[100];
   int adjustment = ReservedSpace::align_size(size, page_size);
-  sprintf(message, "adjustment for %d: %d", size, adjustment);
+  snprintf(message, sizeof(message), "adjustment for %d: %d", size, adjustment);
   ASSERT_EQUALS_M(expected_alignment, adjustment, message);
 }
 END_DECLARE

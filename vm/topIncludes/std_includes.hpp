@@ -48,7 +48,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
   #define _vsnprintf   vsnprintf
 
-  #define __stdcall __attribute__ ((stdcall))
+  // __stdcall is a real calling convention only on 32-bit x86; on 64-bit
+  // targets (x86-64, AArch64) the attribute is meaningless and clang flags it
+  // with -Wignored-attributes. Leave it empty so the primitive/trampoline
+  // declarations below don't emit noise on the ports this VM actually builds.
+  #if defined(__i386__) || defined(_M_IX86)
+    #define __stdcall __attribute__((stdcall))
+  #else
+    #define __stdcall
+  #endif
   #define mystd _mystd
 
 #else

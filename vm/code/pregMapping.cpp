@@ -30,6 +30,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/node.hpp"
 #include "disasm/disassembler.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 // Implementation of PRegMapping
 //

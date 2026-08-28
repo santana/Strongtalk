@@ -34,6 +34,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/vmOperations.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 int lookupCache::number_of_primary_hits;
 int lookupCache::number_of_secondary_hits;

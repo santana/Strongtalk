@@ -31,6 +31,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "utilities/ostream.hpp"
 
 #include <cstdint>
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 // A Displacement describes the 32bit immediate field of an instruction which
 // may be used together with a Label in order to refer to a yet unknown code

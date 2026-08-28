@@ -28,6 +28,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 
 #include <ctype.h>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 symbolOop symbolKlass::allocateSymbol(char* value, int len) {
   symbolOop sym = as_symbolOop(Universe::allocate_tenured(object_size(len)));

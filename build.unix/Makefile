@@ -54,13 +54,52 @@ stest_SO = strongtalk.so stest.so
 
 WRK=$(shell pwd)
 
-.PHONY: all vm test clean pristine
+.PHONY: all vm test clean pristine format format-check
 all: $(PROGRAMS)
 
 vm: strongtalk
 
 test: stest
 	$(LIBRARY_PATH_VAR)=$(WRK) ./$< -b ../strongtalk.bst
+
+# Files clang-format should operate on (sorted, excludes build artifacts).
+# *.inl/.ixx patterns are not used here; add them if introduced.
+FORMAT_SRCS	:= $(sort $(wildcard $(VM_DIR)/*/*.cpp $(VM_DIR)/*/*.hpp \
+						$(TEST_DIR)/*/*.cpp $(TEST_DIR)/*/*.hpp \
+						$(EASYUNIT_DIR)/src/*.cpp $(EASYUNIT_DIR)/src/*.h \
+						$(EASYUNIT_DIR)/easyunit/*.h \
+						$(sort $(wildcard $(EASYUNIT_DIR)/src/*.hpp))))
+
+CLANG_FORMAT	:= $(shell command -v clang-format 2>/dev/null)
+CLANG_FORMAT_STYLE := $(ROOT_DIR)/.clang-format
+
+# `make format` rewrites every source file in place using the repo's
+# .clang-format. If clang-format is not installed it prints a hint and does
+# nothing (so the target is safe to run anywhere).
+format: $(CLANG_FORMAT_STYLE)
+	@if [ -z "$(CLANG_FORMAT)" ]; then \
+		echo "clang-format not found; install it or use 'brew install clang-format'."; \
+	else \
+		$(CLANG_FORMAT) -i --style=file $(FORMAT_SRCS); \
+		echo "Formatted $$(echo $(FORMAT_SRCS) | wc -w | tr -d ' ') files."; \
+	fi
+
+# `make format-check` verifies that sources already obey .clang-format
+# without modifying them (useful as a CI gate / pre-commit check).
+format-check: $(CLANG_FORMAT_STYLE)
+	@if [ -z "$(CLANG_FORMAT)" ]; then \
+		echo "clang-format not found; install it or use 'brew install clang-format'."; \
+	else \
+		$(CLANG_FORMAT) --dry-run --Werror --style=file $(FORMAT_SRCS) \
+			> /tmp/strongtalk-format-check.log 2>&1; \
+		if [ $$? -ne 0 ]; then \
+			echo "clang-format violations found:"; \
+			cat /tmp/strongtalk-format-check.log; \
+			exit 1; \
+		else \
+			echo "All .cpp/.hpp/.h files are correctly formatted."; \
+		fi; \
+	fi
 
 %.o : %.cpp %.d
 

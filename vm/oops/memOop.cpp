@@ -33,6 +33,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/bootstrap.hpp"
 #include "utilities/objectIDTable.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
 
 void memOopDesc::layout_iterate_body(ObjectLayoutClosure* blk, int begin, int end) {
   oop* p = (oop*) addr();

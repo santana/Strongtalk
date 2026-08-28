@@ -7,6 +7,9 @@
 #include "oops/klassOop.hpp"
 #include "oops/dByteArrayOop.hpp"
 #include "prims/dByteArray_prims.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

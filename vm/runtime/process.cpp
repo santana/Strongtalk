@@ -53,6 +53,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/vmOperations.hpp"
 #include "utilities/eventLog.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 // The tricky part is to restore the original return address of the primitive before
 // the delta call. This is necessary for a consistent stack during the delta call.
@@ -640,6 +642,7 @@ void DeltaProcess::print() {
     case DLL_lookup_error:        mystd->print_cr("DLL lookup error");       break;
     case NLR_error:               mystd->print_cr("NLR error");              break;
     case stack_overflow:          mystd->print_cr("stack overflow");         break;
+    default:                      mystd->print_cr("(unknown)");              break;
   }
 }
 
@@ -692,8 +695,8 @@ symbolOop DeltaProcess::symbol_from_state(ProcessState state) {
     case float_error:             return vmSymbols::float_error();
     case NLR_error:               return vmSymbols::NLR_error();
     case stack_overflow:          return vmSymbols::stack_overflow();
+    default:                      return vmSymbols::not_found();
   }
-  return vmSymbols::not_found();
 }
 
 bool DeltaProcess::has_stack() const {
@@ -781,7 +784,9 @@ extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_f
 // Used to transfer information from deoptimize_stretch to unpack_frame_array.
 static bool redo_the_send;
 
-extern "C" int redo_send_offset = 0;
+extern "C" {
+int redo_send_offset = 0;
+}
 
 void DeltaProcess::deoptimize_redo_last_send() {
   redo_the_send = true;
@@ -791,10 +796,12 @@ void DeltaProcess::deoptimize_redo_last_send() {
 //extern "C" void redo_bytecode_after_deoptimization();
 //extern "C" char redo_bytecode_after_deoptimization;
 
-extern "C" bool       nlr_through_unpacking = false;
-extern "C" oop        result_through_unpacking = NULL;
-extern "C" int        number_of_arguments_through_unpacking = 0;
-extern "C" char*      C_frame_return_addr = NULL;
+extern "C" {
+bool       nlr_through_unpacking = false;
+oop        result_through_unpacking = NULL;
+int        number_of_arguments_through_unpacking = 0;
+char*      C_frame_return_addr = NULL;
+}
 extern "C" contextOop nlr_home_context;
 
 inline void trace_deoptimization_start() {
@@ -1324,6 +1331,7 @@ extern "C" void suspend_on_error(InterpreterErrorConstants error_code) {
     case boolean_expected	: handle_error(boolean_error);
     case nonlocal_return_error	: handle_error(NLR_error);
     case float_expected		: handle_error(float_error);
+    default: break;
   }
 
   // Interpreter errors
@@ -1337,6 +1345,7 @@ extern "C" void suspend_on_error(InterpreterErrorConstants error_code) {
     case nlr_offset_wrong	: handle_interpreter_error("NLR offset wrong");
     case last_Delta_fp_wrong	: handle_interpreter_error("last Delta frame wrong");
     case primitive_result_wrong	: handle_interpreter_error("ilast C entry frame wrong");
+    default: break;
   }
   ShouldNotReachHere();
 }

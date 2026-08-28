@@ -25,6 +25,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "code/nmethod.hpp"
 #include "code/pcDesc.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 PcDesc::PcDesc(int pc, uint16 scope, uint16 byteCode) {
   this->pc       = pc;

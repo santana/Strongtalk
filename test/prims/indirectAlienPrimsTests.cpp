@@ -10,6 +10,9 @@
 #include "prims/byteArray_prims.hpp"
 #include "prims/integerOps.hpp"
 #include "utilities/testUtils.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -33,7 +36,7 @@ DECLARE(IndirectAlienPrimsTests)
     bool ok;
     int actual = asInteger(result, ok);
     ASSERT_TRUE_M(ok, "should be integer");
-    sprintf(message, "wrong value. expected: %d, was: %d", expected, actual);
+    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
     ASSERT_EQUALS_M(expected, actual, message);
   }
   void checkLargeUnsigned(oop result, unsigned int expected) {
@@ -42,20 +45,20 @@ DECLARE(IndirectAlienPrimsTests)
     bool ok;
     unsigned int actual = byteArrayOop(result)->number().as_unsigned_int(ok);
     ASSERT_TRUE_M(ok, "should be integer");
-    sprintf(message, "wrong value. expected: %d, was: %d", expected, actual);
+    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
     ASSERT_EQUALS_M(expected, actual, message);
   }
   void checkSmallInteger(oop result, int expected) {
     char message[200];
     ASSERT_TRUE_M(result->is_smi(), "Should be small integer");
     int actual = smiOop(result)->value();
-    sprintf(message, "wrong value. expected: %d, was: %d", expected, actual);
+    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
     ASSERT_EQUALS_M(expected, actual, message);
   }
   void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
     char text[200];
     ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    sprintf(text,"Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+    snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
     ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
   }
 END_DECLARE
@@ -75,7 +78,7 @@ SETUP(IndirectAlienPrimsTests) {
   largeSignedInteger = byteArrayOop(ls.as_oop());
 
   IntegerOps::unsigned_int_to_Integer((unsigned int)0xFFFFFFFF, byteArrayOop(largeUnsignedInteger)->number());
-  IntegerOps::int_to_Integer(-1 << 31, byteArrayOop(largeSignedInteger)->number());
+  IntegerOps::int_to_Integer((int)((unsigned)-1 << 31), byteArrayOop(largeSignedInteger)->number());
 
   alien = byteArrayOop(ah.as_oop());
   byteArrayPrimitives::alienSetSize(as_smiOop(-16), alien);
@@ -195,7 +198,7 @@ TESTF(IndirectAlienPrimsTests, alienSignedLongAtPutShouldSetCorrectValue) {
   byteArrayPrimitives::alienSignedLongAtPut(largeSignedInteger, as_smiOop(1), alien);
   oop result = byteArrayPrimitives::alienSignedLongAt(as_smiOop(1), alien);
 
-  checkLargeInteger(result, -1 << 31);
+  checkLargeInteger(result, (int)((unsigned)-1 << 31));
 }
 
 TESTF(IndirectAlienPrimsTests, alienDoubleAtPutShouldSetCorrectValue) {

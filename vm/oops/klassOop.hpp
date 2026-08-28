@@ -63,7 +63,7 @@ class klassOopDesc : public memOopDesc {
 
   void bootstrap_object(bootstrap* st);
   static intptr_t nonIndexableSizeOffset() {
-    return (intptr_t)(&klassOop(NULL)->klass_part()->_non_indexable_size);
+    return (intptr_t)(&((klassOopDesc*) NULL)->_klass_part._non_indexable_size);
   }
 };
 #endif // _KLASS_OOP_HPP

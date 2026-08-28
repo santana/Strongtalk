@@ -22,6 +22,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "asm/assembler.hpp"
 #include "prims/generatedPrimitives.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 char* PrimitivesGenerator::double_op(arith_op op) {
   Label need_scavenge, fill_object;

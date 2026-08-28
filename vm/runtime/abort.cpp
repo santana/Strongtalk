@@ -27,6 +27,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/smiOop.hpp"
 #include "runtime/abort.hpp"
 #include "runtime/process.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 // The following variables are used to do NLRs through C code
 extern "C" bool       have_nlr_through_C;

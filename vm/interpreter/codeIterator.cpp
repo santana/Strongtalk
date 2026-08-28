@@ -29,6 +29,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/associationOop.hpp"
 #include "oops/symbolOop.hpp"
 #include "prims/dll.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool InterpretedDLL_Cache::async() const {
   u_char* p = (u_char*)this;				// p point to first oop in DLL call
@@ -94,9 +96,8 @@ u_char* CodeIterator::next_hp() const {
    case Bytecodes::BBLO:  return align(current+2) + oopSize + oopSize;
    case Bytecodes::BOOLB: return align(current+1) + oopSize + oopSize + oopSize + 1;
    case Bytecodes::BBS:   return current + 2 + (current[1] == 0 ? 256 : current[1]);
+   default: ShouldNotReachHere(); return 0;
   }
-  ShouldNotReachHere();
-  return 0;
 }
 
 
@@ -106,8 +107,8 @@ InterpretedIC* CodeIterator::ic() {
    case Bytecodes::BLO:   return (InterpretedIC*) align(current+1);
    case Bytecodes::BBOO:  // fall through
    case Bytecodes::BBLO:  return (InterpretedIC*) align(current+2);    
+   default: return NULL;
   }
-  return NULL;
 }
 
 
@@ -189,8 +190,8 @@ oop* CodeIterator::block_method_addr() {
     case Bytecodes::push_new_closure_tos_n:      // fall through
     case Bytecodes::push_new_closure_context_n:
       return aligned_oop(2);
+    default: return NULL;
   }
-  return NULL;
 }
 
 methodOop CodeIterator::block_method() {
@@ -205,6 +206,7 @@ methodOop CodeIterator::block_method() {
     case Bytecodes::push_new_closure_tos_n:      // fall through
     case Bytecodes::push_new_closure_context_n:
         return methodOop(oop_at(2));
+    default: return NULL;
   }
   return NULL;
 }

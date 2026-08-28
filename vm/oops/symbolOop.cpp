@@ -24,6 +24,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/symbolTable.hpp"
 #include "oops/symbolOop.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 symbolOop symbolOopDesc::scavenge() {
   ShouldNotCallThis(); // shouldn't be scavenging canonical symbols

@@ -34,6 +34,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/os.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void callBack::initialize(oop receiver, symbolOop selector) {
   assert(selector->is_symbol(), "must be symbol");

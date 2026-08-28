@@ -30,6 +30,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/systemAverage.hpp"
 #include "runtime/task.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 char         SlidingSystemAverage::buffer[buffer_size];
 unsigned int SlidingSystemAverage::stat[number_of_cases];

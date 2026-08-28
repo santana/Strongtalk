@@ -8,6 +8,10 @@
 #include "prims/system_prims.hpp"
 #include "runtime/delta.hpp"
 #include "easyunit/test.h"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -75,7 +79,7 @@ DECLARE(BehaviorPrimitivesSuperclassTests)
     char message[100];\
     char* name = as_symbol(className)->as_string();\
 \
-    sprintf(message, "Class '%s' already exists", name);\
+    snprintf(message, sizeof(message), "Class '%s' already exists", name);\
     ASSERT_TRUE_M(!Universe::find_global(name), message);\
   }
 #define checkClass(classHandle) {\
@@ -124,14 +128,14 @@ DECLARE(BehaviorPrimitivesSuperclassTests)
     ResourceMark rm;
     char text[200];
     ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    sprintf(text,"%s. Should be: %s, was: %s", message, expected->as_string(), unmarkSymbol(result)->as_string());
+    snprintf(text, sizeof(text), "%s. Should be: %s, was: %s", message, expected->as_string(), unmarkSymbol(result)->as_string());
     ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
   }
   void checkNotMarkedSymbol(oop result) {
     if (!result->is_mark()) return;
     ResourceMark rm;
     char text[200];
-    sprintf(text,"Unexpected marked result was: %s", unmarkSymbol(result)->as_string());
+    snprintf(text, sizeof(text), "Unexpected marked result was: %s", unmarkSymbol(result)->as_string());
     FAIL_M(text);
   }
 END_DECLARE

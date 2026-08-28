@@ -32,6 +32,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 char* ScopeDesc::invalid_pc = (char*) -1;
 

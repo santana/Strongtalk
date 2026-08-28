@@ -43,6 +43,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 void methodOopDesc::decay_invocation_count(double decay_factor) {
   double new_count = (double) invocation_count() / decay_factor;
@@ -70,6 +72,7 @@ void methodOopDesc::decay_invocation_count(double decay_factor) {
           block_method->decay_invocation_count(decay_factor);
 	}
         break;
+      default: break;  // not a block-creating bytecode
     }
   } while (c.advance());
 }
@@ -878,6 +881,7 @@ void methodOopDesc::clear_inline_caches() {
 	  block_method->clear_inline_caches();
         }
         break;
+      default: break;  // not a block-creating bytecode
       }
     }
   } while (c.advance());
@@ -942,6 +946,7 @@ int methodOopDesc::estimated_inline_cost(klassOop receiverKlass) {
 	cost += m->estimated_inline_cost(receiverKlass);
 	break;
       }
+      default: break;  // not a block-creating bytecode
     }
     extern bool SuperSendsAreAlwaysInlined;
     if (Bytecodes::is_super_send(c.code()) && SuperSendsAreAlwaysInlined && receiverKlass) {
@@ -1234,8 +1239,8 @@ methodOop methodOopDesc::block_method_at(int bci) {
 	return block_method;
       }
       break;
+    default: return NULL;  // not a block-creating bytecode
    }
-  return NULL;
 }
 
 int methodOopDesc::bci_for_block_method(methodOop inner) {
@@ -1351,6 +1356,7 @@ void methodOopDesc::customize_for(klassOop klass, mixinOop mixin) {
 	  block_method->customize_for(klass, mixin);
 	}
         break;
+      default: break;  // no customization needed for this bytecode
     }
   } while (c.advance());
   // set customized flag
@@ -1402,6 +1408,7 @@ void methodOopDesc::uncustomize_for(mixinOop mixin) {
 	  block_method->uncustomize_for(mixin);
 	}
         break;
+      default: break;  // no uncustomization needed for this bytecode
     }
   } while (c.advance());
   // set customized flag
@@ -1445,6 +1452,7 @@ methodOop methodOopDesc::copy_for_customization() const {
           Universe::store(c.aligned_oop(2), new_block_method);
 	}
         break;
+      default: break;  // not a block-creating bytecode
     }
   } while (c.advance());
   return new_method;

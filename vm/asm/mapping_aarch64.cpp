@@ -25,6 +25,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "compiler/compiler.hpp"
 #include "compiler/preg.hpp"
 #include "oops/blockOop.hpp"
+#include "oops/oop.inline.hpp"
 
 // stack mapping
 

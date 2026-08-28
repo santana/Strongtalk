@@ -102,7 +102,10 @@ class markOopDesc: public oopDesc {
   markOop clear_klass_invalid() const { return set_sentinel(); }
 
   // tells if context has forward reference to an unoptimized context(via sentinel bit)
-  static int context_forward_bit_mask() { return near_death_mask_in_place; }
+  // The legacy x86 oldCodeGenerator consumes this as a 32-bit testl immediate,
+  // so keep the (historically truncated) int result rather than changing the
+  // 64-bit semantics here.
+  static int context_forward_bit_mask() { return (int) near_death_mask_in_place; }
   bool    has_context_forward() const { return is_near_death();  }
   markOop set_context_forward() const { return set_near_death(); }
 

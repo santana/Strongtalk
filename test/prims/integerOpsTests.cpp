@@ -53,15 +53,15 @@ Integer *x, *y, *z;
 
 char message[100];
 char* reportHex(char*prefix, int expected, int actual) {
-  sprintf(message, "%s. Expected: 0x%x, but was: 0x%x", prefix, expected, actual);
+  snprintf(message, sizeof(message), "%s. Expected: 0x%x, but was: 0x%x", prefix, expected, actual);
   return message;
 }
 char* report(char*prefix, int expected, int actual) {
-  sprintf(message, "%s. Expected: %d, but was: %d", prefix, expected, actual);
+  snprintf(message, sizeof(message), "%s. Expected: %d, but was: %d", prefix, expected, actual);
   return message;
 }
 char* report(char*prefix, char* expected, char* actual) {
-  sprintf(message, "%s. Expected: %s, but was: %s", prefix, expected, actual);
+  snprintf(message, sizeof(message), "%s. Expected: %s, but was: %s", prefix, expected, actual);
   return message;
 }
 END_DECLARE

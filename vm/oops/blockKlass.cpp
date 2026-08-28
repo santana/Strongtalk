@@ -31,6 +31,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/markSweep.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
 
 klassOop blockClosureKlass::blockKlassFor(int numberOfArguments) {
   switch (numberOfArguments) {

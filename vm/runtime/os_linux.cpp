@@ -56,15 +56,15 @@ void os_dump_context2(ucontext_t *context) {
     printf("\nRSI: %lx", context->sc_rsi);
 #else
     mcontext_t mcontext = context->uc_mcontext;
-    printf("\nRAX: %x", mcontext.gregs[REG_RAX]);
-    printf("\nRBX: %x", mcontext.gregs[REG_RBX]);
-    printf("\nRCX: %x", mcontext.gregs[REG_RCX]);
-    printf("\nRDX: %x", mcontext.gregs[REG_RDX]);
-    printf("\nRIP: %x", mcontext.gregs[REG_RIP]);
-    printf("\nRSP: %x", mcontext.gregs[REG_RSP]);
-    printf("\nRBP: %x", mcontext.gregs[REG_RBP]);
-    printf("\nRDI: %x", mcontext.gregs[REG_RDI]);
-    printf("\nRSI: %x", mcontext.gregs[REG_RSI]);
+    printf("\nRAX: %llx", mcontext.gregs[REG_RAX]);
+    printf("\nRBX: %llx", mcontext.gregs[REG_RBX]);
+    printf("\nRCX: %llx", mcontext.gregs[REG_RCX]);
+    printf("\nRDX: %llx", mcontext.gregs[REG_RDX]);
+    printf("\nRIP: %llx", mcontext.gregs[REG_RIP]);
+    printf("\nRSP: %llx", mcontext.gregs[REG_RSP]);
+    printf("\nRBP: %llx", mcontext.gregs[REG_RBP]);
+    printf("\nRDI: %llx", mcontext.gregs[REG_RDI]);
+    printf("\nRSI: %llx", mcontext.gregs[REG_RSI]);
 #endif
 }
 void os_dump_context() {

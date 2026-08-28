@@ -31,6 +31,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/scope.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 // Todo list 
 // - Insert Logical addresses
@@ -49,7 +53,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 const u_char nameDescHeaderByte::code_width        = 2;
 const u_char nameDescHeaderByte::index_width       = 5;
 const u_char nameDescHeaderByte::is_last_bit_num   = code_width+index_width;
-const u_char nameDescHeaderByte::max_code          = nthMask(code_width);
+const u_char nameDescHeaderByte::max_code          = (u_char)nthMask(code_width);
 
 const u_char nameDescHeaderByte::max_index         = nthMask(index_width) - 3;
 const u_char nameDescHeaderByte::no_index          = nthMask(index_width) - 2;
@@ -64,7 +68,7 @@ const u_char nameDescHeaderByte::illegal_index     = nthMask(index_width) - 0;
 // 1 bit:  has context temporaries
 // 1 bit:  has context
 const u_char scopeDescHeaderByte::code_width            = 2;
-const u_char scopeDescHeaderByte::max_code              = nthMask(code_width);
+const u_char scopeDescHeaderByte::max_code              = (u_char)nthMask(code_width);
 const u_char scopeDescHeaderByte::lite_bit_num          = code_width;
 const u_char scopeDescHeaderByte::args_bit_num          = code_width+1;
 const u_char scopeDescHeaderByte::temps_bit_num         = code_width+2;

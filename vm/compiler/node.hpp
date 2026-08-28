@@ -116,7 +116,7 @@ class BasicNode: public PrintableResourceObj {
   bool		dontEliminate;	    	// for special cases: must not elim. this node
   bool		deleted;		// node has been deleted
 
-  int		id() const		{ return this == NULL ? -1 : _id; }
+  int		id() const		{ return _id; }
   BB*		bb() const		{ return _bb; }
   int		num() const		{ return _num; }
   InlinedScope*	scope() const		{ return _scope; }
@@ -1445,7 +1445,7 @@ class TypeTestNode : public AbstractBranchNode {
   bool	hasSrc() const 				{ return true; }
   bool 	canCopyPropagate() const 		{ return true; }
   bool	canCopyPropagateOop() const 		{ return true; }
-  int	cost() const	    	      		{ return 2 * oopSize * (_classes->length() + needsKlassLoad() ? 1 : 0); }
+  int	cost() const	    	      		{ return 2 * oopSize * (_classes->length() + (needsKlassLoad() ? 1 : 0)); }
   Node*	smiCase() const;			// the continuation for the smi case, NULL if there is none
 
   bool	doesTypeTests()  const			{ return true; }

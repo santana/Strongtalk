@@ -49,6 +49,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/weakArrayKlass.hpp"
 #include "runtime/bootstrap.hpp"
 #include "runtime/os.hpp"
+#include "oops/oop.inline.hpp"
 
 //#include <io.h>
 

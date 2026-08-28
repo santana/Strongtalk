@@ -28,6 +28,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/smi_prims.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/objectIDTable.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceSmiPrims, "smi")
 
@@ -127,7 +130,7 @@ PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
   } else {
     // arithmetic shift right
     if (n < -maxShiftCnt) n = -maxShiftCnt;
-    return smiOop((intptr_t(receiver) >> -n) & (-1 << Tag_Size));
+    return smiOop((intptr_t(receiver) >> -n) & ((uintptr_t)-1 << Tag_Size));
   }
 }
 
@@ -144,7 +147,7 @@ PRIM_DECL_2(smiOopPrimitives::rawBitShift, oop receiver, oop argument) {
     return smiOop((uintptr_t)receiver << (n % bitsPerWord));
   } else {
     // logical shift left
-    return smiOop(((uintptr_t)receiver >> ((-n) % bitsPerWord)) & (-1 << Tag_Size));
+    return smiOop(((uintptr_t)receiver >> ((-n) % bitsPerWord)) & ((uintptr_t)-1 << Tag_Size));
   }
 }
 

@@ -32,6 +32,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/objArrayOop.hpp"
 #include "oops/symbolOop.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
 
 void set_methodKlass_vtbl(Klass *k) {
   methodKlass o;
@@ -76,6 +77,7 @@ void methodKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
      case Bytecodes::BOO  :
      case Bytecodes::BOOLB: blk->do_oop(c.aligned_oop(1));
      case Bytecodes::BLO  : blk->do_oop(c.aligned_oop(1)+1); break; // BOO, BOOLB, BLO
+     default: break;  // formats without embedded oops
     }
   } while (c.advance());
 }
@@ -225,6 +227,7 @@ void methodKlass::oop_follow_contents(oop obj) {
      case Bytecodes::BOO  :
      case Bytecodes::BOOLB: MarkSweep::reverse_and_push(c.aligned_oop(1));
      case Bytecodes::BLO  : MarkSweep::reverse_and_push(c.aligned_oop(1)+1); break; // BOO, BOOLB, BLO
+     default: break;  // formats without embedded oops
     }
   } while (c.advance());
   MarkSweep::reverse_and_push((oop*) &m->addr()->_debugInfo);

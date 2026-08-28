@@ -32,6 +32,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/dll.hpp"
 #include "prims/prim.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // MethodInterval
 
@@ -328,7 +331,7 @@ void MethodIterator::should_never_encounter(u_char code) {
   fatal("aborting");
 }
 
-static inline u_char map0to256(u_char ch) { return ch ? ch : 256; }
+static inline u_char map0to256(u_char ch) { return (u_char)(ch ? ch : 256); }
 
 void MethodIterator::dispatch(MethodClosure* blk) {
   bool oldFailState = blk->in_prim_failure_block();

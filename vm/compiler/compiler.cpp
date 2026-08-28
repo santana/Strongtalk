@@ -53,6 +53,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 # ifdef ASSERT
 #include "runtime/debug.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
     bool verifyOften = false;
 # else
     bool verifyOften = false;

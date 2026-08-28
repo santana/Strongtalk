@@ -44,6 +44,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/vframe.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 const RFrame* noCaller    = (RFrame*) 0x1;		// no caller (i.e., initial frame)
 const RFrame* noCallerYet = (RFrame*) 0x0;		// caller not yet computed

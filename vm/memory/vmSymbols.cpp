@@ -24,6 +24,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/markSweep.hpp"
 #include "memory/oopFactory.hpp"
 #include "memory/vmSymbols.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 symbolOop vm_symbols[terminating_enum];
 

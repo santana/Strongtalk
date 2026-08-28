@@ -8,6 +8,9 @@
 #include "prims/byteArray_prims.hpp"
 #include "prims/integerOps.hpp"
 #include "utilities/testUtils.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -28,7 +31,7 @@ DECLARE(ByteArrayPrimsTests)
     ResourceMark rm;
     char text[200];
     ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    sprintf(text,
+    snprintf(text, sizeof(text),
             "%s. Should be: %s, was: %s",
             message,
             expected->as_string(),
@@ -183,7 +186,7 @@ TESTF(ByteArrayPrimsTests, alienAddressShouldReturnLargeIntegerAddress) {
 
   int address = -128 * 256 * 256 * 256;
   ((int*)bytes)[0] = 0;
-  ((u_char**)bytes)[1] = (u_char*) address;
+  ((u_char**)bytes)[1] = (u_char*)(intptr_t)address;
   oop result = byteArrayPrimitives::alienGetAddress(alien);
   ASSERT_TRUE_M(result->is_byteArray(), "should be large integer");
 

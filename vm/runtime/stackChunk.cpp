@@ -29,6 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/stackChunk.hpp"
 #include "runtime/vframe.hpp"
 #include "utilities/growableArray.hpp"
+#include "oops/oop.inline.hpp"
 
 GrowableArray<const compiledVFrame*>*  frames;
 GrowableArray<contextOop>*       contexts;

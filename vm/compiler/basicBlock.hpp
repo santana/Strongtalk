@@ -71,7 +71,7 @@ class BB: public PrintableResourceObj {
   BB* firstPrev() const;
   BB* prev(int i) const;
    
-  int  id() const 		{ return this == NULL ? -1 : _id; }
+  int  id() const 		{ return _id; }
   int  loopDepth() const 	{ return _loopDepth; }
   void setGenCount()		{ _genCount = genCounter++; }
   int  genCount() const 	{ return _genCount; }

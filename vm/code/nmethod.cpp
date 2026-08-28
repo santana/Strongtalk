@@ -39,6 +39,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/prim.hpp"
 #include "recompiler/recompile.hpp"
 #include "utilities/eventLog.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void nmFlags::clear() {
   assert(sizeof(nmFlags) == sizeof(int), "using more than one word for nmFlags");
@@ -401,8 +404,8 @@ void nmethod::makeZombie(bool clearInlineCaches) {
     mystd->print_cr("%s nmethod 0x%x becomes zombie", (is_method() ? "normal" : "block"), this);
     if (WizardMode) {
       mystd->print_cr("entry code sequence:");
-      char* beg = (char*)min(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
-      char* end = (char*)max(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
+      char* beg = (char*)(intptr_t)min(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
+      char* end = (char*)(intptr_t)max(intptr_t(specialHandlerCall()), intptr_t(entryPoint()), intptr_t(verifiedEntryPoint()));
       Disassembler::decode(beg, end + 10);
     }
   }

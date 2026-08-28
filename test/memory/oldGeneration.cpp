@@ -3,6 +3,9 @@
 #include "runtime/debug.hpp"
 
 #include <cstdio>
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 DECLARE(OldGeneration)
@@ -15,7 +18,7 @@ DECLARE(OldGeneration)
     int expectedIncrement = ReservedSpace::align_size(expansionSize, ObjectHeapExpandSize * K);
     int actual = Universe::old_gen.capacity();
     int expectedSize = oldSize + expectedIncrement;
-    sprintf(msg, "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actual);
+    snprintf(msg, sizeof(msg), "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actual);
     ASSERT_EQUALS_M(expectedSize, actual, msg);
   }
 END_DECLARE

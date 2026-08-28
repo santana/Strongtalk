@@ -120,7 +120,7 @@ inline int byte_size(void* from, void* to) {
   //#endif
   */
 
-  inline void Unused(int x) { x, 0; }
-  inline void Unused(void *x) { x, 0; }
+  inline void Unused(int x) { (void) x; }
+  inline void Unused(void *x) { (void) x; }
 
 #endif // _UTIL_HPP

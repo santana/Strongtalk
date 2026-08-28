@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-#ifndef _GENERATION_HPP
-#define _GENERATION_HPP
+#ifndef _GENERATION_INLINE_HPP
+#define _GENERATION_INLINE_HPP
 inline bool newGeneration::is_new(memOop p, char *boundary) {
   return (char*)p < boundary; }
 

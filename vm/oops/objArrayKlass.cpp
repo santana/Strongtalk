@@ -29,6 +29,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/weakArrayKlass.hpp"
 #include "topIncludes/asserts.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 oop objArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool tenured) {
   klassOop k        = as_klassOop();

@@ -38,6 +38,10 @@ class IntegerOps;
 typedef unsigned int Digit;
 typedef unsigned long long DoubleDigit;
 
+static const int   maxD = 36;
+static const Digit oneB = 0xFFFFFFFF;
+static const int   digitBitLength = sizeof(Digit) * 8;
+
 class Integer: ValueObj {
  private:
   int    _signed_length;
@@ -84,13 +88,46 @@ class Integer: ValueObj {
 
 class IntegerOps: AllStatic {
  public:
-  static inline Digit as_Digit(char c);
-  static inline char  as_char(int i);
+  static inline Digit as_Digit(char c) {
+    if ('0' <= c && c <= '9') return Digit(c - '0');
+    if ('A' <= c && c <= 'Z') return Digit(c - 'A') + 10;
+    if ('a' <= c && c <= 'z') return Digit(c - 'a') + 10;
+    fatal("illegal digit");
+    return 0;
+  }
+  static inline char  as_char(int i) {
+    assert(0 <= i && i < maxD, "illegal digit");
+    return "0123456789abcdefghijklmnopqrstuvwxyz"[i];
+  }
 
-  static inline Digit xpy (         Digit x, Digit y, Digit& carry);
-  static inline Digit xmy (         Digit x, Digit y, Digit& carry);
-  static inline Digit axpy(Digit a, Digit x, Digit y, Digit& carry);
-  static inline Digit xdy (         Digit x, Digit y, Digit& carry);
+  static inline Digit xpy (         Digit x, Digit y, Digit& carry) {
+    // returns (x + y + c) mod B; sets carry = (x + y + c) div B
+    DoubleDigit lx = x;
+    DoubleDigit r = lx + y + carry;
+    carry = r >> digitBitLength;
+    return (Digit)(r  & oneB);
+  }
+  static inline Digit xmy (         Digit x, Digit y, Digit& carry) {
+    // returns (x - y - c) mod B; sets carry = -((x - y - c) div B)
+    DoubleDigit lx = x;
+    DoubleDigit r = lx - y - carry;
+    carry = r >> digitBitLength & 1;
+    return Digit(r  & oneB);
+  }
+  static inline Digit axpy(Digit a, Digit x, Digit y, Digit& carry) {
+    // returns (a*x + y + c) mod B; sets carry = (a*x + y + c) div B
+    DoubleDigit lx = x;
+    DoubleDigit r = (lx * a) + y + carry;
+    carry = r >> digitBitLength;
+    return Digit(r  & oneB);
+  }
+  static inline Digit xdy (         Digit x, Digit y, Digit& carry) {
+    // returns (carry*B + x) div y; sets carry = (carry*B + x) mod y
+    DoubleDigit c = carry;	// make sure that carry is used below and not &carry
+    DoubleDigit total = ((c << digitBitLength) + x);
+    carry = total % y;
+    return Digit((total / y) & oneB);
+  }
 
   static Digit  power(Digit x, int n);					// returns x^n
   static Digit  max_power(Digit x);					// returns the largest y with x^y <= B

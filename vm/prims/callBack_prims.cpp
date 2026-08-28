@@ -29,6 +29,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/prim_impl.hpp"
 #include "runtime/debug.hpp"
 #include "runtime/callBack.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceCallBackPrims, "callBack")
 

@@ -27,6 +27,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/asserts.hpp"
 
 #include <ctype.h>
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 oop doubleValueArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
   fatal("should never call allocateObject in doubleValueArrayKlass");

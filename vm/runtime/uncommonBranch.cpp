@@ -38,6 +38,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 // Tells whether the call has been executed before
 // %note:
@@ -161,7 +163,7 @@ void uncommon_trap() {
 
   nm->inc_uncommon_trap_counter();
 
-  LOG_EVENT3("Uncommon trap in 0x%lx@%d #%d", nm, vf->scope()->offset(), nm->uncommon_trap_counter());
+  LOG_EVENT3("Uncommon trap in 0x%lx@%d #%d", nm, (intptr_t)vf->scope()->offset(), (intptr_t)nm->uncommon_trap_counter());
 
   /* For Debugging inserted by Lars Bak 5-13-96
   if (nm->is_block()) { 

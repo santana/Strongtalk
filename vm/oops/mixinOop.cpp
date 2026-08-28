@@ -27,6 +27,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/mixinOop.hpp"
 #include "oops/objArrayOop.hpp"
 #include "runtime/bootstrap.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 int mixinOopDesc::inst_var_offset(symbolOop name, int non_indexable_size) const {
   objArrayOop array  = instVars();

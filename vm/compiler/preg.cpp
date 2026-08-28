@@ -32,6 +32,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/preg.hpp"
 #include "compiler/slist.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 int PReg::currentNo = 0;
 int BlockPReg::_numBlocks = 0;
@@ -964,21 +967,17 @@ void BlockPReg::computeUplevelAccesses() {
 
 
 char* PReg::safeName() const {
-  if (this == NULL) {
-    return "(null)";     // for safer debugging
-  } else {
-    return name();
-  }
+  return name();
 }
 
 char* PReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
   if (loc.equals(unAllocated)) {
-    sprintf(n, "%s%d%s%s%s", prefix(), id(),
+    snprintf(n, 25, "%s%d%s%s%s", prefix(), id(),
 	    uplevelR() || uplevelW() ? "^" : "",
 	    uplevelR() ? "R" : "", uplevelW() ? "W" : "");
   } else {
-    sprintf(n, "%s%d(%s)%s%s%s", prefix(), id(), loc.name(),
+    snprintf(n, 25, "%s%d(%s)%s%s%s", prefix(), id(), loc.name(),
 	    uplevelR() || uplevelW() ? "^" : "",
 	    uplevelR() ? "R" : "", uplevelW() ? "W" : "");
   }
@@ -1006,14 +1005,14 @@ void BlockPReg::print() {
 
 char* BlockPReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
-  sprintf(n, "%s <%#lx>%s", PReg::name(), PrintHexAddresses ? this : 0, _memoized ? "#" : "");
+  snprintf(n, 25, "%s <%#lx>%s", PReg::name(), (uintptr_t)(PrintHexAddresses ? (const void*)this : NULL), _memoized ? "#" : "");
   return n;
 }
 
 
 char* ConstPReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
-  sprintf(n, "%s <%#lx>", PReg::name(), constant);
+  snprintf(n, 25, "%s <%#lx>", PReg::name(), (uintptr_t)(void*)constant);
   return n;
 }
 

@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/iterator.hpp"
 #include "memory/snapshot.hpp"
 #include "memory/universe.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 void SnapshotDesc::read_header() {
   read_revision();
@@ -72,7 +75,7 @@ class ReadClosure : public OopClosure {
 
 class WriteClosure : public OopClosure {
   void do_oop(oop* o) {
-    fprintf(s->file, "0x%lx\n", o);
+    fprintf(s->file, "0x%lx\n", (uintptr_t)o);
   }
   SnapshotDesc* s;
   public:

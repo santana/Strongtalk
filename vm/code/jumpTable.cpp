@@ -34,6 +34,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/vmOperations.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 static const char halt_instruction = '\xF4';
 static const char jump_instruction = '\xE9';
@@ -181,7 +183,7 @@ void jumpTableEntry::fill_entry(char instr, char* dest, char state) {
 }
 
 void jumpTableEntry::initialize_as_unused(int index) {
-  fill_entry(halt_instruction, (char*) index, unused_entry);
+  fill_entry(halt_instruction, (char*)(intptr_t)index, unused_entry);
 }
 
 void jumpTableEntry::initialize_as_link(char* link) {

@@ -33,6 +33,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/dByteArray_prims.hpp"
 #include "prims/prim_impl.hpp"
 #include "runtime/debug.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 TRACE_FUNC(TraceDoubleByteArrayPrims, "doubleByteArray")
 

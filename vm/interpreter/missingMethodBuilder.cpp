@@ -25,6 +25,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/methodOop.hpp"
 #include "oops/methodKlass.hpp"
 #include "oops/symbolOop.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void MissingMethodBuilder::build() {
   BlockScavenge bs;

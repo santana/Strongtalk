@@ -8,6 +8,9 @@
 #include "oops/symbolOop.hpp"
 
 #include <cstdio>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 class HeapResourceMark;
 
@@ -20,8 +23,8 @@ DECLARE(missingMethodBuilderTests)
 #define CHECK_OOPS(expectedOops, oops, index)\
     oop expected = expectedOops[index];\
     oop actual = oops->obj_at(index + 1);\
-    sprintf(msg, "Incorrect oop at %d. Expected: 0x%x, but was: 0x%x",\
-      index, expected, actual);\
+    snprintf(msg, sizeof(msg), "Incorrect oop at %d. Expected: %p, but was: %p",\
+      index, (void*)expected, (void*)actual);\
     ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
   int instVarIndex(klassOop targetClass, char* instVarName) {
@@ -71,7 +74,7 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectBytes) 
   for (int index = 0; index < 52; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    sprintf(msg, "Incorrect byte at %d. Expected: %d, but was: %d",
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
       index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
@@ -290,13 +293,13 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectBytes)
 
   byteArrayOop bytes = builder.bytes();
 
-  sprintf(msg, "Wrong length. Expected: %d, but was: %d", 65, bytes->length());
+  snprintf(msg, sizeof(msg), "Wrong length. Expected: %ld, but was: %ld", (long)65, (long)bytes->length());
   ASSERT_EQUALS_M(80, bytes->length(), msg);
 
   for (int index = 0; index < 80; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    sprintf(msg, "Incorrect byte at %d. Expected: %d, but was: %d",
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
       index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
@@ -382,13 +385,13 @@ TESTF(missingMethodBuilderTests, buildWithTwoArgSelectorShouldBuildCorrectBytes)
 
   byteArrayOop bytes = builder.bytes();
 
-  sprintf(msg, "Wrong length. Expected: %d, but was: %d", 93, bytes->length());
+  snprintf(msg, sizeof(msg), "Wrong length. Expected: %ld, but was: %ld", (long)93, (long)bytes->length());
   ASSERT_EQUALS_M(96, bytes->length(), msg);
 
   for (int index = 0; index < 96; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    sprintf(msg, "Incorrect byte at %d. Expected: %d, but was: %d",
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
       index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
@@ -444,13 +447,13 @@ TESTF(missingMethodBuilderTests, buildWithThreeArgSelectorShouldBuildCorrectByte
 
   byteArrayOop bytes = builder.bytes();
 
-  sprintf(msg, "Wrong length. Expected: %d, but was: %d", 110, bytes->length());
+  snprintf(msg, sizeof(msg), "Wrong length. Expected: %ld, but was: %ld", (long)110, (long)bytes->length());
   ASSERT_EQUALS_M(112, bytes->length(), msg);
 
   for (int index = 0; index < 112; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    sprintf(msg, "Incorrect byte at %d. Expected: %d, but was: %d",
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
       index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }

@@ -36,6 +36,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/delta.hpp"
 #include "runtime/process.hpp"
 #include "utilities/objectIDTable.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceOopPrims, "oop")
 
@@ -195,7 +197,7 @@ PRIM_DECL_1(oopPrimitives::printValue, oop receiver) {
 
 PRIM_DECL_1(oopPrimitives::asObjectID, oop receiver) {
   PROLOGUE_1("asObjectID", receiver)
-  return smiOop(objectIDTable::insert(receiver)); 
+  return smiOop((intptr_t)objectIDTable::insert(receiver)); 
 }
 
 PRIM_DECL_2(oopPrimitives::perform, oop receiver, oop selector) {

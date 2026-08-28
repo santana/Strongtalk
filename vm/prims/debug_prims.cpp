@@ -40,6 +40,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "runtime/vmOperations.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceDebugPrims, "debug")
 
@@ -223,10 +226,10 @@ PRIM_DECL_0(debugPrimitives::timerPrintBuffer) {
 
 PRIM_DECL_0(debugPrimitives::interpreterInvocationCounterLimit) {
   PROLOGUE_0("interpreterInvocationCounterLimit");
-  int limit = Interpreter::get_invocation_counter_limit();
+  long limit = Interpreter::get_invocation_counter_limit();
   if (limit < smi_min) limit = smi_min;
   else if (limit > smi_max) limit = smi_max;
-  return as_smiOop(limit);
+  return as_smiOop((int) limit);
 }
 
 PRIM_DECL_1(debugPrimitives::setInterpreterInvocationCounterLimit, oop limit) {

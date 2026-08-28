@@ -33,6 +33,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "runtime/bootstrap.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void Klass::initialize() {
   set_untagged_contents(false);
@@ -78,8 +81,8 @@ char* Klass::name_from_format(Format format) {
   case byteArray_klass:       return "IndexedByteInstanceVariables";
   case doubleByteArray_klass: return "IndexedDoubleByteInstanceVariables";
   case weakArray_klass:       return "IndexedNextOfKinInstanceVariables";
+  default:                    return "Special";
   }
-  return "Special";
 }
 
 bool Klass::has_same_layout_as(klassOop klass) {
@@ -182,7 +185,7 @@ symbolOop Klass::inst_var_name_at(int offset) const {
       current_offset--;
       if (offset == current_offset) return m->instVar_at(index);
     } 
-  } while(current_klass = (current_klass->superKlass() == nilObj ? NULL : current_klass->superKlass()->klass_part()));
+  } while((current_klass = (current_klass->superKlass() == nilObj ? NULL : current_klass->superKlass()->klass_part())) != NULL);
   return NULL;
 }
 

@@ -25,6 +25,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/proxyKlass.hpp"
+#include "oops/oop.inline.hpp"
 
 void set_proxyKlass_vtbl(Klass* k) {
   proxyKlass o;

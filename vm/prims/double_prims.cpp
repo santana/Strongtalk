@@ -35,6 +35,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <math.h>
 #include <float.h>
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceDoublePrims, "double")
 
@@ -238,7 +240,7 @@ PRIM_DECL_1(doubleOopPrimitives::smi_floor, oop receiver) {
   if (result < 0.0) {
     if (result > smi_min) return as_smiOop((int) result);
   } else {
-    if (result < smi_max) return as_smiOop((int) result);
+    if (result < (double) smi_max) return as_smiOop((int) result);
   }
   return markSymbol(vmSymbols::conversion_failed());
 
@@ -290,7 +292,7 @@ PRIM_DECL_1(doubleOopPrimitives::roundedAsSmallInteger, oop receiver) {
     	return as_smiOop((int) result);
   } else {
     double result = ::floor(doubleOop(receiver)->value() + 0.5);
-    if (result < smi_max)
+    if (result < (double) smi_max)
     	 return as_smiOop((int) result);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
@@ -306,7 +308,7 @@ PRIM_DECL_1(doubleOopPrimitives::asSmallInteger, oop receiver) {
     if (value > smi_min)
     	return as_smiOop((int) value);
   } else {
-    if (value < smi_max)
+    if (value < (double) smi_max)
     	 return as_smiOop((int) value);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
@@ -335,7 +337,7 @@ PRIM_DECL_1(doubleOopPrimitives::printString, oop receiver) {
   ASSERT_RECEIVER;
   ResourceMark rm;
   char* result = NEW_RESOURCE_ARRAY(char, 4*K);
-  int len = sprintf(result, "%1.6f", doubleOop(receiver)->value());
+  int len = snprintf(result, 4*K, "%1.6f", doubleOop(receiver)->value());
   while (len > 1 && result[len-1] == '0' && result[len-2] != '.') len--;
   result[len] = '\0';
 

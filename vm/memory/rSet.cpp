@@ -32,6 +32,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 
 #include <string.h>
+#include "memory/rSet.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 // values of bytes in byte map: during normal operation (incl. scavenge),
 // bytes are either -1 (clean) or 0 (dirty); i.e., the interpreter / compiled code
@@ -274,7 +277,7 @@ bool rSet::is_object_dirty(memOop obj) {
 void rSet::clear(char *start, char *end) {
   int* from  = (int*) start;
   int  count = (int*) end - from;
-  set_words(from, count, AllBits);
+  set_words(from, count, (int)AllBits);
 }
 
 bool rSet::verify(bool postScavenge) {

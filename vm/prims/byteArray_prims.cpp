@@ -41,6 +41,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/debug.hpp"
 #include "runtime/os.hpp"
 #include "runtime/process.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceByteArrayPrims, "byteArray")
 
@@ -847,7 +849,7 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetAddress, oop receiver, oop argument) {
     if (!ok)
       return markSymbol(vmSymbols::argument_is_invalid());
   }
-  alienAddress(receiver) = (void*)value;
+  alienAddress(receiver) = (void*)(intptr_t)value;
 
   return receiver;
 }

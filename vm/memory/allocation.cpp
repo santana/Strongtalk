@@ -26,6 +26,9 @@
 #include "runtime/debug.hpp"
 #include "runtime/os.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 ResourceArea resource_area;
 
@@ -49,7 +52,7 @@ void CHeapObj::operator delete(void* p) {
   FreeHeap(p);
 }
 
-void* StackObj::operator new(size_t size) {
+void* StackObj::operator new(size_t size) noexcept {
   Unused(size);
   ShouldNotCallThis();
   return 0;
@@ -60,7 +63,7 @@ void StackObj::operator delete(void* p) {
   ShouldNotCallThis();
 };
 
-void* ValueObj::operator new(size_t size) {
+void* ValueObj::operator new(size_t size) noexcept {
   Unused(size);
   ShouldNotCallThis();
   return 0;

@@ -36,6 +36,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "prims/method_prims.hpp"
 #include "prims/prim_impl.hpp"
+#include "oops/oop.inline.hpp"
 
 TRACE_FUNC(TraceMethodPrims, "method")
 

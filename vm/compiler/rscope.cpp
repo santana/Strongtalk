@@ -37,6 +37,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "utilities/ostream.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 RScope::RScope(RNonDummyScope* s, int bci) : _senderBCI(bci) {
   _sender = s; 

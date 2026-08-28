@@ -30,6 +30,9 @@
 #include "utilities/growableArray.hpp"
 
 #include <cstdio>
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 static char
     * specialLocNames[nofSpecialLocations] = { "illegalLocation",
@@ -58,35 +61,35 @@ char* Location::name() const {
   switch (mode()) {
   case specialLoc: {
     const char* name = specialLocNames[id()];
-    s = NEW_RESOURCE_ARRAY(char, strlen(name));
-    sprintf(s, name);
+    s = NEW_RESOURCE_ARRAY(char, strlen(name) + 1);
+    snprintf(s, strlen(name) + 1, "%s", name);
     break;
   }
   case registerLoc: {
     const char* name = Mapping::asRegister(*this).name();
     s = NEW_RESOURCE_ARRAY(char, 8);
-    sprintf(s, name);
+    snprintf(s, 8, "%s", name);
     break;
   }
   case stackLoc: {
     s = NEW_RESOURCE_ARRAY(char, 8);
-    sprintf(s, "S%d", offset());
+    snprintf(s, 8, "S%d", offset());
     break;
   }
     break;
   case contextLoc1: {
     s = NEW_RESOURCE_ARRAY(char, 24);
-    sprintf(s, "C%d,%d(%d)", contextNo(), tempNo(), scopeID());
+    snprintf(s, 24, "C%d,%d(%d)", contextNo(), tempNo(), scopeID());
   }
     break;
   case contextLoc2: {
     s = NEW_RESOURCE_ARRAY(char, 24);
-    sprintf(s, "C%d,%d[%d]", contextNo(), tempNo(), scopeOffs());
+    snprintf(s, 24, "C%d,%d[%d]", contextNo(), tempNo(), scopeOffs());
   }
     break;
   case floatLoc: {
     s = NEW_RESOURCE_ARRAY(char, 16);
-    sprintf(s, "F%d(%d)", floatNo(), scopeNo());
+    snprintf(s, 16, "F%d(%d)", floatNo(), scopeNo());
   }
     break;
   default:ShouldNotReachHere()

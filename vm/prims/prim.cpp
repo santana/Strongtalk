@@ -49,6 +49,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   static int size_of_primitive_table
 //   static primitive_desc* primitive_table;
 #include "prims/prims.inc"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // the typedefs below are necessary to ensure that args are passed correctly when calling a primitive
 // through a function pointer

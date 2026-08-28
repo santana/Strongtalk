@@ -33,6 +33,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/eventLog.hpp"
 #include "utilities/growableArray.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 
 // A PIC implements a Polymorphic Inline Cache for compiled code.
@@ -741,7 +745,8 @@ void PIC::oops_do(void f(oop*)) {
     while(!it.at_end()) {
       switch(it.state()) {
         case PIC_Iterator::at_methodOop: f((oop*) it.methodOop_addr());  // fall through
-        case PIC_Iterator::at_nmethod  : f((oop*) it.klass_addr());
+        case PIC_Iterator::at_nmethod  : f((oop*) it.klass_addr());      break;
+        default: break;   // at_smi_nmethod, at_the_end: nothing to scan
       }
       it.advance();
     }
@@ -765,7 +770,7 @@ void PIC::print() {
     lprintf("\n");
     switch (it.state()) {
       case PIC_Iterator::at_smi_nmethod: // fall through
-      case PIC_Iterator::at_nmethod    : printf("\t-    nmethod  : %#x (entry %#x)\n", 
+      case PIC_Iterator::at_nmethod    : printf("\t-    nmethod  : %#lx (entry %#lx)\n", 
                                            (intptr_t)it.compiled_method(), (intptr_t)it.get_call_addr()); break;
       case PIC_Iterator::at_methodOop  : printf("\t-    methodOop: %s\n", it.interpreted_method()->print_value_string()); break;
       default: ShouldNotReachHere();

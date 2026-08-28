@@ -24,6 +24,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/vmSymbols.hpp"
 #include "oops/processOop.hpp"
 #include "runtime/process.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 void processOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);

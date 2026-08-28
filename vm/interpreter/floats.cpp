@@ -28,6 +28,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/debug.hpp"
 #include "runtime/disclaimer.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 char* Floats::_function_table[max_number_of_functions];
 char* Floats::_function_names[] = {
@@ -79,8 +82,8 @@ symbolOop Floats::selector_for(Function f) {
     case is_greater	 : return vmSymbols::greater_than();		break;
     case is_greater_equal: return vmSymbols::greater_than_or_equal();	break;
     case floatify	 : return vmSymbols::as_float_value();		break;
+    default: return NULL;
   }
-  return NULL;
 }
 
 
@@ -151,9 +154,8 @@ static int float_function_args(Floats::Function f) {
     case Floats::is_less_equal:
     case Floats::is_greater:
     case Floats::is_greater_equal:		return 2;
+    default: ShouldNotReachHere(); return 0;
   }
-  ShouldNotReachHere();
-  return 0;
 }
 
 

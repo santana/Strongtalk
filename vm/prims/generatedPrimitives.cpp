@@ -29,6 +29,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 
 #include <cstdio>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // entry points
 char* GeneratedPrimitives::_allocateContext_var			= NULL;
@@ -247,7 +250,7 @@ char* GeneratedPrimitives::patch(char* name, char* entry_point) {
 char* GeneratedPrimitives::patch(char* name, char* entry_point, int argument) {
   char formated_name[100];
   assert(strlen(name) < 100, "primitive name longer the 100 characters - buffer overrun");
-  sprintf(formated_name, name, argument);
+  snprintf(formated_name, sizeof(formated_name), name, argument);
   primitives::patch(formated_name, entry_point);
   return entry_point;
 }

@@ -49,6 +49,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/objectIDTable.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool NeedScavenge  = false;
 bool bootstrapping = true;
@@ -301,7 +305,7 @@ char* Universe::klass_name(klassOop k) {
      } else if (assoc->value()->klass() == k) {
         symbolOop name = assoc->key();
 	char* result = NEW_RESOURCE_ARRAY(char, name->length()+7);
-	sprintf(result, "%s class", name->as_string());
+	snprintf(result, name->length() + 7, "%s class", name->as_string());
         return result;
      }
   }
@@ -311,7 +315,7 @@ char* Universe::klass_name(klassOop k) {
     char* superName = klass_name(super);
     const char* txt = "unnamed class inheriting from ";
     char* result = NEW_RESOURCE_ARRAY(char, strlen(txt) + strlen(superName) + 2);
-    sprintf(result, "%s%s", txt, superName);
+    snprintf(result, strlen(txt) + strlen(superName) + 2, "%s%s", txt, superName);
     return result;
   } else {
     return "<top>";

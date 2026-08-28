@@ -28,6 +28,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/ostream.hpp"
+#include "oops/oop.inline.hpp"
 
 void set_associationKlass_vtbl(Klass* k) {
   associationKlass o;

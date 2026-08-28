@@ -4,6 +4,9 @@
 #include "prims/prim.hpp"
 #include "oops/smiOop.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

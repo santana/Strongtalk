@@ -64,7 +64,7 @@ extern "C" void lprintf(const char* m, ...) {
   char buf[1024];
   va_list ap;
   va_start(ap, m);
-  vsprintf(buf, m, ap);
+  vsnprintf(buf, sizeof(buf), m, ap);
   va_end(ap);
 
   check_log_file();
@@ -132,7 +132,12 @@ extern "C" void my_sprintf(char*& buf, const char* format, ...){
   // sprintfs append to the string
   va_list ap;
   va_start(ap, format);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // The buffer size is not passed to this legacy printf-style helper, so the
+  // original unbounded vsprintf (vs. vsnprintf) behavior is preserved here.
   vsprintf(buf, format, ap);
+#pragma clang diagnostic pop
   va_end(ap);
   buf += strlen(buf);
 }
@@ -141,7 +146,7 @@ extern "C" void my_sprintf_len(char*& buf, const int len, const char* format, ..
   char* oldbuf = buf;
   va_list ap;
   va_start(ap, format);
-  vsprintf(buf, format, ap);
+  vsnprintf(buf, len, format, ap);
   va_end(ap);
   buf += strlen(buf);
   for ( ; buf < oldbuf + len; *buf++ = ' ') ;

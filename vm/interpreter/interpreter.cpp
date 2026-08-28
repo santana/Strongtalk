@@ -52,16 +52,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/tag.hpp"
 
 #include <unistd.h>
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 #if DELTA_X86_64
-extern "C" intptr_t diag_truncated_oop_value = 0;
-extern "C" intptr_t diag_truncated_oop_pc = 0;
-extern "C" intptr_t diag_truncated_oop_check_id = 0;
-extern "C" intptr_t diag_last_eax_writer_pc = 0;
-extern "C" intptr_t diag_last_eax_writer_id = 0;
-extern "C" intptr_t diag_last_eax_writer_value = 0;
-extern "C" intptr_t diag_pre_check_eax = 0;
-extern "C" intptr_t diag_pre_check_id = 0;
+extern "C" {
+intptr_t diag_truncated_oop_value = 0;
+intptr_t diag_truncated_oop_pc = 0;
+intptr_t diag_truncated_oop_check_id = 0;
+intptr_t diag_last_eax_writer_pc = 0;
+intptr_t diag_last_eax_writer_id = 0;
+intptr_t diag_last_eax_writer_value = 0;
+intptr_t diag_pre_check_eax = 0;
+intptr_t diag_pre_check_id = 0;
+}
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
 #define STAMP_EAX_WRITER(id) do { \
   masm->movq(Address((intptr_t)&diag_last_eax_writer_pc, relocInfo::external_word_type), esi); \
@@ -141,8 +145,10 @@ char* Interpreter::_code_end_addr   = NULL;
 #define TEST_GENERATION_
 
 #ifdef TEST_GENERATION_
-extern "C" int interpreter_loop_counter = 0;
-extern "C" int interpreter_loop_counter_limit = 0;
+extern "C" {
+int interpreter_loop_counter = 0;
+int interpreter_loop_counter_limit = 0;
+}
 
 bool Interpreter::contains(char* pc) {
   return
@@ -360,7 +366,7 @@ int Interpreter::get_invocation_counter_limit() {
   return get_unsigned_bitfield(*_invocation_counter_addr, methodOopDesc::_invocation_count_offset, methodOopDesc::_invocation_count_width);
 }
 
-static int* loop_counter_addr() {  }
+static int* loop_counter_addr() { return NULL; }
 static int* loop_counter_limit_addr();
 
 // entry points accessors
@@ -2540,8 +2546,10 @@ void InterpreterGenerator::call_native(Register entry) {
 }
 
 
-extern "C" char* method_entry_point = NULL;		// for interpreter_asm.asm (remove if not used anymore)
-extern "C" char* block_entry_point  = NULL;		// for interpreter_asm.asm (remove if not used anymore)
+extern "C" {
+char* method_entry_point = NULL;		// for interpreter_asm.asm (remove if not used anymore)
+char* block_entry_point  = NULL;		// for interpreter_asm.asm (remove if not used anymore)
+}
 extern "C" char* active_stack_limit();                  // address of pointer to the current process' stack limit
 
 extern "C" void check_stack_overflow();
@@ -2879,7 +2887,7 @@ char* InterpreterGenerator::smi_shift() {
   masm->bind(shift_right);
   masm->negl(ecx);
   masm->sarl(edx);					// receiver >> (argument mod 32)
-  masm->andl(edx, -1 << Tag_Size);			// clear tag bits
+  masm->andl(edx, (int)((unsigned)-1 << Tag_Size));			// clear tag bits
   masm->movl(eax, edx);				// set result
   jump_ebx();
   return ep;
@@ -3089,7 +3097,9 @@ void InterpreterGenerator::generate_error_handler_code() {
 // order to be able to distinguish between compiled and interpreted NLRs, this value is
 // made negative (compiled NLR home ids are always >= 0).
 
-extern "C" char* nlr_testpoint_entry = NULL;	// for interpreter_asm.asm (remove if not used anymore)
+extern "C" {
+char* nlr_testpoint_entry = NULL;	// for interpreter_asm.asm (remove if not used anymore)
+}
 extern "C" contextOop nlr_home_context;
 
 void InterpreterGenerator::generate_nonlocal_return_code() {

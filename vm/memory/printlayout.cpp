@@ -31,6 +31,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/ostream.hpp"
 
 #include <ctype.h>
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 const int indent_col =  3;
 const int value_col  = 16;

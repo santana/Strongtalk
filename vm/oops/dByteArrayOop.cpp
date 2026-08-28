@@ -23,6 +23,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "oops/dByteArrayOop.hpp"
 #include "runtime/bootstrap.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool doubleByteArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();
@@ -61,8 +64,8 @@ int doubleByteArrayOopDesc::compare(doubleByteArrayOop arg) {
   const unsigned int* b = (const unsigned int*) arg->length_addr();
 
   // Get the word sizes of the arays
-  int a_size = roundTo(smiOop(*a++)->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
-  int b_size = roundTo(smiOop(*b++)->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
+  int a_size = roundTo(smiOop((intptr_t)(*a++))->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
+  int b_size = roundTo(smiOop((intptr_t)(*b++))->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
 
   const unsigned int* a_end = a + min(a_size, b_size);
   while(a < a_end) {

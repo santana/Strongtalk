@@ -67,7 +67,7 @@ class methodOopDesc : public memOopDesc {
   smiOop size_and_flags() const { return addr()->_size_and_flags; }
   void set_size_and_flags(int size, int nofArgs, int flags) {
     addr()->_size_and_flags = (smiOop)
-      ((flags << method_flags_mask_bitno) + (nofArgs << method_args_mask_bitno) + (size << method_size_mask_bitno));
+      (((smi)flags << method_flags_mask_bitno) + ((smi)nofArgs << method_args_mask_bitno) + ((smi)size << method_size_mask_bitno));
   }
 
   int flags() const {

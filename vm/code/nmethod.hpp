@@ -92,7 +92,7 @@ class nmethod : public OopNCode {
   char* specialHandlerCall() const	{ return insts() + _special_handler_call_offset; }	// call to special handler
   char* entryPoint() const		{ return insts() + _entry_point_offset; }		// normal entry point
   char* verifiedEntryPoint() const	{ return insts() + _verified_entry_point_offset; }	// e.p. if klass is correct
-  bool  isFree()                        { return Universe::code->contains((void*) _instsLen); } // has this nmethod been freed
+  bool  isFree()                        { return Universe::code->contains((void*) (intptr_t) _instsLen); } // has this nmethod been freed
 
   // debugging information
   nmethodScopes* scopes() const		{ return (nmethodScopes*) locsEnd(); }

@@ -1,5 +1,8 @@
 #include "easyunit/test.h"
 #include "memory/universe.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 DECLARE(UniverseTests)
@@ -25,11 +28,11 @@ TESTF(UniverseTests, allocateShouldAllocateInNewSpaceWhenSpaceAvailable) {
 TESTF(UniverseTests, allocateShouldFailWhenNoSpaceAndScavengeDisallowed) {
   int freeSpace = Universe::new_gen.eden()->free();
   oop* chunk = Universe::allocate(freeSpace/oopSize + 1, NULL, false);
-  ASSERT_EQUALS(NULL, (char*)chunk);
+  ASSERT_EQUALS(0L, (char*)chunk);
 }
 
 TESTF(UniverseTests, allocateTenuredShouldFailWhenNoSpaceAndExpansionDisallowed) {
   int freeSpace = Universe::old_gen.free();
   oop* chunk = Universe::allocate_tenured(freeSpace/oopSize + 1, false);
-  ASSERT_EQUALS(NULL, (char*)chunk);
+  ASSERT_EQUALS(0L, (char*)chunk);
 }

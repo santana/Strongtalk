@@ -30,6 +30,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/prim_impl.hpp"
 #include "runtime/delta.hpp"
 #include "runtime/process.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 TRACE_FUNC(TraceBlockPrims, "block")
 

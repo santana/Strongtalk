@@ -119,8 +119,8 @@ class NativeMov: public NativeInstruction {
 
   char* instruction_address() const		{ return addr_at(instruction_offset); }
   char* next_instruction_address() const	{ return addr_at(next_instruction_offset); }
-  int   data() const				{ return long_at(data_offset); }
-  void  set_data(int x)				{ set_long_at(data_offset, x); }
+  intptr_t data() const				{ return long_at(data_offset); }
+  void  set_data(intptr_t x)			{ set_long_at(data_offset, x); }
 
   void  verify();
   void  print();
@@ -155,8 +155,8 @@ class NativeTest: public NativeInstruction {
 
   char* instruction_address() const		{ return addr_at(instruction_offset); }
   char* next_instruction_address() const	{ return addr_at(next_instruction_offset); }
-  int   data() const				{ return long_at(data_offset); }
-  void  set_data(int x)				{ set_long_at(data_offset, x); }
+  intptr_t data() const				{ return long_at(data_offset); }
+  void  set_data(intptr_t x)			{ set_long_at(data_offset, x); }
 
   void  verify();
   void  print();

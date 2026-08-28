@@ -47,6 +47,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/vframe.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 
 // Sometimes a little stub has to be generated if a merge between two execution
@@ -1102,7 +1104,7 @@ void CodeGenerator::arithRCOp(ArithOpCode op, Register x, int y) { // x := x op 
         // shift right
         int shift_count = ((-y) >> Tag_Size) % 32;
         _masm->sarl(x, shift_count);
-        _masm->andl(x, -1 << Tag_Size);			// clear Tag bits
+        _masm->andl(x, (int)((unsigned)-1 << Tag_Size));			// clear Tag bits
       } else if (y > 0) {
         // shift left
         int shift_count = ((+y) >> Tag_Size) % 32;
@@ -1905,9 +1907,8 @@ Assembler::Condition CodeGenerator::mapToCC(BranchOpCode op) {
     case GEUBranchOp: return Assembler::aboveEqual;
     case VSBranchOp : return Assembler::overflow;
     case VCBranchOp : return Assembler::noOverflow;
+    default: ShouldNotReachHere(); return Assembler::zero;
   }
-  ShouldNotReachHere();
-  return Assembler::zero;
 }
 
 

@@ -7,6 +7,10 @@
 #include "oops/klassOop.hpp"
 #include "oops/objArrayOop.hpp"
 #include "prims/oop_prims.hpp"
+#include "memory/rSet.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

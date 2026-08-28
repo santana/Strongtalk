@@ -55,6 +55,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/systemAverage.hpp"
 #include "runtime/vmOperations.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceSystemPrims, "system")
 
@@ -1041,7 +1044,7 @@ PRIM_DECL_1(systemPrimitives::alienFree, oop address) {
     int intAddress = largeAddress->as_int(ok);
     if (intAddress == 0 || !ok)
       return markSymbol(vmSymbols::argument_is_invalid());
-    free((void*) intAddress);
+    free((void*)(intptr_t) intAddress);
   }
   return trueObj;
 }

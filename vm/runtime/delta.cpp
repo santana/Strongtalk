@@ -33,6 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/os.hpp"		// os::jit_write_protect (Apple Silicon)
 #include "runtime/process.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 // Implementation of DeltaCallCache
 

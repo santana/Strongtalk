@@ -35,6 +35,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.hpp"
 #include "oops/oop.inline.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 inline bool str_equal(char* s, char* t) { return strcmp(s, t) == 0; }
 
@@ -466,9 +468,8 @@ static BranchOpCode not(BranchOpCode cond) {
     case GEUBranchOp: return LTUBranchOp;
     case VSBranchOp : return VCBranchOp;
     case VCBranchOp : return VSBranchOp;
+    default: ShouldNotReachHere(); return EQBranchOp;
   }
-  ShouldNotReachHere();
-  return EQBranchOp;
 }
 
 

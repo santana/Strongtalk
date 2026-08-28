@@ -50,6 +50,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/timer.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/growableArray.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 // Converter hierarchy:
 // - memConverter
@@ -456,9 +458,8 @@ memConverter* ClassChange::create_converter_for(klassOop old_class, klassOop new
   case Klass::weakArray_klass:        return new         objArrayConverter(old_class, new_class);
   case Klass::process_klass:          return new          processConverter(old_class, new_class);
   case Klass::proxy_klass:            return new            proxyConverter(old_class, new_class);
+  default: fatal("cannot create converter for type"); return NULL;
   }
-  fatal("cannot create converter for type");
-  return NULL;
 }
 
 void ClassChange::update_class_vars() {

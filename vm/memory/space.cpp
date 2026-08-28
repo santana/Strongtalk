@@ -243,7 +243,9 @@ void oldSpace::update_offset_array(oop* p, oop* p_end) {
   }
 }
 
-extern "C" int expansion_count = 0;
+extern "C" {
+int expansion_count = 0;
+}
 
 int oldSpace::expand(int size) {
   int min_size = ReservedSpace::page_align_size(size);
@@ -411,6 +413,8 @@ oop* oldSpace::object_start(oop* p) {
   return q;
 }
 
-extern "C" oop* eden_bottom = NULL;
-extern "C" oop* eden_top    = NULL;
-extern "C" oop* eden_end    = NULL;
+extern "C" {
+oop* eden_bottom = NULL;
+oop* eden_top    = NULL;
+oop* eden_end    = NULL;
+}

@@ -32,6 +32,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/scope.hpp"
 #include "oops/blockKlass.hpp"
 #include "oops/klassOop.hpp"
+#include "oops/oop.inline.hpp"
 
 const int UnknownExpr::UnlikelyBit 	  = 1;
 const int MergeExpr::SplittableBit        = 2;

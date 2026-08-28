@@ -38,6 +38,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/process.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
+#include "memory/generation.inline.hpp"
 
 // Implementation of Interpreter_PICs
 //
@@ -167,9 +168,8 @@ int InterpretedIC::nof_arguments() const {
       return n;
                                  }
     case Bytecodes::args_only: return selector()->number_of_arguments();
+    default: ShouldNotReachHere(); return 0;
   }
-  ShouldNotReachHere();
-  return 0;
 }
 
 
@@ -333,6 +333,8 @@ void InterpretedIC::cleanup() {
           }
         }
       }
+      break;
+    default: break;  // no_send, number_of_send_types: nothing to clean up
   }
 }
 

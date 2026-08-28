@@ -5,6 +5,9 @@
 #include "memory/vmSymbols.hpp"
 #include "oops/klassOop.hpp"
 #include "prims/objArray_prims.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

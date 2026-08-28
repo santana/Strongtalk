@@ -47,6 +47,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/growableArray.hpp"
 
 #include <cstdio>
+#include "memory/generation.inline.hpp"
 
 // ToDo list for pretty printer
 // - convert the stream stuff to ostream.
@@ -373,7 +374,7 @@ class scopeNode : public astNode {
 
   char* create_name(char* prefix, int no) {
     char* str = NEW_RESOURCE_ARRAY(char, 7);
-    sprintf(str, "%s_%d", prefix, no);
+    snprintf(str, 7, "%s_%d", prefix, no);
     return str;
   }
 
@@ -401,7 +402,7 @@ class scopeNode : public astNode {
       if (name) return name->as_string();
     }
     char* str = NEW_RESOURCE_ARRAY(char, 15);
-    sprintf(str, "i_%d", offset);
+    snprintf(str, 15, "i_%d", offset);
     return str;
   }
 
@@ -454,7 +455,7 @@ class scopeNode : public astNode {
     output->newline();
     output->print("#");
     assert(frame_index <= 999999999, "frame index too large for buffer - buffer overrun");
-    sprintf(num, "%d", frame_index);
+    snprintf(num, sizeof(num), "%d", frame_index);
     output->print(num);
     output->print(", receiver \"");
     output->print(fr()->receiver()->print_value_string());
@@ -477,7 +478,7 @@ class scopeNode : public astNode {
     if (ActivationShowBCI) {
       // Print current bci
       output->print(" [bci = ");  
-      sprintf(num, "%d", _hot_bci);
+      snprintf(num, sizeof(num), "%d", _hot_bci);
       output->print(num);
       output->print("]");  
       output->newline();
@@ -710,7 +711,7 @@ class blockNode : public codeNode {
     output->print("[");
     astNode* p = scope->params();
     if (p) { 
-      if (split = output->remaining() < p->width(output) + output->width_of_space()) {
+      if ((split = output->remaining() < p->width(output) + output->width_of_space())) {
         output->inc_newline();
         p->print(output);
         output->newline();
@@ -1019,7 +1020,7 @@ class smiNode : public leafNode {
   : leafNode(bci, scope) {
     this->value    = value;
     this->str      = NEW_RESOURCE_ARRAY(char, 10);
-    sprintf(this->str, "%d", value);
+    snprintf(this->str, 10, "%d", value);
   }
   char* string() { return str; }
 };
@@ -1033,7 +1034,7 @@ class doubleNode : public leafNode {
   : leafNode(bci, scope) {
     this->value = value;
     this->str   = NEW_RESOURCE_ARRAY(char, 30);
-    sprintf(this->str, "%1.10gd", value);
+    snprintf(this->str, 30, "%1.10gd", value);
   }
   char* string() { return str; }
 };
@@ -1051,7 +1052,7 @@ class characterNode : public leafNode {
     if (value->is_mem()) {
       oop ch = memOop(value)->instVarAt(2);
       if(ch->is_smi()) {
-        sprintf(this->str, "$%c", smiOop(ch)->value());
+        snprintf(this->str, 3, "$%c", (int) smiOop(ch)->value());
 	return;
       }
     }

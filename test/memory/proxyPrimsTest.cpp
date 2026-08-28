@@ -8,6 +8,9 @@
 #include "oops/smiOop.hpp"
 #include "prims/proxy_prims.hpp"
 #include "utilities/testUtils.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -22,7 +25,7 @@ DECLARE(ProxyPrimsTests)
 void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
     char text[200];
     ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    sprintf(text,"Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+    snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
     ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
   }
 END_DECLARE

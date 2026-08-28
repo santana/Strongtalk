@@ -26,6 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/symbolOop.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 int LookupKey::hash() const {
   return klass()->identity_hash() ^ selector_or_method()->identity_hash();

@@ -2,6 +2,9 @@
 #include "memory/markSweep.hpp"
 #include "oops/klassOop.hpp"
 #include "oops/mixinOop.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

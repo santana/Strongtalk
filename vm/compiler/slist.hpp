@@ -37,7 +37,7 @@ class GenericSListElem : public ResourceObj  {
  public: 
   GenericSListElem(void* d, GenericSListElem* n = NULL) { _data = d; _next = n; }
   
-  void* dataL() const 	      		{ return this ? _data : NULL; }
+  void* dataL() const 	      		{ return _data; }
   void setDataL(void* d) 		{ _data = d; }
   
   GenericSListElem* nextL() const 	{ return _next; }

@@ -2,6 +2,9 @@
 #include "memory/handle.hpp"
 #include "memory/oopFactory.hpp"
 #include "oops/methodOop.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 

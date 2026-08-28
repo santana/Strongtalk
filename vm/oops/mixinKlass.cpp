@@ -26,6 +26,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/mixinKlass.hpp"
+#include "oops/oop.inline.hpp"
 
 void set_mixinKlass_vtbl(Klass* k) {
   mixinKlass o;

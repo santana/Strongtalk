@@ -43,6 +43,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/vframe.hpp"
 #include "utilities/ostream.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // ----------- inlining policy ---------------
 
@@ -530,7 +534,7 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
 
     if (CompilerDebug) {
       char* s = NEW_RESOURCE_ARRAY(char, 200);
-      sprintf(s, "begin type-case of %s (ends at node N%ld)",
+      snprintf(s, 200, "begin type-case of %s (ends at node N%d)",
         sel->copy_null_terminated(), merge->id());
       gen->comment(s);
     }
@@ -862,7 +866,7 @@ Expr* Inliner::typePredict() {
   return r;
 }
 
-extern bool SuperSendsAreAlwaysInlined = true;	// remove when removing super hack
+bool SuperSendsAreAlwaysInlined = true;	// remove when removing super hack
 
 InlinedScope* Inliner::tryLookup(Expr* rcvr) {
   // try to lookup the send to receiver rcvr and determine if it should be inlined;

@@ -27,6 +27,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // Called during bootstrapping for computing vtbl values see (create_*Klass)
 oopDesc::oopDesc() {

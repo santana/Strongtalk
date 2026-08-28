@@ -28,6 +28,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/codeTable.hpp"
 #include "code/nmethod.hpp"
 #include "lookup/key.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 codeTable::codeTable(int size) {
   tableSize = size;

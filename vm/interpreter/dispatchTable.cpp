@@ -126,7 +126,9 @@ doFn original_table[Bytecodes::number_of_codes];
 
 #endif
 
-extern "C" void** frame_breakpoint = (void**) -1;
+extern "C" {
+void** frame_breakpoint = (void**) -1;
+}
 
 dispatchTable::Mode dispatchTable::mode;
 

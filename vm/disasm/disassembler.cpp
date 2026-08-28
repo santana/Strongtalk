@@ -28,6 +28,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/relocInfo.hpp"
 #include "disasm/disassembler.hpp"
 #include "prims/prim.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 //#include <inttypes.h>
 
@@ -110,7 +114,7 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
       
     case relocInfo::oop_type:
       st->print("%p, embedded oop, ", addr);
-      oop(*addr)->print_value();
+      (*iter->oop_addr())->print_value();
       break;
 
     case relocInfo::ic_type:

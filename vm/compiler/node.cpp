@@ -37,6 +37,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/prim.hpp"
 #include "prims/smi_prims.hpp"
 #include "utilities/ostream.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 int BasicNode::currentID;
 int BasicNode::currentCommentID;
@@ -2060,7 +2063,7 @@ bool ArithNode::copyPropagate(BB* bb, Use* u, PReg* d, bool replace) {
     default:	return success;		// can't constant-fold
     }
 
-    _constResult = new_ConstPReg(scope(), (oop)res);
+    _constResult = new_ConstPReg(scope(), (oop)(intptr_t)res);
     // enable further constant propagation of the result
     dontEliminate = false;
     _src->removeUse(bb, srcUse);

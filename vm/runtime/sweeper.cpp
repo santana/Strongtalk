@@ -37,6 +37,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/eventLog.hpp"
 
 #include <math.h>
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 // The sweeper run at real_time ticks. We only swep if the interrupted
 // Delta process is in a well-defined state (see SweeperTask).
@@ -214,7 +218,7 @@ void MethodSweeper::task() {
        int result = klass_task(klassOop(assoc->value()));
      }
   }
-  LOG_EVENT3("MethodSweeper task [%d, %d] #%d", begin, end, result);
+  LOG_EVENT3("MethodSweeper task [%d, %d] #%d", (intptr_t)begin, (intptr_t)end, (intptr_t)result);
 
   if (index > length) deactivate();
 }

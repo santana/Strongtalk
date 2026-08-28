@@ -30,6 +30,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.hpp"
 #include "oops/oop.inline.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 ScopeDesc* nmethodScopes::at(int offset, char* pc) const {
   // Read the first byte and decode the ScopeDesc type at the location.

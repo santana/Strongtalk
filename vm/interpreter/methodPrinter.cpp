@@ -22,6 +22,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "interpreter/methodPrinter.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 MethodPrinterClosure::MethodPrinterClosure(outputStream* stream) {
   st = stream ? stream : mystd;

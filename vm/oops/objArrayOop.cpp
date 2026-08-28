@@ -24,6 +24,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/oopFactory.hpp"
 #include "oops/objArrayOop.hpp"
 #include "runtime/bootstrap.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 bool objArrayOopDesc::verify() {
   bool flag = memOopDesc::verify();

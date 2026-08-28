@@ -50,6 +50,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "recompiler/recompiler.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
+#include "memory/generation.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 
 static bool bb_needs_jump;
@@ -379,7 +381,7 @@ extern "C" void verifyArguments(oop recv, int ebp, int nofArgs) {
   }
   verifyObj(recv);
   int i = nofArgs;
-  oop* arg = (oop*)(ebp + (nofArgs + 2)*oopSize);
+  oop* arg = (oop*)(intptr_t)(ebp + (nofArgs + 2)*oopSize);
   while (i-- > 0) {
     arg--;
     verifyObj(*arg);
@@ -1013,7 +1015,7 @@ static void arithRCOp(ArithOpCode op, Register x, int y) {
         // shift right
         int shift_count = ((-y) >> Tag_Size) % 32;
         theMacroAssm->sarl(x, shift_count);
-        theMacroAssm->andl(x, -1 << Tag_Size);		// clear Tag bits
+        theMacroAssm->andl(x, (int)((unsigned)-1 << Tag_Size));		// clear Tag bits
       } else if (y > 0) {
         // shift left
         int shift_count = ((+y) >> Tag_Size) % 32;

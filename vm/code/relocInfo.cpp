@@ -28,6 +28,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/stubRoutines.hpp"
 #include "prims/prim.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 relocInfo::relocInfo(int t, int off) {
   assert(0 <= t && t < (1 << reloc_type_width), "wrong type");
@@ -43,7 +47,7 @@ int relocInfo::print(nmethod* m, int last_offset) {
   printIndent();
   if (isOop()) {
     mystd->print("embedded oop   @0x%lx = ", addr);
-    oop(*addr)->print_value();
+    oop((intptr_t)*addr)->print_value();
   } else {
     assert(isCall(), "must be a call");
     char* target = (char*) (*addr + (intptr_t) addr + oopSize);

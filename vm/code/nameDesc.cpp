@@ -32,6 +32,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/stackChunk.hpp"
 #include "runtime/vframe.hpp"
 #include "topIncludes/std_includes.hpp"
+#include "oops/oop.inline.hpp"
 
 void LocationNameDesc::print() {
   mystd->print("@%s (%d)", location().name(), offset);

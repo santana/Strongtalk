@@ -60,6 +60,9 @@ namespace easyunit {
 	  char *buffer;
 };
 
+bool operator== (const SimpleString& left, const SimpleString& right);
+bool operator!= (const SimpleString& left, const SimpleString& right);
+
 // Those functions are provided to ease the conversion between
 // primary datatypes and SimpleString. Feel free to extend this list
 // to support your own datatype.

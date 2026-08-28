@@ -8,6 +8,9 @@
 #include "prims/system_prims.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/testUtils.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 
 using namespace easyunit;
 
@@ -17,7 +20,7 @@ TEST(SystemPrimTests, expansionShouldExpandOldGenerationCapacity) {
   ASSERT_EQUALS_M(trueObj, systemPrimitives::expandMemory(as_smiOop(1000 * K)), "Wrong result");
   int expectedSize = oldSize + ReservedSpace::align_size(1000 * K, ObjectHeapExpandSize * K);
   int actualSize = Universe::old_gen.capacity();
-  sprintf(msg, "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actualSize);
+  snprintf(msg, sizeof(msg), "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actualSize);
   ASSERT_EQUALS_M(expectedSize, actualSize, msg);
 }
 
@@ -76,7 +79,7 @@ TEST(SystemPrimTests, shrinkMemoryShouldReturnArgumentIsOfWrongType) {
 TEST(SystemPrimTests, alienMallocShouldReturnAlignedValue) {
   oop pointer = systemPrimitives::alienMalloc(as_smiOop(4));
   ASSERT_TRUE_M(pointer->is_smi(), "result should be SmallInteger");
-  int address = smiOop(pointer)->value();
+  intptr_t address = smiOop(pointer)->value();
   ASSERT_TRUE_M(address % 4 == 0, "not aligned");
   ASSERT_TRUE_M(address != 0, "not allocated");
   free((void*)address);
@@ -103,7 +106,7 @@ TEST(SystemPrimTests, alienMallocShouldReturnMarkedSymbolWhenSizeZero) {
 TEST(SystemPrimTests, alienCallocShouldReturnAlignedValue) {
   oop pointer = systemPrimitives::alienCalloc(as_smiOop(4));
   ASSERT_TRUE_M(pointer->is_smi(), "result should be SmallInteger");
-  int address = smiOop(pointer)->value();
+  intptr_t address = smiOop(pointer)->value();
   ASSERT_TRUE_M(address % 4 == 0, "not aligned");
   ASSERT_TRUE_M(address != 0, "not allocated");
   free((void*)address);
@@ -114,7 +117,7 @@ TEST(SystemPrimTests, alienCallocContentsShouldBeZero) {
   oop pointer = systemPrimitives::alienCalloc(as_smiOop(4));
   char* address = (char*) smiOop(pointer)->value();
   for (int index = 0; index < 4; index++) {
-    sprintf(message, "char %d should be zero", index);
+    snprintf(message, sizeof(message), "char %d should be zero", index);
     ASSERT_EQUALS_M((int)address[index], 0, message);
   }
   free((void*)address);

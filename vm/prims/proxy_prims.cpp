@@ -32,6 +32,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "prims/proxy_prims.hpp"
 #include "runtime/debug.hpp"
 #include "runtime/os.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
 
 TRACE_FUNC(TraceProxyPrims, "proxy")
 
@@ -77,7 +79,7 @@ PRIM_DECL_3(proxyOopPrimitives::setHighLow, oop receiver, oop high, oop low) {
   unsigned int h     = (unsigned int) smiOop(high)->value();
   unsigned int l     = (unsigned int) smiOop(low)->value();
   unsigned int value = (h << 16) | l;
-  proxyOop(receiver)->set_pointer((void*) value);
+  proxyOop(receiver)->set_pointer((void*)(intptr_t)value);
   return receiver;
 }
 
@@ -191,8 +193,8 @@ PRIM_DECL_2(proxyOopPrimitives::smiAt, oop receiver, oop offset) {
   if (proxyOop(receiver)->is_null())
     return markSymbol(vmSymbols::illegal_state());
 
-  unsigned int value   = (unsigned int) proxyOop(receiver)->long_at(smiOop(offset)->value());
-  unsigned int topBits = value >> (BitsPerWord - Tag_Size);
+  unsigned long value   = (unsigned long) proxyOop(receiver)->long_at(smiOop(offset)->value());
+  unsigned long topBits = value >> (BitsPerWord - Tag_Size);
   if ((topBits != 0) && (topBits != 3))
     return markSymbol(vmSymbols::smi_conversion_failed());
   return as_smiOop((int) value);
