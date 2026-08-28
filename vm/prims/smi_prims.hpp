@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for small integers
 
 class smiOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -206,7 +207,7 @@ extern "C" oop PRIM_API smiOopPrimitives_quo(oop receiver, oop argument);
 //%
 extern "C" oop PRIM_API smiOopPrimitives_remainder(oop receiver, oop argument);
 
- //%prim
+//%prim
 // <SmallInteger> primitiveAsFloat ^<Float> =
 //   Internal { flags = #(Pure SmiArith)
 //              name  = 'double_from_smi' }

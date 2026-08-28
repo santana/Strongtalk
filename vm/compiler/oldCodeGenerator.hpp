@@ -31,18 +31,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The OldCodeGenerator is the new interface to the gen() routines in x86_node.cpp.
 // It allows to call the old code generation routines via the new apply method.
 
-class OldCodeGenerator: public NodeVisitor {
- public:
+class OldCodeGenerator : public NodeVisitor {
+public:
   // Basic blocks
   void beginOfBasicBlock(Node* node);
   void endOfBasicBlock(Node* node);
-  
- public:
+
+public:
   // For all nodes
   void beginOfNode(Node* node);
   void endOfNode(Node* node);
 
- public:
+public:
   // Individual nodes
   void aPrologueNode(PrologueNode* node);
 
@@ -53,20 +53,20 @@ class OldCodeGenerator: public NodeVisitor {
   void anAssignNode(AssignNode* node);
   void aStoreOffsetNode(StoreOffsetNode* node);
   void aStoreUplevelNode(StoreUplevelNode* node);
-  
+
   void anArithRRNode(ArithRRNode* node);
   void aFloatArithRRNode(FloatArithRRNode* node);
   void aFloatUnaryArithNode(FloatUnaryArithNode* node);
   void anArithRCNode(ArithRCNode* node);
   void aTArithRRNode(TArithRRNode* node);
-  
+
   void aContextCreateNode(ContextCreateNode* node);
   void aContextInitNode(ContextInitNode* node);
   void aContextZapNode(ContextZapNode* node);
 
   void aBlockCreateNode(BlockCreateNode* node);
   void aBlockMaterializeNode(BlockMaterializeNode* node);
-  
+
   void aSendNode(SendNode* node);
   void aPrimNode(PrimNode* node);
   void aDLLNode(DLLNode* node);
@@ -77,12 +77,12 @@ class OldCodeGenerator: public NodeVisitor {
   void aNLRSetupNode(NLRSetupNode* node);
   void anInlinedReturnNode(InlinedReturnNode* node);
   void aNLRContinuationNode(NLRContinuationNode* node);
-  
+
   void aBranchNode(BranchNode* node);
   void aTypeTestNode(TypeTestNode* node);
   void aNLRTestNode(NLRTestNode* node);
   void aMergeNode(MergeNode* node);
-  
+
   void anArrayAtNode(ArrayAtNode* node);
   void anArrayAtPutNode(ArrayAtPutNode* node);
 

@@ -30,13 +30,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // of SavedRegisters::save_registers() (compiler doesn't accept
 // static class variables).
 static void** stored_frame_pointer = NULL;
-static oop  saved_eax;
-static oop  saved_ecx;
-static oop  saved_edx;
-static oop  saved_ebx;
-static oop  saved_esi;
-static oop  saved_edi;
-
+static oop saved_eax;
+static oop saved_ecx;
+static oop saved_edx;
+static oop saved_ebx;
+static oop saved_esi;
+static oop saved_edi;
 
 oop SavedRegisters::fetch(int register_number, void** frame_pointer) {
   if (frame_pointer != stored_frame_pointer) {
@@ -44,16 +43,21 @@ oop SavedRegisters::fetch(int register_number, void** frame_pointer) {
     mystd->print_cr(" register number = %d, fp = 0x%lx", register_number, frame_pointer);
     fatal("vm aborted");
   }
-  if (register_number == eax.number()) return saved_eax;
-  if (register_number == ecx.number()) return saved_ecx;
-  if (register_number == edx.number()) return saved_edx;
-  if (register_number == ebx.number()) return saved_ebx;
-  if (register_number == esi.number()) return saved_esi;
-  if (register_number == edi.number()) return saved_edi;
+  if (register_number == eax.number())
+    return saved_eax;
+  if (register_number == ecx.number())
+    return saved_ecx;
+  if (register_number == edx.number())
+    return saved_edx;
+  if (register_number == ebx.number())
+    return saved_ebx;
+  if (register_number == esi.number())
+    return saved_esi;
+  if (register_number == edi.number())
+    return saved_edi;
   fatal("cannot fetch esp or ebp from saved registers");
   return NULL;
 }
-
 
 void SavedRegisters::clear() {
   stored_frame_pointer = NULL;
@@ -81,20 +85,19 @@ Naked void SavedRegisters::save_registers() {
 #undef Naked
 */
 
-void SavedRegisters::generate_save_registers(MacroAssembler* masm)
-{
+void SavedRegisters::generate_save_registers(MacroAssembler* masm) {
   // save the registers
-  masm->movl( Address((intptr_t)&saved_eax, relocInfo::external_word_type), eax );
-  masm->movl( Address((intptr_t)&saved_ecx, relocInfo::external_word_type), ecx );
-  masm->movl( Address((intptr_t)&saved_edx, relocInfo::external_word_type), edx );
-  masm->movl( Address((intptr_t)&saved_ebx, relocInfo::external_word_type), ebx );
-  masm->movl( Address((intptr_t)&saved_esi, relocInfo::external_word_type), esi );
-  masm->movl( Address((intptr_t)&saved_edi, relocInfo::external_word_type), edi );
+  masm->movl(Address((intptr_t)&saved_eax, relocInfo::external_word_type), eax);
+  masm->movl(Address((intptr_t)&saved_ecx, relocInfo::external_word_type), ecx);
+  masm->movl(Address((intptr_t)&saved_edx, relocInfo::external_word_type), edx);
+  masm->movl(Address((intptr_t)&saved_ebx, relocInfo::external_word_type), ebx);
+  masm->movl(Address((intptr_t)&saved_esi, relocInfo::external_word_type), esi);
+  masm->movl(Address((intptr_t)&saved_edi, relocInfo::external_word_type), edi);
   // save frame pointer w/o destroying any register contents
   masm->movl(eax, Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
   masm->movl(Address((intptr_t)&stored_frame_pointer, relocInfo::external_word_type), eax);
   masm->movl(eax, Address((intptr_t)&saved_eax, relocInfo::external_word_type));
   // return
   // %note: we don't return because the code is inlined in stubs -Marc 04/07
-//  masm->ret();
+  //  masm->ret();
 }

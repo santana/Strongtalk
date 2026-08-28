@@ -21,7 +21,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-// LookupKeys are the keys into the code table.  
+// LookupKeys are the keys into the code table.
 // There should be at most one compiled method for a given LookupKey.
 // A LookupKey can take two forms:
 // 1) normal send lookup key (is_normal_type() == true).
@@ -44,67 +44,67 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 
 class LookupKey : ValueObj {
- protected:
-  klassOop  _klass;
-  oop       _selector_or_method;
- public:
-  LookupKey() {
-    clear();
-  }
+protected:
+  klassOop _klass;
+  oop _selector_or_method;
+
+public:
+  LookupKey() { clear(); }
   LookupKey(klassOop klass, oop selector_or_method) {
-    _klass              = klass;
+    _klass = klass;
     _selector_or_method = selector_or_method;
   }
   LookupKey(LookupKey* key) {
-    _klass              = key->klass();
+    _klass = key->klass();
     _selector_or_method = key->selector_or_method();
   }
 
-  klassOop klass() const              { return _klass; }
-  oop      selector_or_method() const { return _selector_or_method; }
+  klassOop klass() const { return _klass; }
+  oop selector_or_method() const { return _selector_or_method; }
 
   symbolOop selector() const;
 
   methodOop method() const {
-     assert(selector_or_method()->is_method(), "Wrong lookup type");
-     return methodOop(selector_or_method());
+    assert(selector_or_method()->is_method(), "Wrong lookup type");
+    return methodOop(selector_or_method());
   }
 
   // Lookup type
-  bool is_super_type()  const { return selector_or_method()->is_method() && !methodOop(selector_or_method())->is_blockMethod();}
+  bool is_super_type() const {
+    return selector_or_method()->is_method() && !methodOop(selector_or_method())->is_blockMethod();
+  }
   bool is_normal_type() const { return !selector_or_method()->is_method(); }
-  bool is_block_type()  const { return selector_or_method()->is_method() && methodOop(selector_or_method())->is_blockMethod(); }
-
-  bool equal(LookupKey* p) const {
-    return klass()              == p->klass() &&
-           selector_or_method() == p->selector_or_method();
+  bool is_block_type() const {
+    return selector_or_method()->is_method() && methodOop(selector_or_method())->is_blockMethod();
   }
 
+  bool equal(LookupKey* p) const { return klass() == p->klass() && selector_or_method() == p->selector_or_method(); }
+
   void initialize(klassOop klass, oop selector_or_method) {
-    _klass              = klass;
+    _klass = klass;
     _selector_or_method = selector_or_method;
   }
 
   void clear() {
-    _klass              = NULL;
+    _klass = NULL;
     _selector_or_method = NULL;
   }
 
   int hash() const;
-  
+
   void switch_pointers(oop from, oop to);
   void relocate();
   bool verify() const;
   void oops_do(void f(oop*));
-  
+
   // Printing support output format is:
   //   "class::selector" for normal sends and
   //   "class^^selector" for super sends.
   //   "class->selector {bci}+" for block keys
-  void  print() const;
+  void print() const;
   char* print_string() const;
-  void  print_on(outputStream* st) const;
-  void  print_inlining_database_on(outputStream* st) const;
+  void print_on(outputStream* st) const;
+  void print_inlining_database_on(outputStream* st) const;
 
   // For resource allocation.
   static LookupKey* allocate(klassOop klass, oop selector_or_method);

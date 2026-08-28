@@ -11,46 +11,46 @@
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
 
-void trace(vframe* from_frame, int start_frame, int number_of_frames){
+void trace(vframe* from_frame, int start_frame, int number_of_frames) {
   FlagSetting fs(ActivationShowCode, true);
 
   mystd->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
-  int  vframe_no = 1;
+  int vframe_no = 1;
 
-  for (vframe* f = from_frame; f; f = f->sender() ) {
+  for (vframe* f = from_frame; f; f = f->sender()) {
     if (vframe_no >= start_frame) {
       if (f->is_delta_frame()) {
-        ((deltaVFrame*) f)->print_activation(vframe_no);
-      } else f->print();
-      if (vframe_no - start_frame + 1 >= number_of_frames) return;
+        ((deltaVFrame*)f)->print_activation(vframe_no);
+      } else
+        f->print();
+      if (vframe_no - start_frame + 1 >= number_of_frames)
+        return;
     }
     vframe_no++;
   }
 }
 
 void traceCompiledFrame(frame& f) {
-    ResourceMark mark;
+  ResourceMark mark;
 
-    // Find the nmethod containing the pc
-    compiledVFrame* vf = (compiledVFrame*) vframe::new_vframe(&f);
-    assert(vf->is_compiled_frame(), "must be compiled frame");
-    nmethod* nm = vf->code();
-    lprintf("Found nmethod: 0x%x\n", nm);
-    nm->print_value_on(mystd);
+  // Find the nmethod containing the pc
+  compiledVFrame* vf = (compiledVFrame*)vframe::new_vframe(&f);
+  assert(vf->is_compiled_frame(), "must be compiled frame");
+  nmethod* nm = vf->code();
+  lprintf("Found nmethod: 0x%x\n", nm);
+  nm->print_value_on(mystd);
 
-    mystd->print("\n @%d called from %#x",
-               vf->scope()->offset(),
-               f.pc() - Assembler::sizeOfCall);
-    mystd->cr();
-    
-    trace(vf, 0, 10);
+  mystd->print("\n @%d called from %#x", vf->scope()->offset(), f.pc() - Assembler::sizeOfCall);
+  mystd->cr();
+
+  trace(vf, 0, 10);
 }
 
 void traceInterpretedFrame(frame& f) {
-    ResourceMark mark;
-    vframe *vf = vframe::new_vframe(&f);
+  ResourceMark mark;
+  vframe* vf = vframe::new_vframe(&f);
 
-    trace(vf, 0, 10);
+  trace(vf, 0, 10);
 }
 
 void traceDeltaFrame(frame& f) {
@@ -67,7 +67,7 @@ void handle_exception(void* fp, void* sp, void* pc) {
   if (f.is_delta_frame()) {
     traceDeltaFrame(f);
     return;
-  } 
+  }
   if (DeltaProcess::active() && last_Delta_fp) {
     frame lastf((oop*)last_Delta_sp, (int*)last_Delta_fp);
     if (lastf.is_delta_frame()) {
@@ -81,8 +81,7 @@ void handle_exception(void* fp, void* sp, void* pc) {
     }
   }
   if (DeltaProcess::active() && DeltaProcess::active()->last_Delta_fp()) {
-    frame activef((oop*)DeltaProcess::active()->last_Delta_sp(), 
-                (int*)DeltaProcess::active()->last_Delta_fp());
+    frame activef((oop*)DeltaProcess::active()->last_Delta_sp(), (int*)DeltaProcess::active()->last_Delta_fp());
     if (activef.is_delta_frame()) {
       traceDeltaFrame(activef);
       return;

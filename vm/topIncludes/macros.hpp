@@ -33,45 +33,42 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
  **  XCHAR(b) Makes a character of the macro expansion of a
  */
 
-# define CONC(a,b)      a##b
-# define CONC3(a,b,c)   a##b##c
-# define STR(a)         #a
-# define CHAR(a)        ((#a)[0])
-  
-# define XCONC(a,b)     CONC(a,b)
-# define XSTR(a)        STR(a)
-# define XCHAR(a)       CHAR(a)
+#define CONC(a, b) a##b
+#define CONC3(a, b, c) a##b##c
+#define STR(a) #a
+#define CHAR(a) ((#a)[0])
 
+#define XCONC(a, b) CONC(a, b)
+#define XSTR(a) STR(a)
+#define XCHAR(a) CHAR(a)
 
-// ------------------------ Type and value checking macros -------------------- 
+// ------------------------ Type and value checking macros --------------------
 
 // Macro to verify the type of an oop, and create a requalified oop.
 // E.g. CHECKOOPTYPE(host, is_byteArray, byteArrayOop, host1) expands to:
 //      if(!host->is_byteArray()) return prim_error(BADTYPEERROR);
 //      byteArrayOop host1 = byteArrayOop(host);
 // Warning: does not wrap in '{' and '}'!
-# define CHECKOOPTYPE(ref, typePredicate, newType, newRef)                    \
-    if (!ref->typePredicate())                                                \
-      return prim_error(BADTYPEERROR);                                        \
-    newType newRef = newType(ref);
+#define CHECKOOPTYPE(ref, typePredicate, newType, newRef)                                                              \
+  if (!ref->typePredicate())                                                                                           \
+    return prim_error(BADTYPEERROR);                                                                                   \
+  newType newRef = newType(ref);
 
-
-// Check that ref is a smiOop, and set up variable to hold value. 
+// Check that ref is a smiOop, and set up variable to hold value.
 // Warning: does not wrap in '{' and '}'!
-# define CHECKOOPSMI(ref, val)                                                \
-    if (!ref->is_smi())                                                       \
-      return prim_error(BADTYPEERROR);                                        \
-    smi val = smiOop(ref)->value();
-
+#define CHECKOOPSMI(ref, val)                                                                                          \
+  if (!ref->is_smi())                                                                                                  \
+    return prim_error(BADTYPEERROR);                                                                                   \
+  smi val = smiOop(ref)->value();
 
 // Check that ref is either trueObj or falseObj. Set up boolean var corresp.
 // Warning: does not wrap in '{' and '}'!
-# define CHECKOOPBOOL(ref, val)                                               \
-    bool val;                                                                 \
-    if (ref == falseObj)                                              \
-      val = false;                                                            \
-    else if (ref == trueObj)                                          \
-      val = true;                                                             \
-    else                                                                      \
-      return prim_error(BADTYPEERROR);
+#define CHECKOOPBOOL(ref, val)                                                                                         \
+  bool val;                                                                                                            \
+  if (ref == falseObj)                                                                                                 \
+    val = false;                                                                                                       \
+  else if (ref == trueObj)                                                                                             \
+    val = true;                                                                                                        \
+  else                                                                                                                 \
+    return prim_error(BADTYPEERROR);
 #endif // _MACROS_HPP

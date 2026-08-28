@@ -34,26 +34,23 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // %todo:
 //   clear all DeltaCallCache at garbage collection
 
-class DeltaCallCache: public AllStatic {
- private:
-  static DeltaCallCache* _root;	// root of all DeltaCallCaches
-  DeltaCallCache*        _link;	// all DeltaCallCaches are linked
+class DeltaCallCache : public AllStatic {
+private:
+  static DeltaCallCache* _root; // root of all DeltaCallCaches
+  DeltaCallCache* _link; // all DeltaCallCaches are linked
 
   // cache
-  LookupKey    _key;
+  LookupKey _key;
   LookupResult _result;
 
- public:
+public:
   DeltaCallCache();
-  void clear();			// clears the cache
-  static void clearAll();	// clears all DeltaCallCaches (called by GC, etc.)
-
+  void clear(); // clears the cache
+  static void clearAll(); // clears all DeltaCallCaches (called by GC, etc.)
 
   bool match(klassOop klass, symbolOop selector) {
-    return oop(selector) == _key.selector_or_method() 
-        && klass         == _key.klass();
+    return oop(selector) == _key.selector_or_method() && klass == _key.klass();
   }
-
 
   LookupResult lookup(klassOop klass, symbolOop selector) {
     if (!match(klass, selector)) {
@@ -68,11 +65,10 @@ class DeltaCallCache: public AllStatic {
   LookupResult result() { return _result; }
 };
 
-
 // Delta provides the following entry points for calling Delta methods
 
-class Delta: public AllStatic {
- public:
+class Delta : public AllStatic {
+public:
   // The following functions return a marked oop if the selector is not a symbolOop
   static oop call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofArgs, oop* args);
 

@@ -29,33 +29,63 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // opcodes used by the Compiler
 
 enum BranchOpCode {
-  EQBranchOp, NEBranchOp,
-  LTBranchOp, LEBranchOp, LTUBranchOp, LEUBranchOp,
-  GTBranchOp, GEBranchOp, GTUBranchOp, GEUBranchOp,
-  VSBranchOp, VCBranchOp,		// Overflow set/cleared
+  EQBranchOp,
+  NEBranchOp,
+  LTBranchOp,
+  LEBranchOp,
+  LTUBranchOp,
+  LEUBranchOp,
+  GTBranchOp,
+  GEBranchOp,
+  GTUBranchOp,
+  GEUBranchOp,
+  VSBranchOp,
+  VCBranchOp, // Overflow set/cleared
 
   LastBranchOp
 };
-
 
 enum ArithOpCode {
   NilArithOp,
   TestArithOp,
 
   // untagged operations
-  AddArithOp,  SubArithOp,  MulArithOp,  DivArithOp,    ModArithOp,
-  AndArithOp,  OrArithOp,   XOrArithOp,  ShiftArithOp,  CmpArithOp,
+  AddArithOp,
+  SubArithOp,
+  MulArithOp,
+  DivArithOp,
+  ModArithOp,
+  AndArithOp,
+  OrArithOp,
+  XOrArithOp,
+  ShiftArithOp,
+  CmpArithOp,
 
   // tagged operations
-  tAddArithOp, tSubArithOp, tMulArithOp, tDivArithOp,   tModArithOp,
-  tAndArithOp, tOrArithOp , tXOrArithOp, tShiftArithOp, tCmpArithOp,
+  tAddArithOp,
+  tSubArithOp,
+  tMulArithOp,
+  tDivArithOp,
+  tModArithOp,
+  tAndArithOp,
+  tOrArithOp,
+  tXOrArithOp,
+  tShiftArithOp,
+  tCmpArithOp,
 
   // binary untagged float operations
-  fAddArithOp, fSubArithOp, fMulArithOp, fDivArithOp,   fModArithOp,
+  fAddArithOp,
+  fSubArithOp,
+  fMulArithOp,
+  fDivArithOp,
+  fModArithOp,
   fCmpArithOp,
 
   // unary untagged float operations
-  fNegArithOp, fAbsArithOp, fSqrArithOp, f2OopArithOp,
+  fNegArithOp,
+  fAbsArithOp,
+  fSqrArithOp,
+  f2OopArithOp,
 
   // unary tagged float operation
   f2FloatArithOp,
@@ -63,10 +93,9 @@ enum ArithOpCode {
   LastArithOp
 };
 
-
-extern char* BranchOpName[];		// indexed by BranchOpCode
-extern char* ArithOpName[];		// indexed by ArithOpCode
-extern bool  ArithOpIsCommutative[];	// indexed by ArithOpCode
+extern char* BranchOpName[]; // indexed by BranchOpCode
+extern char* ArithOpName[]; // indexed by ArithOpCode
+extern bool ArithOpIsCommutative[]; // indexed by ArithOpCode
 
 #endif // DELTA_COMPILER
 #endif // _OPCODE_HPP

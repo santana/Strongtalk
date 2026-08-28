@@ -38,38 +38,37 @@ namespace easyunit {
  * tests and print results. All methods that should be used by
  * the user are static.
  */
-class TestRegistry: public CHeap
-{
-	public:
-	  TestRegistry();
-		~TestRegistry();
-		
-		/**
+class TestRegistry : public CHeap {
+public:
+  TestRegistry();
+  ~TestRegistry();
+
+  /**
 		 * Add a test in the registry. If the previous TestCase was not the same
 		 * as the one of the current test, a new TestCase is created.
 		 *
 		 * @param test Test to be added
 		 */
-		static void addTest (Test *test);
-		
-		/**
+  static void addTest(Test* test);
+
+  /**
 		 * Run all tests in the registry (default test runner) and return
 		 * the test results.
 		 *
 		 * @return The test results
 		 */
-		static const TestResult* run();
-		
-		/**
+  static const TestResult* run();
+
+  /**
 		 * Pass all tests in the registry to the TestRunner runner and
 		 * return the results of all tests ran.
 		 *
 		 * @param runner The custom runner used to decided which test to run
 		 * @return The test results of all tests ran
 		 */
-		static const TestResult* run(TestRunner *runner);
-		
-		/**
+  static const TestResult* run(TestRunner* runner);
+
+  /**
 		 * Run all tests in the registry (default test runner) and return
 		 * the test results. This will also print the results using the
 		 * default test printer (normal level of details and to the standard
@@ -77,9 +76,9 @@ class TestRegistry: public CHeap
 		 *
 		 * @return The test results
 		 */
-		static const TestResult* runAndPrint();
-		
-		/**
+  static const TestResult* runAndPrint();
+
+  /**
 		 * Pass all tests in the registry to the TestRunner runner and
 		 * return the results of all tests ran. This will also print the results 
 		 * using the default test printer (normal level of details and to the 
@@ -88,9 +87,9 @@ class TestRegistry: public CHeap
 		 * @param runner The custom runner used to decided which test to run
 		 * @return The test results
 		 */
-		static const TestResult* runAndPrint(TestRunner *runner);
-		
-		/**
+  static const TestResult* runAndPrint(TestRunner* runner);
+
+  /**
 		 * Run all tests in the registry (default test runner) and return
 		 * the test results. Results will also be given to   
 		 * to the TestPrinter printer.
@@ -98,9 +97,9 @@ class TestRegistry: public CHeap
 		 * @param printer The custom printer used to print the test results
 		 * @return The test results
 		 */
-		static const TestResult* runAndPrint(TestPrinter *printer);
-		
-		/**
+  static const TestResult* runAndPrint(TestPrinter* printer);
+
+  /**
 		 * Pass all tests in the registry to the TestRunner runner and
 		 * return the results of all tests ran. Results will also be given to   
 		 * to the TestPrinter printer.
@@ -109,21 +108,20 @@ class TestRegistry: public CHeap
 		 * @param runner The custom runner used to decided which test to run
 		 * @return The test results
 		 */
-		static const TestResult* runAndPrint(TestPrinter *printer, TestRunner *runner);
-		
-	private:
-		static TestRegistry& instance();
-		static int nextName;
-		void add(Test *test);
-		void addTestCase(TestCase *testCase);
-		int testCaseCount_;
-		const TestResult* runTests(TestRunner *runner);
-		TestCase *currentTC_;
-		TestPrinter *defaultPrinter_;
-		TestRunner *defaultRunner_;
-		TestResult testResult_;
+  static const TestResult* runAndPrint(TestPrinter* printer, TestRunner* runner);
+
+private:
+  static TestRegistry& instance();
+  static int nextName;
+  void add(Test* test);
+  void addTestCase(TestCase* testCase);
+  int testCaseCount_;
+  const TestResult* runTests(TestRunner* runner);
+  TestCase* currentTC_;
+  TestPrinter* defaultPrinter_;
+  TestRunner* defaultRunner_;
+  TestResult testResult_;
 };
 
 } // EasyUnit ns
 #endif // TESTREGISTRY_H
-

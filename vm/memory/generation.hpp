@@ -29,7 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // A generation is a bunch of spaces of similarly-aged objects
 
-class generation: ValueObj {
+class generation : ValueObj {
   friend class rSet;
   friend class Universe;
   friend class MarkSweep;
@@ -37,14 +37,14 @@ class generation: ValueObj {
   friend class byteArrayOopDesc;
   friend class oldGeneration;
 
- protected:
+protected:
   // Minimum and maximum addresses, used by card marking code.
   // Must not overlap with address ranges of other generation(s).
-  char *low_boundary;
-  char *high_boundary;
+  char* low_boundary;
+  char* high_boundary;
   VirtualSpace virtual_space;
 
- public:
+public:
   // space enquiries
   virtual int capacity() = 0;
   virtual int used() = 0;
@@ -53,22 +53,21 @@ class generation: ValueObj {
   void print();
 };
 
-
-class newGeneration: public generation {
+class newGeneration : public generation {
   friend class rSet;
   friend class Universe;
   friend class MarkSweep;
   friend class OopNCode;
 
- private:
+private:
   edenSpace eden_space;
   survivorSpace* from_space;
   survivorSpace* to_space;
 
- public:
-  edenSpace*      eden() { return &eden_space; }
-  survivorSpace*  from() { return from_space;  }
-  survivorSpace*  to()   { return to_space;    }
+public:
+  edenSpace* eden() { return &eden_space; }
+  survivorSpace* from() { return from_space; }
+  survivorSpace* to() { return to_space; }
 
   // space enquiries
   int capacity();
@@ -84,21 +83,20 @@ class newGeneration: public generation {
 
   void swap_spaces();
 
-  bool contains(void* p) {
-    return (char*)p >= low_boundary && (char*)p < high_boundary; }
+  bool contains(void* p) { return (char*)p >= low_boundary && (char*)p < high_boundary; }
 
   oop* object_start(oop* p);
 
   oop* allocate(int size) { return eden()->allocate(size); }
-  oop* allocate_in_survivor_space(int size) {
-    return to_space->allocate(size); }
+  oop* allocate_in_survivor_space(int size) { return to_space->allocate(size); }
 
-  char *boundary() { return high_boundary; }
- protected:
-  inline bool is_new(memOop p, char *boundary); // inlined in generation.dcl.h
-  inline bool is_new(oop p,    char *boundary); // ditto
+  char* boundary() { return high_boundary; }
 
- private:
+protected:
+  inline bool is_new(memOop p, char* boundary); // inlined in generation.dcl.h
+  inline bool is_new(oop p, char* boundary); // ditto
+
+private:
   // called by Universe
   void initialize(ReservedSpace rs, int eden_size, int surv_size);
 
@@ -110,8 +108,7 @@ class newGeneration: public generation {
   void switch_pointers(oop from, oop to);
 };
 
-
-class oldGeneration: public generation {
+class oldGeneration : public generation {
   friend class rSet;
   friend class Universe;
   friend class MarkSweep;
@@ -120,28 +117,26 @@ class oldGeneration: public generation {
 
   oop* allocate_in_next_space(int size);
 
- private:
+private:
   // OldGeneration consists of a linked lists of spaces.
-  // [ ] -> [ ] -> [ ] -> [ ] -> [ ] 
+  // [ ] -> [ ] -> [ ] -> [ ] -> [ ]
   //  ^             ^             ^
   // first         current       last
 
-  oldSpace *first_space;
-  oldSpace *current_space;
-  oldSpace *last_space;
+  oldSpace* first_space;
+  oldSpace* current_space;
+  oldSpace* last_space;
 
- public:
+public:
   int expand(int size);
   int shrink(int size);
 
-  oop* allocate(int size, bool allow_expansion=true) {
-    return current_space->allocate(size, allow_expansion);
-  }
+  oop* allocate(int size, bool allow_expansion = true) { return current_space->allocate(size, allow_expansion); }
 
   // called by Universe
   void initialize(ReservedSpace rs, int initial_size);
 
- public:
+public:
   // space enquiries
   int capacity();
   int used();
@@ -166,29 +161,27 @@ class oldGeneration: public generation {
   bool contains(void* p);
   oop* object_start(oop* p);
 
-  OldWaterMark top_mark()    { return current_space->top_mark(); }
+  OldWaterMark top_mark() { return current_space->top_mark(); }
   OldWaterMark bottom_mark() { return first_space->bottom_mark(); }
   OldSpaceMark memo() { return OldSpaceMark(current_space); }
- private:
+
+private:
   void scavenge_contents_from(OldWaterMark* mark);
 
   void switch_pointers(oop from, oop to);
   void switch_pointers_by_card(oop from, oop to);
 
-  void sorted_space_list(oldSpace *sp[], int (*cmp)(oldSpace**, oldSpace**));
+  void sorted_space_list(oldSpace* sp[], int (*cmp)(oldSpace**, oldSpace**));
 
   // phase2 of mark sweep
   void prepare_for_compaction(OldWaterMark* mark);
   // phase3 of mark sweep
   void compact(OldWaterMark* mark);
 
-  void append_space(oldSpace *last);
+  void append_space(oldSpace* last);
 };
 
 // ensure that you surround the call with {} to prevent s leaking out!
-#define FOR_EACH_OLD_SPACE(s) \
-  for (oldSpace *s= Universe::old_gen.first_space;               \
-       s != NULL;                                               \
-       s= s->next_space)
+#define FOR_EACH_OLD_SPACE(s) for (oldSpace* s = Universe::old_gen.first_space; s != NULL; s = s->next_space)
 
 #endif // _GENERATION_HPP

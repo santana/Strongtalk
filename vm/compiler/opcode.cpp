@@ -26,65 +26,56 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/opcode.hpp"
 #include "memory/error.hpp"
 
-char* BranchOpName[] = {
-  "B=",    "B#",
-  "B<",    "B<=",    "Bu<",    "Bu<=",
-  "B>",    "B>=",    "Bu>",    "Bu>=",
-  "Bovfl", "Bnofvl",
+char* BranchOpName[] = {"B=",
+                        "B#",
+                        "B<",
+                        "B<=",
+                        "Bu<",
+                        "Bu<=",
+                        "B>",
+                        "B>=",
+                        "Bu>",
+                        "Bu>=",
+                        "Bovfl",
+                        "Bnofvl",
 
-  "last (INVALID)"
-};
+                        "last (INVALID)"};
 
+char* ArithOpName[] = {"nil (INVALID)", "test",
 
-char* ArithOpName[] = {
-  "nil (INVALID)",
-  "test",
+                       // untagged operations
+                       "+", "-", "*", "div", "mod", "and", "or", "xor", "shift", "cmp",
 
-  // untagged operations
-  "+",    "-",    "*",    "div",    "mod",
-  "and",  "or",   "xor",  "shift",  "cmp",
+                       // tagged operations
+                       "t+", "t-", "t*", "tdiv", "tmod", "tand", "tor", "txor", "tshift", "tcmp",
 
-  // tagged operations
-  "t+",   "t-",   "t*",   "tdiv",   "tmod",
-  "tand", "tor",  "txor", "tshift", "tcmp",
+                       // untagged float operations
+                       "f+", "f-", "f*", "fdiv", "fmod", "fcmp",
 
-  // untagged float operations
-  "f+",   "f-",   "f*",   "fdiv",   "fmod",
-  "fcmp",
+                       "fneg", "fabs", "f^2", "f2oop",
 
-  "fneg", "fabs", "f^2", "f2oop", 
+                       // tagged float operation
+                       "f2float",
 
-  // tagged float operation
-  "f2float",
+                       "last (INVALID)"};
 
-  "last (INVALID)"
-};
+bool ArithOpIsCommutative[] = {false, true,
 
+                               // untagged operations
+                               true, false, true, false, false, true, true, true, false, false,
 
-bool ArithOpIsCommutative[] = {
-  false,
-  true,
+                               // tagged operations
+                               true, false, true, false, false, true, true, true, false, false,
 
-  // untagged operations
-  true,  false, true,  false, false,
-  true,  true,  true,  false, false,
+                               // untagged float operations
+                               true, false, true, false, false, false,
 
-  // tagged operations
-  true,  false, true,  false, false,
-  true,  true,  true,  false, false,
+                               false, false, false, false,
 
-  // untagged float operations
-  true,  false, true,  false, false,
-  false,
+                               // tagged float operation
+                               false,
 
-  false, false, false, false,
-
-  // tagged float operation
-  false,
-
-  false
-};
-
+                               false};
 
 void opcode_init() {
   if (sizeof(BranchOpName) / sizeof(char*) != LastBranchOp + 1) {
@@ -93,7 +84,7 @@ void opcode_init() {
   if (sizeof(ArithOpName) / sizeof(char*) != LastArithOp + 1) {
     fatal("forgot to change ArithOpName after changing ArithOpCode");
   }
-  if (sizeof(ArithOpIsCommutative) / sizeof(bool) !=  LastArithOp + 1) {
+  if (sizeof(ArithOpIsCommutative) / sizeof(bool) != LastArithOp + 1) {
     fatal("forgot to change ArithOpIsCommutative after changing ArithOpCode");
   }
 }

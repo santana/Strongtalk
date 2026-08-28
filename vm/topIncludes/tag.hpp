@@ -28,18 +28,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-const int Int_Tag      = 0;
-const int Mem_Tag      = 1;
-const int Mark_Tag     = 3;
-const int Mark_Tag_Bit = 2;	// (oop & Mark_Tag_Bit) != 0  --> oop is a markOop
+const int Int_Tag = 0;
+const int Mem_Tag = 1;
+const int Mark_Tag = 3;
+const int Mark_Tag_Bit = 2; // (oop & Mark_Tag_Bit) != 0  --> oop is a markOop
 
 const intptr_t Tag_Size = 2;
 // Tag_Mask must be pointer-width: tag()/maskBits operate on intptr_t oop
 // values and narrowing a 64-bit mask to int trips -Wconstant-conversion.
-const intptr_t Tag_Mask   = nthMask(Tag_Size);
-const intptr_t Num_Tags   = nthBit(Tag_Size);
+const intptr_t Tag_Mask = nthMask(Tag_Size);
+const intptr_t Num_Tags = nthBit(Tag_Size);
 
-# define clearTag(oop)  (int(oop) & ~Tag_Mask)
+#define clearTag(oop) (int(oop) & ~Tag_Mask)
 
 inline int byteOffset(int offset) {
   // Computes the byte offset from the beginning of an oop

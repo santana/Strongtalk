@@ -34,13 +34,12 @@ void Variable::print() {
     mystd->print("S[%d]", offset());
   } else if (is_unused()) {
     mystd->print("UN");
-  } else if (is_top_of_stack()){
+  } else if (is_top_of_stack()) {
     mystd->print("tos");
   } else {
     fatal("invalid variable");
   }
 }
-
 
 Variable MapConformance::pop_temporary() {
   Variable result = Variable::top_of_stack();
@@ -63,50 +62,54 @@ void MapConformance::push(Variable src, int n) {
   }
 }
 class MappingEntry : public ValueObj {
- private:
+private:
   Variable _reg;
   Variable _stack;
- public:
+
+public:
   MappingEntry(Variable reg, Variable stack) {
-    _reg   = reg;
+    _reg = reg;
     _stack = stack;
   }
-  Variable reg()   { return _reg;  }
+  Variable reg() { return _reg; }
   Variable stack() { return _stack; }
 
-  bool has_reg()   { return !reg().is_unused(); }
+  bool has_reg() { return !reg().is_unused(); }
   bool has_stack() { return !stack().is_unused(); }
 
-  void set_reg(Variable r)   { _reg = r; }
+  void set_reg(Variable r) { _reg = r; }
   void set_stack(Variable s) { _stack = s; }
 
   void print();
 };
 
 void MappingEntry::print() {
-  if (!reg().is_unused())   reg().print();
-  if (!stack().is_unused()) stack().print();
+  if (!reg().is_unused())
+    reg().print();
+  if (!stack().is_unused())
+    stack().print();
 }
 
-bool operator == (MappingEntry x, MappingEntry y) {
+bool operator==(MappingEntry x, MappingEntry y) {
   return x.reg() == y.reg() && x.stack() == y.stack();
 }
 
 class MappingTask : public ResourceObj {
- private:
-  MappingTask* _next;         // next task with same source
-  MappingTask* _parent;       // parent chain for recursion
-  bool         _is_processed; 
-  char*        _what_happend; // what happend to this task
-  bool         _uses_top_of_stack;
-  Variable     _variable_to_free;
- public:
-  MappingTask(Variable src_register, Variable src_stack, Variable dst_register, Variable dst_stack) 
-  : src(src_register, src_stack), dst(dst_register, dst_stack) {
-    _next         = NULL;
+private:
+  MappingTask* _next; // next task with same source
+  MappingTask* _parent; // parent chain for recursion
+  bool _is_processed;
+  char* _what_happend; // what happend to this task
+  bool _uses_top_of_stack;
+  Variable _variable_to_free;
+
+public:
+  MappingTask(Variable src_register, Variable src_stack, Variable dst_register, Variable dst_stack) :
+    src(src_register, src_stack), dst(dst_register, dst_stack) {
+    _next = NULL;
     _is_processed = false;
     _what_happend = "Nothing";
-    _parent       = NULL;
+    _parent = NULL;
     _uses_top_of_stack = false;
     _variable_to_free = Variable::unused();
   }
@@ -118,7 +121,7 @@ class MappingTask : public ResourceObj {
   }
 
   void append(MappingTask* son) {
-    assert(!is_processed(),      "should be un touched");
+    assert(!is_processed(), "should be un touched");
     assert(!son->is_processed(), "should be un touched");
     son->set_next(next());
     set_next(son);
@@ -147,7 +150,7 @@ class MappingTask : public ResourceObj {
   bool is_dependent(MapConformance* mc, MappingTask* task);
   bool in_parent_chain(MappingTask* task);
 
-  int  number_of_targets();
+  int number_of_targets();
 
   void print(int index);
 };
@@ -155,16 +158,18 @@ class MappingTask : public ResourceObj {
 int MappingTask::number_of_targets() {
   int result = 0;
   for (MappingTask* current = this; current; current = current->next()) {
-    if (current->dst.has_reg())   result++;
-    if (current->dst.has_stack()) result++;
+    if (current->dst.has_reg())
+      result++;
+    if (current->dst.has_stack())
+      result++;
   }
   return result;
 }
 
-
 bool MappingTask::in_parent_chain(MappingTask* task) {
   for (MappingTask* current = this; current; current = current->parent()) {
-    if (current == task) return true;
+    if (current == task)
+      return true;
   }
   return false;
 }
@@ -177,13 +182,13 @@ bool MappingTask::target_includes(Variable var) {
   return false;
 }
 
-
 bool MappingTask::is_dependent(MapConformance* mc, MappingTask* task) {
   // Do we have to process task before this?
   // => do task->results overlap with src?
-  if (this == task) return false;
+  if (this == task)
+    return false;
 
-  bool is_reg_dependent   = false;
+  bool is_reg_dependent = false;
   bool is_stack_dependent = false;
 
   if (task->src.has_reg()) {
@@ -202,27 +207,27 @@ bool MappingTask::is_dependent(MapConformance* mc, MappingTask* task) {
           task->src.set_stack(Variable::unused());
         }
         Variable temp = mc->pop_temporary();
-	if (temp.is_top_of_stack()) {
-	  mc->push(task->src.reg(), number_of_targets());
+        if (temp.is_top_of_stack()) {
+          mc->push(task->src.reg(), number_of_targets());
           task->src.set_reg(temp);
-	  task->set_uses_top_of_stack(true);
-	} else {
-	  mc->move(task->src.reg(), temp);
+          task->set_uses_top_of_stack(true);
+        } else {
+          mc->move(task->src.reg(), temp);
           task->src.set_reg(temp);
-	  task->set_variable_to_free(temp);
-	}
+          task->set_variable_to_free(temp);
+        }
       } else {
         Variable temp = mc->pop_temporary();
-	if (temp.is_top_of_stack()) {
-	  mc->push(task->src.stack(), number_of_targets());
+        if (temp.is_top_of_stack()) {
+          mc->push(task->src.stack(), number_of_targets());
           task->src.set_reg(temp);
-	  task->set_uses_top_of_stack(true);
-	} else {
-	  mc->move(task->src.stack(), temp);
+          task->set_uses_top_of_stack(true);
+        } else {
+          mc->move(task->src.stack(), temp);
           task->src.set_reg(temp);
-	  task->src.set_stack(Variable::unused());
-	  task->set_variable_to_free(temp);
-	}
+          task->src.set_stack(Variable::unused());
+          task->set_variable_to_free(temp);
+        }
       }
       return false;
     }
@@ -232,7 +237,8 @@ bool MappingTask::is_dependent(MapConformance* mc, MappingTask* task) {
 }
 
 void MappingTask::process_task(MapConformance* mc, MappingTask* p) {
-  if (is_processed()) return;
+  if (is_processed())
+    return;
 
   //Is anybody dependent on source?
   set_parent(p);
@@ -256,8 +262,8 @@ void MappingTask::generate_code(MapConformance* mc) {
   if (uses_top_of_stack()) {
     //Use source register for moves
     for (MappingTask* current = this; current; current = current->next()) {
-      if(current->dst.has_reg()) {
-	mc->pop(current->dst.reg()); 
+      if (current->dst.has_reg()) {
+        mc->pop(current->dst.reg());
       }
       if (dst.has_stack() && !(src.stack() == dst.stack())) {
         mc->pop(current->dst.stack());
@@ -266,8 +272,8 @@ void MappingTask::generate_code(MapConformance* mc) {
   } else if (src.has_reg()) {
     //Use source register for moves
     for (MappingTask* current = this; current; current = current->next()) {
-      if(current->dst.has_reg()) {
-	mc->move(src.reg(), current->dst.reg()); 
+      if (current->dst.has_reg()) {
+        mc->move(src.reg(), current->dst.reg());
       }
       if (current->dst.has_stack() && !(src.stack() == current->dst.stack())) {
         mc->move(src.reg(), current->dst.stack());
@@ -277,7 +283,8 @@ void MappingTask::generate_code(MapConformance* mc) {
     //Use register in target or free register
     Variable temp;
     for (MappingTask* current = this; current; current = current->next()) {
-      if(current->dst.has_reg()) temp = current->dst.reg();
+      if (current->dst.has_reg())
+        temp = current->dst.reg();
     }
     if (temp.is_unused()) {
       uses_temp = true;
@@ -287,8 +294,8 @@ void MappingTask::generate_code(MapConformance* mc) {
       //We found a temporary register
       mc->move(src.stack(), temp);
       for (MappingTask* current = this; current; current = current->next()) {
-        if(current->dst.has_reg() && !(current->dst.reg() == temp)) {
-	  mc->move(temp, current->dst.reg()); 
+        if (current->dst.has_reg() && !(current->dst.reg() == temp)) {
+          mc->move(temp, current->dst.reg());
         }
         if (current->dst.has_stack() && !(src.stack() == current->dst.stack())) {
           mc->move(temp, current->dst.stack());
@@ -299,13 +306,13 @@ void MappingTask::generate_code(MapConformance* mc) {
       }
     } else {
       for (MappingTask* current = this; current; current = current->next()) {
-        if(current->dst.has_reg()) {
-	  mc->push(src.stack());
-	  mc->pop(current->dst.reg()); 
+        if (current->dst.has_reg()) {
+          mc->push(src.stack());
+          mc->pop(current->dst.reg());
         }
         if (current->dst.has_stack() && !(src.stack() == current->dst.stack())) {
-	  mc->push(src.stack());
-	  mc->pop(current->dst.stack()); 
+          mc->push(src.stack());
+          mc->pop(current->dst.stack());
         }
       }
     }
@@ -326,26 +333,27 @@ void MappingTask::print(int index) {
 }
 
 MapConformance::MapConformance() {
-  mappings       = new GrowableArray<MappingTask*>(20);
+  mappings = new GrowableArray<MappingTask*>(20);
   used_variables = NULL;
   _free_register.set_unused();
 }
 
-void MapConformance::append_mapping(Variable src_register, Variable src_stack, Variable dst_register, Variable dst_stack) {
+void MapConformance::append_mapping(Variable src_register, Variable src_stack, Variable dst_register,
+                                    Variable dst_stack) {
   mappings->append(new MappingTask(src_register, src_stack, dst_register, dst_stack));
 }
 
 void MapConformance::generate(Variable free_register1, Variable free_register2) {
- this->_free_register  = free_register1;
- // There is max. 2 used variables per mapping.
- this->used_variables = NEW_RESOURCE_ARRAY(Variable, mappings->length() * 2);
- this->number_of_used_variables = 0;
+  this->_free_register = free_register1;
+  // There is max. 2 used variables per mapping.
+  this->used_variables = NEW_RESOURCE_ARRAY(Variable, mappings->length() * 2);
+  this->number_of_used_variables = 0;
 
- simplify();
- process_tasks();
+  simplify();
+  process_tasks();
 
- this->_free_register.set_unused();
- this->used_variables = NULL;
+  this->_free_register.set_unused();
+  this->used_variables = NULL;
 }
 
 void MapConformance::move(Variable src, Variable dst) {
@@ -387,7 +395,8 @@ bool MapConformance::reduce_noop_task(MappingTask* task) {
     result = false;
   }
 
-  if (result) task->set_processed("Noop");
+  if (result)
+    task->set_processed("Noop");
   return result;
 }
 
@@ -398,7 +407,8 @@ void MapConformance::simplify() {
     if (!x_task->is_processed() && !reduce_noop_task(x_task)) {
       for (int y = x + 1; y < mappings->length(); y++) {
         MappingTask* y_task = mappings->at(y);
-        if (x_task->src == y_task->src) x_task->append(y_task);
+        if (x_task->src == y_task->src)
+          x_task->append(y_task);
       }
     }
   }

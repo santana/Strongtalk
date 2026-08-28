@@ -50,18 +50,17 @@ typedef struct {
 class OopChunk : public ResourceObj {
 private:
   oopAssoc oop_start[1000];
-  const oopAssoc* oop_end;;
+  const oopAssoc* oop_end;
+  ;
   oopAssoc* next;
 
 public:
   OopChunk() {
-    oop_end = oop_start + 1000 - 1;// account for pre-increment in append
+    oop_end = oop_start + 1000 - 1; // account for pre-increment in append
     next = oop_start - 1;
   }
 
-  bool isFull() {
-    return next >= oop_end;
-  }
+  bool isFull() { return next >= oop_end; }
 
   oop* append(oop* anOop) {
     assert(!isFull(), "Cannot append to full OopChunk");
@@ -88,8 +87,8 @@ private:
   OopChunk* current;
 
   void newChunk() {
-      current = new OopChunk();
-      chunks->append(current);
+    current = new OopChunk();
+    chunks->append(current);
   }
 
 public:
@@ -106,30 +105,30 @@ public:
   }
 
   void fixupOops() {
-    while(chunks->nonEmpty())
+    while (chunks->nonEmpty())
       chunks->pop()->fixupOops();
   }
 };
 
 GrowableArray<memOop>* MarkSweep::stack;
-GrowableArray<intptr_t>*    MarkSweep::hcode_offsets;
-int                    MarkSweep::hcode_pos;
-OopRelocations*        MarkSweep::oopRelocations;
-
+GrowableArray<intptr_t>* MarkSweep::hcode_offsets;
+int MarkSweep::hcode_pos;
+OopRelocations* MarkSweep::oopRelocations;
 
 void oopVerify(oop* p) {
   (*p)->verify();
 }
 
 oop MarkSweep::collect(oop p) {
-  FlagSetting  fl(GCInProgress, true);
-  EventMarker  em("Garbage Collect");
+  FlagSetting fl(GCInProgress, true);
+  EventMarker em("Garbage Collect");
   ResourceMark rm;
-  TraceTime    t("Garbage collection", PrintGC);
+  TraceTime t("Garbage collection", PrintGC);
 
   int old_used = Universe::old_gen.used();
 
-  if (VerifyBeforeScavenge || VerifyBeforeGC) Universe::verify();
+  if (VerifyBeforeScavenge || VerifyBeforeGC)
+    Universe::verify();
 
   // Clear all vm inline caches
   DeltaCallCache::clearAll();
@@ -137,14 +136,14 @@ oop MarkSweep::collect(oop p) {
   // clear remembered set; it is used for object sizes
   Universe::remembered_set->clear();
 
-  allocate();	// allocate stack for traversal
-  
+  allocate(); // allocate stack for traversal
+
   mark_sweep_phase1(&p);
   mark_sweep_phase2();
   mark_sweep_phase3();
 
   deallocate(); // clear allocated structures
-  
+
   // clear the remember set; we have no pointers from old to new
   Universe::remembered_set->clear();
 
@@ -156,23 +155,22 @@ oop MarkSweep::collect(oop p) {
   }
 
   if (PrintGC) {
-    mystd->print(" %.1fM -> %.1fM",
-               (double) old_used                 / (double) (1024 * 1024),
-               (double) Universe::old_gen.used() / (double) (1024 * 1024));
+    mystd->print(" %.1fM -> %.1fM", (double)old_used / (double)(1024 * 1024),
+                 (double)Universe::old_gen.used() / (double)(1024 * 1024));
   }
 
   return p;
 }
 
 void MarkSweep::allocate() {
-  stack         = new GrowableArray<memOop>(200);
+  stack = new GrowableArray<memOop>(200);
   hcode_offsets = new GrowableArray<intptr_t>(100);
-  hcode_pos     = 0;
+  hcode_pos = 0;
   oopRelocations = new OopRelocations();
 }
 
 void MarkSweep::deallocate() {
-  stack         = NULL;
+  stack = NULL;
   hcode_offsets = NULL;
 }
 
@@ -185,11 +183,12 @@ memOop MarkSweep::reverse(oop* p) {
   oop obj = *p;
 
   // Return NULL if non memOop
-  if (!obj->is_mem()) return NULL;
-  if (!oop(p)->is_smi()) {// ie. not word aligned
+  if (!obj->is_mem())
+    return NULL;
+  if (!oop(p)->is_smi()) { // ie. not word aligned
     p = oopRelocations->relocate(p);
   }
-  
+
   if (memOop(obj)->is_gc_marked()) {
     // Reverse pointer
     *p = oop(memOop(obj)->mark());
@@ -198,7 +197,7 @@ memOop MarkSweep::reverse(oop* p) {
     return NULL;
   } else {
     // Before the pointer reversal takes place the object size must be made accessible
-    // without using the klass pointer. We store the object size partially in the 
+    // without using the klass pointer. We store the object size partially in the
     // age field and partially in the remembered set.
     memOop(obj)->gc_store_size();
 
@@ -216,12 +215,14 @@ memOop MarkSweep::reverse(oop* p) {
 
 void MarkSweep::reverse_and_push(oop* p) {
   memOop m = reverse(p);
-  if (m) stack->push(m);
+  if (m)
+    stack->push(m);
 }
 
 void MarkSweep::reverse_and_follow(oop* p) {
   memOop m = reverse(p);
-  if (m) m->follow_contents(); // Follow contents of the marked object
+  if (m)
+    m->follow_contents(); // Follow contents of the marked object
 }
 
 void MarkSweep::follow_root(oop* p) {
@@ -291,4 +292,3 @@ void MarkSweep::mark_sweep_phase3() {
   // we converted these pointers in phase1.
   Processes::restore_hcode_pointers();
 }
-

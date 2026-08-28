@@ -21,8 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-#ifndef  _ERROR_HPP
-#define  _ERROR_HPP
+#ifndef _ERROR_HPP
+#define _ERROR_HPP
 
 #include "topIncludes/macros.hpp"
 
@@ -38,42 +38,97 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define LINE_INFO __LINE__
 #endif
 
-
-
 extern "C" {
-  void breakpoint();		// called at every warning
-  void error_breakpoint();	// called at every error or fatal
+void breakpoint(); // called at every warning
+void error_breakpoint(); // called at every error or fatal
 }
 
 #ifdef ASSERT
-#define assert(b,msg)                                            \
-  if (!(b)) {                                                    \
-    report_assertion_failure(XSTR(b),FILE_INFO, LINE_INFO, msg); \
-    breakpoint();                                             \
+#define assert(b, msg)                                                                                                 \
+  if (!(b)) {                                                                                                          \
+    report_assertion_failure(XSTR(b), FILE_INFO, LINE_INFO, msg);                                                      \
+    breakpoint();                                                                                                      \
   }
 #else
-#define assert(b,msg)
+#define assert(b, msg)
 #endif
 
+#define fatal(m)                                                                                                       \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m);                                                                             \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal1(m, x1)                                                                                                  \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1);                                                                         \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal2(m, x1, x2)                                                                                              \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2);                                                                     \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal3(m, x1, x2, x3)                                                                                          \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3);                                                                 \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal4(m, x1, x2, x3, x4)                                                                                      \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4);                                                             \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal5(m, x1, x2, x3, x4, x5)                                                                                  \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5);                                                         \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal6(m, x1, x2, x3, x4, x5, x6)                                                                              \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6);                                                     \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal7(m, x1, x2, x3, x4, x5, x6, x7)                                                                          \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7);                                                 \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal8(m, x1, x2, x3, x4, x5, x6, x7, x8)                                                                      \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7, x8);                                             \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define fatal9(m, x1, x2, x3, x4, x5, x6, x7, x8, x9)                                                                  \
+  {                                                                                                                    \
+    report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7, x8, x9);                                         \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
 
-#define fatal(m)                             { report_fatal(FILE_INFO, LINE_INFO, m                                    ); DEBUG_EXCEPTION; }
-#define fatal1(m,x1)                         { report_fatal(FILE_INFO, LINE_INFO, m, x1                                ); DEBUG_EXCEPTION; }
-#define fatal2(m,x1,x2)                      { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2                            ); DEBUG_EXCEPTION; }
-#define fatal3(m,x1,x2,x3)                   { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3                        ); DEBUG_EXCEPTION; }
-#define fatal4(m,x1,x2,x3,x4)                { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4                    ); DEBUG_EXCEPTION; }
-#define fatal5(m,x1,x2,x3,x4,x5)             { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5                ); DEBUG_EXCEPTION; }
-#define fatal6(m,x1,x2,x3,x4,x5,x6)          { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6            ); DEBUG_EXCEPTION; }
-#define fatal7(m,x1,x2,x3,x4,x5,x6,x7)       { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7        ); DEBUG_EXCEPTION; }
-#define fatal8(m,x1,x2,x3,x4,x5,x6,x7,x8)    { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7, x8    ); DEBUG_EXCEPTION; }
-#define fatal9(m,x1,x2,x3,x4,x5,x6,x7,x8,x9) { report_fatal(FILE_INFO, LINE_INFO, m, x1, x2, x3, x4, x5, x6, x7, x8, x9); DEBUG_EXCEPTION; }
-
-
-#define guarantee(b,msg)         { if (!(b)) fatal(msg); }
-#define ShouldNotCallThis()      { report_should_not_call        (FILE_INFO, LINE_INFO); DEBUG_EXCEPTION; }
-#define ShouldNotReachHere()     { report_should_not_reach_here  (FILE_INFO, LINE_INFO); DEBUG_EXCEPTION; }
-#define SubclassResponsibility() { report_subclass_responsibility(FILE_INFO, LINE_INFO); DEBUG_EXCEPTION; }
-#define Unimplemented()          { report_unimplemented          (FILE_INFO, LINE_INFO); DEBUG_EXCEPTION; }
-
+#define guarantee(b, msg)                                                                                              \
+  {                                                                                                                    \
+    if (!(b))                                                                                                          \
+      fatal(msg);                                                                                                      \
+  }
+#define ShouldNotCallThis()                                                                                            \
+  {                                                                                                                    \
+    report_should_not_call(FILE_INFO, LINE_INFO);                                                                      \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define ShouldNotReachHere()                                                                                           \
+  {                                                                                                                    \
+    report_should_not_reach_here(FILE_INFO, LINE_INFO);                                                                \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define SubclassResponsibility()                                                                                       \
+  {                                                                                                                    \
+    report_subclass_responsibility(FILE_INFO, LINE_INFO);                                                              \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
+#define Unimplemented()                                                                                                \
+  {                                                                                                                    \
+    report_unimplemented(FILE_INFO, LINE_INFO);                                                                        \
+    DEBUG_EXCEPTION;                                                                                                   \
+  }
 
 void report_assertion_failure(char* code_str, char* file_name, int line_no, char* message);
 void report_fatal(char* file_name, int line_no, char* format, ...);

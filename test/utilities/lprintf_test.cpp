@@ -5,9 +5,9 @@
 using namespace easyunit;
 
 DECLARE(errorTests)
-  HeapResourceMark *mark;
-  Notifier* saved;
-  TestNotifier* notifier;
+HeapResourceMark* mark;
+Notifier* saved;
+TestNotifier* notifier;
 END_DECLARE
 
 SETUP(errorTests) {
@@ -17,7 +17,7 @@ SETUP(errorTests) {
   Notifier::current = notifier;
 }
 
-TEARDOWN(errorTests){
+TEARDOWN(errorTests) {
   Notifier::current = saved;
   delete mark;
   mark = NULL;
@@ -28,7 +28,7 @@ TESTF(errorTests, strcmp) {
 
 TESTF(errorTests, errorShouldReportErrorWithOneArgToNotifier) {
   ::error("format %s", "arg1");
-  
+
   ASSERT_EQUALS(1, notifier->errorCount());
   ASSERT_EQUALS(0, strcmp("format arg1", notifier->errorAt(0)));
 }

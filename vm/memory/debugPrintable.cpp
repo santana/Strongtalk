@@ -43,13 +43,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // ------ helper functions for debugging go here ------------
 
 #ifndef DEBUG
-#  ifdef ASSERT
-   // NOTE: don't turn the lines below into a comment -- if you're getting
-   // a compile error here, change the settings to define DEBUG
+#ifdef ASSERT
+// NOTE: don't turn the lines below into a comment -- if you're getting
+// a compile error here, change the settings to define DEBUG
    DEBUG should be defined when ASSERT is defined.  It is intended to be used for debugging
    functions that do not slow down the system too much and thus can be left in optimized code.
    On the other hand, the code should not be included in a production version.
-#  endif
+#endif
 #endif
 
 // All debug entries should be wrapped with a stack allocated
@@ -57,263 +57,263 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // flushes the logfile to prevent file sharing problems.
 
 class Command {
- private:
-  ResourceMark rm;
- public:
-  Command(char* str) {
-    mystd->cr();
-	mystd->print_cr("\"Executing %s\"", str);
-  }
+   private:
+     ResourceMark rm;
 
-  ~Command() {
-    flush_logFile();
-  }
-};
+   public:
+     Command(char* str) {
+       mystd->cr();
+       mystd->print_cr("\"Executing %s\"", str);
+     }
 
+     ~Command() { flush_logFile(); }
+   };
 
-void pp(void* p) {
-  Command c("pp");
-  FlagSetting fl(PrintVMMessages, true);
-  if (p == NULL) {
-    lprintf("0x0");
-    return;
-  }
+   void pp(void* p) {
+     Command c("pp");
+     FlagSetting fl(PrintVMMessages, true);
+     if (p == NULL) {
+       lprintf("0x0");
+       return;
+     }
 
-  if (Universe::is_heap((oop*) p)) {
-    memOop obj = as_memOop(Universe::object_start((oop*) p));
-    obj->print();
-    if (obj->is_method()) {
-      int bci = methodOop(obj)->bci_from((u_char*) p);
-      prettyPrinter::print(methodOop(obj), NULL, bci);
-    }
-    return;
-  }
+     if (Universe::is_heap((oop*)p)) {
+       memOop obj = as_memOop(Universe::object_start((oop*)p));
+       obj->print();
+       if (obj->is_method()) {
+         int bci = methodOop(obj)->bci_from((u_char*)p);
+         prettyPrinter::print(methodOop(obj), NULL, bci);
+       }
+       return;
+     }
 
-  if (oop(p)->is_smi() || oop(p)->is_mark()) {
-    oop(p)->print();
-    return;
-  }
-}
+     if (oop(p)->is_smi() || oop(p)->is_mark()) {
+       oop(p)->print();
+       return;
+     }
+   }
 
-// pv: print vm-printable object
-void pv(int p)   { ((PrintableResourceObj*)(intptr_t) p)->print(); }
+   // pv: print vm-printable object
+   void pv(int p) {
+     ((PrintableResourceObj*)(intptr_t)p)->print();
+   }
 
-void pp_short(void* p) {
-  Command c("pp_short");
-  FlagSetting fl(PrintVMMessages, true);
-  if (p == NULL) {
-    lprintf("0x0");
-  } else if (oop(p)->is_mem()) {
-    // guess that it's a memOop
-    oop(p)->print();
-  } else {
-    // guess that it's a VMObj*
-    // FIX LATER ((VMObj*) p)->print_short_zero();
-  }
-}
+   void pp_short(void* p) {
+     Command c("pp_short");
+     FlagSetting fl(PrintVMMessages, true);
+     if (p == NULL) {
+       lprintf("0x0");
+     } else if (oop(p)->is_mem()) {
+       // guess that it's a memOop
+       oop(p)->print();
+     } else {
+       // guess that it's a VMObj*
+       // FIX LATER ((VMObj*) p)->print_short_zero();
+     }
+   }
 
+   void pk(Klass* p) {
+     Command c("pk");
+     FlagSetting fl(PrintVMMessages, true);
+     p->print_klass();
+   }
 
-void pk(Klass* p) {
-  Command c("pk");
-  FlagSetting fl(PrintVMMessages, true);
-  p->print_klass();
-}
+   void pr(void* m) {
+     Command c("pr");
+     Universe::remembered_set->print_set_for_object(memOop(m));
+   }
 
-void pr(void* m) {
-  Command c("pr");
-  Universe::remembered_set->print_set_for_object(memOop(m));
-}
+   void ps() { // print stack
+     {
+       // Prints the stack of the current Delta process
+       DeltaProcess* p = DeltaProcess::active();
+       if (!p)
+         return;
+       Command c("ps");
+       mystd->print(" for process: ");
+       p->print();
+       mystd->cr();
 
-void ps() { // print stack
-  {
-    // Prints the stack of the current Delta process
-    DeltaProcess* p = DeltaProcess::active();
-    if (!p) return;
-    Command c("ps");
-    mystd->print(" for process: ");
-    p->print();
-    mystd->cr();
+       if (p->last_Delta_fp() != NULL) {
+         // If the last_Delta_fp is set we are in C land and
+         // can call the standard stack_trace function.
+         p->trace_stack();
+       } else {
+         // fp point to the frame of the ps stub routine
+         frame f = p->profile_top_frame();
+         f = f.sender();
+         p->trace_stack_from(vframe::new_vframe(&f));
+       }
+     }
+   }
 
-    if (p->last_Delta_fp() != NULL) {
-      // If the last_Delta_fp is set we are in C land and
-      // can call the standard stack_trace function.
-      p->trace_stack();
-    } else {
-      // fp point to the frame of the ps stub routine
-      frame f = p->profile_top_frame();
-      f = f.sender();
-      p->trace_stack_from(vframe::new_vframe(&f));
-    }
-  }
-}
+   void pss() { // print all stack
+     Command c("pss");
+     Processes::print();
+   }
 
-void pss() { // print all stack
-  Command c("pss");
-  Processes::print();
-}
+   void pd() { // print stack
+     // Retrieve the frame pointer of the current frame
+     {
+       Command c("pd");
+       // Prints the stack of the current Delta process
+       DeltaProcess* p = DeltaProcess::active();
+       mystd->print(" for process: ");
+       p->print();
+       mystd->cr();
 
+       if (p->last_Delta_fp() != NULL) {
+         // If the last_Delta_fp is set we are in C land and
+         // can call the standard stack_trace function.
+         p->trace_stack_for_deoptimization();
+       } else {
+         // fp point to the frame of the ps stub routine
+         frame f = p->profile_top_frame();
+         f = f.sender();
+         p->trace_stack_for_deoptimization(&f);
+       }
+     }
+   }
 
-void pd() { // print stack
-  // Retrieve the frame pointer of the current frame 
-  {
-    Command c("pd");
-    // Prints the stack of the current Delta process
-    DeltaProcess* p = DeltaProcess::active();
-    mystd->print(" for process: ");
-    p->print();
-    mystd->cr();
+   void oat(int index) {
+     Command c("oat");
+     if (objectIDTable::is_index_ok(index)) {
+       oop obj = objectIDTable::at(index);
+       obj->print();
+     } else {
+       mystd->print_cr("index %d out of bounds", index);
+     }
+   }
 
-    if (p->last_Delta_fp() != NULL) {
-      // If the last_Delta_fp is set we are in C land and
-      // can call the standard stack_trace function.
-      p->trace_stack_for_deoptimization();
-    } else {
-      // fp point to the frame of the ps stub routine
-      frame f = p->profile_top_frame();
-      f = f.sender();
-      p->trace_stack_for_deoptimization(&f);
-    }
-  }
-}
+   // please use this to print stacks when reporting compiler bugs
+   void urs_ps() {
+     FlagSetting f1(WizardMode, true);
+     FlagSetting f2(PrintOopAddress, true);
+     FlagSetting f3(ActivationShowCode, true);
+     FlagSetting f4(MaterializeEliminatedBlocks, false);
+     FlagSetting f5(BreakAtWarning, false);
+     ps();
+   }
 
-void oat(int index) {
-  Command c("oat");
-  if (objectIDTable::is_index_ok(index)) {
-    oop obj = objectIDTable::at(index);
-    obj->print();
-  } else {
-    mystd->print_cr("index %d out of bounds", index);
-  }
-}
+   void pc() {
+     Command c("pc");
+     theCompiler->print_code(false);
+   }
 
-// please use this to print stacks when reporting compiler bugs
-void urs_ps() {
-  FlagSetting f1(WizardMode, true);
-  FlagSetting f2(PrintOopAddress, true);
-  FlagSetting f3(ActivationShowCode, true);
-  FlagSetting f4(MaterializeEliminatedBlocks, false);
-  FlagSetting f5(BreakAtWarning, false);
-  ps();
-}
+   void pscopes() {
+     Command c("pscopes");
+     theCompiler->topScope->printTree();
+   }
 
-void pc() 	{
-  Command c("pc");
-  theCompiler->print_code(false);
-}
+   void debug() { // to set things up for compiler debugging
+     Command c("debug");
+     WizardMode = true;
+     PrintVMMessages = true;
+     PrintCompilation = PrintInlining = PrintSplitting = PrintCode = PrintAssemblyCode = PrintEliminateUnnededNodes =
+       true;
+     PrintEliminateContexts = PrintCopyPropagation = PrintRScopes = PrintExposed = PrintLoopOpts = true;
+     AlwaysFlushVMMessages = true;
+     flush_logFile();
+   }
 
-void pscopes()	{
-  Command c("pscopes");
-  theCompiler->topScope->printTree();
-}
+   void ndebug() { // undo debug()
+     Command c("ndebug");
+     PrintCompilation = PrintInlining = PrintSplitting = PrintCode = PrintAssemblyCode = PrintEliminateUnnededNodes =
+       false;
+     PrintEliminateContexts = PrintCopyPropagation = PrintRScopes = PrintExposed = PrintLoopOpts = false;
+     AlwaysFlushVMMessages = false;
+     flush_logFile();
+   }
 
-void debug() {		// to set things up for compiler debugging
-  Command c("debug");
-  WizardMode = true;
-  PrintVMMessages = true;
-  PrintCompilation = PrintInlining = PrintSplitting = PrintCode = PrintAssemblyCode = PrintEliminateUnnededNodes = true;
-  PrintEliminateContexts = PrintCopyPropagation = PrintRScopes = PrintExposed = PrintLoopOpts = true;
-  AlwaysFlushVMMessages = true;
-  flush_logFile();
-}
+   void flush() {
+     Command c("flush");
+     flush_logFile();
+   }
 
-void ndebug() {		// undo debug()
-  Command c("ndebug");
-  PrintCompilation = PrintInlining = PrintSplitting = PrintCode = PrintAssemblyCode = PrintEliminateUnnededNodes = false;
-  PrintEliminateContexts = PrintCopyPropagation = PrintRScopes = PrintExposed = PrintLoopOpts = false;
-  AlwaysFlushVMMessages = false;
-  flush_logFile();
-}
+   void events() {
+     Command c("events");
+     eventLog->printPartial(50);
+   }
 
-void flush()  {
-  Command c("flush");
-  flush_logFile();
-}
+   nmethod* find(int addr) {
+     Command c("find");
+     return findNMethod((void*)(intptr_t)addr);
+   }
 
-void events() {
-  Command c("events");
-  eventLog->printPartial(50);
-}
+   methodOop findm(int hp) {
+     Command c("findm");
+     return methodOopDesc::methodOop_from_hcode((u_char*)(intptr_t)hp);
+   }
 
-nmethod* find(int addr) {
-  Command c("find");
-  return findNMethod((void*)(intptr_t)addr);
-}
+   // int versions of all methods to avoid having to type casts in the debugger
 
-methodOop findm(int hp) { 
-  Command c("findm");
-  return methodOopDesc::methodOop_from_hcode((u_char*)(intptr_t)hp); 
-}
+   void pp(int p) {
+     pp((void*)(intptr_t)p);
+   }
 
-// int versions of all methods to avoid having to type casts in the debugger
+   void pp_short(int p) {
+     pp_short((void*)(intptr_t)p);
+   }
 
-void pp(int p) {
-  pp((void*)(intptr_t)p);
-}
+   void pk(int p) {
+     pk((Klass*)(intptr_t)p);
+   }
 
-void pp_short(int p) {
-  pp_short((void*)(intptr_t)p);
-}
+   void ph(int hp) {
+     Command c("ph");
+     findm(hp)->pretty_print();
+   }
 
-void pk(int p) {
-  pk((Klass*)(intptr_t)p);
-}
+   void pm(int m) {
+     Command c("pm");
+     methodOop((intptr_t)m)->pretty_print();
+   }
 
-void ph(int hp)	{ 
-  Command c("ph");
-  findm(hp)->pretty_print(); 
-}
+   void print_codes(char* class_name, char* selector) {
+     Command c("print_codes");
+     mystd->print_cr("Finding %s in %s.", selector, class_name);
+     oop result = Universe::find_global(class_name);
+     if (!result) {
+       mystd->print_cr("Could not find global %s.", class_name);
+     } else if (!result->is_klass()) {
+       mystd->print_cr("Global %s is not a class.", class_name);
+     } else {
+       symbolOop sel = oopFactory::new_symbol(selector);
+       methodOop method = klassOop(result)->klass_part()->lookup(sel);
+       if (!method)
+         method = result->blueprint()->lookup(sel);
+       if (!method) {
+         mystd->print_cr("Method %s is not in %s.", selector, class_name);
+       } else {
+         method->pretty_print();
+         method->print_codes();
+       }
+     }
+   }
 
-void pm(int m) { 
-  Command c("pm");
-  methodOop((intptr_t)m)->pretty_print(); 
-}
+   void help() {
+     Command c("help");
 
-void print_codes(char* class_name, char* selector) { 
-  Command c("print_codes");
-  mystd->print_cr("Finding %s in %s.", selector, class_name);
-  oop result = Universe::find_global(class_name);
-  if (!result) {
-    mystd->print_cr("Could not find global %s.", class_name);
-  } else if (!result->is_klass()) {
-    mystd->print_cr("Global %s is not a class.", class_name);
-  } else {
-    symbolOop sel = oopFactory::new_symbol(selector);
-    methodOop method = klassOop(result)->klass_part()->lookup(sel);
-    if (!method) method = result->blueprint()->lookup(sel);
-    if (!method) {
-      mystd->print_cr("Method %s is not in %s.", selector, class_name);
-    } else {
-      method->pretty_print();
-      method->print_codes();
-    }
-  }
-}
+     mystd->print_cr("basic");
+     mystd->print_cr("  pp(void* p)   - try to make sense of p");
+     mystd->print_cr("  pv(int p)     - ((PrintableResourceObj*) p)->print()");
+     mystd->print_cr("  ps()          - print current process stack");
+     mystd->print_cr("  pss()         - print all process stacks");
+     mystd->print_cr("  oat(int i)    - print object with id = i");
 
-void help() { 
-  Command c("help");
+     mystd->print_cr("methodOop");
+     mystd->print_cr("  pm(int m)     - pretty print methodOop(m)");
+     mystd->print_cr("  ph(int hp)    - pretty print method containing hp");
+     mystd->print_cr("  findm(int hp) - returns methodOop containing hp");
 
+     mystd->print_cr("misc.");
+     mystd->print_cr("  flush()       - flushes the log file");
+     mystd->print_cr("  events()      - dump last 50 event");
 
-  mystd->print_cr("basic");
-  mystd->print_cr("  pp(void* p)   - try to make sense of p");
-  mystd->print_cr("  pv(int p)     - ((PrintableResourceObj*) p)->print()");
-  mystd->print_cr("  ps()          - print current process stack");
-  mystd->print_cr("  pss()         - print all process stacks");
-  mystd->print_cr("  oat(int i)    - print object with id = i");
- 
-  mystd->print_cr("methodOop");
-  mystd->print_cr("  pm(int m)     - pretty print methodOop(m)");
-  mystd->print_cr("  ph(int hp)    - pretty print method containing hp");
-  mystd->print_cr("  findm(int hp) - returns methodOop containing hp");
-
-  mystd->print_cr("misc.");
-  mystd->print_cr("  flush()       - flushes the log file");
-  mystd->print_cr("  events()      - dump last 50 event");
-
-
-  mystd->print_cr("compiler debugging");
-  mystd->print_cr("  debug()       - to set things up for compiler debugging");
-  mystd->print_cr("  ndebug()      - undo debug");
-  mystd->print_cr("  pc()          - theCompiler->print_code(false)");
-  mystd->print_cr("  pscopes()     - theCompiler->topScope->printTree()");
-  mystd->print_cr("  urs_ps()      - print current process stack with many flags turned on");
-}
+     mystd->print_cr("compiler debugging");
+     mystd->print_cr("  debug()       - to set things up for compiler debugging");
+     mystd->print_cr("  ndebug()      - undo debug");
+     mystd->print_cr("  pc()          - theCompiler->print_code(false)");
+     mystd->print_cr("  pscopes()     - theCompiler->topScope->printTree()");
+     mystd->print_cr("  urs_ps()      - print current process stack with many flags turned on");
+   }

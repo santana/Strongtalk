@@ -29,108 +29,86 @@ using namespace easyunit;
 
 static const int DEFAULT_SIZE = 20;
 
-SimpleString::SimpleString ()
-: buffer((char*) malloc(sizeof(char)))
-{
-	buffer [0] = '\0';
+SimpleString::SimpleString() : buffer((char*)malloc(sizeof(char))) {
+  buffer[0] = '\0';
 }
 
-SimpleString::SimpleString (const char *otherBuffer)
-: buffer (NEW_BUFFER(strlen (otherBuffer) + 1))
-{
-	strcpy (buffer, otherBuffer);
+SimpleString::SimpleString(const char* otherBuffer) : buffer(NEW_BUFFER(strlen(otherBuffer) + 1)) {
+  strcpy(buffer, otherBuffer);
 }
 
-SimpleString::SimpleString (const SimpleString& other)
-{
-	buffer = NEW_BUFFER(other.size() + 1);
-	strcpy(buffer, other.buffer);
+SimpleString::SimpleString(const SimpleString& other) {
+  buffer = NEW_BUFFER(other.size() + 1);
+  strcpy(buffer, other.buffer);
 }
 
-
-SimpleString SimpleString::operator= (const SimpleString& other)
-{
-	delete buffer;
-	buffer = NEW_BUFFER(other.size() + 1);
-	strcpy(buffer, other.buffer);	
-	return *this;
+SimpleString SimpleString::operator=(const SimpleString& other) {
+  delete buffer;
+  buffer = NEW_BUFFER(other.size() + 1);
+  strcpy(buffer, other.buffer);
+  return *this;
 }
 
-SimpleString SimpleString::operator+ (const SimpleString& other)
-{
-	SimpleString newS;
-	free(newS.buffer);
-	newS.buffer = NEW_BUFFER(this->size()+other.size()+1);
-	strcpy(newS.buffer,this->asCharString());
-	newS.buffer= strcat(newS.buffer,other.asCharString());
-	return newS;
+SimpleString SimpleString::operator+(const SimpleString& other) {
+  SimpleString newS;
+  free(newS.buffer);
+  newS.buffer = NEW_BUFFER(this->size() + other.size() + 1);
+  strcpy(newS.buffer, this->asCharString());
+  newS.buffer = strcat(newS.buffer, other.asCharString());
+  return newS;
 }
 
-char *SimpleString::asCharString () const
-{
-	return buffer;
+char* SimpleString::asCharString() const {
+  return buffer;
 }
 
-int SimpleString::size() const
-{
-	return strlen (buffer);
+int SimpleString::size() const {
+  return strlen(buffer);
 }
 
-SimpleString::~SimpleString ()
-{
-	free(buffer);
+SimpleString::~SimpleString() {
+  free(buffer);
 }
 
-bool easyunit::operator== (const SimpleString& left, const SimpleString& right)
-{
-	return !strcmp (left.asCharString (), right.asCharString ());
+bool easyunit::operator==(const SimpleString& left, const SimpleString& right) {
+  return !strcmp(left.asCharString(), right.asCharString());
 }
 
-bool easyunit::operator!= (const SimpleString& left, const SimpleString& right)
-{
-	return !(left == right);
+bool easyunit::operator!=(const SimpleString& left, const SimpleString& right) {
+  return !(left == right);
 }
 
-SimpleString easyunit::StringFrom (bool value)
-{
-	char buffer [sizeof ("false") + 1];
-	snprintf (buffer, sizeof (buffer), "%s", value ? "true" : "false");
-	return SimpleString(buffer);
+SimpleString easyunit::StringFrom(bool value) {
+  char buffer[sizeof("false") + 1];
+  snprintf(buffer, sizeof(buffer), "%s", value ? "true" : "false");
+  return SimpleString(buffer);
 }
 
-SimpleString easyunit::StringFrom (const char *value)
-{
-	return SimpleString(value);
+SimpleString easyunit::StringFrom(const char* value) {
+  return SimpleString(value);
 }
 
-SimpleString easyunit::StringFrom (long value)
-{
-	char buffer [DEFAULT_SIZE];
-	snprintf (buffer, sizeof (buffer), "%ld", value);
+SimpleString easyunit::StringFrom(long value) {
+  char buffer[DEFAULT_SIZE];
+  snprintf(buffer, sizeof(buffer), "%ld", value);
 
-	return SimpleString(buffer);
+  return SimpleString(buffer);
 }
 
-SimpleString easyunit::StringFrom (int value)
-{
-	char buffer [DEFAULT_SIZE];
-	snprintf (buffer, sizeof (buffer), "%d", value);
+SimpleString easyunit::StringFrom(int value) {
+  char buffer[DEFAULT_SIZE];
+  snprintf(buffer, sizeof(buffer), "%d", value);
 
-	return SimpleString(buffer);
+  return SimpleString(buffer);
 }
 
-SimpleString easyunit::StringFrom (double value)
-{
-	char buffer [DEFAULT_SIZE];
-	snprintf (buffer, sizeof (buffer), "%lf", value);
+SimpleString easyunit::StringFrom(double value) {
+  char buffer[DEFAULT_SIZE];
+  snprintf(buffer, sizeof(buffer), "%lf", value);
 
-	return SimpleString(buffer);
+  return SimpleString(buffer);
 }
 
-SimpleString easyunit::StringFrom (const SimpleString& value)
-{
-	return SimpleString(value);
+SimpleString easyunit::StringFrom(const SimpleString& value) {
+  return SimpleString(value);
 }
-
-
-

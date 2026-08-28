@@ -31,53 +31,60 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class NodeBuilder;
 
-// The Inliner controls and performs method inlining in the compiler.  It contains 
+// The Inliner controls and performs method inlining in the compiler.  It contains
 // all the code to set up the new scopes once a go-ahead decision has been made.
 // (Most of) the actual decisions are made by InliningPolicy (further down).
 
-enum SendKind { NormalSend, SelfSend, SuperSend };
+enum SendKind {
+  NormalSend,
+  SelfSend,
+  SuperSend
+};
 
-class Inliner: public PrintableResourceObj {
+class Inliner : public PrintableResourceObj {
   void reportInline(char* prefix); // Add a comment node delimiting an inlined send
- protected:
-  InlinedScope* sender;		// scope containing the send
+protected:
+  InlinedScope* sender; // scope containing the send
   SendKind kind;
-  InlinedScope* callee;		// scope being inlined (or NULL)
-  SendInfo* _info;		// send being inlined
-  Expr* res;			// result expression
-  SAPReg* resultPR;		// result PReg
-  NodeBuilder* gen;		// current generator (sender's or callee's)
-  MergeNode* merge;		// where multiple versions merge (NULL if only one)
-  char* _msg;			// reason for not inlining the send
-  bool lastLookupFailed;	// last tryLookup failed because no method found
- public:
-  int depth;			// nesting depth (for debug output)
-  
-  Inliner(InlinedScope* s) 	{ this->sender = s; initialize(); }
+  InlinedScope* callee; // scope being inlined (or NULL)
+  SendInfo* _info; // send being inlined
+  Expr* res; // result expression
+  SAPReg* resultPR; // result PReg
+  NodeBuilder* gen; // current generator (sender's or callee's)
+  MergeNode* merge; // where multiple versions merge (NULL if only one)
+  char* _msg; // reason for not inlining the send
+  bool lastLookupFailed; // last tryLookup failed because no method found
+public:
+  int depth; // nesting depth (for debug output)
+
+  Inliner(InlinedScope* s) {
+    this->sender = s;
+    initialize();
+  }
 
   // The inlineXXX generate a non-inlined send if necessary, with the exception
   // of inlineBlockInvocation which returns NULL (and does nothing) if the block
   // shouldn't be inlined
-  Expr* inlineNormalSend	(SendInfo* info);
-  Expr* inlineSuperSend 	(SendInfo* info);
-  Expr* inlineSelfSend  	(SendInfo* info);
-  Expr* inlineBlockInvocation	(SendInfo* info);
+  Expr* inlineNormalSend(SendInfo* info);
+  Expr* inlineSuperSend(SendInfo* info);
+  Expr* inlineSelfSend(SendInfo* info);
+  Expr* inlineBlockInvocation(SendInfo* info);
 
-  SendInfo* info() const	{ return _info; }
-  char* msg() const		{ return _msg; }
+  SendInfo* info() const { return _info; }
+  char* msg() const { return _msg; }
   void print();
 
- protected:
+protected:
   void initialize();
   void initialize(SendInfo* info, SendKind kind);
   Expr* inlineSend();
   void tryInlineSend();
   Expr* inlineMerge(SendInfo* info);
-  Expr* picPredict ();
+  Expr* picPredict();
   Expr* picPredictUnlikely(SendInfo* info, RUntakenScope* uscope);
   Expr* typePredict();
   Expr* genRealSend();
-  InlinedScope* tryLookup(Expr* rcvr);	  // try lookup and determine if should inline send
+  InlinedScope* tryLookup(Expr* rcvr); // try lookup and determine if should inline send
   Expr* doInline(Node* start);
   char* checkSendInPrimFailure();
   InlinedScope* notify(const char* msg);
@@ -89,67 +96,65 @@ class Inliner: public PrintableResourceObj {
   friend class InliningPolicy;
 };
 
-
 class InliningPolicy : public ResourceObj {
   // the instance variables only serve as temporary storage during shouldInline()
- protected:
-  methodOop method;		// target method
- public:
-  int calleeCost;		// cost of inlining candidate
+protected:
+  methodOop method; // target method
+public:
+  int calleeCost; // cost of inlining candidate
 
   InliningPolicy() { method = NULL; }
   char* basic_shouldInline(methodOop method);
-   	// should send be inlined?  returns NULL (--> yes) or rejection msg 
- 	// doesn't rely on compiler-internal information
+  // should send be inlined?  returns NULL (--> yes) or rejection msg
+  // doesn't rely on compiler-internal information
 
-  static bool isCriticalSmiSelector   (const symbolOop sel);
-  static bool isCriticalArraySelector (const symbolOop sel);
-  static bool isCriticalBoolSelector  (const symbolOop sel);
+  static bool isCriticalSmiSelector(const symbolOop sel);
+  static bool isCriticalArraySelector(const symbolOop sel);
+  static bool isCriticalBoolSelector(const symbolOop sel);
 
   // predicted by compiler?
-  static bool isPredictedSmiSelector  (const symbolOop sel);
+  static bool isPredictedSmiSelector(const symbolOop sel);
   static bool isPredictedArraySelector(const symbolOop sel);
-  static bool isPredictedBoolSelector (const symbolOop sel);
+  static bool isPredictedBoolSelector(const symbolOop sel);
 
   // predicted by interpreter?
-  static bool isInterpreterPredictedSmiSelector  (const symbolOop sel);
+  static bool isInterpreterPredictedSmiSelector(const symbolOop sel);
   static bool isInterpreterPredictedArraySelector(const symbolOop sel);
-  static bool isInterpreterPredictedBoolSelector (const symbolOop sel);
+  static bool isInterpreterPredictedBoolSelector(const symbolOop sel);
 
- protected:
-  virtual klassOop receiverKlass() const = 0;		// return receiver klass (NULL if unknown)
-  virtual klassOop nthArgKlass(int nth) const = 0;	// return nth argument of method (NULL if unknown)
+protected:
+  virtual klassOop receiverKlass() const = 0; // return receiver klass (NULL if unknown)
+  virtual klassOop nthArgKlass(int nth) const = 0; // return nth argument of method (NULL if unknown)
   bool shouldNotInline() const;
   bool isBuiltinMethod() const;
 };
 
-
 // inlining policy of compiler
 class CompilerInliningPolicy : public InliningPolicy {
- protected:
-  InlinedScope* sender;		// sending scope
-  Expr* rcvr;			// target receiver 
+protected:
+  InlinedScope* sender; // sending scope
+  Expr* rcvr; // target receiver
 
   klassOop receiverKlass() const;
   klassOop nthArgKlass(int n) const;
- public:
-  char* shouldInline(InlinedScope* sender, InlinedScope* callee);
-  	// should send be inlined?  returns NULL (--> yes) or rejection msg 
-};
 
+public:
+  char* shouldInline(InlinedScope* sender, InlinedScope* callee);
+  // should send be inlined?  returns NULL (--> yes) or rejection msg
+};
 
 // "inlining policy" of recompiler (i.e., guesses whether method will be
 // inlined or not
 class RecompilerInliningPolicy : public InliningPolicy {
- protected:
-  deltaVFrame* _vf;		// top vframe of this method/nmethod; may be NULL
+protected:
+  deltaVFrame* _vf; // top vframe of this method/nmethod; may be NULL
   klassOop receiverKlass() const;
   klassOop nthArgKlass(int n) const;
-  char* shouldInline(nmethod* nm);	// should nm be inlined?
+  char* shouldInline(nmethod* nm); // should nm be inlined?
 
- public:
+public:
   char* shouldInline(RFrame* rf);
-  	// would send be inlined by compiler?  returns NULL (--> yes) or rejection msg 
+  // would send be inlined by compiler?  returns NULL (--> yes) or rejection msg
 };
 
 #endif // DELTA_COMPILER

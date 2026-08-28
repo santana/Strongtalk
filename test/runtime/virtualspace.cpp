@@ -23,10 +23,9 @@ END_DECLARE
 
 SETUP(ReservedSpace) {}
 
-TEARDOWN(ReservedSpace){}
+TEARDOWN(ReservedSpace) {}
 
-TESTF(ReservedSpace, page_align_size)
-{
+TESTF(ReservedSpace, page_align_size) {
   // at least one page
   checkAlignment(0, os::vm_page_size());
   checkAlignment(1, os::vm_page_size());
@@ -40,8 +39,7 @@ TESTF(ReservedSpace, page_align_size)
   checkAlignment(2 * os::vm_page_size() + 1, 3 * os::vm_page_size());
 }
 
-TESTF(ReservedSpace, arbitrary_align_size)
-{
+TESTF(ReservedSpace, arbitrary_align_size) {
   // at least one page
   checkArbitraryAlignment(0, 10000, 10000);
   checkArbitraryAlignment(1, 10000, 10000);

@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives applying to all objects
 
 class oopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -111,7 +112,7 @@ class oopPrimitives : AllStatic {
   static PRIM_DECL_2(not_equal, oop receiver, oop argument);
 
   //%prim
-  // <Object> primitiveOopSize ^<SmallInteger> = 
+  // <Object> primitiveOopSize ^<SmallInteger> =
   //   Internal {
   //     flags = #Pure
   //     name = 'oopPrimitives::oop_size'}
@@ -119,7 +120,7 @@ class oopPrimitives : AllStatic {
   static PRIM_DECL_1(oop_size, oop receiver);
 
   //%prim
-  // <Object> primitiveClass ^<Self class> = 
+  // <Object> primitiveClass ^<Self class> =
   //   Internal {
   //     flags = #(Pure LastDeltaFrameNotNeeded)
   //     name = 'oopPrimitives::klass'}
@@ -127,7 +128,7 @@ class oopPrimitives : AllStatic {
   static PRIM_DECL_1(klass, oop receiver);
 
   //%prim
-  // <NoReceiver> primitiveClassOf: obj <Object> ^<Behavior> = 
+  // <NoReceiver> primitiveClassOf: obj <Object> ^<Behavior> =
   //   Internal {
   //     flags = #(Pure LastDeltaFrameNotNeeded)
   //     name = 'oopPrimitives::klass_of'}
@@ -207,5 +208,5 @@ class oopPrimitives : AllStatic {
   //            }
   //%
   static PRIM_DECL_3(performArguments, oop receiver, oop selector, oop args);
-}; 
+};
 #endif // _OOP_PRIMS_HPP

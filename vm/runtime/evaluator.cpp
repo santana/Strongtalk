@@ -62,14 +62,15 @@ bool patch_last_delta_frame(void** fr, int* dist) {
 
   methodOop method = methodOopDesc::methodOop_from_hcode(v.hp());
 
-  // The interpreter is in the middle of executing a byte code 
+  // The interpreter is in the middle of executing a byte code
   // and the hp pointer points to the current bci and NOT the next bci.
   int bci = method->next_bci_from(v.hp());
 
   // in case of single step we ignore the case with
   // an empty inline cache since the send is reexecuted.
   InterpretedIC* ic = method->ic_at(bci);
-  if (ic && ic->is_empty()) return false;
+  if (ic && ic->is_empty())
+    return false;
 
   *dist = method->next_bci(bci) - bci;
   v.set_hp(v.hp() + *dist);
@@ -85,8 +86,9 @@ static bool is_aborting = false;
 
 void evaluator::single_step(void** fr) {
   int dist;
-  if (!patch_last_delta_frame(fr, &dist)) return;
-  
+  if (!patch_last_delta_frame(fr, &dist))
+    return;
+
   deltaVFrame* df = DeltaProcess::active()->last_delta_vframe();
   assert(df, "delta frame must be present");
 
@@ -110,47 +112,47 @@ bool evaluator::get_line(char* line) {
   int c;
   while (((c = getchar()) != EOF) && (c != '\n'))
     line[end++] = c;
-  while ((end > 0) && ((line[end-1] == ' ') || (line[end-1] == '\t')))
+  while ((end > 0) && ((line[end - 1] == ' ') || (line[end - 1] == '\t')))
     end--;
   line[end] = '\0';
   return c != EOF;
 }
 
-
 class TokenStream : public StackObj {
- private:
+private:
   GrowableArray<char*>* tokens;
   int pos;
   void tokenize(char* str);
   bool match(char* str) { return strcmp(current(), str) == 0; }
- public:
+
+public:
   TokenStream(char* line) {
     tokens = new GrowableArray<char*>(10);
     tokenize(line);
     pos = 0;
   }
   char* current() { return tokens->at(pos); }
-  void  advance() { pos++; }
-  bool  eos()     { return pos >= tokens->length(); }
+  void advance() { pos++; }
+  bool eos() { return pos >= tokens->length(); }
 
   // testers
-  bool is_hat()     { return match("^"); }
-  bool is_step()    { return match("s") || match("step");    }
-  bool is_next()    { return match("n") || match("next");    }
-  bool is_end()     { return match("e") || match("end");     }
-  bool is_cont()    { return match("c") || match("cont");    }
-  bool is_stack()   { return               match("stack");   }
-  bool is_abort()   { return               match("abort");   }
-  bool is_genesis() { return               match("genesis"); }
-  bool is_top()     { return               match("top");     }
-  bool is_show()    { return               match("show");    }
-  bool is_break()   { return               match("break");   }
-  bool is_events()  { return               match("events");  }
-  bool is_status()  { return               match("status");  }
-  bool is_help()    { return match("?") || match("help");    }
-  bool is_quit()    { return match("q") || match("quit");    }
-  bool is_plus()    { return match("+"); }
-  bool is_minus()   { return match("-"); }
+  bool is_hat() { return match("^"); }
+  bool is_step() { return match("s") || match("step"); }
+  bool is_next() { return match("n") || match("next"); }
+  bool is_end() { return match("e") || match("end"); }
+  bool is_cont() { return match("c") || match("cont"); }
+  bool is_stack() { return match("stack"); }
+  bool is_abort() { return match("abort"); }
+  bool is_genesis() { return match("genesis"); }
+  bool is_top() { return match("top"); }
+  bool is_show() { return match("show"); }
+  bool is_break() { return match("break"); }
+  bool is_events() { return match("events"); }
+  bool is_status() { return match("status"); }
+  bool is_help() { return match("?") || match("help"); }
+  bool is_quit() { return match("q") || match("quit"); }
+  bool is_plus() { return match("+"); }
+  bool is_minus() { return match("-"); }
 
   bool is_smi(oop* addr);
   bool is_table_entry(oop* addr);
@@ -163,17 +165,15 @@ class TokenStream : public StackObj {
   bool is_keyword();
 };
 
-
 static char* seps = " \t\n";
 
 void TokenStream::tokenize(char* str) {
   char* token = strtok(str, seps);
-  while( token != NULL ) {
+  while (token != NULL) {
     tokens->push(token);
     token = strtok(NULL, seps);
   }
 }
-
 
 bool TokenStream::is_smi(oop* addr) {
   int value;
@@ -185,12 +185,11 @@ bool TokenStream::is_smi(oop* addr) {
   return false;
 }
 
-
 bool TokenStream::is_table_entry(oop* addr) {
   int value;
   unsigned int length;
   if (sscanf(current(), "!%d%n", &value, &length) == 1 && strlen(current()) == length) {
-    if(!objectIDTable::is_index_ok(value)) {
+    if (!objectIDTable::is_index_ok(value)) {
       mystd->print_cr("Could not find index %d in object table.", value);
       return true;
     }
@@ -199,7 +198,6 @@ bool TokenStream::is_table_entry(oop* addr) {
   }
   return false;
 }
-
 
 bool TokenStream::is_object_search(oop* addr) {
   int address;
@@ -216,17 +214,20 @@ bool TokenStream::is_object_search(oop* addr) {
 
 bool TokenStream::is_name(oop* addr) {
   char name[200];
-  oop   obj;
-  unsigned int length; 
+  oop obj;
+  unsigned int length;
   if (sscanf(current(), "%[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length) {
-    if ((obj = Universe::find_global(name))) { *addr = obj ; return true; }
+    if ((obj = Universe::find_global(name))) {
+      *addr = obj;
+      return true;
+    }
   }
   return false;
 }
 
 bool TokenStream::is_symbol(oop* addr) {
   char name[200];
-  unsigned int length; 
+  unsigned int length;
   if (sscanf(current(), "#%[a-zA-Z0-9_]%n", name, &length) == 1 && strlen(current()) == length) {
     *addr = reinterpret_cast<oop>(oopFactory::new_symbol(name));
     return true;
@@ -240,7 +241,9 @@ bool TokenStream::is_unary() {
   return sscanf(current(), "%[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length;
 }
 
-bool TokenStream::is_binary() { return !is_unary() && !is_keyword();}
+bool TokenStream::is_binary() {
+  return !is_unary() && !is_keyword();
+}
 
 bool TokenStream::is_keyword() {
   char name[40];
@@ -249,25 +252,39 @@ bool TokenStream::is_keyword() {
 }
 
 bool evaluator::get_oop(TokenStream* st, oop* addr) {
-  if (st->is_smi(addr))           { st->advance(); return true; }
-  if (st->is_table_entry(addr))   { st->advance(); return true; }
-  if (st->is_object_search(addr)) { st->advance(); return true; }
-  if (st->is_name(addr))          { st->advance(); return true; }
-  if (st->is_symbol(addr))        { st->advance(); return true; }
+  if (st->is_smi(addr)) {
+    st->advance();
+    return true;
+  }
+  if (st->is_table_entry(addr)) {
+    st->advance();
+    return true;
+  }
+  if (st->is_object_search(addr)) {
+    st->advance();
+    return true;
+  }
+  if (st->is_name(addr)) {
+    st->advance();
+    return true;
+  }
+  if (st->is_symbol(addr)) {
+    st->advance();
+    return true;
+  }
   mystd->print_cr("Error: could not oop'ify [%s]", st->current());
-  return false; 
+  return false;
 }
 
-
 bool validate_lookup(oop receiver, symbolOop selector) {
- LookupKey key(receiver->klass(), reinterpret_cast<oop>(selector));
- if (lookupCache::lookup(&key).is_empty()) {
-   mystd->print_cr("Lookup error");
-   key.print_on(mystd);
-   mystd->cr();
-   return false;
- }
- return true;
+  LookupKey key(receiver->klass(), reinterpret_cast<oop>(selector));
+  if (lookupCache::lookup(&key).is_empty()) {
+    mystd->print_cr("Lookup error");
+    key.print_on(mystd);
+    mystd->cr();
+    return false;
+  }
+  return true;
 }
 
 void evaluator::eval_message(TokenStream* st) {
@@ -275,35 +292,42 @@ void evaluator::eval_message(TokenStream* st) {
   oop result = nilObj;
   symbolOop selector;
 
-  if (st->eos()) return;
-  if (!get_oop(st, &receiver)) return;
+  if (st->eos())
+    return;
+  if (!get_oop(st, &receiver))
+    return;
   if (st->eos()) {
     receiver->print();
   } else if (st->is_unary()) {
     symbolOop selector = oopFactory::new_symbol(st->current());
-    if (!validate_lookup(receiver, selector)) return;
+    if (!validate_lookup(receiver, selector))
+      return;
     result = Delta::call(receiver, reinterpret_cast<oop>(selector));
   } else if (st->is_binary()) {
     selector = oopFactory::new_symbol(st->current());
-    if (!validate_lookup(receiver, selector)) return;
+    if (!validate_lookup(receiver, selector))
+      return;
     oop argument;
     st->advance();
-    if (!get_oop(st, &argument)) return;
+    if (!get_oop(st, &argument))
+      return;
     result = Delta::call(receiver, reinterpret_cast<oop>(selector), argument);
   } else if (st->is_keyword()) {
     char name[100];
-    oop  arguments[10];
-    int  nofArgs = 0;
+    oop arguments[10];
+    int nofArgs = 0;
     name[0] = '\0';
     while (!st->eos()) {
       strcat(name, st->current());
       st->advance();
       oop arg;
-      if (!get_oop(st, &arg)) return;
+      if (!get_oop(st, &arg))
+        return;
       arguments[nofArgs++] = arg;
     }
     selector = oopFactory::new_symbol(name);
-    if (!validate_lookup(receiver, selector)) return;
+    if (!validate_lookup(receiver, selector))
+      return;
     static DeltaCallCache cache;
     result = Delta::call_generic(&cache, receiver, reinterpret_cast<oop>(selector), nofArgs, arguments);
   }
@@ -332,7 +356,7 @@ void evaluator::change_debug_flag(TokenStream* st, bool value) {
   if (!st->eos()) {
     st->current();
     bool r = value;
-    if (!debugFlags::boolAtPut(st->current(), &r)) { 
+    if (!debugFlags::boolAtPut(st->current(), &r)) {
       mystd->print_cr("boolean flag %s not found", st->current());
     }
     st->advance();
@@ -345,7 +369,7 @@ void evaluator::change_debug_flag(TokenStream* st, bool value) {
 }
 
 void evaluator::show_command(TokenStream* st) {
-  int start_frame              = 1;
+  int start_frame = 1;
   int number_of_frames_to_show = 1;
 
   st->advance();
@@ -363,17 +387,19 @@ void evaluator::show_command(TokenStream* st) {
       if (!st->eos()) {
         mystd->print_cr("warning: garbage at end");
       }
-    }    
+    }
   }
-  DeltaProcess::active()->trace_top(start_frame, number_of_frames_to_show);               
+  DeltaProcess::active()->trace_top(start_frame, number_of_frames_to_show);
 };
 
 bool evaluator::process_line() {
   char line[200];
-  if (!get_line(line)) return false;
+  if (!get_line(line))
+    return false;
 
   TokenStream st(line);
-  if (st.eos()) return true;
+  if (st.eos())
+    return true;
 
   if (st.is_hat()) {
     st.advance();
@@ -381,35 +407,77 @@ bool evaluator::process_line() {
     eval_message(&st);
     return true;
   } else {
-    if (st.is_help())    { print_help();                                     return true;  }
-    if (st.is_step())    { dispatchTable::intercept_for_step(NULL);          return false; }
-    if (st.is_next())    { dispatchTable::intercept_for_next(saved_frame);   return false; }
-    if (st.is_end())     { dispatchTable::intercept_for_return(saved_frame); return false; }
-    if (st.is_cont())    { dispatchTable::reset();                           return false; }
-    if (st.is_stack())   { DeltaProcess::active()->trace_stack();            return true;  }
-    if (st.is_quit())    { os::fatalExit(0);                                 return true;  }
-    if (st.is_break())   { fatal("evaluator break");                         return true;  }
-    if (st.is_events())  { eventLog->print();                                return true;  }
-    if (st.is_top())     { top_command(&st);                                 return true;  }
-    if (st.is_show())    { show_command(&st);                                return true;  }
-    if (st.is_plus())    { change_debug_flag(&st, true);                     return true;  }
-    if (st.is_minus())   { change_debug_flag(&st, false);                    return true;  }
-    if (st.is_status())  { print_status();                                   return true;  }
-    if (st.is_abort())   {
+    if (st.is_help()) {
+      print_help();
+      return true;
+    }
+    if (st.is_step()) {
+      dispatchTable::intercept_for_step(NULL);
+      return false;
+    }
+    if (st.is_next()) {
+      dispatchTable::intercept_for_next(saved_frame);
+      return false;
+    }
+    if (st.is_end()) {
+      dispatchTable::intercept_for_return(saved_frame);
+      return false;
+    }
+    if (st.is_cont()) {
+      dispatchTable::reset();
+      return false;
+    }
+    if (st.is_stack()) {
+      DeltaProcess::active()->trace_stack();
+      return true;
+    }
+    if (st.is_quit()) {
+      os::fatalExit(0);
+      return true;
+    }
+    if (st.is_break()) {
+      fatal("evaluator break");
+      return true;
+    }
+    if (st.is_events()) {
+      eventLog->print();
+      return true;
+    }
+    if (st.is_top()) {
+      top_command(&st);
+      return true;
+    }
+    if (st.is_show()) {
+      show_command(&st);
+      return true;
+    }
+    if (st.is_plus()) {
+      change_debug_flag(&st, true);
+      return true;
+    }
+    if (st.is_minus()) {
+      change_debug_flag(&st, false);
+      return true;
+    }
+    if (st.is_status()) {
+      print_status();
+      return true;
+    }
+    if (st.is_abort()) {
       if (DeltaProcess::active()->is_scheduler()) {
         mystd->print_cr("You cannot abort in the scheduler");
-	mystd->print_cr("Try another command");
+        mystd->print_cr("Try another command");
       } else {
-        dispatchTable::reset(); 
-        is_aborting = true; 
-        return false; 
+        dispatchTable::reset();
+        is_aborting = true;
+        return false;
       }
     }
-    if (st.is_genesis()) { 
-      dispatchTable::reset(); 
+    if (st.is_genesis()) {
+      dispatchTable::reset();
       VM_Genesis op;
       VMProcess::execute(&op);
-      return false; 
+      return false;
     }
     oop receiver;
     if (get_oop(&st, &receiver)) {
@@ -426,7 +494,6 @@ bool evaluator::process_line() {
   return true;
 }
 
-
 void evaluator::read_eval_loop() {
   ResourceMark rm;
   do {
@@ -434,16 +501,16 @@ void evaluator::read_eval_loop() {
   } while (process_line());
 }
 
-
 void evaluator::print_mini_help() {
   mystd->print_cr("Use '?' for help ('c' to continue)");
 }
 
 class ProcessStatusClosure : public ProcessClosure {
- private:
+private:
   int index;
- public:
-   ProcessStatusClosure() { index = 1; }
+
+public:
+  ProcessStatusClosure() { index = 1; }
 
   void do_process(DeltaProcess* p) {
     mystd->print(" %d:%s ", index++, DeltaProcess::active() == p ? "*" : " ");

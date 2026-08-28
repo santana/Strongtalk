@@ -27,121 +27,118 @@ barthelemy@prologique.com
 
 namespace easyunit {
 
-class TestResult: public CHeap
-{
+class TestResult : public CHeap {
 public:
-	TestResult();
-	virtual ~TestResult();
-	
-	
-	/**
+  TestResult();
+  virtual ~TestResult();
+
+  /**
 	 * Get the total number of successes registered by all
 	 * test cases ran. This is the sum of all TestCase->getSuccessesCount().
 	 *
 	 *@return The number of successes registered by all testcases.
 	 */
-	int getTotalSuccesses() const;
-	
-	/**
+  int getTotalSuccesses() const;
+
+  /**
 	 * Get the total number of errors registered by all
 	 * test cases ran. This is the sum of all TestCase->getErrorsCount().
 	 *
 	 *@return The number of errors registered by all testcases.
 	 */
-	int getTotalErrors() const;
-	
-	/**
+  int getTotalErrors() const;
+
+  /**
 	 * Get the total number of failures registered by all
 	 * test cases ran. This is the sum of all TestCase->getFailuresCount().
 	 *
 	 * @return The number of failures registered by all testcases.
 	 */
-	int getTotalFailures() const;
-	
-	/**
+  int getTotalFailures() const;
+
+  /**
 	 * Get the number of testcases ran that succeeded.
 	 *
 	 * @return The number of testcases ran that succeeded.
 	 */
-	int getSuccesses() const;
-	
-	/**
+  int getSuccesses() const;
+
+  /**
 	 * Get the number of testcases ran that failed.
 	 *
 	 * @return The number of testcases ran that failed.
 	 */
-	int getFailures() const;
-	
-	/**
+  int getFailures() const;
+
+  /**
 	 * Get the number of testcases ran that reported an error.
 	 *
 	 * @return The number of testcases ran that reported an error.
 	 */
-	int getErrors() const;
-	
-	/**
+  int getErrors() const;
+
+  /**
 	 * Get the number of testcases in the TestCase list.
 	 *
 	 * @return The size of the TestCase list
 	 */
-	int getTestCaseCount() const;
-	
-	/**
+  int getTestCaseCount() const;
+
+  /**
 	 * Get the number of tests 
 	 *
 	 * @return The number of tests ran that succeeded
 	 */
-	int getTestRanCount() const;
-	
-	/**
+  int getTestRanCount() const;
+
+  /**
 	 * Get the number of testcases ran.
 	 *
 	 * @return The number of testcases ran 
 	 */
-	int getTestCaseRanCount() const;
-	
-	/**
+  int getTestCaseRanCount() const;
+
+  /**
 	 * Get the TestCase list. This list contains all TestCase registered and
 	 * not only those that were ran.
 	 *
 	 * @return The TestCase list
 	 */
-	TestCase* getTestCases() const;
-	
-	/**
+  TestCase* getTestCases() const;
+
+  /**
 	 * Set the TestCase list and the size of the list.
 	 *
 	 * @param testCases TestCase list
 	 * @param testCaseCount size of the TestCase list
 	 */
-	void setTestCases(TestCase *testCases, int testCaseCount);
-	
-	/**
+  void setTestCases(TestCase* testCases, int testCaseCount);
+
+  /**
 	 * Add a TestCase result. This is used by a TestCase after it has
 	 * completed.
 	 *
 	 * @param testCase TestCase that ran and contains results to add to
 	 * global results
 	 */
-	virtual void addResult(TestCase *testCase);
-	
+  virtual void addResult(TestCase* testCase);
+
 protected:
-	int testCaseCount_;
-	int testRanCount_;
-	int testCaseRanCount_;
-	
-	int totalSuccesses_;
-	int totalErrors_;
-	int totalFailures_;
+  int testCaseCount_;
+  int testRanCount_;
+  int testCaseRanCount_;
 
-	int successes_;
-	int errors_;
-	int failures_;
+  int totalSuccesses_;
+  int totalErrors_;
+  int totalFailures_;
 
-	TestCase* testCases_;
+  int successes_;
+  int errors_;
+  int failures_;
 
+  TestCase* testCases_;
 };
 
 } // EasyUnit ns
 
-#endif	// testresult_H
+#endif // testresult_H

@@ -40,27 +40,29 @@ ScopeDesc* nmethodScopes::at(int offset, char* pc) const {
   scopeDescHeaderByte b;
   b.unpack(peek_next_char(offset));
   switch (b.code()) {
-    case METHOD_CODE          : return new MethodScopeDesc(       (nmethodScopes*) this, offset, pc);
-    case TOPLEVELBLOCK_CODE   : return new TopLevelBlockScopeDesc((nmethodScopes*) this, offset, pc);
-    case BLOCK_CODE           : return new BlockScopeDesc(        (nmethodScopes*) this, offset, pc);
-    case NONINLINED_BLOCK_CODE: return NULL;
+    case METHOD_CODE:
+      return new MethodScopeDesc((nmethodScopes*)this, offset, pc);
+    case TOPLEVELBLOCK_CODE:
+      return new TopLevelBlockScopeDesc((nmethodScopes*)this, offset, pc);
+    case BLOCK_CODE:
+      return new BlockScopeDesc((nmethodScopes*)this, offset, pc);
+    case NONINLINED_BLOCK_CODE:
+      return NULL;
   }
   fatal("Unknown ScopeDesc code in nmethodScopes");
   return NULL;
 }
-
 
 NonInlinedBlockScopeDesc* nmethodScopes::noninlined_block_scope_at(int offset) const {
   // Read the first byte and decode the ScopeDesc type at the location.
   assert(offset > 0, "illegal desc offset");
   scopeDescHeaderByte b;
   b.unpack(peek_next_char(offset));
-  if ( b.code() != NONINLINED_BLOCK_CODE) {
+  if (b.code() != NONINLINED_BLOCK_CODE) {
     fatal("Not an noninlined scope desc as expected");
   }
   return new NonInlinedBlockScopeDesc((nmethodScopes*)this, offset);
 }
-
 
 int16 nmethodScopes::get_next_half(int& offset) const {
   int16 v;
@@ -69,37 +71,35 @@ int16 nmethodScopes::get_next_half(int& offset) const {
   return v;
 }
 
-
-inline u_char nmethodScopes::getIndexAt(int& offset) const { 
+inline u_char nmethodScopes::getIndexAt(int& offset) const {
   return get_next_char(offset);
 }
 
-
 inline oop nmethodScopes::unpackOopFromIndex(u_char index, int& offset) const {
-  if (index == 0)  return 0;
-  if (index < EXTENDED_INDEX) return oop_at(index-1);
-  return oop_at(get_next_half(offset)-1); 
+  if (index == 0)
+    return 0;
+  if (index < EXTENDED_INDEX)
+    return oop_at(index - 1);
+  return oop_at(get_next_half(offset) - 1);
 }
-
 
 inline int nmethodScopes::unpackValueFromIndex(u_char index, int& offset) const {
-  if (index <= MAX_INLINE_VALUE) return index;
-  if (index < EXTENDED_INDEX) return value_at(index-(MAX_INLINE_VALUE+1));
-  return value_at(get_next_half(offset)-(MAX_INLINE_VALUE+1)); 
+  if (index <= MAX_INLINE_VALUE)
+    return index;
+  if (index < EXTENDED_INDEX)
+    return value_at(index - (MAX_INLINE_VALUE + 1));
+  return value_at(get_next_half(offset) - (MAX_INLINE_VALUE + 1));
 }
-
 
 oop nmethodScopes::unpackOopAt(int& offset) const {
   u_char index = getIndexAt(offset);
   return unpackOopFromIndex(index, offset);
 }
 
-
 int nmethodScopes::unpackValueAt(int& offset) const {
   u_char index = getIndexAt(offset);
   return unpackValueFromIndex(index, offset);
 }
-
 
 NameDesc* nmethodScopes::unpackNameDescAt(int& offset, bool& is_last, char* pc) const {
   int startOffset = offset;
@@ -115,65 +115,65 @@ NameDesc* nmethodScopes::unpackNameDescAt(int& offset, bool& is_last, char* pc) 
     u_char index;
     index = b.has_index() ? b.index() : getIndexAt(offset);
 
-    switch(b.code()) {
-     case LOCATION_CODE: {
-       Location l = Location(unpackValueFromIndex(index, offset));
-       nd = new LocationNameDesc(l);
-       break;
-     }
-     case VALUE_CODE: {
-       oop v = unpackOopFromIndex(index, offset);
-       nd = new ValueNameDesc(v);
-       break;
-     }
-     case BLOCKVALUE_CODE: {
-       oop blkMethod    = unpackOopFromIndex(index, offset);
-       assert(blkMethod->is_method(), "must be a method");
-       int parent_scope_offset = unpackValueAt(offset);
-       ScopeDesc* parent_scope = at(parent_scope_offset, pc);
-       nd = new BlockValueNameDesc(methodOop(blkMethod), parent_scope);
-       break;
-     }
-     case MEMOIZEDBLOCK_CODE: {
-       Location l   = Location(unpackValueFromIndex(index, offset));
-       oop      blkMethod = unpackOopAt(offset);
-       assert(blkMethod->is_method(), "must be a method");
-       int parent_scope_offset = unpackValueAt(offset);
-       ScopeDesc* parent_scope = at(parent_scope_offset, pc);
-       nd = new MemoizedBlockNameDesc(l, methodOop(blkMethod), parent_scope);
-       break;
-     }
-     default:
-      fatal1("no such name desc (code %d)", b.code());
+    switch (b.code()) {
+      case LOCATION_CODE: {
+        Location l = Location(unpackValueFromIndex(index, offset));
+        nd = new LocationNameDesc(l);
+        break;
+      }
+      case VALUE_CODE: {
+        oop v = unpackOopFromIndex(index, offset);
+        nd = new ValueNameDesc(v);
+        break;
+      }
+      case BLOCKVALUE_CODE: {
+        oop blkMethod = unpackOopFromIndex(index, offset);
+        assert(blkMethod->is_method(), "must be a method");
+        int parent_scope_offset = unpackValueAt(offset);
+        ScopeDesc* parent_scope = at(parent_scope_offset, pc);
+        nd = new BlockValueNameDesc(methodOop(blkMethod), parent_scope);
+        break;
+      }
+      case MEMOIZEDBLOCK_CODE: {
+        Location l = Location(unpackValueFromIndex(index, offset));
+        oop blkMethod = unpackOopAt(offset);
+        assert(blkMethod->is_method(), "must be a method");
+        int parent_scope_offset = unpackValueAt(offset);
+        ScopeDesc* parent_scope = at(parent_scope_offset, pc);
+        nd = new MemoizedBlockNameDesc(l, methodOop(blkMethod), parent_scope);
+        break;
+      }
+      default:
+        fatal1("no such name desc (code %d)", b.code());
     }
   }
   nd->offset = startOffset;
   return nd;
 }
 
-
 void nmethodScopes::iterate(int& offset, UnpackClosure* closure) const {
   char* pc = my_nmethod()->insts();
   bool is_last;
   NameDesc* nd = unpackNameDescAt(offset, is_last, ScopeDesc::invalid_pc);
-  if (nd == NULL) return;		// if at termination byte
+  if (nd == NULL)
+    return; // if at termination byte
   closure->nameDescAt(nd, pc);
   while (!is_last) {
-    nd  = unpackNameDescAt(offset, is_last, ScopeDesc::invalid_pc);
+    nd = unpackNameDescAt(offset, is_last, ScopeDesc::invalid_pc);
     pc += unpackValueAt(offset);
     closure->nameDescAt(nd, pc);
   }
 }
-
 
 NameDesc* nmethodScopes::unpackNameDescAt(int& offset, char* pc) const {
   int pc_offset = pc - my_nmethod()->insts();
   int current_pc_offset = 0;
   bool is_last;
   NameDesc* result = unpackNameDescAt(offset, is_last, pc);
-  if (result == NULL) return NULL;	// if at termination byte
+  if (result == NULL)
+    return NULL; // if at termination byte
   while (!is_last) {
-    NameDesc* current  = unpackNameDescAt(offset, is_last, pc);
+    NameDesc* current = unpackNameDescAt(offset, is_last, pc);
     current_pc_offset += unpackValueAt(offset);
     if (current_pc_offset <= pc_offset) {
       result = current;
@@ -182,25 +182,19 @@ NameDesc* nmethodScopes::unpackNameDescAt(int& offset, char* pc) const {
   return result;
 }
 
-
-# define FOR_EACH_OOPADDR(VAR)						      \
-    for (oop* VAR = oops(), *CONC(VAR, _end) = oops() + oops_size();	      \
-         VAR < CONC(VAR, _end); VAR++)
-
+#define FOR_EACH_OOPADDR(VAR)                                                                                          \
+  for (oop* VAR = oops(), *CONC(VAR, _end) = oops() + oops_size(); VAR < CONC(VAR, _end); VAR++)
 
 void nmethodScopes::verify() {
   // Verify all oops
-  FOR_EACH_OOPADDR(addr) {
-    VERIFY_TEMPLATE(addr)
-  }
+  FOR_EACH_OOPADDR(addr){VERIFY_TEMPLATE(addr)}
 
   // Verify all scopedesc
   FOR_EACH_SCOPE(this, s) {
     if (!s->verify())
-      lprintf("\t\tin nmethod at %#lx (scopes)\n", my_nmethod()); 
+      lprintf("\t\tin nmethod at %#lx (scopes)\n", my_nmethod());
   }
 }
-
 
 void nmethodScopes::scavenge_contents() {
   FOR_EACH_OOPADDR(addr) {
@@ -208,11 +202,9 @@ void nmethodScopes::scavenge_contents() {
   }
 }
 
-
-void nmethodScopes::switch_pointers(oop from, oop to,
-				    GrowableArray<nmethod*> *nmethods_to_invalidate) {
+void nmethodScopes::switch_pointers(oop from, oop to, GrowableArray<nmethod*>* nmethods_to_invalidate) {
   Unused(to);
-/*
+  /*
   This is tricky!
   First, since some inlined methods are not included in scopes
   (those that generate no code such as asSmallInteger),
@@ -242,17 +234,17 @@ void nmethodScopes::switch_pointers(oop from, oop to,
 */
 
 #ifdef NOT_IMPLEMENTED
-  if (my_nmethod()->isInvalid()) return;
-  
+  if (my_nmethod()->isInvalid())
+    return;
+
   FOR_EACH_OOPADDR(addr) {
     if (*addr == from) {
       nmethods_to_invalidate->append(my_nmethod());
-	return;
-      }
+      return;
+    }
   }
 #endif
 }
-
 
 void nmethodScopes::oops_do(void f(oop*)) {
   oop* end = oops() + oops_size();
@@ -261,46 +253,40 @@ void nmethodScopes::oops_do(void f(oop*)) {
   }
 }
 
-
 void nmethodScopes::relocate() {
   FOR_EACH_OOPADDR(addr) {
     RELOCATE_TEMPLATE(addr);
   }
 }
 
-
 bool nmethodScopes::is_new() const {
   bool result = false;
   FOR_EACH_OOPADDR(addr) {
-    if ((*addr)->is_new()) return true;
+    if ((*addr)->is_new())
+      return true;
   }
   return false;
 }
 
-
 void nmethodScopes::print() {
-  ResourceMark m;	// in case methods get printed via debugger
+  ResourceMark m; // in case methods get printed via debugger
   printIndent();
   lprintf("scopes:\n");
-  Indent ++;
+  Indent++;
   FOR_EACH_SCOPE(this, d)
-    d->print();
-  Indent --;
+  d->print();
+  Indent--;
 }
-
 
 void nmethodScopes::print_partition() {
   int d_size = dependent_length() * sizeof(oop);
   int o_size = oops_size() * sizeof(oop) - d_size;
-  int p_size = (intptr_t) pcsEnd() - (intptr_t) pcs();
+  int p_size = (intptr_t)pcsEnd() - (intptr_t)pcs();
   int v_size = value_size() * sizeof(int);
-  int total  = v_size + p_size + o_size + d_size;
- 
-  mystd->print_cr("{deps %d%%, oops %d%%, bytes %d%%, pcs %d%%}",
-                d_size * 100/ total,
-                o_size * 100/ total,
-                v_size * 100/ total,
-                p_size * 100/ total);
+  int total = v_size + p_size + o_size + d_size;
+
+  mystd->print_cr("{deps %d%%, oops %d%%, bytes %d%%, pcs %d%%}", d_size * 100 / total, o_size * 100 / total,
+                  v_size * 100 / total, p_size * 100 / total);
 }
 
 #endif // DELTA_COMPILER

@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "code/inliningdb.hpp"
 #include "memory/allocation.hpp"
 #include "memory/vmSymbols.hpp"
@@ -38,14 +37,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-extern "C" void load_image()   {
-    ResourceMark rm;
-    stringStream st;
-    st.print("Reading in %s", boot_filename);
-    TraceTime t(st.as_string());
-    bootstrap b(boot_filename);
-    vmSymbols::initialize();
-    bootstrapping = false;
+extern "C" void load_image() {
+  ResourceMark rm;
+  stringStream st;
+  st.print("Reading in %s", boot_filename);
+  TraceTime t(st.as_string());
+  bootstrap b(boot_filename);
+  vmSymbols::initialize();
+  bootstrapping = false;
 }
 
 int vmProcessMain(void* ignored) {
@@ -53,7 +52,7 @@ int vmProcessMain(void* ignored) {
   return 0;
 }
 int vm_main(int argc, char* argv[]) {
-  parse_arguments(argc, argv);		// overrides default flag settings
+  parse_arguments(argc, argv); // overrides default flag settings
   init_globals();
 
   load_image();

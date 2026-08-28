@@ -34,11 +34,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // A PRegClosure is used when iterating over a PRegMapping.
 
-class PRegClosure: public PrintableResourceObj {
- public:
-  virtual void preg_do(PReg* preg) {}		// called for each PReg in the mapping
+class PRegClosure : public PrintableResourceObj {
+public:
+  virtual void preg_do(PReg* preg) {} // called for each PReg in the mapping
 };
-
 
 // A PRegMapping holds the mapping of life PRegs to (register and/or stack) locations.
 // Within one PRegMapping, at any time a particular PReg is mapped to at most one register
@@ -50,39 +49,42 @@ class PRegClosure: public PrintableResourceObj {
 //       are not explicitly visible in the intermediate data structure (no PRegs) but
 //       have to be preserved anyway (e.g. code generation for conformance mappings).
 
-class PRegMapping: public PrintableResourceObj {
- private:
-  MacroAssembler*	_assm;			// the low_level assembler (for spill code generation, etc.)
-  bool                  _NLRinProgress;		// indicates that a NLR is in progress (see also Note above)
-  Locations*		_locs;			// the locations freelist
-  GrowableArray<PReg*>*	_pregs;			// the pregs, a NULL entry means the slot is not used
-  GrowableArray<intptr_t>*	_regLocs;	// the register to which a preg is mapped or -1
-  GrowableArray<intptr_t>*	_stkLocs;	// the stack location to which a preg is mapped or -1
-  GrowableArray<intptr_t>*	_tmpLocs;	// a list of temporary locations used by instances of Temporary
-  						// (these locations will be freed when the mapping is copied)
+class PRegMapping : public PrintableResourceObj {
+private:
+  MacroAssembler* _assm; // the low_level assembler (for spill code generation, etc.)
+  bool _NLRinProgress; // indicates that a NLR is in progress (see also Note above)
+  Locations* _locs; // the locations freelist
+  GrowableArray<PReg*>* _pregs; // the pregs, a NULL entry means the slot is not used
+  GrowableArray<intptr_t>* _regLocs; // the register to which a preg is mapped or -1
+  GrowableArray<intptr_t>* _stkLocs; // the stack location to which a preg is mapped or -1
+  GrowableArray<intptr_t>* _tmpLocs; // a list of temporary locations used by instances of Temporary
+  // (these locations will be freed when the mapping is copied)
 
   // Helper routines
-  int  size() const				{ return _pregs->length(); }
-  bool used(int i) const			{ return _pregs->at(i) != NULL; }
-  intptr_t  regLoc(int i) const			{ return _regLocs->at(i); }
-  intptr_t  stkLoc(int i) const			{ return _stkLocs->at(i); }
-  bool hasRegLoc(int i) const			{ return _locs->isLocation(regLoc(i)); }
-  bool hasStkLoc(int i) const			{ return _locs->isLocation(stkLoc(i)); }
-  int  location(int i) const			{ int rloc = regLoc(i); return rloc >= 0 ? rloc : stkLoc(i); }
+  int size() const { return _pregs->length(); }
+  bool used(int i) const { return _pregs->at(i) != NULL; }
+  intptr_t regLoc(int i) const { return _regLocs->at(i); }
+  intptr_t stkLoc(int i) const { return _stkLocs->at(i); }
+  bool hasRegLoc(int i) const { return _locs->isLocation(regLoc(i)); }
+  bool hasStkLoc(int i) const { return _locs->isLocation(stkLoc(i)); }
+  int location(int i) const {
+    int rloc = regLoc(i);
+    return rloc >= 0 ? rloc : stkLoc(i);
+  }
   void set_entry(int i, PReg* preg, int rloc, int sloc);
-  int  index(PReg* preg);
-  int  freeSlot();
+  int index(PReg* preg);
+  int freeSlot();
   void print(int i);
-  void destroy();				// destroys mapping to make sure it is not accidentally used afterwards
+  void destroy(); // destroys mapping to make sure it is not accidentally used afterwards
 
   // Register allocation/spilling
-  int  spillablePRegIndex();			// returns the _pregs/_mappings index of a PReg mapped to a non-locked register
-  void ensureOneFreeRegister();			// ensures at least one free register in locations - spill a register if necessary
-  void spillRegister(int loc);			// spills register loc to a free stack location
+  int spillablePRegIndex(); // returns the _pregs/_mappings index of a PReg mapped to a non-locked register
+  void ensureOneFreeRegister(); // ensures at least one free register in locations - spill a register if necessary
+  void spillRegister(int loc); // spills register loc to a free stack location
   void saveRegister(int loc);
-  
+
   // Helpers for class Temporary
-  int  allocateTemporary(Register hint = noreg);
+  int allocateTemporary(Register hint = noreg);
   void releaseTemporary(int regLoc);
   void releaseAllTemporaries();
 
@@ -90,20 +92,26 @@ class PRegMapping: public PrintableResourceObj {
   void old_makeConformant(PRegMapping* with);
   void new_makeConformant(PRegMapping* with);
 
- public:
+public:
   // Creation
   PRegMapping(MacroAssembler* assm, int nofArgs, int nofRegs, int nofTemps);
   PRegMapping(PRegMapping* m);
 
-  MacroAssembler* assembler() const		{ return _assm; }
+  MacroAssembler* assembler() const { return _assm; }
 
   // Testers
   bool isInjective();
   bool isConformant(PRegMapping* with);
-  bool isDefined(PReg* preg)			{ return index(preg) >= 0; }
-  bool inRegister(PReg* preg)			{ int i = index(preg); return used(i) && hasRegLoc(i); }
-  bool onStack(PReg* preg)			{ int i = index(preg); return used(i) && hasStkLoc(i); }
-  
+  bool isDefined(PReg* preg) { return index(preg) >= 0; }
+  bool inRegister(PReg* preg) {
+    int i = index(preg);
+    return used(i) && hasRegLoc(i);
+  }
+  bool onStack(PReg* preg) {
+    int i = index(preg);
+    return used(i) && hasStkLoc(i);
+  }
+
   // Definition
   void mapToArgument(PReg* preg, int argNo);
   void mapToRegister(PReg* preg, Register reg);
@@ -115,9 +123,9 @@ class PRegMapping: public PrintableResourceObj {
   void cleanupContextReferences();
 
   // Expressions
-  Register def(PReg* preg, Register hint = noreg);	// defines a new value for preg (uses hint if given)
-  Register use(PReg* preg, Register hint);		// uses the value of preg (uses hint if given)
-  Register use(PReg* preg);				// deals also with constants (code originally in CodeGenerator)
+  Register def(PReg* preg, Register hint = noreg); // defines a new value for preg (uses hint if given)
+  Register use(PReg* preg, Register hint); // uses the value of preg (uses hint if given)
+  Register use(PReg* preg); // deals also with constants (code originally in CodeGenerator)
 
   // Assignments
   void move(PReg* dst, PReg* src);
@@ -125,10 +133,10 @@ class PRegMapping: public PrintableResourceObj {
   // Calls
   void saveRegisters(PReg* exception = NULL);
   void killRegisters(PReg* exception = NULL);
-  void killRegister (PReg* preg);
+  void killRegister(PReg* preg);
 
   // Non-local returns
-  bool NLRinProgress() const			{ return _NLRinProgress; }
+  bool NLRinProgress() const { return _NLRinProgress; }
   void acquireNLRRegisters();
   void releaseNLRRegisters();
 
@@ -141,8 +149,8 @@ class PRegMapping: public PrintableResourceObj {
   Location locationFor(PReg* preg);
 
   // Space usage
-  int  nofPRegs();
-  int  maxNofStackTmps();
+  int nofPRegs();
+  int maxNofStackTmps();
 
   // Debugging
   void my_print();
@@ -152,50 +160,52 @@ class PRegMapping: public PrintableResourceObj {
   friend class Temporary;
 };
 
-
 // A PRegLocker is used to lock certain PRegs for the existence of the scope of
 // a C++ function activation. A PReg that is locked in a PRegLocker is kept in
 // the same register once it has been mapped to a register location by a PRegMapping.
 // NOTE: PRegLockers MUST only be created/destructed in a stack-fashioned manner.
 
-class PRegLocker: StackObj {
- private:
-  static PRegLocker*	_top;			// the topmost PRegLocker
-  PRegLocker*		_prev;			// the previous PRegLocker
-  PReg*			_pregs[3];		// the locked PRregs
+class PRegLocker : StackObj {
+private:
+  static PRegLocker* _top; // the topmost PRegLocker
+  PRegLocker* _prev; // the previous PRegLocker
+  PReg* _pregs[3]; // the locked PRregs
 
-  void lock(PReg* r0, PReg* r1, PReg* r2)	{ _prev = _top; _top = this; _pregs[0] = r0; _pregs[1] = r1; _pregs[2] = r2; }
-  bool holds(PReg* preg) const;			// returns true if preg belongs to the locked PRegs
+  void lock(PReg* r0, PReg* r1, PReg* r2) {
+    _prev = _top;
+    _top = this;
+    _pregs[0] = r0;
+    _pregs[1] = r1;
+    _pregs[2] = r2;
+  }
+  bool holds(PReg* preg) const; // returns true if preg belongs to the locked PRegs
 
- public:
+public:
   PRegLocker(PReg* r0);
   PRegLocker(PReg* r0, PReg* r1);
   PRegLocker(PReg* r0, PReg* r1, PReg* r2);
-  ~PRegLocker()					{ _top = _prev; }
+  ~PRegLocker() { _top = _prev; }
 
-  
-  static bool locks(PReg* preg);		// returns true if preg is locked in any PRegLocker instance
-  static void initialize()			{ _top = NULL; }
+  static bool locks(PReg* preg); // returns true if preg is locked in any PRegLocker instance
+  static void initialize() { _top = NULL; }
   friend class PRegMapping;
 };
-
 
 // A Temporary is a freely usable register allocated for the time the Temporary
 // is alive. Temporaries must be created/destructed in a stack-fashioned manner.
 
-class Temporary: StackObj {
- private:
-  PRegMapping*	_mapping;
-  int		_regLoc;
+class Temporary : StackObj {
+private:
+  PRegMapping* _mapping;
+  int _regLoc;
 
- public:
+public:
   Temporary(PRegMapping* mapping, Register hint = noreg);
-  Temporary(PRegMapping* mapping, PReg* preg);	// keep a (modifiable) copy of the preg value in temporary register
+  Temporary(PRegMapping* mapping, PReg* preg); // keep a (modifiable) copy of the preg value in temporary register
   ~Temporary();
 
-  Register reg() const				{ return _mapping->_locs->locationAsRegister(_regLoc); }
+  Register reg() const { return _mapping->_locs->locationAsRegister(_regLoc); }
 };
-
 
 #endif // DELTA_COMPILER
 #endif // _PREG_MAPPING_HPP

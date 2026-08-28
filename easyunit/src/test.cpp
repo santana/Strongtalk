@@ -25,119 +25,94 @@ barthelemy@prologique.com
 
 using namespace easyunit;
 
-Test::Test(const SimpleString& testCaseName, const SimpleString& testName) 
-: testName_(testName), testCaseName_(testCaseName), failuresCount_(0),
-	successesCount_(0),nextTest_(0),testPartResult_(0)
-{
-  TestRegistry::addTest(this); 
+Test::Test(const SimpleString& testCaseName, const SimpleString& testName) :
+  testName_(testName), testCaseName_(testCaseName), failuresCount_(0), successesCount_(0), nextTest_(0),
+  testPartResult_(0) {
+  TestRegistry::addTest(this);
 }
 
 Test::~Test() {
-  TestPartResult *tmp;
+  TestPartResult* tmp;
   int size = failuresCount_ + successesCount_;
-  
-  for (int i = 0; i<size; i++) {
-  	tmp = testPartResult_;
-  	testPartResult_ = testPartResult_->getNext();
-  	delete tmp;
+
+  for (int i = 0; i < size; i++) {
+    tmp = testPartResult_;
+    testPartResult_ = testPartResult_->getNext();
+    delete tmp;
   }
-} 
-
-void Test::setUp()
-{
 }
 
-void Test::tearDown()
-{
+void Test::setUp() {}
+
+void Test::tearDown() {}
+
+void Test::run() {}
+
+TestCase* Test::getTestCase() const {
+  return testCase_;
 }
 
-void Test::run() 
-{
-}  
-
-
-TestCase* Test::getTestCase() const
-{
-	return testCase_;
+void Test::setTestCase(TestCase* testCase) {
+  testCase_ = testCase;
 }
 
-
-void Test::setTestCase(TestCase *testCase)
-{
-	testCase_ = testCase;
-}
-
-void Test::addTestPartResult(TestPartResult *testPartResult) 
-{
-  TestPartResult *tmp;
+void Test::addTestPartResult(TestPartResult* testPartResult) {
+  TestPartResult* tmp;
   int type = testPartResult->getType();
- 	
+
   if (testPartResult_ == 0) {
-		testPartResult_ = testPartResult;
-		testPartResult_->setNext(testPartResult_);
-	}
-	else {
-		tmp = testPartResult_;
-		testPartResult_ = testPartResult;
-		testPartResult_->setNext(tmp->getNext());
-		tmp->setNext(testPartResult_);
-	}
-	
-	if (type == failure) {
-	  failuresCount_++;
-	}
-	else if (type == error) {
-		errorsCount_++;
-	}  
-	else {
-		successesCount_++;	  
-	}  
-}  
-
-TestPartResult* Test::getTestPartResult() const 
-{
-  TestPartResult *tpr = testPartResult_;
-  
-  if (tpr != 0) {
-  	tpr = tpr->getNext();
+    testPartResult_ = testPartResult;
+    testPartResult_->setNext(testPartResult_);
+  } else {
+    tmp = testPartResult_;
+    testPartResult_ = testPartResult;
+    testPartResult_->setNext(tmp->getNext());
+    tmp->setNext(testPartResult_);
   }
-  
+
+  if (type == failure) {
+    failuresCount_++;
+  } else if (type == error) {
+    errorsCount_++;
+  } else {
+    successesCount_++;
+  }
+}
+
+TestPartResult* Test::getTestPartResult() const {
+  TestPartResult* tpr = testPartResult_;
+
+  if (tpr != 0) {
+    tpr = tpr->getNext();
+  }
+
   return tpr;
-}  
-
-int Test::getFailuresCount() const 
-{
-	return failuresCount_;  
 }
 
-int Test::getSuccessesCount() const 
-{
- 	return successesCount_; 
-}  
-
-int Test::getErrorsCount() const
-{
-	return errorsCount_;
+int Test::getFailuresCount() const {
+  return failuresCount_;
 }
 
-void Test::setNext(Test *nextTest)
-{
-	nextTest_ = nextTest;
+int Test::getSuccessesCount() const {
+  return successesCount_;
 }
 
-
-Test* Test::getNext() const
-{
-	return nextTest_;
+int Test::getErrorsCount() const {
+  return errorsCount_;
 }
 
-const SimpleString& Test::getTestName() const 
-{
+void Test::setNext(Test* nextTest) {
+  nextTest_ = nextTest;
+}
+
+Test* Test::getNext() const {
+  return nextTest_;
+}
+
+const SimpleString& Test::getTestName() const {
   return testName_;
 }
 
-const SimpleString& Test::getTestCaseName() const 
-{
-	return testCaseName_;
-} 
-
+const SimpleString& Test::getTestCaseName() const {
+  return testCaseName_;
+}

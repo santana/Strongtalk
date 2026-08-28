@@ -26,10 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/ostream.hpp"
 
 void markOopDesc::print_on(outputStream* st) {
-  st->print("mark(%c,%c,", has_tagged_contents() ? 'U' : '_',
-                           is_near_death()       ? 'D' : '_');
+  st->print("mark(%c,%c,", has_tagged_contents() ? 'U' : '_', is_near_death() ? 'D' : '_');
   st->print("hash %#lx,", hash());
-  st->print("age %d)",    age());
+  st->print("age %d)", age());
 }
 
 int assign_hash(markOop& m) {

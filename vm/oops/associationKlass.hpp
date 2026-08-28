@@ -28,8 +28,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOopKlass.hpp"
 
 // associations are cons cells used in the Delta system dictionary.
-class associationKlass: public memOopKlass {
- public:
+class associationKlass : public memOopKlass {
+public:
   friend void set_associationKlass_vtbl(Klass* k);
 
   bool oop_is_association() const { return true; }
@@ -47,7 +47,7 @@ class associationKlass: public memOopKlass {
 
   // Format
   Format format() { return association_klass; }
- 
+
   // memory operations
   bool oop_verify(oop obj);
 
@@ -55,15 +55,15 @@ class associationKlass: public memOopKlass {
 
   // Reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // printing operations
   void oop_short_print_on(oop obj, outputStream* st);
   void oop_print_value_on(oop obj, outputStream* st);
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators

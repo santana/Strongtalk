@@ -30,40 +30,40 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 template <class E> class GrowableArray;
 
-// The RecompilationPolicy selects which method (if any) should be recompiled.    
+// The RecompilationPolicy selects which method (if any) should be recompiled.
 
 class RecompilationPolicy : public ResourceObj {
- protected:
-   GrowableArray<RFrame*>* stack;
-   char* msg;				// for (performance) debugging: reason for not going up, etc.
+protected:
+  GrowableArray<RFrame*>* stack;
+  char* msg; // for (performance) debugging: reason for not going up, etc.
 
-   RFrame* senderOf(RFrame* rf);	// return rf->sender() and update stack if necessary
-   RFrame* parentOfBlock(blockClosureOop blk);	// block's parent frame (or NULL)
-   RFrame* parentOf(RFrame* rf);	// same for rf->parent()
-   RFrame* senderOrParentOf(RFrame* rf);// either sender or parent, depending on various factors
-   RFrame* findTopInlinableFrame();
-   void	   checkCurrent(RFrame*& current, RFrame*& prev, RFrame*& prevMethod);
-   void    fixBlockParent(RFrame* rf);
-   void    printStack();
- public:
-   RecompilationPolicy(RFrame* first);
+  RFrame* senderOf(RFrame* rf); // return rf->sender() and update stack if necessary
+  RFrame* parentOfBlock(blockClosureOop blk); // block's parent frame (or NULL)
+  RFrame* parentOf(RFrame* rf); // same for rf->parent()
+  RFrame* senderOrParentOf(RFrame* rf); // either sender or parent, depending on various factors
+  RFrame* findTopInlinableFrame();
+  void checkCurrent(RFrame*& current, RFrame*& prev, RFrame*& prevMethod);
+  void fixBlockParent(RFrame* rf);
+  void printStack();
 
-   Recompilee* findRecompilee(); 	// determine what to recompile
-   void cleanupStaleInlineCaches();	// clean up inline caches of top methods
+public:
+  RecompilationPolicy(RFrame* first);
 
-   static bool needRecompileCounter(Compiler* c);  // does this compilation (nmethod) need an invocation counter?
-   static bool shouldRecompileAfterUncommonTrap(nmethod* nm);  
-	  // nm encountered an uncommon case; should it be recompiled?
-   static bool shouldRecompileUncommonNMethod(nmethod* nm);  
-	  // nm is in uncommon mode; ok to recompile and reoptimize it?
-   static char* shouldNotRecompileNMethod(nmethod* nm);
-	  // is nm fit to be recompiled?  return NULL if yes, reason otherwise
-   static int uncommonNMethodInvocationLimit(int version);  
-	  // return invocation counter limit for an uncommon nmethod
-   static int uncommonNMethodAgeLimit(int version);  
-	  // return nmethod age limit for an uncommon nmethod
+  Recompilee* findRecompilee(); // determine what to recompile
+  void cleanupStaleInlineCaches(); // clean up inline caches of top methods
+
+  static bool needRecompileCounter(Compiler* c); // does this compilation (nmethod) need an invocation counter?
+  static bool shouldRecompileAfterUncommonTrap(nmethod* nm);
+  // nm encountered an uncommon case; should it be recompiled?
+  static bool shouldRecompileUncommonNMethod(nmethod* nm);
+  // nm is in uncommon mode; ok to recompile and reoptimize it?
+  static char* shouldNotRecompileNMethod(nmethod* nm);
+  // is nm fit to be recompiled?  return NULL if yes, reason otherwise
+  static int uncommonNMethodInvocationLimit(int version);
+  // return invocation counter limit for an uncommon nmethod
+  static int uncommonNMethodAgeLimit(int version);
+  // return nmethod age limit for an uncommon nmethod
 };
-
 
 #endif // DELTA_COMPILER
 #endif // _RECOMPILER_HPP

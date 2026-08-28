@@ -33,37 +33,39 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // take place in the vmProcess.
 
 class VM_Operation : public PrintableStackObj {
- private:
-   DeltaProcess* _calling_process;
- public:
-   void set_calling_process(DeltaProcess* p) { _calling_process = p; }
-   DeltaProcess* calling_process() const { return _calling_process; }
+private:
+  DeltaProcess* _calling_process;
 
-   virtual bool is_scavenge()        const { return false; }
-   virtual bool is_garbage_collect() const { return false; }
-   virtual bool is_single_step()     const { return false; }
+public:
+  void set_calling_process(DeltaProcess* p) { _calling_process = p; }
+  DeltaProcess* calling_process() const { return _calling_process; }
 
-   void evaluate();
-   // Evaluate is called in the vmProcess
-   virtual void doit() = 0;
-   void print() { mystd->print("%s", name()); }
+  virtual bool is_scavenge() const { return false; }
+  virtual bool is_garbage_collect() const { return false; }
+  virtual bool is_single_step() const { return false; }
 
-   virtual char* name() { return "vanilla"; }
+  void evaluate();
+  // Evaluate is called in the vmProcess
+  virtual void doit() = 0;
+  void print() { mystd->print("%s", name()); }
+
+  virtual char* name() { return "vanilla"; }
 };
 
 class VM_Scavenge : public VM_Operation {
- private:
+private:
   oop* addr;
- public:
-  bool is_scavenge() const 	{ return true; }
-  VM_Scavenge(oop* addr) 	{ this->addr = addr; }
+
+public:
+  bool is_scavenge() const { return true; }
+  VM_Scavenge(oop* addr) { this->addr = addr; }
   void doit();
 
   char* name() { return "scavenge"; }
 };
 
 class VM_Genesis : public VM_Operation {
- public:
+public:
   VM_Genesis();
   void doit();
 
@@ -71,29 +73,30 @@ class VM_Genesis : public VM_Operation {
 };
 
 class VM_GarbageCollect : public VM_Operation {
- private:
+private:
   oop* addr;
- public:
-  bool is_garbage_collect() const 	{ return true; }
-  VM_GarbageCollect(oop* addr) 		{ this->addr = addr; }
+
+public:
+  bool is_garbage_collect() const { return true; }
+  VM_GarbageCollect(oop* addr) { this->addr = addr; }
   void doit();
 
   char* name() { return "garbage collect"; }
 };
 
 class VM_TerminateProcess : public VM_Operation {
- private:
+private:
   DeltaProcess* target;
- public:
+
+public:
   VM_TerminateProcess(DeltaProcess* target) { this->target = target; }
   void doit();
 
   char* name() { return "terminate process"; }
 };
 
-
 class VM_DeoptimizeStacks : public VM_Operation {
- public:
+public:
   void doit();
 
   char* name() { return "deoptimize stacks"; }
@@ -102,46 +105,45 @@ class VM_DeoptimizeStacks : public VM_Operation {
 #ifdef DELTA_COMPILER
 
 class VM_OptimizeMethod : public VM_Operation {
- private:
+private:
   LookupKey _key;
   methodOop _method;
-  nmethod*  _nm;
- public:
-  VM_OptimizeMethod(LookupKey* key, methodOop method) : _key(key) {
-    _method = method;
-  }
-  nmethod* result() const 	{ return _nm; }
+  nmethod* _nm;
+
+public:
+  VM_OptimizeMethod(LookupKey* key, methodOop method) : _key(key) { _method = method; }
+  nmethod* result() const { return _nm; }
   void doit();
 
   char* name() { return "optimize method"; }
 };
 
 class VM_OptimizeRScope : public VM_Operation {
- private:
-  RScope*   _scope;
-  nmethod*  _nm;
- public:
-  VM_OptimizeRScope(RScope* scope) {
-    _scope = scope;
-  }
-  nmethod* result() const 	{ return _nm; }
+private:
+  RScope* _scope;
+  nmethod* _nm;
+
+public:
+  VM_OptimizeRScope(RScope* scope) { _scope = scope; }
+  nmethod* result() const { return _nm; }
   void doit();
 
   char* name() { return "optimize rscope"; }
 };
 
 class VM_OptimizeBlockMethod : public VM_Operation {
- private:
-  blockClosureOop           closure;
+private:
+  blockClosureOop closure;
   NonInlinedBlockScopeDesc* scope;
-  nmethod*                  nm;
- public:
+  nmethod* nm;
+
+public:
   VM_OptimizeBlockMethod(blockClosureOop closure, NonInlinedBlockScopeDesc* scope) {
-    this->closure   = closure;
-    this->scope     = scope;
+    this->closure = closure;
+    this->scope = scope;
   }
   void doit();
-  nmethod* method() const 	{ return nm; }
+  nmethod* method() const { return nm; }
 
   char* name() { return "optimize block method"; }
 };

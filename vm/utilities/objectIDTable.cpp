@@ -37,7 +37,9 @@ objArrayOop objectIDTable::array() {
   return Universe::objectIDTable();
 }
 
-oop objectIDTable::at(int index) { return array()->obj_at(index); }
+oop objectIDTable::at(int index) {
+  return array()->obj_at(index);
+}
 
 bool objectIDTable::is_index_ok(int index) {
   return 1 <= index && index <= Universe::objectIDTable()->length();
@@ -46,7 +48,8 @@ bool objectIDTable::is_index_ok(int index) {
 int objectIDTable::find_index(oop obj) {
   int len = Universe::objectIDTable()->length();
   for (int index = 1; index <= len; index++)
-    if (at(index) == obj) return index;
+    if (at(index) == obj)
+      return index;
   return 0;
 }
 

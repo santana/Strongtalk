@@ -31,8 +31,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 PcDesc::PcDesc(int pc, uint16 scope, uint16 byteCode) {
-  this->pc       = pc;
-  this->scope    = scope;
+  this->pc = pc;
+  this->scope = scope;
   this->byteCode = byteCode;
 }
 
@@ -41,13 +41,12 @@ char* PcDesc::real_pc(const nmethod* nm) const {
 }
 
 ScopeDesc* PcDesc::containingDesc(const nmethod* nm) const {
-  return nm->scopes()->at(scope, real_pc(nm)); 
+  return nm->scopes()->at(scope, real_pc(nm));
 }
 
 void PcDesc::print(nmethod* nm) {
   printIndent();
-  lprintf("PcDesc %#lx: pc: %#lx; scope: %5ld; byte code: %ld\n",
-	  this, real_pc(nm), scope, (long) byteCode);
+  lprintf("PcDesc %#lx: pc: %#lx; scope: %5ld; byte code: %ld\n", this, real_pc(nm), scope, (long)byteCode);
 }
 
 bool PcDesc::verify(nmethod* nm) {

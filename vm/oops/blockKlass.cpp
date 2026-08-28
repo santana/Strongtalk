@@ -35,19 +35,39 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 klassOop blockClosureKlass::blockKlassFor(int numberOfArguments) {
   switch (numberOfArguments) {
-    case 0: return Universe::zeroArgumentBlockKlassObj();  break;
-    case 1: return Universe::oneArgumentBlockKlassObj();   break;
-    case 2: return Universe::twoArgumentBlockKlassObj();   break;
-    case 3: return Universe::threeArgumentBlockKlassObj(); break;
-    case 4: return Universe::fourArgumentBlockKlassObj();  break;
-    case 5: return Universe::fiveArgumentBlockKlassObj();  break;
-    case 6: return Universe::sixArgumentBlockKlassObj();   break;
-    case 7: return Universe::sevenArgumentBlockKlassObj(); break;
-    case 8: return Universe::eightArgumentBlockKlassObj(); break;
-    case 9: return Universe::nineArgumentBlockKlassObj();  break;
+    case 0:
+      return Universe::zeroArgumentBlockKlassObj();
+      break;
+    case 1:
+      return Universe::oneArgumentBlockKlassObj();
+      break;
+    case 2:
+      return Universe::twoArgumentBlockKlassObj();
+      break;
+    case 3:
+      return Universe::threeArgumentBlockKlassObj();
+      break;
+    case 4:
+      return Universe::fourArgumentBlockKlassObj();
+      break;
+    case 5:
+      return Universe::fiveArgumentBlockKlassObj();
+      break;
+    case 6:
+      return Universe::sixArgumentBlockKlassObj();
+      break;
+    case 7:
+      return Universe::sevenArgumentBlockKlassObj();
+      break;
+    case 8:
+      return Universe::eightArgumentBlockKlassObj();
+      break;
+    case 9:
+      return Universe::nineArgumentBlockKlassObj();
+      break;
   }
- fatal("cannot handle block with more than 9 arguments");
- return NULL;
+  fatal("cannot handle block with more than 9 arguments");
+  return NULL;
 }
 
 bool blockClosureKlass::oop_verify(oop obj) {
@@ -62,7 +82,7 @@ void set_blockClosureKlass_vtbl(Klass* k) {
 }
 
 oop blockClosureKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
+  klassOop k = as_klassOop();
   // allocate
   oop* result = basicAllocate(blockClosureOopDesc::object_size(), &k, permit_scavenge, tenured);
   if (result == NULL)
@@ -83,52 +103,62 @@ klassOop blockClosureKlass::create_subclass(mixinOop mixin, Format format) {
 int blockClosureKlass::oop_scavenge_contents(oop obj) {
   // header
   memOop(obj)->scavenge_header();
-  // %note _method can be ignored since methods are tenured 
-  scavenge_oop((oop*) &blockClosureOop(obj)->addr()->_lexical_scope);
+  // %note _method can be ignored since methods are tenured
+  scavenge_oop((oop*)&blockClosureOop(obj)->addr()->_lexical_scope);
   return blockClosureOopDesc::object_size();
 }
 
 int blockClosureKlass::oop_scavenge_tenured_contents(oop obj) {
   // header
   memOop(obj)->scavenge_tenured_header();
-  // %note _method can be ignored since methods are tenured 
-  scavenge_tenured_oop((oop*) &blockClosureOop(obj)->addr()->_lexical_scope);
+  // %note _method can be ignored since methods are tenured
+  scavenge_tenured_oop((oop*)&blockClosureOop(obj)->addr()->_lexical_scope);
   return blockClosureOopDesc::object_size();
 }
 
 void blockClosureKlass::oop_follow_contents(oop obj) {
   // header
   memOop(obj)->follow_header();
-  MarkSweep::reverse_and_push((oop*) &blockClosureOop(obj)->addr()->_methodOrJumpAddr);
-  MarkSweep::reverse_and_push((oop*) &blockClosureOop(obj)->addr()->_lexical_scope);
+  MarkSweep::reverse_and_push((oop*)&blockClosureOop(obj)->addr()->_methodOrJumpAddr);
+  MarkSweep::reverse_and_push((oop*)&blockClosureOop(obj)->addr()->_lexical_scope);
 }
 
 void blockClosureKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
-  blk->do_oop("method", (oop*) &blockClosureOop(obj)->addr()->_methodOrJumpAddr);
-  blk->do_oop("scope",  (oop*) &blockClosureOop(obj)->addr()->_lexical_scope);
+  blk->do_oop("method", (oop*)&blockClosureOop(obj)->addr()->_methodOrJumpAddr);
+  blk->do_oop("scope", (oop*)&blockClosureOop(obj)->addr()->_lexical_scope);
 }
 
 void blockClosureKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
-  blk->do_oop((oop*) &blockClosureOop(obj)->addr()->_methodOrJumpAddr);
-  blk->do_oop((oop*) &blockClosureOop(obj)->addr()->_lexical_scope);
+  blk->do_oop((oop*)&blockClosureOop(obj)->addr()->_methodOrJumpAddr);
+  blk->do_oop((oop*)&blockClosureOop(obj)->addr()->_lexical_scope);
 }
 
 int blockClosureKlass::number_of_arguments() const {
-  klassOop k = klassOop(this);		// C++ bogosity alert
-  if (k == Universe::zeroArgumentBlockKlassObj())  return 0;
-  if (k == Universe::oneArgumentBlockKlassObj())   return 1;
-  if (k == Universe::twoArgumentBlockKlassObj())   return 2;
-  if (k == Universe::threeArgumentBlockKlassObj()) return 3;
-  if (k == Universe::fourArgumentBlockKlassObj())  return 4;
-  if (k == Universe::fiveArgumentBlockKlassObj())  return 5;
-  if (k == Universe::sixArgumentBlockKlassObj())   return 6;
-  if (k == Universe::sevenArgumentBlockKlassObj()) return 7;
-  if (k == Universe::eightArgumentBlockKlassObj()) return 8;
-  if (k == Universe::nineArgumentBlockKlassObj())  return 9;
+  klassOop k = klassOop(this); // C++ bogosity alert
+  if (k == Universe::zeroArgumentBlockKlassObj())
+    return 0;
+  if (k == Universe::oneArgumentBlockKlassObj())
+    return 1;
+  if (k == Universe::twoArgumentBlockKlassObj())
+    return 2;
+  if (k == Universe::threeArgumentBlockKlassObj())
+    return 3;
+  if (k == Universe::fourArgumentBlockKlassObj())
+    return 4;
+  if (k == Universe::fiveArgumentBlockKlassObj())
+    return 5;
+  if (k == Universe::sixArgumentBlockKlassObj())
+    return 6;
+  if (k == Universe::sevenArgumentBlockKlassObj())
+    return 7;
+  if (k == Universe::eightArgumentBlockKlassObj())
+    return 8;
+  if (k == Universe::nineArgumentBlockKlassObj())
+    return 9;
   fatal("unknown block closure class");
   return 0;
 }
@@ -152,8 +182,8 @@ void set_contextKlass_vtbl(Klass* k) {
 }
 
 oop contextKlass::allocateObjectSize(int num_of_temps, bool permit_scavenge, bool tenured) {
-  klassOop k        = as_klassOop();
-  int      obj_size = contextOopDesc::header_size() + num_of_temps;
+  klassOop k = as_klassOop();
+  int obj_size = contextOopDesc::header_size() + num_of_temps;
   // allocate
   contextOop obj = as_contextOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -171,7 +201,7 @@ klassOop contextKlass::create_subclass(mixinOop mixin, Format format) {
 }
 
 contextOop contextKlass::allocate_context(int num_of_temps) {
-  contextKlass* ck = (contextKlass*) contextKlassObj->klass_part();
+  contextKlass* ck = (contextKlass*)contextKlassObj->klass_part();
   return contextOop(ck->allocateObjectSize(num_of_temps));
 }
 
@@ -179,7 +209,7 @@ int contextKlass::oop_scavenge_contents(oop obj) {
   int size = contextOop(obj)->object_size();
   // header
   memOop(obj)->scavenge_header();
-  scavenge_oop((oop*) &contextOop(obj)->addr()->_parent);
+  scavenge_oop((oop*)&contextOop(obj)->addr()->_parent);
   // temporaries
   memOop(obj)->scavenge_body(contextOopDesc::header_size(), size);
   return size;
@@ -189,7 +219,7 @@ int contextKlass::oop_scavenge_tenured_contents(oop obj) {
   int size = contextOop(obj)->object_size();
   // header
   memOop(obj)->scavenge_tenured_header();
-  scavenge_tenured_oop((oop*) &contextOop(obj)->addr()->_parent);
+  scavenge_tenured_oop((oop*)&contextOop(obj)->addr()->_parent);
   // temporaries
   memOop(obj)->scavenge_tenured_body(contextOopDesc::header_size(), size);
   return size;
@@ -198,15 +228,15 @@ int contextKlass::oop_scavenge_tenured_contents(oop obj) {
 void contextKlass::oop_follow_contents(oop obj) {
   // header
   memOop(obj)->follow_header();
-  MarkSweep::reverse_and_push((oop*) &contextOop(obj)->addr()->_parent);
+  MarkSweep::reverse_and_push((oop*)&contextOop(obj)->addr()->_parent);
   // temporaries
 
   // we have to find the header word in order to compute object size.
   // %implementation note:
   //   implement this another way if possible
-  oop* root_or_mark = (oop*) memOop(obj)->mark();
+  oop* root_or_mark = (oop*)memOop(obj)->mark();
   while (!oop(root_or_mark)->is_mark()) {
-    root_or_mark = (oop*) *root_or_mark;
+    root_or_mark = (oop*)*root_or_mark;
   }
   int len = markOop(root_or_mark)->hash() - 1;
   memOop(obj)->follow_body(contextOopDesc::header_size(), contextOopDesc::header_size() + len);
@@ -215,7 +245,7 @@ void contextKlass::oop_follow_contents(oop obj) {
 void contextKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
-  blk->do_oop((oop*) &contextOop(obj)->addr()->_parent);
+  blk->do_oop((oop*)&contextOop(obj)->addr()->_parent);
   // temporaries
   memOop(obj)->oop_iterate_body(blk, contextOopDesc::header_size(), oop_size(obj));
 }
@@ -223,7 +253,7 @@ void contextKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
 void contextKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
-  blk->do_oop("home", (oop*) &contextOop(obj)->addr()->_parent);
+  blk->do_oop("home", (oop*)&contextOop(obj)->addr()->_parent);
   // temporaries
   memOop(obj)->layout_iterate_body(blk, contextOopDesc::header_size(), oop_size(obj));
 }

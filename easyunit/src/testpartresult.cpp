@@ -25,43 +25,34 @@ barthelemy@prologique.com
 
 using namespace easyunit;
 
-TestPartResult::TestPartResult (Test *test,
-	const SimpleString&	fileName, 
-	long lineNumber,
-	const SimpleString&	message,
-	testType type) 
-  : message_ (message), 
-    test_ (test), 
-    fileName_ (fileName), 
-    lineNumber_ (lineNumber),
-    type_ (type)
-{
-}
+TestPartResult::TestPartResult(Test* test, const SimpleString& fileName, long lineNumber, const SimpleString& message,
+                               testType type) :
+  message_(message), test_(test), fileName_(fileName), lineNumber_(lineNumber), type_(type) {}
 
-void TestPartResult::setNext(TestPartResult *next) {
+void TestPartResult::setNext(TestPartResult* next) {
   next_ = next;
-}  
+}
 
 TestPartResult* TestPartResult::getNext() const {
   return next_;
-}  
+}
 
 testType TestPartResult::getType() const {
-	return type_; 
-} 
+  return type_;
+}
 
 const SimpleString& TestPartResult::getMessage() const {
   return message_;
 }
-  	
+
 Test* TestPartResult::getTest() const {
   return test_;
 }
-  	
+
 const SimpleString& TestPartResult::getFileName() const {
   return fileName_;
 }
-  	
+
 long TestPartResult::getLineNumber() const {
   return lineNumber_;
 }

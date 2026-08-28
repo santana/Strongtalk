@@ -25,12 +25,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define _INIT_HPP
 
 // init_globals replaces C++ global objects so we can use the standard linker
-// to link Delta (which is at least twice as fast as using the GNU C++ linker). 
+// to link Delta (which is at least twice as fast as using the GNU C++ linker).
 // Also, init.c gives explicit control over the sequence of initialization.
 
-// Programming convention: instead of using a global object (e,g, "Foo foo;"), 
+// Programming convention: instead of using a global object (e,g, "Foo foo;"),
 // use "Foo* foo;", create a function init_foo() in foo.c, and add a call
 // to init_foo in init.cpp.
 
-void init_globals();	    	// call constructors at startup
+void init_globals(); // call constructors at startup
 #endif // _INIT_HPP

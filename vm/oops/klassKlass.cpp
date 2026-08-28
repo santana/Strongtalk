@@ -55,12 +55,12 @@ int klassKlass::oop_scavenge_contents(oop obj) {
   // header
   memOop(obj)->scavenge_header();
   Klass* k = klassOop(obj)->klass_part();
-  scavenge_oop((oop*) &k->_non_indexable_size);
-  scavenge_oop((oop*) &k->_has_untagged_contents);
-  scavenge_oop((oop*) &k->_classVars);
-  scavenge_oop((oop*) &k->_methods);
-  scavenge_oop((oop*) &k->_superKlass);
-  scavenge_oop((oop*) &k->_mixin);
+  scavenge_oop((oop*)&k->_non_indexable_size);
+  scavenge_oop((oop*)&k->_has_untagged_contents);
+  scavenge_oop((oop*)&k->_classVars);
+  scavenge_oop((oop*)&k->_methods);
+  scavenge_oop((oop*)&k->_superKlass);
+  scavenge_oop((oop*)&k->_mixin);
   // instance variables
   memOop(obj)->scavenge_body(klassOopDesc::header_size(), size);
   return size;
@@ -71,12 +71,12 @@ int klassKlass::oop_scavenge_tenured_contents(oop obj) {
   // header
   memOop(obj)->scavenge_tenured_header();
   Klass* k = klassOop(obj)->klass_part();
-  scavenge_tenured_oop((oop*) &k->_non_indexable_size);
-  scavenge_tenured_oop((oop*) &k->_has_untagged_contents);
-  scavenge_tenured_oop((oop*) &k->_classVars);
-  scavenge_tenured_oop((oop*) &k->_methods);
-  scavenge_tenured_oop((oop*) &k->_superKlass);
-  scavenge_tenured_oop((oop*) &k->_mixin);
+  scavenge_tenured_oop((oop*)&k->_non_indexable_size);
+  scavenge_tenured_oop((oop*)&k->_has_untagged_contents);
+  scavenge_tenured_oop((oop*)&k->_classVars);
+  scavenge_tenured_oop((oop*)&k->_methods);
+  scavenge_tenured_oop((oop*)&k->_superKlass);
+  scavenge_tenured_oop((oop*)&k->_mixin);
   // instance variables
   memOop(obj)->scavenge_tenured_body(klassOopDesc::header_size(), size);
   return size;
@@ -86,12 +86,12 @@ void klassKlass::oop_follow_contents(oop obj) {
   // header
   memOop(obj)->follow_header();
   Klass* k = klassOop(obj)->klass_part();
-  MarkSweep::reverse_and_push((oop*) &k->_non_indexable_size);
-  MarkSweep::reverse_and_push((oop*) &k->_has_untagged_contents);
-  MarkSweep::reverse_and_push((oop*) &k->_classVars);
-  MarkSweep::reverse_and_push((oop*) &k->_methods);
-  MarkSweep::reverse_and_push((oop*) &k->_superKlass);
-  MarkSweep::reverse_and_push((oop*) &k->_mixin);
+  MarkSweep::reverse_and_push((oop*)&k->_non_indexable_size);
+  MarkSweep::reverse_and_push((oop*)&k->_has_untagged_contents);
+  MarkSweep::reverse_and_push((oop*)&k->_classVars);
+  MarkSweep::reverse_and_push((oop*)&k->_methods);
+  MarkSweep::reverse_and_push((oop*)&k->_superKlass);
+  MarkSweep::reverse_and_push((oop*)&k->_mixin);
   // instance variables
   memOop(obj)->follow_body(klassOopDesc::header_size(), non_indexable_size());
 }
@@ -130,12 +130,12 @@ void klassKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
   Klass* k = klassOop(obj)->klass_part();
-  blk->do_oop("size",      (oop*) &k->_non_indexable_size);
-  blk->do_oop("untag",     (oop*) &k->_has_untagged_contents);
-  blk->do_oop("classVars", (oop*) &k->_classVars);
-  blk->do_oop("methods",   (oop*) &k->_methods);
-  blk->do_oop("super",     (oop*) &k->_superKlass);
-  blk->do_oop("mixin",     (oop*) &k->_mixin);
+  blk->do_oop("size", (oop*)&k->_non_indexable_size);
+  blk->do_oop("untag", (oop*)&k->_has_untagged_contents);
+  blk->do_oop("classVars", (oop*)&k->_classVars);
+  blk->do_oop("methods", (oop*)&k->_methods);
+  blk->do_oop("super", (oop*)&k->_superKlass);
+  blk->do_oop("mixin", (oop*)&k->_mixin);
   // instance variables
   memOop(obj)->layout_iterate_body(blk, klassOopDesc::header_size(), non_indexable_size());
 }
@@ -144,12 +144,12 @@ void klassKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
   Klass* k = klassOop(obj)->klass_part();
-  blk->do_oop((oop*) &k->_non_indexable_size);
-  blk->do_oop((oop*) &k->_has_untagged_contents);
-  blk->do_oop((oop*) &k->_classVars);
-  blk->do_oop((oop*) &k->_methods);
-  blk->do_oop((oop*) &k->_superKlass);
-  blk->do_oop((oop*) &k->_mixin);
+  blk->do_oop((oop*)&k->_non_indexable_size);
+  blk->do_oop((oop*)&k->_has_untagged_contents);
+  blk->do_oop((oop*)&k->_classVars);
+  blk->do_oop((oop*)&k->_methods);
+  blk->do_oop((oop*)&k->_superKlass);
+  blk->do_oop((oop*)&k->_mixin);
   // instance variables
   memOop(obj)->oop_iterate_body(blk, klassOopDesc::header_size(), non_indexable_size());
 }

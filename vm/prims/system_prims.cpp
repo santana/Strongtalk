@@ -209,8 +209,7 @@ PRIM_DECL_0(systemPrimitives::expansions) {
 }
 
 PRIM_DECL_0(systemPrimitives::breakpoint) {
-  PROLOGUE_0("breakpoint")
-  {
+  PROLOGUE_0("breakpoint") {
     ResourceMark rm;
     StubRoutines::setSingleStepHandler(&single_step_handler);
     dispatchTable::intercept_for_step(NULL);
@@ -239,13 +238,13 @@ PRIM_DECL_0(systemPrimitives::halt) {
   Unimplemented();
   PRIM_NOT_IMPLEMENTED
 
-//  __asm hlt
-//  return trueObj;
+  //  __asm hlt
+  //  return trueObj;
 }
 
 static oop fake_time() {
   static int time = 0;
-  return reinterpret_cast<oop>(oopFactory::new_double((double) time++));
+  return reinterpret_cast<oop>(oopFactory::new_double((double)time++));
 }
 
 PRIM_DECL_0(systemPrimitives::userTime) {
@@ -282,7 +281,8 @@ PRIM_DECL_1(systemPrimitives::writeSnapshot, oop fileName) {
   SnapshotDesc sd;
   char* name = "fisk.snap";
   sd.write_on(name);
-  if (sd.has_error()) return markSymbol(sd.error_symbol());
+  if (sd.has_error())
+    return markSymbol(sd.error_symbol());
   return fileName;
 }
 
@@ -293,7 +293,7 @@ PRIM_DECL_1(systemPrimitives::globalAssociationKey, oop receiver) {
 }
 
 PRIM_DECL_2(systemPrimitives::globalAssociationSetKey, oop receiver, oop key) {
-  PROLOGUE_2("globalAssociationSetKey", receiver,  key);
+  PROLOGUE_2("globalAssociationSetKey", receiver, key);
   assert(receiver->is_association(), "receiver must be association");
   if (!key->is_symbol())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
@@ -325,9 +325,12 @@ PRIM_DECL_2(systemPrimitives::globalAssociationSetConstant, oop receiver, oop va
   assert(receiver->is_association(), "receiver must be association");
   oop old_value = associationOop(receiver)->is_constant() ? trueObj : falseObj;
 
-       if (value == trueObj)  associationOop(receiver)->set_is_constant(true);
-  else if (value == falseObj) associationOop(receiver)->set_is_constant(false);
-  else return markSymbol(vmSymbols::first_argument_has_wrong_type());
+  if (value == trueObj)
+    associationOop(receiver)->set_is_constant(true);
+  else if (value == falseObj)
+    associationOop(receiver)->set_is_constant(false);
+  else
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   return old_value;
 }
@@ -338,7 +341,7 @@ PRIM_DECL_1(systemPrimitives::smalltalk_at, oop index) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   if (!Universe::systemDictionaryObj()->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   return Universe::systemDictionaryObj()->obj_at(smiOop(index)->value());
 }
@@ -359,7 +362,7 @@ PRIM_DECL_1(systemPrimitives::smalltalk_remove_at, oop index) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   if (!Universe::systemDictionaryObj()->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   BlockScavenge bs;
 
@@ -440,10 +443,11 @@ PRIM_DECL_1(systemPrimitives::characterFor, oop value) {
   if (!value->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  if ((unsigned int) smiOop(value)->value() < 256)
+  if ((unsigned int)smiOop(value)->value() < 256)
     // return the n+1'th element in asciiCharacter
     return Universe::asciiCharacters()->obj_at(smiOop(value)->value() + 1);
-  else return markSymbol(vmSymbols::out_of_bounds());
+  else
+    return markSymbol(vmSymbols::out_of_bounds());
 }
 
 PRIM_DECL_0(systemPrimitives::traceStack) {
@@ -496,7 +500,6 @@ PRIM_DECL_0(systemPrimitives::notificationQueueGet) {
   return NotificationQueue::get();
 }
 
-
 PRIM_DECL_1(systemPrimitives::notificationQueuePut, oop value) {
   PROLOGUE_1("notificationQueuePut", value);
   NotificationQueue::put(value);
@@ -505,10 +508,8 @@ PRIM_DECL_1(systemPrimitives::notificationQueuePut, oop value) {
 
 PRIM_DECL_1(systemPrimitives::hadNearDeathExperience, oop value) {
   PROLOGUE_1("hadNearDeathExperience", value);
-  return (value->is_mem() && memOop(value)->mark()->is_near_death())
-         ? trueObj : falseObj;
+  return (value->is_mem() && memOop(value)->mark()->is_near_death()) ? trueObj : falseObj;
 }
-
 
 PRIM_DECL_2(systemPrimitives::dll_setup, oop receiver, oop selector) {
   PROLOGUE_2("dll_setup", receiver, selector);
@@ -535,7 +536,7 @@ PRIM_DECL_3(systemPrimitives::dll_lookup, oop name, oop library, oop result) {
   if (!result->is_proxy())
     return markSymbol(vmSymbols::third_argument_has_wrong_type());
 
-  dll_func res = DLLs::lookup(symbolOop(name), (DLL*) proxyOop(library)->get_pointer());
+  dll_func res = DLLs::lookup(symbolOop(name), (DLL*)proxyOop(library)->get_pointer());
   if (res) {
     proxyOop(result)->set_pointer((void*)res);
     return result;
@@ -568,9 +569,7 @@ PRIM_DECL_1(systemPrimitives::dll_unload, oop library) {
   if (!library->is_proxy())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
-  return DLLs::unload((DLL*) proxyOop(library)->get_pointer())
-       ? library
-       : markSymbol(vmSymbols::failed());
+  return DLLs::unload((DLL*)proxyOop(library)->get_pointer()) ? library : markSymbol(vmSymbols::failed());
 }
 
 // Inlining Database
@@ -590,10 +589,9 @@ PRIM_DECL_1(systemPrimitives::inlining_database_set_directory, oop name) {
   ResourceMark rm;
 
   int len = name->is_byteArray() ? byteArrayOop(name)->length() : doubleByteArrayOop(name)->length();
-  char* str = NEW_C_HEAP_ARRAY(char, len+1);
-  name->is_byteArray()
-  ?       byteArrayOop(name)->copy_null_terminated(str, len+1)
-  : doubleByteArrayOop(name)->copy_null_terminated(str, len+1);
+  char* str = NEW_C_HEAP_ARRAY(char, len + 1);
+  name->is_byteArray() ? byteArrayOop(name)->copy_null_terminated(str, len + 1)
+                       : doubleByteArrayOop(name)->copy_null_terminated(str, len + 1);
   // Potential memory leak, but this is temporary
   InliningDatabase::set_directory(str);
   return trueObj;
@@ -627,10 +625,9 @@ PRIM_DECL_1(systemPrimitives::inlining_database_compile, oop file_name) {
   ResourceMark rm;
 
   int len = file_name->is_byteArray() ? byteArrayOop(file_name)->length() : doubleByteArrayOop(file_name)->length();
-  char* str = NEW_RESOURCE_ARRAY(char, len+1);
-  file_name->is_byteArray()
-  ?       byteArrayOop(file_name)->copy_null_terminated(str, len+1)
-  : doubleByteArrayOop(file_name)->copy_null_terminated(str, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
+  file_name->is_byteArray() ? byteArrayOop(file_name)->copy_null_terminated(str, len + 1)
+                            : doubleByteArrayOop(file_name)->copy_null_terminated(str, len + 1);
 
   RScope* rs = InliningDatabase::file_in(str);
   if (rs) {
@@ -652,7 +649,7 @@ PRIM_DECL_1(systemPrimitives::inlining_database_compile, oop file_name) {
     }
   } else {
     if (TraceInliningDatabase) {
-       mystd->print_cr("compiling {%s} failed", str);
+      mystd->print_cr("compiling {%s} failed", str);
     }
   }
   return trueObj;
@@ -688,13 +685,11 @@ PRIM_DECL_1(systemPrimitives::inlining_database_mangle, oop name) {
   ResourceMark rm;
 
   int len = name->is_byteArray() ? byteArrayOop(name)->length() : doubleByteArrayOop(name)->length();
-  char* str = NEW_RESOURCE_ARRAY(char, len+1);
-  name->is_byteArray()
-  ?       byteArrayOop(name)->copy_null_terminated(str, len+1)
-  : doubleByteArrayOop(name)->copy_null_terminated(str, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
+  name->is_byteArray() ? byteArrayOop(name)->copy_null_terminated(str, len + 1)
+                       : doubleByteArrayOop(name)->copy_null_terminated(str, len + 1);
   return oopFactory::new_byteArray(InliningDatabase::mangle_name(str));
 }
-
 
 PRIM_DECL_1(systemPrimitives::inlining_database_demangle, oop name) {
   PROLOGUE_1("inlining_database_demangle", name);
@@ -705,10 +700,9 @@ PRIM_DECL_1(systemPrimitives::inlining_database_demangle, oop name) {
   ResourceMark rm;
 
   int len = name->is_byteArray() ? byteArrayOop(name)->length() : doubleByteArrayOop(name)->length();
-  char* str = NEW_RESOURCE_ARRAY(char, len+1);
-  name->is_byteArray()
-  ?       byteArrayOop(name)->copy_null_terminated(str, len+1)
-  : doubleByteArrayOop(name)->copy_null_terminated(str, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
+  name->is_byteArray() ? byteArrayOop(name)->copy_null_terminated(str, len + 1)
+                       : doubleByteArrayOop(name)->copy_null_terminated(str, len + 1);
   return oopFactory::new_byteArray(InliningDatabase::unmangle_name(str));
 }
 
@@ -736,7 +730,7 @@ PRIM_DECL_0(systemPrimitives::sliding_system_average) {
 
   unsigned int* array = SlidingSystemAverage::update();
 
-  objArrayOop result = oopFactory::new_objArray(SlidingSystemAverage::number_of_cases-1);
+  objArrayOop result = oopFactory::new_objArray(SlidingSystemAverage::number_of_cases - 1);
 
   for (int index = 1; index < SlidingSystemAverage::number_of_cases; index++) {
     result->obj_at_put(index, as_smiOop(array[index]));
@@ -747,16 +741,16 @@ PRIM_DECL_0(systemPrimitives::sliding_system_average) {
 // Enumeration primitives
 // - it is important to exclude contextOops since they should be invisible to the Smalltalk level.
 
-class InstancesOfClosure: public ObjectClosure {
- public:
+class InstancesOfClosure : public ObjectClosure {
+public:
   InstancesOfClosure(klassOop target, int limit) {
     this->result = new GrowableArray<oop>(100);
     this->target = target;
-    this->limit  = limit;
+    this->limit = limit;
   }
 
-  int                 limit;
-  klassOop            target;
+  int limit;
+  klassOop target;
   GrowableArray<oop>* result;
 
   void do_object(memOop obj) {
@@ -786,40 +780,40 @@ PRIM_DECL_2(systemPrimitives::instances_of, oop klass, oop limit) {
   int length = blk.result->length();
   objArrayOop result = oopFactory::new_objArray(length);
   for (int index = 1; index <= length; index++) {
-    result->obj_at_put(index, blk.result->at(index-1));
+    result->obj_at_put(index, blk.result->at(index - 1));
   }
   return result;
 }
 
 class ConvertClosure : public OopClosure {
-  void do_oop(oop* o) {
-    Reflection::convert(o);
-  }
+  void do_oop(oop* o) { Reflection::convert(o); }
 };
 
 class HasReferenceClosure : public OopClosure {
   oop target;
- public:
+
+public:
   HasReferenceClosure(oop target) {
     this->target = target;
     this->result = false;
   }
   void do_oop(oop* o) {
-    if (*o == target) result = true;
+    if (*o == target)
+      result = true;
   }
   bool result;
 };
 
-class ReferencesToClosure: public ObjectClosure {
- public:
+class ReferencesToClosure : public ObjectClosure {
+public:
   ReferencesToClosure(oop target, int limit) {
     this->result = new GrowableArray<oop>(100);
     this->target = target;
-    this->limit  = limit;
+    this->limit = limit;
   }
 
-  int                 limit;
-  oop                 target;
+  int limit;
+  oop target;
   GrowableArray<oop>* result;
 
   bool has_reference(memOop obj) {
@@ -853,34 +847,36 @@ PRIM_DECL_2(systemPrimitives::references_to, oop obj, oop limit) {
   int length = blk.result->length();
   objArrayOop result = oopFactory::new_objArray(length);
   for (int index = 1; index <= length; index++) {
-    result->obj_at_put(index, blk.result->at(index-1));
+    result->obj_at_put(index, blk.result->at(index - 1));
   }
   return result;
 }
 
 class HasInstanceReferenceClosure : public OopClosure {
   klassOop target;
- public:
+
+public:
   HasInstanceReferenceClosure(klassOop target) {
     this->target = target;
     this->result = false;
   }
   void do_oop(oop* o) {
-    if ((*o)->klass() == target) result = true;
+    if ((*o)->klass() == target)
+      result = true;
   }
   bool result;
 };
 
-class ReferencesToInstancesOfClosure: public ObjectClosure {
- public:
+class ReferencesToInstancesOfClosure : public ObjectClosure {
+public:
   ReferencesToInstancesOfClosure(klassOop target, int limit) {
     this->result = new GrowableArray<oop>(100);
     this->target = target;
-    this->limit  = limit;
+    this->limit = limit;
   }
 
-  int                 limit;
-  klassOop            target;
+  int limit;
+  klassOop target;
   GrowableArray<oop>* result;
 
   bool has_reference(memOop obj) {
@@ -916,19 +912,19 @@ PRIM_DECL_2(systemPrimitives::references_to_instances_of, oop klass, oop limit) 
   int length = blk.result->length();
   objArrayOop result = oopFactory::new_objArray(length);
   for (int index = 1; index <= length; index++) {
-    result->obj_at_put(index, blk.result->at(index-1));
+    result->obj_at_put(index, blk.result->at(index - 1));
   }
   return result;
 }
 
-class AllObjectsClosure: public ObjectClosure {
- public:
+class AllObjectsClosure : public ObjectClosure {
+public:
   AllObjectsClosure(int limit) {
     this->result = new GrowableArray<oop>(20000);
-    this->limit  = limit;
+    this->limit = limit;
   }
 
-  int                 limit;
+  int limit;
   GrowableArray<oop>* result;
 
   void do_object(memOop obj) {
@@ -954,7 +950,7 @@ PRIM_DECL_1(systemPrimitives::all_objects, oop limit) {
   int length = blk.result->length();
   objArrayOop result = oopFactory::new_objArray(length);
   for (int index = 1; index <= length; index++) {
-    result->obj_at_put(index, blk.result->at(index-1));
+    result->obj_at_put(index, blk.result->at(index - 1));
   }
   return result;
 }
@@ -1012,7 +1008,7 @@ PRIM_DECL_1(systemPrimitives::alienMalloc, oop size) {
   if (theSize <= 0)
     return markSymbol(vmSymbols::argument_is_invalid());
 
-  return as_smiOop((intptr_t) malloc(theSize));
+  return as_smiOop((intptr_t)malloc(theSize));
 }
 
 PRIM_DECL_1(systemPrimitives::alienCalloc, oop size) {
@@ -1023,20 +1019,19 @@ PRIM_DECL_1(systemPrimitives::alienCalloc, oop size) {
   if (theSize <= 0)
     return markSymbol(vmSymbols::argument_is_invalid());
 
-  return as_smiOop((intptr_t) calloc(smiOop(size)->value(), 1));
+  return as_smiOop((intptr_t)calloc(smiOop(size)->value(), 1));
 }
 
 PRIM_DECL_1(systemPrimitives::alienFree, oop address) {
   PROLOGUE_0("alienFree");
-  if (!address->is_smi() && 
-     !(address->is_byteArray() && address->klass() == Universe::find_global("LargeInteger")))
+  if (!address->is_smi() && !(address->is_byteArray() && address->klass() == Universe::find_global("LargeInteger")))
     return markSymbol(vmSymbols::argument_has_wrong_type());
 
   if (address->is_smi()) {
     if (smiOop(address)->value() == 0)
       return markSymbol(vmSymbols::argument_is_invalid());
 
-    free((void*) smiOop(address)->value());
+    free((void*)smiOop(address)->value());
   } else { // LargeInteger
     BlockScavenge bs;
     Integer* largeAddress = &byteArrayOop(address)->number();
@@ -1044,7 +1039,7 @@ PRIM_DECL_1(systemPrimitives::alienFree, oop address) {
     int intAddress = largeAddress->as_int(ok);
     if (intAddress == 0 || !ok)
       return markSymbol(vmSymbols::argument_is_invalid());
-    free((void*)(intptr_t) intAddress);
+    free((void*)(intptr_t)intAddress);
   }
   return trueObj;
 }

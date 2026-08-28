@@ -30,75 +30,104 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the last N events.  An EL_Event is represented by an identifying string
 // and up to EVENT_PARAMS parameters.
 
-const int EVENT_PARAMS = 3;       // number of params per EL_Event
+const int EVENT_PARAMS = 3; // number of params per EL_Event
 
 // helper macros
 
-#define LOG_EVENT(name)           eventLog->log(name)
-#define LOG_EVENT1(name,p1)       eventLog->log(name, (void*)(intptr_t)(p1))
-#define LOG_EVENT2(name,p1,p2)    eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2))
-#define LOG_EVENT3(name,p1,p2,p3) eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2), (void*)(intptr_t)(p3))
+#define LOG_EVENT(name) eventLog->log(name)
+#define LOG_EVENT1(name, p1) eventLog->log(name, (void*)(intptr_t)(p1))
+#define LOG_EVENT2(name, p1, p2) eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2))
+#define LOG_EVENT3(name, p1, p2, p3)                                                                                   \
+  eventLog->log(name, (void*)(intptr_t)(p1), (void*)(intptr_t)(p2), (void*)(intptr_t)(p3))
 
-enum EL_EventStatus { starting, ending, atomic };
+enum EL_EventStatus {
+  starting,
+  ending,
+  atomic
+};
 
-struct EL_Event /* no superclass - never allocated individually */ {       
-  const char* name;                     // in printf format
-  EL_EventStatus status;          // for nested events
+struct EL_Event /* no superclass - never allocated individually */ {
+  const char* name; // in printf format
+  EL_EventStatus status; // for nested events
   const void* args[EVENT_PARAMS];
 };
 
-
-struct EventLog : public CHeapObj {   
-  EL_Event* buf;                  // event buffer
+struct EventLog : public CHeapObj {
+  EL_Event* buf; // event buffer
   EL_Event* bufEnd;
-  EL_Event* next;                 // where the next entry will go
-  int  nesting;         	  // current nesting depth
+  EL_Event* next; // where the next entry will go
+  int nesting; // current nesting depth
 
   EventLog();
-  void   init();
+  void init();
 
   EL_Event* nextEvent(EL_Event* e, EL_Event* start, EL_Event* end) {
-    if (e + 1 == end) return start; else return e + 1; }
+    if (e + 1 == end)
+      return start;
+    else
+      return e + 1;
+  }
   EL_Event* prevEvent(EL_Event* e, EL_Event* start, EL_Event* end) {
-    if (e == start) return end - 1; else return e - 1; }
-  void   inc()          { next = nextEvent(next, buf, bufEnd); }
+    if (e == start)
+      return end - 1;
+    else
+      return e - 1;
+  }
+  void inc() { next = nextEvent(next, buf, bufEnd); }
 
-  void   log(EL_Event* e)  { *next = *e; inc(); }
-  void   log(const char* name) {
-    next->name = name; next->status = atomic;
-    inc(); }
-  void   log(const char* name, const void* p1) {
-    next->name = name; next->status = atomic;
-    next->args[0] = p1; inc(); }
-  void   log(const char* name, const void* p1, const void* p2) {
-    next->name = name; next->status = atomic;
-    next->args[0] = p1; next->args[1] = p2; inc(); }
-  void   log(const char* name, const void* p1, const void* p2, const void* p3) {
-    next->name = name; next->status = atomic;
-    next->args[0] = p1; next->args[1] = p2; next->args[2] = p3; inc(); }
-  
-  void   resize();                // resize buffer
-  
-  void   print() { printPartial(bufEnd - buf); }
-  void   printPartial(int n);
+  void log(EL_Event* e) {
+    *next = *e;
+    inc();
+  }
+  void log(const char* name) {
+    next->name = name;
+    next->status = atomic;
+    inc();
+  }
+  void log(const char* name, const void* p1) {
+    next->name = name;
+    next->status = atomic;
+    next->args[0] = p1;
+    inc();
+  }
+  void log(const char* name, const void* p1, const void* p2) {
+    next->name = name;
+    next->status = atomic;
+    next->args[0] = p1;
+    next->args[1] = p2;
+    inc();
+  }
+  void log(const char* name, const void* p1, const void* p2, const void* p3) {
+    next->name = name;
+    next->status = atomic;
+    next->args[0] = p1;
+    next->args[1] = p2;
+    next->args[2] = p3;
+    inc();
+  }
+
+  void resize(); // resize buffer
+
+  void print() { printPartial(bufEnd - buf); }
+  void printPartial(int n);
 };
 
 extern EventLog* eventLog;
 
-class EventMarker : StackObj {    // for events which have a duration
- public:
+class EventMarker : StackObj { // for events which have a duration
+public:
   EL_Event event;
   EL_Event* here;
 
-  EventMarker(const char* n)                                  { init(n, 0, 0, 0); }
-  EventMarker(const char* n, const void* p1)                        { init(n, p1, 0, 0); }
-  EventMarker(const char* n, const void* p1, const void* p2)              { init(n, p1, p2, 0); }
-  EventMarker(const char* n, const void* p1, const void* p2, const void* p3)    { init(n, p1, p2, p3);}
+  EventMarker(const char* n) { init(n, 0, 0, 0); }
+  EventMarker(const char* n, const void* p1) { init(n, p1, 0, 0); }
+  EventMarker(const char* n, const void* p1, const void* p2) { init(n, p1, p2, 0); }
+  EventMarker(const char* n, const void* p1, const void* p2, const void* p3) { init(n, p1, p2, p3); }
 
   void init(const char* n, const void* p1, const void* p2, const void* p3) {
     here = eventLog->next;
     eventLog->log(n, p1, p2, p3);
-    here->status = starting; 
+    here->status = starting;
     event = *here;
     eventLog->nesting++;
   }
@@ -108,7 +137,7 @@ class EventMarker : StackObj {    // for events which have a duration
     // but that's ok
     if (here == eventLog->next - 1) {
       *here = event;
-      here->status = atomic;       // nothing happened inbetween
+      here->status = atomic; // nothing happened inbetween
     } else {
       event.status = ending;
       eventLog->log(&event);

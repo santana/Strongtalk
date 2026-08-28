@@ -25,15 +25,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/os.hpp"
 #include "topIncludes/std_includes.hpp"
 
-void timer::start() { 
+void timer::start() {
   os::updateTimes();
-  userTime   = os::userTime();
+  userTime = os::userTime();
   systemTime = os::systemTime();
 }
 
 void timer::stop() {
   os::updateTimes();
-  userTime   = os::userTime()   - userTime;
+  userTime = os::userTime() - userTime;
   systemTime = os::systemTime() - systemTime;
 }
 
@@ -55,16 +55,15 @@ void elapsedTimer::stop() {
 
 double elapsedTimer::seconds() {
   double count = counter.as_double();
-  double freq  = os::elapsed_frequency().as_double();
-  return count/freq;
+  double freq = os::elapsed_frequency().as_double();
+  return count / freq;
 }
 
 void elapsedTimer::print() {
   mystd->print_cr("%3.3f", seconds());
 }
 
-TimeStamp::TimeStamp() : counter(0,0) {
-}
+TimeStamp::TimeStamp() : counter(0, 0) {}
 
 void TimeStamp::update() {
   counter = os::elapsed_counter();
@@ -73,8 +72,8 @@ void TimeStamp::update() {
 double TimeStamp::seconds() {
   long_int new_count = os::elapsed_counter();
   double count = (new_count - counter).as_double();
-  double freq  = os::elapsed_frequency().as_double();
-  return count/freq;
+  double freq = os::elapsed_frequency().as_double();
+  return count / freq;
 }
 
 TraceTime::TraceTime(const char* title, bool doit) {
@@ -91,4 +90,3 @@ TraceTime::~TraceTime() {
     mystd->print_cr(", %3.3f secs]", t.seconds());
   }
 }
-

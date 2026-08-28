@@ -27,17 +27,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/doubleOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class doubleKlass: public memOopKlass {
- public:
+class doubleKlass : public memOopKlass {
+public:
   // testers
-  bool oop_is_double()               const { return true;  }
+  bool oop_is_double() const { return true; }
 
   // allocation properties
-  bool can_inline_allocation()       const { return false; }
+  bool can_inline_allocation() const { return false; }
 
   // reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // allocates a double
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
@@ -49,8 +49,8 @@ class doubleKlass: public memOopKlass {
   Format format() { return double_klass; }
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // printing operations

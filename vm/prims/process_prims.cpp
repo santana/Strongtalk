@@ -56,7 +56,7 @@ PRIM_DECL_2(processOopPrimitives::create, oop receiver, oop block) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   processOop process = processOop(receiver->primitive_allocate());
   assert(process->is_process(), "must be process");
- 
+
   DeltaProcess* p = new DeltaProcess(block, oopFactory::new_symbol("value"));
   process->set_process(p);
   p->set_processObj(process);
@@ -251,7 +251,8 @@ PRIM_DECL_2(processOopPrimitives::trace_stack, oop receiver, oop size) {
     return markSymbol(vmSymbols::dead());
 
   // Print the stack
-  { ResourceMark rm; 
+  {
+    ResourceMark rm;
     processOop(receiver)->process()->trace_top(1, smiOop(size)->value());
   }
 
@@ -307,14 +308,13 @@ PRIM_DECL_2(processOopPrimitives::stack, oop receiver, oop limit) {
   if (processOop(receiver)->process() == DeltaProcess::active())
     return markSymbol(vmSymbols::running());
 
-
   ResourceMark rm;
   BlockScavenge bs;
 
-  int                     l = smiOop(limit)->value();
-  processOop        process = processOop(receiver);
-  GrowableArray<oop>* stack = new GrowableArray<oop> (100);
-  
+  int l = smiOop(limit)->value();
+  processOop process = processOop(receiver);
+  GrowableArray<oop>* stack = new GrowableArray<oop>(100);
+
   vframe* vf = processOop(receiver)->process()->last_delta_vframe();
 
   for (int index = 1; index <= l && vf; index++) {

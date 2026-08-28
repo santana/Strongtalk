@@ -33,37 +33,33 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 MacroAssembler* theMacroAssm = NULL;
 
-
 CodeBuffer::CodeBuffer(int instsSize, int locsSize) {
-  instsStart    = instsEnd =  NEW_RESOURCE_ARRAY(char, instsSize);
+  instsStart = instsEnd = NEW_RESOURCE_ARRAY(char, instsSize);
   instsOverflow = instsStart + instsSize;
-  locsStart = locsEnd = (relocInfo*) NEW_RESOURCE_ARRAY(char, locsSize);
-  locsOverflow = (relocInfo*) ((char*) locsStart + locsSize);
+  locsStart = locsEnd = (relocInfo*)NEW_RESOURCE_ARRAY(char, locsSize);
+  locsOverflow = (relocInfo*)((char*)locsStart + locsSize);
   last_reloc_offset = code_size();
   _decode_begin = NULL;
 }
 
-
 CodeBuffer::CodeBuffer(char* code_start, int code_size) {
-  instsStart    = instsEnd =  (char*)code_start;
+  instsStart = instsEnd = (char*)code_start;
   instsOverflow = instsStart + code_size;
-  locsStart     = locsEnd = NULL;
-  locsOverflow  = NULL;
+  locsStart = locsEnd = NULL;
+  locsOverflow = NULL;
   last_reloc_offset = CodeBuffer::code_size();
   _decode_begin = NULL;
 }
-
 
 char* CodeBuffer::decode_begin() {
   return _decode_begin == NULL ? (char*)instsStart : _decode_begin;
 }
 
-
 void CodeBuffer::set_code_end(char* end) {
-  if ((char*)end < instsStart || instsOverflow < (char*)end) fatal("code end out of bounds");
+  if ((char*)end < instsStart || instsOverflow < (char*)end)
+    fatal("code end out of bounds");
   instsEnd = (char*)end;
 }
-
 
 void CodeBuffer::relocate(char* at, relocInfo::relocType rtype) {
   assert(code_begin() <= at && at <= code_end(), "cannot relocate data outside code boundaries");
@@ -71,50 +67,47 @@ void CodeBuffer::relocate(char* at, relocInfo::relocType rtype) {
     // no space for relocation information provided => code cannot be relocated
     // make sure that relocate is only called with rtypes that can be ignored for
     // this kind of code.
-    assert(rtype == relocInfo::none              ||
-           rtype == relocInfo::runtime_call_type ||
-	   rtype == relocInfo::external_word_type, "code needs relocation information");
+    assert(rtype == relocInfo::none || rtype == relocInfo::runtime_call_type || rtype == relocInfo::external_word_type,
+           "code needs relocation information");
   } else {
     assert(sizeof(relocInfo) == sizeof(short), "change this code");
     int len = at - instsStart;
     int offset = len - last_reloc_offset;
     last_reloc_offset = len;
     *locsEnd++ = relocInfo(rtype, offset);
-    if (locsEnd >= locsOverflow) fatal("routine is too long to compile");
+    if (locsEnd >= locsOverflow)
+      fatal("routine is too long to compile");
   }
 }
-
 
 void CodeBuffer::decode() {
   Disassembler::decode((char*)decode_begin(), (char*)code_end());
   _decode_begin = code_end();
 }
 
-
 void CodeBuffer::decode_all() {
   Disassembler::decode((char*)code_begin(), (char*)code_end());
 }
 
-
 void CodeBuffer::copyTo(nmethod* nm) {
   const char hlt = '\xF4';
-  while (code_size()  % oopSize != 0) *instsEnd++ = hlt;			// align code
-  while (reloc_size() % oopSize != 0) *locsEnd++  = relocInfo(false, 0);	// align relocation info
+  while (code_size() % oopSize != 0)
+    *instsEnd++ = hlt; // align code
+  while (reloc_size() % oopSize != 0)
+    *locsEnd++ = relocInfo(false, 0); // align relocation info
 
-  copy_oops((oop*)instsStart, (oop*)nm->insts(), code_size() /oopSize);
-  copy_oops((oop*)locsStart,  (oop*)nm->locs(),  reloc_size()/oopSize);
+  copy_oops((oop*)instsStart, (oop*)nm->insts(), code_size() / oopSize);
+  copy_oops((oop*)locsStart, (oop*)nm->locs(), reloc_size() / oopSize);
 
   // Fix the pc relative information after the move
   int delta = (char*)instsStart - (char*)nm->insts();
   nm->fix_relocation_at_move(delta);
 }
 
-
 void CodeBuffer::print() {
   mystd->print("CodeBuffer:\n");
   mystd->print("Code  [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", instsStart, instsEnd, instsOverflow);
-  mystd->print("Reloc [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", locsStart,  locsEnd,  locsOverflow );
+  mystd->print("Reloc [0x%x <- used -> 0x%x[ <- free -> 0x%x[\n", locsStart, locsEnd, locsOverflow);
 }
-
 
 #endif // DELTA_COMPILER

@@ -36,49 +36,42 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [instVars    ]*
 //    [length      ]      offset
 
-class doubleValueArrayOopDesc: public memOopDesc {
-  public:
+class doubleValueArrayOopDesc : public memOopDesc {
+public:
   // constructor
-	friend doubleValueArrayOop as_doubleValueArrayOop(void* p);
+  friend doubleValueArrayOop as_doubleValueArrayOop(void* p);
 
   void bootstrap_object(bootstrap* st);
 
   // accessors
-  doubleValueArrayOopDesc* addr() const {
-    return (doubleValueArrayOopDesc*) memOopDesc::addr(); }
+  doubleValueArrayOopDesc* addr() const { return (doubleValueArrayOopDesc*)memOopDesc::addr(); }
 
   bool is_within_bounds(int index) const { return 1 <= index && index <= length(); }
 
   oop* addr_as_oops() const { return (oop*)addr(); }
 
   // returns the location of the length field
-  oop* length_addr() const {
-    return &addr_as_oops()[blueprint()->non_indexable_size()];
-  }
+  oop* length_addr() const { return &addr_as_oops()[blueprint()->non_indexable_size()]; }
 
   smi length() const {
     oop len = *length_addr();
     assert(len->is_smi(), "length of indexable should be smi");
-    return smiOop(len)->value();}
+    return smiOop(len)->value();
+  }
 
-  void set_length(smi len) {
-    *length_addr() = (oop) as_smiOop(len); }
+  void set_length(smi len) { *length_addr() = (oop)as_smiOop(len); }
 
   // returns the location where the double bytes start
-  double* double_start() const {
-    return (double*) &length_addr()[1];
-  }
+  double* double_start() const { return (double*)&length_addr()[1]; }
 
   double* double_at_addr(int which) const {
     assert(which > 0 && which <= length(), "index out of bounds");
     return &double_start()[which - 1];
   }
 
-  double double_at(int which) const {
-    return *double_at_addr(which); }
+  double double_at(int which) const { return *double_at_addr(which); }
 
-  void double_at_put(int which, double value) {
-    *double_at_addr(which) = value; }
+  void double_at_put(int which, double value) { *double_at_addr(which) = value; }
 
   // memory operations
   bool verify();
@@ -86,5 +79,6 @@ class doubleValueArrayOopDesc: public memOopDesc {
   friend class doubleValueArrayKlass;
 };
 inline doubleValueArrayOop as_doubleValueArrayOop(void* p) {
-    return doubleValueArrayOop(as_memOop(p)); }
+  return doubleValueArrayOop(as_memOop(p));
+}
 #endif // _DVALUE_ARRAY_OOPS_HPP

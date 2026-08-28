@@ -30,14 +30,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for byte arrays
 
 class byteArrayPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
-   static int number_of_calls;
+
+public:
+  static int number_of_calls;
 
   //%prim
   // <IndexedByteInstanceVariables class>
-  //   primitiveIndexedByteNew: size      <SmallInteger> 
+  //   primitiveIndexedByteNew: size      <SmallInteger>
   //                    ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { error = #(NegativeSize)
   //              flags = #(Allocate)
@@ -45,7 +46,7 @@ class byteArrayPrimitives : AllStatic {
   //%
   static PRIM_DECL_2(allocateSize, oop receiver, oop argument);
 
-    //%prim
+  //%prim
   // <NoReceiver>
   //   primitiveIndexedByteNew:  class     <IndexedByteInstanceVariables class>
   //                    size:    size      <SmallInteger>
@@ -63,16 +64,16 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Pure IndexedByte)
   //              name  = 'byteArrayPrimitives::size' }
   //%
-  static PRIM_DECL_1(size, oop receiver); 
-  
+  static PRIM_DECL_1(size, oop receiver);
+
   //%prim
   // <IndexedByteInstanceVariables>
   //   primitiveSymbolNumberOfArguments ^<SmallInteger> =
   //   Internal { flags = #(Pure IndexedByte)
   //              name  = 'byteArrayPrimitives::numberOfArguments' }
   //%
-  static PRIM_DECL_1(numberOfArguments, oop receiver); 
-  
+  static PRIM_DECL_1(numberOfArguments, oop receiver);
+
   //%prim
   // <IndexedByteInstanceVariables>
   //   primitiveIndexedByteAt: index <SmallInteger>
@@ -82,7 +83,7 @@ class byteArrayPrimitives : AllStatic {
   //              name  = 'byteArrayPrimitives::at' }
   //%
   static PRIM_DECL_2(at, oop receiver, oop index);
-  
+
   //%prim
   // <IndexedByteInstanceVariables>
   //   primitiveIndexedByteAt: index     <SmallInteger>
@@ -128,12 +129,11 @@ class byteArrayPrimitives : AllStatic {
   //%
   static PRIM_DECL_2(at_all_put, oop receiver, oop c);
 
-
   // SUPPORT FOR LARGE INTEGER
 
   //%prim
   // <IndexedByteInstanceVariables class>
-  //   primitiveIndexedByteLargeIntegerFromSmallInteger: number  <SmallInteger> 
+  //   primitiveIndexedByteLargeIntegerFromSmallInteger: number  <SmallInteger>
   //                                             ifFail: failBlock <PrimFailBlock> ^<IndexedByteInstanceVariables> =
   //   Internal { flags = #(Function)
   //              name  = 'byteArrayPrimitives::largeIntegerFromSmallInteger' }
@@ -142,7 +142,7 @@ class byteArrayPrimitives : AllStatic {
 
   //%prim
   // <IndexedByteInstanceVariables class>
-  //   primitiveIndexedByteLargeIntegerFromFloat: number  <Float> 
+  //   primitiveIndexedByteLargeIntegerFromFloat: number  <Float>
   //                                      ifFail: failBlock <PrimFailBlock> ^<IndexedByteInstanceVariables> =
   //   Internal { flags = #(Function)
   //              name  = 'byteArrayPrimitives::largeIntegerFromDouble' }
@@ -152,7 +152,7 @@ class byteArrayPrimitives : AllStatic {
   //%prim
   // <IndexedByteInstanceVariables class>
   //   primitiveIndexedByteLargeIntegerFromString: argument  <String>
-  //                                         base: base      <Integer> 
+  //                                         base: base      <Integer>
   //                                       ifFail: failBlock <PrimFailBlock> ^<IndexedByteInstanceVariables> =
   //   Internal { error = #(ConversionFailed)
   //              flags = #(Function IndexedByte)
@@ -209,7 +209,6 @@ class byteArrayPrimitives : AllStatic {
   //              name  = 'byteArrayPrimitives::largeIntegerDiv' }
   //%
   static PRIM_DECL_2(largeIntegerDiv, oop receiver, oop argument);
-
 
   //%prim
   // <IndexedByteInstanceVariables>
@@ -303,7 +302,7 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Pure IndexedByte)
   //              name  = 'byteArrayPrimitives::hash' }
   //%
-  static PRIM_DECL_1(hash, oop receiver); 
+  static PRIM_DECL_1(hash, oop receiver);
 
   //%prim
   // <IndexedByteInstanceVariables>
@@ -554,7 +553,8 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Function IndexedByte)
   //              name  = 'byteArrayPrimitives::alienCallResult4' }
   //%
-  static PRIM_DECL_6(alienCallResult4, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4, oop argument5);
+  static PRIM_DECL_6(alienCallResult4, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4,
+                     oop argument5);
 
   //%prim
   // <IndexedByteInstanceVariables>
@@ -568,8 +568,8 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Function IndexedByte)
   //              name  = 'byteArrayPrimitives::alienCallResult5' }
   //%
-  static PRIM_DECL_7(alienCallResult5, oop receiver, oop argument1, oop argument2, 
-    oop argument3, oop argument4, oop argument5, oop argument6);
+  static PRIM_DECL_7(alienCallResult5, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4,
+                     oop argument5, oop argument6);
 
   //%prim
   // <IndexedByteInstanceVariables>
@@ -584,8 +584,8 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Function IndexedByte)
   //              name  = 'byteArrayPrimitives::alienCallResult6' }
   //%
-  static PRIM_DECL_8(alienCallResult6, oop receiver, oop argument1, oop argument2, 
-    oop argument3, oop argument4, oop argument5, oop argument6, oop argument7);
+  static PRIM_DECL_8(alienCallResult6, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4,
+                     oop argument5, oop argument6, oop argument7);
 
   //%prim
   // <IndexedByteInstanceVariables>
@@ -601,8 +601,8 @@ class byteArrayPrimitives : AllStatic {
   //   Internal { flags = #(Function IndexedByte)
   //              name  = 'byteArrayPrimitives::alienCallResult7' }
   //%
-  static PRIM_DECL_9(alienCallResult7, oop receiver, oop argument1, oop argument2,
-    oop argument3, oop argument4, oop argument5, oop argument6, oop argument7, oop argument8);
+  static PRIM_DECL_9(alienCallResult7, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4,
+                     oop argument5, oop argument6, oop argument7, oop argument8);
 
   //%prim
   // <IndexedByteInstanceVariables>

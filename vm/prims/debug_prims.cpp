@@ -53,25 +53,24 @@ PRIM_DECL_1(debugPrimitives::boolAt, oop name) {
   if (!name->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   bool result;
-  if (debugFlags::boolAt(byteArrayOop(name)->chars(),
-			 byteArrayOop(name)->length(),
-			 &result))
+  if (debugFlags::boolAt(byteArrayOop(name)->chars(), byteArrayOop(name)->length(), &result))
     return result ? trueObj : falseObj;
   return markSymbol(vmSymbols::not_found());
 }
 
-PRIM_DECL_2(debugPrimitives::boolAtPut , oop name, oop value) {
+PRIM_DECL_2(debugPrimitives::boolAtPut, oop name, oop value) {
   PROLOGUE_2("boolAtPut", name, value)
   if (!name->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   bool b;
-  if      (value == trueObj)  b = true;
-  else if (value == falseObj) b = false;
-  else return markSymbol(vmSymbols::first_argument_has_wrong_type());
+  if (value == trueObj)
+    b = true;
+  else if (value == falseObj)
+    b = false;
+  else
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  if (debugFlags::boolAtPut(byteArrayOop(name)->chars(),
-			    byteArrayOop(name)->length(),
-			    &b))
+  if (debugFlags::boolAtPut(byteArrayOop(name)->chars(), byteArrayOop(name)->length(), &b))
     return b ? trueObj : falseObj;
   return markSymbol(vmSymbols::not_found());
 }
@@ -81,23 +80,19 @@ PRIM_DECL_1(debugPrimitives::smiAt, oop name) {
   if (!name->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   int result;
-  if (debugFlags::intAt(byteArrayOop(name)->chars(),
-			byteArrayOop(name)->length(),
-			&result))
+  if (debugFlags::intAt(byteArrayOop(name)->chars(), byteArrayOop(name)->length(), &result))
     return as_smiOop(result);
   return markSymbol(vmSymbols::not_found());
 }
 
-PRIM_DECL_2(debugPrimitives::smiAtPut , oop name, oop value) {
+PRIM_DECL_2(debugPrimitives::smiAtPut, oop name, oop value) {
   PROLOGUE_2("smiAtPut", name, value)
   if (!name->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   if (!value->is_smi())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
   int v = smiOop(value)->value();
-  if (debugFlags::intAtPut(byteArrayOop(name)->chars(),
-			   byteArrayOop(name)->length(),
-			   &v))
+  if (debugFlags::intAtPut(byteArrayOop(name)->chars(), byteArrayOop(name)->length(), &v))
     return as_smiOop(v);
   return markSymbol(vmSymbols::not_found());
 }
@@ -142,10 +137,13 @@ PRIM_DECL_2(debugPrimitives::printMethodCodes, oop receiver, oop sel) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   symbolOop s = oopFactory::new_symbol(byteArrayOop(sel));
   methodOop m = receiver->blueprint()->lookup(s);
-  if (!m) return markSymbol(vmSymbols::not_found());
-  { ResourceMark rm;
-     if (WizardMode) m->print_codes();
-     prettyPrinter::print(methodOop(m), receiver->klass());
+  if (!m)
+    return markSymbol(vmSymbols::not_found());
+  {
+    ResourceMark rm;
+    if (WizardMode)
+      m->print_codes();
+    prettyPrinter::print(methodOop(m), receiver->klass());
   }
   return receiver;
 }
@@ -153,18 +151,19 @@ PRIM_DECL_2(debugPrimitives::printMethodCodes, oop receiver, oop sel) {
 PRIM_DECL_2(debugPrimitives::generateIR, oop receiver, oop sel) {
   PRIMITIVE_FAILS_IN_PRODUCT
   mystd->print_cr("primitiveGenerateIR called...");
-  ResourceMark rm;	// needed to avoid memory leaks!
+  ResourceMark rm; // needed to avoid memory leaks!
   PROLOGUE_2("generateIR", receiver, sel)
   if (!sel->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   symbolOop s = oopFactory::new_symbol(byteArrayOop(sel));
   methodOop m = receiver->blueprint()->lookup(s);
-  if (!m) return markSymbol(vmSymbols::not_found());
+  if (!m)
+    return markSymbol(vmSymbols::not_found());
   LookupKey key(receiver->klass(), s);
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   VM_OptimizeMethod method = VM_OptimizeMethod(&key, m);
   VMProcess::execute(&method);
-# endif
+#endif
   return receiver;
 }
 
@@ -176,14 +175,15 @@ PRIM_DECL_2(debugPrimitives::optimizeMethod, oop receiver, oop sel) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   symbolOop s = oopFactory::new_symbol(byteArrayOop(sel));
   methodOop m = receiver->blueprint()->lookup(s);
-  if (!m) return markSymbol(vmSymbols::not_found());
+  if (!m)
+    return markSymbol(vmSymbols::not_found());
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   LookupKey key(receiver->klass(), s);
   VM_OptimizeMethod op(&key, m);
   // The operation takes place in the vmProcess
   VMProcess::execute(&op);
-# endif
+#endif
   return receiver;
 }
 
@@ -197,11 +197,11 @@ PRIM_DECL_2(debugPrimitives::decodeMethod, oop receiver, oop sel) {
     return markSymbol(vmSymbols::not_found());
   if (result.is_method()) {
     // methodOop found => print byte codes
-   ResourceMark rm;
-   result.method()->print_codes();
+    ResourceMark rm;
+    result.method()->print_codes();
   } else {
     // nmethod found => print assembly code
-   result.get_nmethod()->printCode();
+    result.get_nmethod()->printCode();
   }
   return receiver;
 }
@@ -227,9 +227,11 @@ PRIM_DECL_0(debugPrimitives::timerPrintBuffer) {
 PRIM_DECL_0(debugPrimitives::interpreterInvocationCounterLimit) {
   PROLOGUE_0("interpreterInvocationCounterLimit");
   long limit = Interpreter::get_invocation_counter_limit();
-  if (limit < smi_min) limit = smi_min;
-  else if (limit > smi_max) limit = smi_max;
-  return as_smiOop((int) limit);
+  if (limit < smi_min)
+    limit = smi_min;
+  else if (limit > smi_max)
+    limit = smi_max;
+  return as_smiOop((int)limit);
 }
 
 PRIM_DECL_1(debugPrimitives::setInterpreterInvocationCounterLimit, oop limit) {
@@ -240,11 +242,11 @@ PRIM_DECL_1(debugPrimitives::setInterpreterInvocationCounterLimit, oop limit) {
   if (value < 0 || value > methodOopDesc::_invocation_count_max)
     return markSymbol(vmSymbols::out_of_bounds());
   Interpreter::set_invocation_counter_limit(value);
-  Interpreter::set_loop_counter_limit(value);	// for now - probably should have its own primitive
+  Interpreter::set_loop_counter_limit(value); // for now - probably should have its own primitive
   return limit;
 }
 
-class ClearInvocationCounterClosure: public ObjectClosure {
+class ClearInvocationCounterClosure : public ObjectClosure {
   void do_object(memOop obj) {
     if (obj->is_method())
       methodOop(obj)->set_invocation_count(0);
@@ -259,12 +261,13 @@ PRIM_DECL_0(debugPrimitives::clearInvocationCounters) {
 }
 
 // Collects all methods with invocation counter >= cutoff
-class CollectMethodClosure: public ObjectClosure {
-  GrowableArray <methodOop>* col;
-  int                        cutoff;
- public:
-  CollectMethodClosure(GrowableArray <methodOop>* col, int cutoff) {
-    this->col    = col;
+class CollectMethodClosure : public ObjectClosure {
+  GrowableArray<methodOop>* col;
+  int cutoff;
+
+public:
+  CollectMethodClosure(GrowableArray<methodOop>* col, int cutoff) {
+    this->col = col;
     this->cutoff = cutoff;
   }
   void do_object(memOop obj) {
@@ -274,7 +277,7 @@ class CollectMethodClosure: public ObjectClosure {
   }
 };
 
-static int compare_method_counters(methodOop* a,  methodOop* b) {
+static int compare_method_counters(methodOop* a, methodOop* b) {
   return (*b)->invocation_count() - (*a)->invocation_count();
 }
 
@@ -284,7 +287,7 @@ PRIM_DECL_1(debugPrimitives::printInvocationCounterHistogram, oop size) {
   if (!size->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   ResourceMark rm;
-  GrowableArray <methodOop>* col = new GrowableArray<methodOop>(1024);
+  GrowableArray<methodOop>* col = new GrowableArray<methodOop>(1024);
   // Collect the methods
   CollectMethodClosure blk(col, smiOop(size)->value());
   Universe::object_iterate(&blk);
@@ -308,8 +311,7 @@ PRIM_DECL_0(debugPrimitives::clearInlineCaches) {
   return trueObj;
 }
 
-#define FOR_ALL_NMETHOD(var) \
-  for (nmethod *var = Universe::code->first_nm(); var; var = Universe::code->next_nm(var))
+#define FOR_ALL_NMETHOD(var) for (nmethod* var = Universe::code->first_nm(); var; var = Universe::code->next_nm(var))
 
 PRIM_DECL_0(debugPrimitives::clearNMethodCounters) {
   PROLOGUE_0("clearNMethodCounters");
@@ -328,7 +330,7 @@ PRIM_DECL_1(debugPrimitives::printNMethodCounterHistogram, oop size) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   ResourceMark rm;
-  GrowableArray <nmethod*>* col = new GrowableArray<nmethod*>(1024);
+  GrowableArray<nmethod*>* col = new GrowableArray<nmethod*>(1024);
   // Collect the nmethods
   FOR_ALL_NMETHOD(nm) col->push(nm);
 
@@ -336,8 +338,7 @@ PRIM_DECL_1(debugPrimitives::printNMethodCounterHistogram, oop size) {
   // Sort the methods based on the invocation counters.
   col->sort(&compare_nmethod_counters);
   // Print out the result
-  int end = (col->length() > smiOop(size)->value()) 
-            ? smiOop(size)->value() : col->length();
+  int end = (col->length() > smiOop(size)->value()) ? smiOop(size)->value() : col->length();
   for (int index = 0; index < end; index++) {
     nmethod* m = col->at(index);
     mystd->print("[%d] ", m->invocation_count());
@@ -347,12 +348,11 @@ PRIM_DECL_1(debugPrimitives::printNMethodCounterHistogram, oop size) {
   return trueObj;
 }
 
-class SumMethodInvocationClosure: public ObjectClosure {
+class SumMethodInvocationClosure : public ObjectClosure {
   int sum;
- public:
-  SumMethodInvocationClosure() {
-    sum = 0;
-  }
+
+public:
+  SumMethodInvocationClosure() { sum = 0; }
   void do_object(memOop obj) {
     if (obj->is_method())
       sum += methodOop(obj)->invocation_count();
@@ -394,15 +394,14 @@ PRIM_DECL_0(debugPrimitives::numberOfLookupCacheMisses) {
   return as_smiOop(lookupCache::number_of_misses);
 }
 
-
-PRIM_DECL_0(debugPrimitives::clearPrimitiveCounters){
+PRIM_DECL_0(debugPrimitives::clearPrimitiveCounters) {
   PRIMITIVE_RETURNS_TRUE_IN_PRODUCT
   PROLOGUE_0("clearPrimitiveCounters");
   primitives::clear_counters();
   return trueObj;
 }
 
-PRIM_DECL_0(debugPrimitives::printPrimitiveCounters){
+PRIM_DECL_0(debugPrimitives::printPrimitiveCounters) {
   PRIMITIVE_RETURNS_TRUE_IN_PRODUCT
   PROLOGUE_0("printPrimitiveCounters");
   primitives::print_counters();
@@ -410,36 +409,34 @@ PRIM_DECL_0(debugPrimitives::printPrimitiveCounters){
 }
 
 class Counter : public ResourceObj {
- public:
-   char* title;
-   int total_size;
-   int number;
-   Counter(char* t) {
-     title = t;
-     total_size = 0;
-     number = 0;
-   }
-   void update(memOop obj) { 
-     total_size += obj->size();
-     number++;
-   }
-   void print(char* prefix) {
-     mystd->print("%s%s", prefix, title);
-     mystd->fill_to(22);
-     mystd->print_cr("%6d %8d", number, total_size * oopSize);
-   }
-   void add(Counter* i) {
-     total_size += i->total_size;
-     number     += i->number;
-   }
+public:
+  char* title;
+  int total_size;
+  int number;
+  Counter(char* t) {
+    title = t;
+    total_size = 0;
+    number = 0;
+  }
+  void update(memOop obj) {
+    total_size += obj->size();
+    number++;
+  }
+  void print(char* prefix) {
+    mystd->print("%s%s", prefix, title);
+    mystd->fill_to(22);
+    mystd->print_cr("%6d %8d", number, total_size * oopSize);
+  }
+  void add(Counter* i) {
+    total_size += i->total_size;
+    number += i->number;
+  }
 
-   static int compare(Counter** a,  Counter** b) { 
-     return (*b)->total_size - (*a)->total_size;
-   }
+  static int compare(Counter** a, Counter** b) { return (*b)->total_size - (*a)->total_size; }
 };
 
 class ObjectHistogram : public ObjectClosure {
- private:
+private:
   Counter* doubles;
   Counter* blocks;
   Counter* objArrays;
@@ -456,7 +453,8 @@ class ObjectHistogram : public ObjectClosure {
   Counter* contexts;
   Counter* memOops;
   GrowableArray<Counter*>* counters;
- public:
+
+public:
   ObjectHistogram();
 
   Counter* counter(memOop obj);
@@ -466,38 +464,52 @@ class ObjectHistogram : public ObjectClosure {
 
 ObjectHistogram::ObjectHistogram() {
   counters = new GrowableArray<Counter*>(20);
-  counters->push(doubles           = new Counter("doubles"));
-  counters->push(blocks            = new Counter("blocks"));
-  counters->push(objArrays         = new Counter("arrays"));
-  counters->push(symbols           = new Counter("symbols"));
-  counters->push(byteArrays        = new Counter("byte arrays"));
-  counters->push(doubleByteArrays  = new Counter("double byte arrays"));
-  counters->push(klasses           = new Counter("class"));
-  counters->push(processes         = new Counter("processes"));
-  counters->push(vframes           = new Counter("vframes"));
-  counters->push(methods           = new Counter("methods"));
-  counters->push(proxies           = new Counter("proxies"));
-  counters->push(mixins            = new Counter("mixins"));
-  counters->push(associations      = new Counter("associations"));
-  counters->push(contexts          = new Counter("contexts"));
-  counters->push(memOops           = new Counter("oops"));
+  counters->push(doubles = new Counter("doubles"));
+  counters->push(blocks = new Counter("blocks"));
+  counters->push(objArrays = new Counter("arrays"));
+  counters->push(symbols = new Counter("symbols"));
+  counters->push(byteArrays = new Counter("byte arrays"));
+  counters->push(doubleByteArrays = new Counter("double byte arrays"));
+  counters->push(klasses = new Counter("class"));
+  counters->push(processes = new Counter("processes"));
+  counters->push(vframes = new Counter("vframes"));
+  counters->push(methods = new Counter("methods"));
+  counters->push(proxies = new Counter("proxies"));
+  counters->push(mixins = new Counter("mixins"));
+  counters->push(associations = new Counter("associations"));
+  counters->push(contexts = new Counter("contexts"));
+  counters->push(memOops = new Counter("oops"));
 }
 
 Counter* ObjectHistogram::counter(memOop obj) {
-  if (obj->is_double())           return doubles;
-  if (obj->is_block())            return blocks;
-  if (obj->is_objArray())         return objArrays;
-  if (obj->is_symbol())           return symbols;		// Must be before byteArray
-  if (obj->is_byteArray())        return byteArrays;
-  if (obj->is_doubleByteArray())  return doubleByteArrays;
-  if (obj->is_klass())            return klasses;
-  if (obj->is_process())          return processes;
-  if (obj->is_vframe())           return vframes;
-  if (obj->is_method())           return methods;
-  if (obj->is_proxy())            return proxies;
-  if (obj->is_mixin())            return mixins;
-  if (obj->is_association())      return associations;
-  if (obj->is_context())          return contexts;
+  if (obj->is_double())
+    return doubles;
+  if (obj->is_block())
+    return blocks;
+  if (obj->is_objArray())
+    return objArrays;
+  if (obj->is_symbol())
+    return symbols; // Must be before byteArray
+  if (obj->is_byteArray())
+    return byteArrays;
+  if (obj->is_doubleByteArray())
+    return doubleByteArrays;
+  if (obj->is_klass())
+    return klasses;
+  if (obj->is_process())
+    return processes;
+  if (obj->is_vframe())
+    return vframes;
+  if (obj->is_method())
+    return methods;
+  if (obj->is_proxy())
+    return proxies;
+  if (obj->is_mixin())
+    return mixins;
+  if (obj->is_association())
+    return associations;
+  if (obj->is_context())
+    return contexts;
   return memOops;
 }
 
@@ -507,7 +519,7 @@ void ObjectHistogram::print() {
   mystd->print_cr("number    bytes");
   Counter* total = new Counter("Total");
   counters->sort(&Counter::compare);
-  for(int index = 0; index < counters->length(); index++) {
+  for (int index = 0; index < counters->length(); index++) {
     Counter* c = counters->at(index);
     if (c->number > 0) {
       c->print(" - ");

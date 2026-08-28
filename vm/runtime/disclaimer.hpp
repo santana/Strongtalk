@@ -27,36 +27,36 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 #include "topIncludes/std_includes.hpp"
 
-class Disclaimer: AllStatic {
- private:
+class Disclaimer : AllStatic {
+private:
   static char* _msg;
 
- public:
+public:
   // Use these functions instead of the preprocessor flags if
   // possible so that browse information is beeing generated.
 
   static bool is_debug() {
-    #ifdef ASSERT
-      return true;
-    #else
-      return false;
-    #endif
+#ifdef ASSERT
+    return true;
+#else
+    return false;
+#endif
   }
 
   static bool is_fast() {
-    #ifdef FAST
-      return true;
-    #else
-      return false;
-    #endif
+#ifdef FAST
+    return true;
+#else
+    return false;
+#endif
   }
 
   static bool is_product() {
-    #ifdef PRODUCT
-      return true;
-    #else
-      return false;
-    #endif
+#ifdef PRODUCT
+    return true;
+#else
+    return false;
+#endif
   }
 
   static void print_disclaimer(outputStream* s = mystd);

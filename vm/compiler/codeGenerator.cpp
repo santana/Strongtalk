@@ -50,7 +50,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/generation.inline.hpp"
 #include "oops/oop.inline.hpp"
 
-
 // Sometimes a little stub has to be generated if a merge between two execution
 // paths requires that the PRegMapping of one path is made conformant with the
 // mapping of the other path. If this code cannot be emitted in place (because
@@ -61,19 +60,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Stub routines should eventually be canonicalized if possible -> saves space. FIX THIS
 
-class Stub: public ResourceObj {
- private:
-  PRegMapping*	_mapping;
-  Node*		_dst;
-  Label		_stub_code;
-  
+class Stub : public ResourceObj {
+private:
+  PRegMapping* _mapping;
+  Node* _dst;
+  Label _stub_code;
+
   Stub(PRegMapping* mapping, Node* dst) {
     assert(dst->hasMapping() && !mapping->isConformant(dst->mapping()), "no stub required");
     _mapping = mapping;
-    _dst     = dst;
+    _dst = dst;
   }
 
- public:
+public:
   static Stub* new_jcc_stub(PRegMapping* mapping, Node* dst, Assembler::Condition cc) {
     Stub* s = new Stub(mapping, dst);
     // generate conditional jump to stub code
@@ -95,23 +94,21 @@ class Stub: public ResourceObj {
   }
 };
 
+class DebugInfoWriter : public PRegClosure {
+private:
+  GrowableArray<PReg*>* _pregs; // maps index -> preg
+  GrowableArray<intptr_t>* _locations; // previous preg location or illegalLocation
+  GrowableArray<bool>* _present; // true if preg is currently present
 
-class DebugInfoWriter: public PRegClosure {
- private:
-  GrowableArray<PReg*>*	_pregs;			// maps index -> preg
-  GrowableArray<intptr_t>*	_locations;	// previous preg location or illegalLocation
-  GrowableArray<bool>*	_present;		// true if preg is currently present
+  Location location_at(int i) { return Location(_locations->at(i)); }
+  void location_at_put(int i, Location loc) { _locations->at_put(i, loc._loc); }
 
-  Location location_at(int i)			{ return Location(_locations->at(i)); }
-  void location_at_put(int i, Location loc)	{ _locations->at_put(i, loc._loc); }
-
- public:
+public:
   DebugInfoWriter(int number_of_pregs) {
-    _pregs     = new GrowableArray<PReg*>(number_of_pregs, number_of_pregs, NULL                );
+    _pregs = new GrowableArray<PReg*>(number_of_pregs, number_of_pregs, NULL);
     _locations = new GrowableArray<intptr_t>(number_of_pregs, number_of_pregs, illegalLocation._loc);
-    _present   = new GrowableArray<bool >(number_of_pregs, number_of_pregs, false               );
+    _present = new GrowableArray<bool>(number_of_pregs, number_of_pregs, false);
   }
-
 
   void preg_do(PReg* preg) {
     if (preg->logicalAddress() != NULL && !preg->loc.isContextLocation()) {
@@ -119,70 +116,63 @@ class DebugInfoWriter: public PRegClosure {
       // Note: ContextPRegs appear in the mapping only because
       //       their values might also be cached in a register.
       int i = preg->id();
-      _pregs  ->at_put(i, preg);		// make sure preg is available
-      _present->at_put(i, true);		// mark it as present
+      _pregs->at_put(i, preg); // make sure preg is available
+      _present->at_put(i, true); // mark it as present
     }
   }
 
-  
   void write_debug_info(PRegMapping* mapping, int pc_offset) {
     // record current pregs in mapping
     mapping->iterate(this);
     // determine changes & notify ScopeDescRecorder if necessary
     ScopeDescRecorder* rec = theCompiler->scopeDescRecorder();
-    for (int i = _locations->length(); i-- > 0; ) {
-      PReg*    preg    = _pregs->at(i);
-      bool     present = _present->at(i);
+    for (int i = _locations->length(); i-- > 0;) {
+      PReg* preg = _pregs->at(i);
+      bool present = _present->at(i);
       Location old_loc = location_at(i);
       Location new_loc = present ? mapping->locationFor(preg) : illegalLocation;
-      if ((!present && old_loc != illegalLocation) ||	// preg not present anymore but has been there before
-	  ( present && old_loc == illegalLocation) ||	// preg present but has not been there before
-	  ( present && old_loc != new_loc)) {		// preg present but has changed location
+      if ((!present && old_loc != illegalLocation) || // preg not present anymore but has been there before
+          (present && old_loc == illegalLocation) || // preg present but has not been there before
+          (present && old_loc != new_loc)) { // preg present but has changed location
         // preg location has changed => notify ScopeDescRecorder
-	NameNode* nameNode;
-	if (new_loc == illegalLocation) {
-	  nameNode = new IllegalName();
-	} else {
-	  nameNode = new LocationName(new_loc);
-	}
-	// debugging
-	if (PrintDebugInfoGeneration) {
-	  mystd->print_cr("%5d: %-20s @ %s", pc_offset, preg->name(), new_loc.name());
-	}
-	rec->changeLogicalAddress(preg->logicalAddress(), nameNode, pc_offset);
+        NameNode* nameNode;
+        if (new_loc == illegalLocation) {
+          nameNode = new IllegalName();
+        } else {
+          nameNode = new LocationName(new_loc);
+        }
+        // debugging
+        if (PrintDebugInfoGeneration) {
+          mystd->print_cr("%5d: %-20s @ %s", pc_offset, preg->name(), new_loc.name());
+        }
+        rec->changeLogicalAddress(preg->logicalAddress(), nameNode, pc_offset);
       }
-      location_at_put(i, new_loc);		// record current location
-      _present->at_put(i, false);		// mark as not present for next round
+      location_at_put(i, new_loc); // record current location
+      _present->at_put(i, false); // mark as not present for next round
     }
   }
 
-
-  void print() {
-    mystd->print_cr("a DebugInfoWriter");
-  }
+  void print() { mystd->print_cr("a DebugInfoWriter"); }
 };
-
 
 // Implementation of CodeGenerator
 
 CodeGenerator::CodeGenerator(MacroAssembler* masm, PRegMapping* mapping) : _mergeStubs(16) {
   assert(masm == mapping->assembler(), "should be the same");
   PRegLocker::initialize();
-  _masm            = masm;
-  _currentMapping  = mapping;
+  _masm = masm;
+  _currentMapping = mapping;
   _debugInfoWriter = new DebugInfoWriter(bbIterator->pregTable->length());
   _maxNofStackTmps = 0;
-  _previousNode    = NULL;
-  _nilReg          = noreg;
-  _pushCode        = NULL;
+  _previousNode = NULL;
+  _nilReg = noreg;
+  _pushCode = NULL;
 }
-
 
 void CodeGenerator::setMapping(PRegMapping* mapping) {
   maxNofStackTmps(); // enforce adjustement of _maxNofStackTmps
   _currentMapping = mapping;
 }
-
 
 int CodeGenerator::maxNofStackTmps() {
   if (_currentMapping != NULL) {
@@ -191,22 +181,20 @@ int CodeGenerator::maxNofStackTmps() {
   return _maxNofStackTmps;
 }
 
-
 Register CodeGenerator::def(PReg* preg) const {
   assert(!preg->isConstPReg(), "cannot assign to ConstPReg");
   assert(!preg->loc.isContextLocation(), "cannot assign into context yet");
   return _currentMapping->def(preg);
 }
 
-
 bool CodeGenerator::isLiveRangeBoundary(Node* a, Node* b) const {
   return a->scope() != b->scope() || a->bci() != b->bci();
 }
 
-
 void CodeGenerator::jmp(Node* from, Node* to, bool to_maybe_nontrivial) {
   // keep only PRegs that are still alive at dst
-  if (from != NULL && isLiveRangeBoundary(from, to)) _currentMapping->killDeadsAt(to);
+  if (from != NULL && isLiveRangeBoundary(from, to))
+    _currentMapping->killDeadsAt(to);
   // make mappings conformant if necessary
   if (to_maybe_nontrivial || (to->isMergeNode() && !to->isTrivial())) {
     // dst has more than one predecessor
@@ -227,7 +215,6 @@ void CodeGenerator::jmp(Node* from, Node* to, bool to_maybe_nontrivial) {
   setMapping(NULL);
 }
 
-
 void CodeGenerator::jcc(Assembler::Condition cc, Node* from, Node* to, bool to_maybe_nontrivial) {
   // make mappings conformant if necessary
   if (to_maybe_nontrivial || (to->isMergeNode() && !to->isTrivial())) {
@@ -237,31 +224,33 @@ void CodeGenerator::jcc(Assembler::Condition cc, Node* from, Node* to, bool to_m
       _currentMapping->makeInjective(); // may generate code => must be applied to current mapping
       PRegMapping* copy = new PRegMapping(_currentMapping);
       // eliminate PRegs that are not alive anymore at dst
-      if (isLiveRangeBoundary(from, to)) copy->killDeadsAt(to);
+      if (isLiveRangeBoundary(from, to))
+        copy->killDeadsAt(to);
       to->setMapping(copy);
       _masm->jcc(cc, to->label);
     } else {
       // not the first mapping
       PRegMapping* copy = new PRegMapping(_currentMapping);
-      if (isLiveRangeBoundary(from, to)) copy->killDeadsAt(to);
+      if (isLiveRangeBoundary(from, to))
+        copy->killDeadsAt(to);
       if (copy->isConformant(to->mapping())) {
         // everythink ok, simply jump (must use a copy with dead PRegs removed for comparison)
-	_masm->jcc(cc, to->label);
+        _masm->jcc(cc, to->label);
       } else {
         // must make mappings conformant, use stub routine
-	_mergeStubs.push(Stub::new_jcc_stub(copy, to, cc));
+        _mergeStubs.push(Stub::new_jcc_stub(copy, to, cc));
       }
     }
   } else {
     // dst has exactly one predecessor
     assert(!to->hasMapping(), "more than one predecessor?");
     PRegMapping* copy = new PRegMapping(_currentMapping);
-    if (isLiveRangeBoundary(from, to)) copy->killDeadsAt(to);
+    if (isLiveRangeBoundary(from, to))
+      copy->killDeadsAt(to);
     to->setMapping(copy);
     _masm->jcc(cc, to->label);
   }
 }
-
 
 void CodeGenerator::bindLabel(Node* node) {
   if (_currentMapping == NULL) {
@@ -275,13 +264,15 @@ void CodeGenerator::bindLabel(Node* node) {
       if (node->isMergeNode() && !node->isTrivial()) {
         // more than one predecessor => store injective version of current mapping at node
         // (if only one predecessor => simply continue to use the current mapping)
-	if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node)) _currentMapping->killDeadsAt(node);
-	_currentMapping->makeInjective();
+        if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node))
+          _currentMapping->killDeadsAt(node);
+        _currentMapping->makeInjective();
         node->setMapping(_currentMapping);
       }
     } else {
       // merge current mapping with node mapping
-      if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node)) _currentMapping->killDeadsAt(node);
+      if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node))
+        _currentMapping->killDeadsAt(node);
       _currentMapping->makeConformant(node->mapping());
       setMapping(node->mapping());
     }
@@ -289,7 +280,6 @@ void CodeGenerator::bindLabel(Node* node) {
   assert(_currentMapping != NULL, "must have a mapping");
   _masm->bind(node->label);
 }
-
 
 void CodeGenerator::inlineCache(Node* call, MergeNode* nlrTestPoint, int flags) {
   assert(_currentMapping != NULL, "mapping must exist");
@@ -300,7 +290,8 @@ void CodeGenerator::inlineCache(Node* call, MergeNode* nlrTestPoint, int flags) 
     if (!nlrTestPoint->hasMapping()) {
       // first jump to dst, use current mapping, must be injective
       PRegMapping* copy = new PRegMapping(_currentMapping);
-      if (isLiveRangeBoundary(call, nlrTestPoint)) copy->killDeadsAt(nlrTestPoint);
+      if (isLiveRangeBoundary(call, nlrTestPoint))
+        copy->killDeadsAt(nlrTestPoint);
       assert(_currentMapping->isInjective(), "must be injective");
       copy->acquireNLRRegisters();
       nlrTestPoint->setMapping(copy);
@@ -308,31 +299,33 @@ void CodeGenerator::inlineCache(Node* call, MergeNode* nlrTestPoint, int flags) 
     } else {
       // not the first mapping
       PRegMapping* copy = new PRegMapping(_currentMapping);
-      if (isLiveRangeBoundary(call, nlrTestPoint)) copy->killDeadsAt(nlrTestPoint);
+      if (isLiveRangeBoundary(call, nlrTestPoint))
+        copy->killDeadsAt(nlrTestPoint);
       copy->acquireNLRRegisters();
       if (copy->isConformant(nlrTestPoint->mapping())) {
         // everything ok, simply jump (must use a copy with dead PRegs removed for comparison)
-	_masm->ic_info(nlrTestPoint->label, flags);
+        _masm->ic_info(nlrTestPoint->label, flags);
       } else {
         // must make mappings conformant, use stub routine
-	_mergeStubs.push(Stub::new_NLR_stub(copy, nlrTestPoint, flags));
+        _mergeStubs.push(Stub::new_NLR_stub(copy, nlrTestPoint, flags));
       }
     }
   } else {
     // dst has exactly one predecessor
     assert(!nlrTestPoint->hasMapping(), "more than one predecessor?");
     PRegMapping* copy = new PRegMapping(_currentMapping);
-    if (isLiveRangeBoundary(call, nlrTestPoint)) copy->killDeadsAt(nlrTestPoint);
+    if (isLiveRangeBoundary(call, nlrTestPoint))
+      copy->killDeadsAt(nlrTestPoint);
     copy->acquireNLRRegisters();
     nlrTestPoint->setMapping(copy);
     _masm->ic_info(nlrTestPoint->label, flags);
   }
 }
 
-
 void CodeGenerator::generateMergeStubs() {
   char* start_pc = _masm->pc();
-  while (_mergeStubs.nonEmpty()) _mergeStubs.pop()->generateMergeStub();
+  while (_mergeStubs.nonEmpty())
+    _mergeStubs.pop()->generateMergeStub();
   if (PrintCodeGeneration && _masm->pc() > start_pc) {
     mystd->print("---\n");
     mystd->print("fixup merge stubs\n");
@@ -340,22 +333,19 @@ void CodeGenerator::generateMergeStubs() {
   }
 }
 
-
 // Code generation for statistical information on nmethods
 
 char* CodeGenerator::nmethodAddress() const {
   // hack to compute hypothetical nmethod address
   // should be fixed at some point
-  return (char*)(((nmethod*) (_masm->code()->code_begin())) - 1);
+  return (char*)(((nmethod*)(_masm->code()->code_begin())) - 1);
 }
-
 
 void CodeGenerator::incrementInvocationCounter() {
   // Generates code to increment the nmethod execution counter
   char* addr = nmethodAddress() + nmethod::invocationCountOffset();
   _masm->incl(Address(intptr_t(addr), relocInfo::internal_word_type));
 }
-
 
 // Initialization / Finalization
 
@@ -379,14 +369,13 @@ void CodeGenerator::initialize(InlinedScope* scope) {
   _currentMapping->mapToRegister(scope->self()->preg(), self_reg);
 }
 
-
 void CodeGenerator::finalize(InlinedScope* scope) {
   // first generate stubs if there are any
   generateMergeStubs();
 
   // patch 'initialize locals' code
   int n = maxNofStackTmps();
-  int frame_size = 2 + n;	// return address, old ebp + stack temps
+  int frame_size = 2 + n; // return address, old ebp + stack temps
   // make sure frame is big enough for deoptimization
   if (frame_size < minimum_size_for_deoptimized_frame) {
     // add the difference to
@@ -395,15 +384,18 @@ void CodeGenerator::finalize(InlinedScope* scope) {
 
   Assembler masm(_pushCode);
   if (_pushCode->code_begin() + n <= _pushCode->code_limit()) {
-    while (n-- > 0) masm.pushl(_nilReg);
+    while (n-- > 0)
+      masm.pushl(_nilReg);
   } else {
     masm.jmp(_masm->pc(), relocInfo::none);
-    while (n-- > 0) _masm->pushl(_nilReg);
+    while (n-- > 0)
+      _masm->pushl(_nilReg);
     _masm->jmp(_pushCode->code_limit(), relocInfo::none);
   }
 
-   // store nofCompilations at end of code for easier debugging
-  if (CompilerDebug) _masm->movl(eax, nofCompilations);
+  // store nofCompilations at end of code for easier debugging
+  if (CompilerDebug)
+    _masm->movl(eax, nofCompilations);
 
   if (PrintCodeGeneration) {
     mystd->print("---\n");
@@ -412,7 +404,6 @@ void CodeGenerator::finalize(InlinedScope* scope) {
     mystd->print("---\n");
   }
 }
-
 
 /*
 void CodeGenerator::finalize(InlinedScope* scope) {
@@ -517,11 +508,9 @@ void CodeGenerator::finalize(InlinedScope* scope) {
 }
 */
 
-
 void CodeGenerator::zapContext(PReg* context) {
   _masm->movl(Address(use(context), contextOopDesc::parent_byte_offset()), 0);
 }
-
 
 void CodeGenerator::storeCheck(Register obj) {
   // Does a store check for the oop in register obj.
@@ -532,24 +521,30 @@ void CodeGenerator::storeCheck(Register obj) {
   Temporary base(_currentMapping);
   Temporary indx(_currentMapping);
   Label no_store;
-  _masm->cmpl(obj, (intptr_t)Universe::new_gen.boundary());                  // assumes boundary between new_gen and old_gen is unchanging
-  _masm->jcc(Assembler::less, no_store);                                // avoid marking dirty if target is a new object
+  _masm->cmpl(obj,
+              (intptr_t)Universe::new_gen.boundary()); // assumes boundary between new_gen and old_gen is unchanging
+  _masm->jcc(Assembler::less, no_store); // avoid marking dirty if target is a new object
   _masm->movl(base.reg(), Address(intptr_t(&byte_map_base), relocInfo::external_word_type));
-  _masm->movl(indx.reg(), obj);						// do not destroy obj (a preg may be mapped to it)
-  _masm->shrl(indx.reg(), card_shift);					// divide obj by card_size
-  _masm->movb(Address(base.reg(), indx.reg(), Address::times_1), 0);	// clear entry
+  _masm->movl(indx.reg(), obj); // do not destroy obj (a preg may be mapped to it)
+  _masm->shrl(indx.reg(), card_shift); // divide obj by card_size
+  _masm->movb(Address(base.reg(), indx.reg(), Address::times_1), 0); // clear entry
   _masm->bind(no_store);
 }
 
-
 void CodeGenerator::assign(PReg* dst, PReg* src, bool needsStoreCheck) {
-  PRegLocker lock(src);		// make sure src stays in register if it's in a register
-  enum { is_const, is_loaded, is_mapped, is_undefined } state = is_undefined;
-  oop value;			// valid if state == is_const
-  Register reg;			// valid if state == is_loaded
-  PReg* preg;			// valid if state == is_mapped
+  PRegLocker lock(src); // make sure src stays in register if it's in a register
+  enum {
+    is_const,
+    is_loaded,
+    is_mapped,
+    is_undefined
+  } state = is_undefined;
+  oop value; // valid if state == is_const
+  Register reg; // valid if state == is_loaded
+  PReg* preg; // valid if state == is_mapped
 
-  { Temporary t1(_currentMapping, NLR_result_reg);
+  {
+    Temporary t1(_currentMapping, NLR_result_reg);
     if (t1.reg() != NLR_result_reg) {
       reg = t1.reg();
     } else {
@@ -583,83 +578,107 @@ void CodeGenerator::assign(PReg* dst, PReg* src, bool needsStoreCheck) {
   // map/store to dest
   if (dst->loc == topOfStack) {
     switch (state) {
-      case is_const : _masm->pushl(value);		break;
-      case is_loaded: _masm->pushl(reg);		break;
-      case is_mapped: _masm->pushl(use(preg));		break;
-      default       : ShouldNotReachHere();
+      case is_const:
+        _masm->pushl(value);
+        break;
+      case is_loaded:
+        _masm->pushl(reg);
+        break;
+      case is_mapped:
+        _masm->pushl(use(preg));
+        break;
+      default:
+        ShouldNotReachHere();
     }
   } else if (dst->loc.isContextLocation()) {
     PReg* context = theCompiler->contextList->at(dst->loc.contextNo())->context();
     PRegLocker lock(context);
     Address addr = Address(use(context), Mapping::contextOffset(dst->loc.tempNo()));
     switch (state) {
-      case is_const : _masm->movl(addr, value);		break;
-      case is_loaded: _masm->movl(addr, reg);		break;
-      case is_mapped: _masm->movl(addr, use(preg));	break;
-      default       : ShouldNotReachHere();
+      case is_const:
+        _masm->movl(addr, value);
+        break;
+      case is_loaded:
+        _masm->movl(addr, reg);
+        break;
+      case is_mapped:
+        _masm->movl(addr, use(preg));
+        break;
+      default:
+        ShouldNotReachHere();
     }
-    if (needsStoreCheck) storeCheck(use(context));
+    if (needsStoreCheck)
+      storeCheck(use(context));
   } else {
     assert(!dst->loc.isSpecialLocation(), "what's this?");
     switch (state) {
-      case is_const : _masm->movl(def(dst), value);	break;
-      case is_loaded: _masm->movl(def(dst), reg);	break;
-      case is_mapped: _currentMapping->move(dst, preg);	break;
-      default       : ShouldNotReachHere();
+      case is_const:
+        _masm->movl(def(dst), value);
+        break;
+      case is_loaded:
+        _masm->movl(def(dst), reg);
+        break;
+      case is_mapped:
+        _currentMapping->move(dst, preg);
+        break;
+      default:
+        ShouldNotReachHere();
     }
   }
 }
 
-
 // Debugging
 
-static int _callDepth		= 0;
-static int _numberOfCalls	= 0;
-static int _numberOfReturns	= 0;
-static int _numberOfNLRs	= 0;
-
+static int _callDepth = 0;
+static int _numberOfCalls = 0;
+static int _numberOfReturns = 0;
+static int _numberOfNLRs = 0;
 
 void CodeGenerator::indent() {
   const int maxIndent = 40;
   if (_callDepth <= maxIndent) {
     mystd->print("%*s", _callDepth, "");
   } else {
-    mystd->print("%*d: ", maxIndent-2, _callDepth);
+    mystd->print("%*d: ", maxIndent - 2, _callDepth);
   }
 }
-
 
 char* CodeGenerator::nmethodName() {
   deltaVFrame* f = DeltaProcess::active()->last_delta_vframe();
   return f->method()->selector()->as_string();
 }
 
-
 void CodeGenerator::verifyObj(oop obj) {
-  if (!obj->is_smi() && !obj->is_mem()) fatal("should be an ordinary oop");
+  if (!obj->is_smi() && !obj->is_mem())
+    fatal("should be an ordinary oop");
   klassOop klass = obj->klass();
-  if (klass == NULL || !klass->is_mem()) fatal("should be an ordinary memOop");
-  if (obj->is_block()) blockClosureOop(obj)->verify();
+  if (klass == NULL || !klass->is_mem())
+    fatal("should be an ordinary memOop");
+  if (obj->is_block())
+    blockClosureOop(obj)->verify();
 }
-
 
 void CodeGenerator::verifyContext(oop obj) {
-  if (obj->is_mark()) error("context should never be mark");
-  if (!Universe::is_heap((oop*)obj)) error("context outside of heap");
-  if (!obj->is_context()) error("should be a context");
+  if (obj->is_mark())
+    error("context should never be mark");
+  if (!Universe::is_heap((oop*)obj))
+    error("context outside of heap");
+  if (!obj->is_context())
+    error("should be a context");
   oop c = (oop)(contextOop(obj)->parent());
-  if (c->is_mem()) verifyContext(c);
+  if (c->is_mem())
+    verifyContext(c);
 }
-
 
 void CodeGenerator::verifyArguments(oop recv, oop* ebp, int nofArgs) {
   bool print_args_long = true;
   ResourceMark rm;
   _numberOfCalls++;
   _callDepth++;
-  if (TraceCalls) { 
+  if (TraceCalls) {
     ResourceMark rm;
-    indent(); mystd->print("( %s %s ", recv->print_value_string(), nmethodName());
+    indent();
+    mystd->print("( %s %s ", recv->print_value_string(), nmethodName());
   }
   verifyObj(recv);
   int i = nofArgs;
@@ -676,8 +695,9 @@ void CodeGenerator::verifyArguments(oop recv, oop* ebp, int nofArgs) {
       }
     }
   }
-  if (TraceCalls) mystd->cr();
-  if (VerifyDebugInfo) { 
+  if (TraceCalls)
+    mystd->cr();
+  if (VerifyDebugInfo) {
     deltaVFrame* f = DeltaProcess::active()->last_delta_vframe();
     while (f != NULL) {
       f->verify_debug_info();
@@ -686,58 +706,61 @@ void CodeGenerator::verifyArguments(oop recv, oop* ebp, int nofArgs) {
   }
 }
 
-
 void CodeGenerator::verifyReturn(oop result) {
   _numberOfReturns++;
   result->verify();
   if (TraceCalls) {
     ResourceMark rm;
-    indent(); mystd->print(") %s -> %s\n", nmethodName(), result->print_value_string());
+    indent();
+    mystd->print(") %s -> %s\n", nmethodName(), result->print_value_string());
   }
   _callDepth--;
 }
-
 
 void CodeGenerator::verifyNLR(char* fp, char* nlrFrame, int nlrScopeID, oop result) {
   _numberOfNLRs++;
   LOG_EVENT3("verifyNLR(%#x, %#x, %d, %#x)", fp, nlrFrame, result);
-  if (nlrFrame <= fp) error("NLR went too far: %#x <= %#x", nlrFrame, fp);
+  if (nlrFrame <= fp)
+    error("NLR went too far: %#x <= %#x", nlrFrame, fp);
   // treat >99 scopes as likely error -- might actually be ok
-  if (nlrScopeID < 0 || nlrScopeID > 99) error("illegal NLR scope ID %#x", nlrScopeID);
-  if (result->is_mark()) error("NLR result is a markOop");
+  if (nlrScopeID < 0 || nlrScopeID > 99)
+    error("illegal NLR scope ID %#x", nlrScopeID);
+  if (result->is_mark())
+    error("NLR result is a markOop");
   result->verify();
   if (TraceCalls) {
     ResourceMark rm;
-    indent(); mystd->print(") %s  ^ %s\n", nmethodName(), result->print_value_string());
+    indent();
+    mystd->print(") %s  ^ %s\n", nmethodName(), result->print_value_string());
   }
   _callDepth--;
 }
 
-
 void CodeGenerator::callVerifyObj(Register obj) {
   // generates transparent check code which verifies that obj is
   // a legal oop and halts if not - for debugging purposes only
-  if (!VerifyCode) warning(": verifyObj should not be called");
+  if (!VerifyCode)
+    warning(": verifyObj should not be called");
   _masm->pushad();
   _masm->call_C((char*)CodeGenerator::verifyObj, obj);
   _masm->popad();
 }
 
-
 void CodeGenerator::callVerifyContext(Register context) {
   // generates transparent check code which verifies that context is
   // a legal context and halts if not - for debugging purposes only
-  if (!VerifyCode) warning(": verifyContext should not be called");
+  if (!VerifyCode)
+    warning(": verifyContext should not be called");
   _masm->pushad();
   _masm->call_C((char*)CodeGenerator::verifyContext, context);
   _masm->popad();
 }
 
-
 void CodeGenerator::callVerifyArguments(Register recv, int nofArgs) {
   // generates transparent check code which verifies that all arguments
   // are legal oops and halts if not - for debugging purposes only
-  if (!VerifyCode && !TraceCalls && !TraceResults) warning(": performance bug: verifyArguments should not be called");
+  if (!VerifyCode && !TraceCalls && !TraceResults)
+    warning(": performance bug: verifyArguments should not be called");
   assert(recv != temp1, "use another temporary register");
   _masm->pushad();
   _masm->movl(temp1, nofArgs);
@@ -745,25 +768,24 @@ void CodeGenerator::callVerifyArguments(Register recv, int nofArgs) {
   _masm->popad();
 }
 
-
 void CodeGenerator::callVerifyReturn() {
   // generates transparent check code which verifies that result contains
   // a legal oop and halts if not - for debugging purposes only
-  if (!VerifyCode && !TraceCalls && !TraceResults) warning(": verifyReturn should not be called");
+  if (!VerifyCode && !TraceCalls && !TraceResults)
+    warning(": verifyReturn should not be called");
   _masm->pushad();
   _masm->call_C((char*)CodeGenerator::verifyReturn, result_reg);
   _masm->popad();
 }
 
-
 void CodeGenerator::callVerifyNLR() {
   // generates transparent check code which verifies NLR check & continuation
-  if (!VerifyCode && !TraceCalls && !TraceResults) warning(": verifyNLR should not be called");
+  if (!VerifyCode && !TraceCalls && !TraceResults)
+    warning(": verifyNLR should not be called");
   _masm->pushad();
   _masm->call_C((char*)CodeGenerator::verifyNLR, ebp, NLR_home_reg, NLR_homeId_reg, NLR_result_reg);
   _masm->popad();
 }
-
 
 // Basic blocks
 
@@ -779,29 +801,30 @@ static bool bb_needs_jump;
 // This flag should go away at soon as all node with more than one exit are
 // implemented correctly (i.e., do all the jumping themselves).
 
-
 void CodeGenerator::beginOfBasicBlock(Node* node) {
-  if (PrintCodeGeneration && WizardMode) mystd->print("--- begin of basic block (N%d) ---\n", node->id());
+  if (PrintCodeGeneration && WizardMode)
+    mystd->print("--- begin of basic block (N%d) ---\n", node->id());
   bindLabel(node);
 }
-
 
 void CodeGenerator::endOfBasicBlock(Node* node) {
   if (bb_needs_jump && node->next() != NULL) {
     Node* from = node;
-    Node* to   = node->next();
+    Node* to = node->next();
     if (PrintCodeGeneration) {
       mystd->print("branch from N%d to N%d\n", from->id(), to->id());
-      if (PrintPRegMapping) _currentMapping->print();
+      if (PrintPRegMapping)
+        _currentMapping->print();
     }
     jmp(from, to);
     _previousNode = NULL;
-    if (PrintCodeGeneration) _masm->code()->decode();
+    if (PrintCodeGeneration)
+      _masm->code()->decode();
   }
 
-  if (PrintCodeGeneration && WizardMode) mystd->print("--- end of basic block (N%d) ---\n", node->id());
+  if (PrintCodeGeneration && WizardMode)
+    mystd->print("--- end of basic block (N%d) ---\n", node->id());
 }
-
 
 void CodeGenerator::updateDebuggingInfo(Node* node) {
   ScopeDescRecorder* rec = theCompiler->scopeDescRecorder();
@@ -810,35 +833,36 @@ void CodeGenerator::updateDebuggingInfo(Node* node) {
   _debugInfoWriter->write_debug_info(_currentMapping, pc_offset);
 }
 
-
 // For all nodes
 void CodeGenerator::beginOfNode(Node* node) {
   assert(_currentMapping != NULL, "must have a valid mapping");
   // adjust mapping to liveness of PRegs
-  if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node)) _currentMapping->killDeadsAt(node);
+  if (_previousNode != NULL && isLiveRangeBoundary(_previousNode, node))
+    _currentMapping->killDeadsAt(node);
   _currentMapping->cleanupContextReferences();
   // adjust debugging information if desired (e.g., when using disassembler with full symbolic support)
-  if (GenerateFullDebugInfo) updateDebuggingInfo(node);
+  if (GenerateFullDebugInfo)
+    updateDebuggingInfo(node);
   // debugging
   if (PrintCodeGeneration) {
     mystd->print("---\n");
     mystd->print("N%d: ", node->id());
     node->print();
     mystd->print(" (bci = %d)\n", node->bci());
-    if (PrintPRegMapping) _currentMapping->print();
+    if (PrintPRegMapping)
+      _currentMapping->print();
   }
   bb_needs_jump = true;
 };
 
-
 void CodeGenerator::endOfNode(Node* node) {
-  if (PrintCodeGeneration) _masm->code()->decode();
+  if (PrintCodeGeneration)
+    _masm->code()->decode();
   // if _currentMapping == NULL there's no previous node & the next node will be
   // reached via a jump and it's mapping is already set up the right way
   // (i.e., no PReg killing required => set _previousNode to NULL)
   _previousNode = _currentMapping == NULL ? NULL : node;
 };
-
 
 // Individual nodes
 extern "C" char* active_stack_limit();
@@ -888,12 +912,14 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
 
   // build stack frame & initialize locals
   _masm->enter();
-  { Temporary t(_currentMapping);
+  {
+    Temporary t(_currentMapping);
     _masm->movl(t.reg(), Universe::nilObj());
     _nilReg = t.reg();
     char* beg = _masm->pc();
     int i = 10;
-    while (i-- > 0) _masm->nop();
+    while (i-- > 0)
+      _masm->nop();
     char* end = _masm->pc();
     _pushCode = new CodeBuffer(beg, end - beg);
   }
@@ -908,7 +934,8 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
     assign(scope->context(), recv);
   }
   // debugging
-  if (VerifyCode || VerifyDebugInfo || TraceCalls) callVerifyArguments(use(recv), scope->method()->number_of_arguments());
+  if (VerifyCode || VerifyDebugInfo || TraceCalls)
+    callVerifyArguments(use(recv), scope->method()->number_of_arguments());
 
   // increment invocation counter & check for overflow (trigger recompilation)
   Label recompile_stub_call;
@@ -946,32 +973,29 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
   _masm->bind(continue_after_stack_overflow);
 }
 
-
 void CodeGenerator::aLoadIntNode(LoadIntNode* node) {
   _masm->movl(def(node->dst()), node->value());
 }
-
 
 void CodeGenerator::aLoadOffsetNode(LoadOffsetNode* node) {
   PRegLocker lock(node->base(), node->dst());
   _masm->movl(def(node->dst()), Address(use(node->base()), byteOffset(node->offset)));
 }
 
-
 int CodeGenerator::byteOffset(int offset) {
   // Computes the byte offset from the beginning of an oop
   assert(offset >= 0, "wrong offset");
-  return offset*oopSize - Mem_Tag;
+  return offset * oopSize - Mem_Tag;
 }
-
 
 void CodeGenerator::uplevelBase(PReg* startContext, int nofLevels, Register base) {
   // Compute uplevel base into register base; nofLevels is number of indirections (0 = in this context).
   _masm->movl(base, use(startContext));
-  if (VerifyCode) callVerifyContext(base);
-  while (nofLevels-- > 0) _masm->movl(base, Address(base, contextOopDesc::parent_byte_offset()));
+  if (VerifyCode)
+    callVerifyContext(base);
+  while (nofLevels-- > 0)
+    _masm->movl(base, Address(base, contextOopDesc::parent_byte_offset()));
 }
-
 
 void CodeGenerator::aLoadUplevelNode(LoadUplevelNode* node) {
   PRegLocker lock(node->context0());
@@ -979,91 +1003,119 @@ void CodeGenerator::aLoadUplevelNode(LoadUplevelNode* node) {
   uplevelBase(node->context0(), node->nofLevels(), base.reg());
   Register dst = def(node->dst());
   _masm->movl(dst, Address(base.reg(), byteOffset(node->offset())));
-  if (VerifyCode) callVerifyObj(dst);
+  if (VerifyCode)
+    callVerifyObj(dst);
 }
-
 
 void CodeGenerator::anAssignNode(AssignNode* node) {
   assign(node->dst(), node->src());
 }
 
-
 void CodeGenerator::aStoreOffsetNode(StoreOffsetNode* node) {
   PRegLocker lock(node->base(), node->src());
   Register base = use(node->base());
   _masm->movl(Address(base, byteOffset(node->offset())), use(node->src()));
-  if (node->needsStoreCheck()) storeCheck(base);
+  if (node->needsStoreCheck())
+    storeCheck(base);
 }
-
 
 void CodeGenerator::aStoreUplevelNode(StoreUplevelNode* node) {
   PRegLocker lock(node->context0(), node->src());
   Temporary base(_currentMapping);
   uplevelBase(node->context0(), node->nofLevels(), base.reg());
   _masm->movl(Address(base.reg(), byteOffset(node->offset())), use(node->src()));
-  if (node->needsStoreCheck()) storeCheck(base.reg());
+  if (node->needsStoreCheck())
+    storeCheck(base.reg());
 }
-
 
 void CodeGenerator::moveConstant(ArithOpCode op, PReg*& x, PReg*& y, bool& x_attr, bool& y_attr) {
   if (x->isConstPReg() && ArithOpIsCommutative[op]) {
-    PReg* t1 = x     ; x      = y     ; y      = t1;
-    bool  t2 = x_attr; x_attr = y_attr; y_attr = t2;
+    PReg* t1 = x;
+    x = y;
+    y = t1;
+    bool t2 = x_attr;
+    x_attr = y_attr;
+    y_attr = t2;
   }
 }
-
 
 void CodeGenerator::arithRROp(ArithOpCode op, Register x, Register y) { // x := x op y
   assert(Int_Tag == 0, "check this code");
   switch (op) {
-    case TestArithOp  : _masm->testl(x, y);		break;
-    case tAddArithOp  : // fall through
-    case  AddArithOp  : _masm->addl(x, y);		break;
-    case tSubArithOp  : // fall through
-    case  SubArithOp  : _masm->subl(x, y);		break;
-    case tMulArithOp  : _masm->sarl(x, Tag_Size);
-    case  MulArithOp  : _masm->imull(x, y);		break;
-    case tDivArithOp  : // fall through
-    case  DivArithOp  : Unimplemented();		break;
-    case tModArithOp  : // fall through
-    case  ModArithOp  : Unimplemented();		break;
-    case tAndArithOp  : // fall through
-    case  AndArithOp  : _masm->andl(x, y);		break;
-    case tOrArithOp   : // fall through
-    case  OrArithOp   : _masm->orl(x, y);		break;
-    case tXOrArithOp  : // fall through
-    case  XOrArithOp  : _masm->xorl(x, y);		break;
-    case tShiftArithOp: Unimplemented();
-    case  ShiftArithOp: Unimplemented();
-    case tCmpArithOp  : // fall through
-    case  CmpArithOp  : _masm->cmpl(x, y);		break;
-    default: ShouldNotReachHere();
+    case TestArithOp:
+      _masm->testl(x, y);
+      break;
+    case tAddArithOp: // fall through
+    case AddArithOp:
+      _masm->addl(x, y);
+      break;
+    case tSubArithOp: // fall through
+    case SubArithOp:
+      _masm->subl(x, y);
+      break;
+    case tMulArithOp:
+      _masm->sarl(x, Tag_Size);
+    case MulArithOp:
+      _masm->imull(x, y);
+      break;
+    case tDivArithOp: // fall through
+    case DivArithOp:
+      Unimplemented();
+      break;
+    case tModArithOp: // fall through
+    case ModArithOp:
+      Unimplemented();
+      break;
+    case tAndArithOp: // fall through
+    case AndArithOp:
+      _masm->andl(x, y);
+      break;
+    case tOrArithOp: // fall through
+    case OrArithOp:
+      _masm->orl(x, y);
+      break;
+    case tXOrArithOp: // fall through
+    case XOrArithOp:
+      _masm->xorl(x, y);
+      break;
+    case tShiftArithOp:
+      Unimplemented();
+    case ShiftArithOp:
+      Unimplemented();
+    case tCmpArithOp: // fall through
+    case CmpArithOp:
+      _masm->cmpl(x, y);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
-
 
 void CodeGenerator::arithRCOp(ArithOpCode op, Register x, int y) { // x := x op y
   assert(Int_Tag == 0, "check this code");
   switch (op) {
-    case TestArithOp  : _masm->testl(x, y);		break;
-    case tAddArithOp  : // fall through
-    case  AddArithOp  :
+    case TestArithOp:
+      _masm->testl(x, y);
+      break;
+    case tAddArithOp: // fall through
+    case AddArithOp:
       if (y == 0) {
         warning("code generated to add 0 (no load required)");
       } else {
         _masm->addl(x, y);
       }
       break;
-    case tSubArithOp  : // fall through
-    case  SubArithOp  :
+    case tSubArithOp: // fall through
+    case SubArithOp:
       if (y == 0) {
         warning("code generated to subtract 0 (no load required)");
       } else {
         _masm->subl(x, y);
       }
       break;
-    case tMulArithOp  : y = arithmetic_shift_right(y, Tag_Size);
-    case  MulArithOp  :
+    case tMulArithOp:
+      y = arithmetic_shift_right(y, Tag_Size);
+    case MulArithOp:
       // catch a few trivial cases (since certain optimizations happen
       // after inlining of primitives, these cases cannot be handled in
       // the primitive inliner alone => phase ordering problem).
@@ -1072,75 +1124,88 @@ void CodeGenerator::arithRCOp(ArithOpCode op, Register x, int y) { // x := x op 
       switch (y) {
         case -1:
           _masm->negl(x);
-	  break;
-	case  0:
-	  warning("code generated to multiply with 0 (no load required)");
+          break;
+        case 0:
+          warning("code generated to multiply with 0 (no load required)");
           _masm->xorl(x, x);
-	  break;
-	case  1:
-	  warning("code generated to multiply with 1 (no load required)");
+          break;
+        case 1:
+          warning("code generated to multiply with 1 (no load required)");
           // do nothing
-	  break;
-	case  2:
-	  _masm->addl(x, x);
-	  break;
-	default:
-	  _masm->imull(x, x, y);
-	  break;
+          break;
+        case 2:
+          _masm->addl(x, x);
+          break;
+        default:
+          _masm->imull(x, x, y);
+          break;
       }
       break;
-    case tDivArithOp  : // fall through
-    case  DivArithOp  : Unimplemented();		break;
-    case tModArithOp  : // fall through
-    case  ModArithOp  : Unimplemented();		break;
-    case tAndArithOp  : // fall through
-    case  AndArithOp  : _masm->andl(x, y);		break;
-    case tOrArithOp   : // fall through
-    case  OrArithOp   : _masm->orl(x, y);		break;
-    case tXOrArithOp  : // fall through
-    case  XOrArithOp  : _masm->xorl(x, y);		break;
+    case tDivArithOp: // fall through
+    case DivArithOp:
+      Unimplemented();
+      break;
+    case tModArithOp: // fall through
+    case ModArithOp:
+      Unimplemented();
+      break;
+    case tAndArithOp: // fall through
+    case AndArithOp:
+      _masm->andl(x, y);
+      break;
+    case tOrArithOp: // fall through
+    case OrArithOp:
+      _masm->orl(x, y);
+      break;
+    case tXOrArithOp: // fall through
+    case XOrArithOp:
+      _masm->xorl(x, y);
+      break;
     case tShiftArithOp:
       if (y < 0) {
         // shift right
         int shift_count = ((-y) >> Tag_Size) % 32;
         _masm->sarl(x, shift_count);
-        _masm->andl(x, (int)((unsigned)-1 << Tag_Size));			// clear Tag bits
+        _masm->andl(x, (int)((unsigned)-1 << Tag_Size)); // clear Tag bits
       } else if (y > 0) {
         // shift left
         int shift_count = ((+y) >> Tag_Size) % 32;
         _masm->shll(x, shift_count);
       }
       break;
-    case  ShiftArithOp: Unimplemented();
-    case tCmpArithOp  : // fall through
-    case  CmpArithOp  : _masm->cmpl(x, y);		break;
-    default: ShouldNotReachHere();
+    case ShiftArithOp:
+      Unimplemented();
+    case tCmpArithOp: // fall through
+    case CmpArithOp:
+      _masm->cmpl(x, y);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
-
 
 void CodeGenerator::arithROOp(ArithOpCode op, Register x, oop y) { // x := x op y
   assert(!y->is_smi(), "check this code");
   switch (op) {
-    case  CmpArithOp  : _masm->cmpl(x, y);		break;
-    default           : ShouldNotReachHere();
+    case CmpArithOp:
+      _masm->cmpl(x, y);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
-
 void CodeGenerator::arithRXOp(ArithOpCode op, Register x, oop y) { // x := x op y
   if (y->is_smi()) {
-    arithRCOp(op, x, intptr_t(y));				// y is smiOop -> needs no relocation info
+    arithRCOp(op, x, intptr_t(y)); // y is smiOop -> needs no relocation info
   } else {
     arithROOp(op, x, y);
   }
 }
 
-
 bool CodeGenerator::producesResult(ArithOpCode op) {
   return (op != TestArithOp) && (op != CmpArithOp) && (op != tCmpArithOp);
 }
-
 
 Register CodeGenerator::targetRegister(ArithOpCode op, PReg* z, PReg* x) {
   assert(PRegLocker::locks(z) && PRegLocker::locks(x), "should be locked");
@@ -1165,7 +1230,6 @@ Register CodeGenerator::targetRegister(ArithOpCode op, PReg* z, PReg* x) {
   return reg;
 }
 
-
 void CodeGenerator::anArithRRNode(ArithRRNode* node) {
   ArithOpCode op = node->op();
   PReg* z = node->dst();
@@ -1182,17 +1246,15 @@ void CodeGenerator::anArithRRNode(ArithRRNode* node) {
   }
 }
 
-
 void CodeGenerator::anArithRCNode(ArithRCNode* node) {
   ArithOpCode op = node->op();
   PReg* z = node->dst();
   PReg* x = node->src();
-  int   y = node->operand();
+  int y = node->operand();
   PRegLocker lock(z, x);
   Register reg = targetRegister(op, z, x);
   arithRCOp(op, reg, y);
 }
-
 
 void CodeGenerator::aTArithRRNode(TArithRRNode* node) {
   ArithOpCode op = node->op();
@@ -1220,7 +1282,7 @@ void CodeGenerator::aTArithRRNode(TArithRRNode* node) {
       Temporary t(_currentMapping);
       tags = t.reg();
       _masm->movl(tags, use(x));
-      _masm->orl (tags, use(y));
+      _masm->orl(tags, use(y));
     }
   }
   if (tags != noreg) {
@@ -1236,16 +1298,13 @@ void CodeGenerator::aTArithRRNode(TArithRRNode* node) {
   }
 }
 
-
 void CodeGenerator::aFloatArithRRNode(FloatArithRRNode* node) {
   Unimplemented();
 }
 
-
 void CodeGenerator::aFloatUnaryArithNode(FloatUnaryArithNode* node) {
   Unimplemented();
 }
-
 
 void CodeGenerator::aContextCreateNode(ContextCreateNode* node) {
   // node->dst() has been pre-allocated (temp0) in the prologue node -> remove it from
@@ -1253,21 +1312,22 @@ void CodeGenerator::aContextCreateNode(ContextCreateNode* node) {
   // node->src() and node->dst() differ because the NodeBuilder allocates a new SAPReg in this case.
   assert(node->src() != node->dst(), "should not be the same");
   assert(node->dst() == node->scope()->context(), "should assign to scope context");
-  _currentMapping->kill(node->dst());		// kill it so that aPrimNode(node) can map the result to it
+  _currentMapping->kill(node->dst()); // kill it so that aPrimNode(node) can map the result to it
   switch (node->sizeOfContext()) {
-    case 0 : // fall through for now - fix this
-    case 1 : // fall through for now - fix this
-    case 2 : // fall through for now - fix this
+    case 0: // fall through for now - fix this
+    case 1: // fall through for now - fix this
+    case 2: // fall through for now - fix this
     default:
       _masm->pushl(intptr_t(as_smiOop(node->nofTemps())));
       aPrimNode(node);
-      _masm->addl(esp, oopSize);	// pop argument, this is not a Pascal call - change this as some point?
+      _masm->addl(esp, oopSize); // pop argument, this is not a Pascal call - change this as some point?
       break;
   }
-  PRegLocker lock(node->dst());		// once loaded, make sure context stays in register
+  PRegLocker lock(node->dst()); // once loaded, make sure context stays in register
   Register context_reg = use(node->dst());
   if (node->src() == NULL) {
-    assert(node->scope()->isMethodScope() || node->scope()->method()->block_info() == methodOopDesc::expects_nil, "inconsistency");
+    assert(node->scope()->isMethodScope() || node->scope()->method()->block_info() == methodOopDesc::expects_nil,
+           "inconsistency");
     _masm->movl(Address(context_reg, contextOopDesc::parent_byte_offset()), nullptr);
     // NULL for now; the interpreter uses nil. However, some of the
     // context verification code called from compiled code checks for
@@ -1284,18 +1344,17 @@ void CodeGenerator::aContextCreateNode(ContextCreateNode* node) {
   storeCheck(context_reg);
 }
 
-
 void CodeGenerator::aContextInitNode(ContextInitNode* node) {
   // initialize context temporaries (parent has been initialized in the ContextCreateNode)
-  for (int i = node->nofTemps(); i-- > 0; ) {
+  for (int i = node->nofTemps(); i-- > 0;) {
     PReg* src = node->initialValue(i)->preg();
     PReg* dst;
     if (src->isBlockPReg()) {
       // Blocks aren't actually assigned (at the PReg level) so that the inlining info isn't lost.
       if (node->wasEliminated()) {
-        continue;				// there's no assignment (context was eliminated)
+        continue; // there's no assignment (context was eliminated)
       } else {
-	dst = node->contextTemp(i)->preg();	// fake destination created by compiler
+        dst = node->contextTemp(i)->preg(); // fake destination created by compiler
       }
     } else {
       dst = node->contextTemp(i)->preg();
@@ -1307,10 +1366,11 @@ void CodeGenerator::aContextInitNode(ContextInitNode* node) {
   assert(node->firstPrev()->isContextCreateNode(), "should be immediatly after a ContextCreateNode");
 }
 
-
 void CodeGenerator::aContextZapNode(ContextZapNode* node) {
-  if (!node->isActive()) return;
-  assert(node->scope()->needsContextZapping() && node->src() == node->scope()->context(), "no zapping needed or wrong context");
+  if (!node->isActive())
+    return;
+  assert(node->scope()->needsContextZapping() && node->src() == node->scope()->context(),
+         "no zapping needed or wrong context");
   // Make sure these registers are not used within zapContext
   // because they are used for return/non-local return
   // -> allocate them as temporaries for now
@@ -1323,12 +1383,11 @@ void CodeGenerator::aContextZapNode(ContextZapNode* node) {
   // to exclude certain register from beeing taken.
 }
 
-
 void CodeGenerator::copyIntoContexts(BlockCreateNode* node) {
   // Copy newly created block into all contexts that have a copy.
   // The BlockPReg has a list of all contexts containing the block.  It should
   // be stored into those that are allocated (weren't eliminated) and are in
-  // a sender scope.  
+  // a sender scope.
   // Why not copy into contexts in a sibling scope?  There are two cases:
   //   (1) The sibling scope never created the block(s) that uplevel-access this
   //       block.  The context location still contains 0 but that doesn't matter
@@ -1340,13 +1399,16 @@ void CodeGenerator::copyIntoContexts(BlockCreateNode* node) {
   BlockPReg* blk = node->block();
   GrowableArray<Location*>* copies = blk->contextCopies();
   if (copies != NULL) {
-    for (int i = copies->length(); i-- > 0; ) {
+    for (int i = copies->length(); i-- > 0;) {
       Location* l = copies->at(i);
       InlinedScope* scopeWithContext = theCompiler->scopes->at(l->scopeID());
       PReg* r = scopeWithContext->contextTemporaries()->at(l->tempNo())->preg();
-      if (r->loc == unAllocated) continue;	  // not uplevel-accessed (eliminated)
-      if (r->isBlockPReg()) continue;		  // ditto
-      if (!r->loc.isContextLocation()) fatal("expected context location");
+      if (r->loc == unAllocated)
+        continue; // not uplevel-accessed (eliminated)
+      if (r->isBlockPReg())
+        continue; // ditto
+      if (!r->loc.isContextLocation())
+        fatal("expected context location");
       if (scopeWithContext->isSenderOrSame(node->scope())) {
         assign(r, node->block());
       }
@@ -1354,34 +1416,34 @@ void CodeGenerator::copyIntoContexts(BlockCreateNode* node) {
   }
 }
 
-
 void CodeGenerator::materializeBlock(BlockCreateNode* node) {
   CompileTimeClosure* closure = node->block()->closure();
   // allocate closure
-  _currentMapping->kill(node->dst());	// kill it so that aPrimNode(node) can map the result to it
+  _currentMapping->kill(node->dst()); // kill it so that aPrimNode(node) can map the result to it
   int nofArgs = closure->nofArgs();
   switch (nofArgs) {
-    case 0 : // fall through for now - fix this
-    case 1 : // fall through for now - fix this
-    case 2 : // fall through for now - fix this
+    case 0: // fall through for now - fix this
+    case 1: // fall through for now - fix this
+    case 2: // fall through for now - fix this
     default:
       _masm->pushl(intptr_t(as_smiOop(nofArgs)));
-      aPrimNode(node);			// Note: primitive calls are called via call_C - also necessary for primitiveValue calls?
-      _masm->addl(esp, oopSize);	// pop argument, this is not a Pascal call - change this at some point?
+      aPrimNode(node); // Note: primitive calls are called via call_C - also necessary for primitiveValue calls?
+      _masm->addl(esp, oopSize); // pop argument, this is not a Pascal call - change this at some point?
       break;
   }
   // copy into all contexts that have a copy
-  if (node->block()->isMemoized()) copyIntoContexts(node);
+  if (node->block()->isMemoized())
+    copyIntoContexts(node);
   // initialize closure fields
-  PRegLocker lock(node->block());	// once loaded, make sure closure stays in register
+  PRegLocker lock(node->block()); // once loaded, make sure closure stays in register
   Register closure_reg = use(node->block());
   // assert(theCompiler->jumpTableID == closure->parent_id(), "nmethod id must be the same");
   // fix this: RELOCATION INFORMATION IS NEEDED WHEN MOVING THE JUMPTABLE (Snapshot reading etc.)
-  _masm->movl(Address(closure_reg, blockClosureOopDesc::context_byte_offset()        ),	use(closure->context()));
-  _masm->movl(Address(closure_reg, blockClosureOopDesc::method_or_entry_byte_offset()),	(intptr_t)closure->jump_table_entry());
+  _masm->movl(Address(closure_reg, blockClosureOopDesc::context_byte_offset()), use(closure->context()));
+  _masm->movl(Address(closure_reg, blockClosureOopDesc::method_or_entry_byte_offset()),
+              (intptr_t)closure->jump_table_entry());
   storeCheck(closure_reg);
 }
-
 
 void CodeGenerator::aBlockCreateNode(BlockCreateNode* node) {
   if (node->block()->closure()->method()->is_clean_block()) {
@@ -1398,7 +1460,6 @@ void CodeGenerator::aBlockCreateNode(BlockCreateNode* node) {
   }
 }
 
-
 void CodeGenerator::aBlockMaterializeNode(BlockMaterializeNode* node) {
   assert(node->next() == node->likelySuccessor(), "code pattern is not optimal");
   if (node->block()->closure()->method()->is_clean_block()) {
@@ -1411,11 +1472,10 @@ void CodeGenerator::aBlockMaterializeNode(BlockMaterializeNode* node) {
     _masm->testl(closure_reg, closure_reg);
     jcc(Assembler::notZero, node, node->next(), true);
     materializeBlock(node);
-    jmp(node, node->next(), true);			// will be eliminated since next() is the likely successor
+    jmp(node, node->next(), true); // will be eliminated since next() is the likely successor
     bb_needs_jump = false;
   }
 }
-
 
 void CodeGenerator::aSendNode(SendNode* node) {
   // Question concerning saveRegisters() below: is it really needed to also save the
@@ -1425,51 +1485,53 @@ void CodeGenerator::aSendNode(SendNode* node) {
   // this is only true, if the recv value is not explicitly assigned (and the assignment
   // has not been eliminated). Otherwise this is an unneccessary save instr.
   // For now: be conservative & save it always.
-  if (node->isCounting()) incrementInvocationCounter();
+  if (node->isCounting())
+    incrementInvocationCounter();
   char* entry = node->isSuperSend() ? CompiledIC::superLookupRoutine() : CompiledIC::normalLookupRoutine();
   PReg* recv = node->recv();
-  _currentMapping->killDeadsAt(node->next(), recv);	// free mapping of unused pregs
-  _currentMapping->makeInjective();			// make injective because NLR cannot deal with non-injective mappings yet
-  _currentMapping->saveRegisters();			// make sure none of the remaining preg values are lost
-  _currentMapping->killRegisters(recv);			// so PRegMapping::use can safely allocate receiverLoc if necessary
-  _currentMapping->use(recv, receiver_reg);		// make sure recv is in the right register
+  _currentMapping->killDeadsAt(node->next(), recv); // free mapping of unused pregs
+  _currentMapping->makeInjective(); // make injective because NLR cannot deal with non-injective mappings yet
+  _currentMapping->saveRegisters(); // make sure none of the remaining preg values are lost
+  _currentMapping->killRegisters(recv); // so PRegMapping::use can safely allocate receiverLoc if necessary
+  _currentMapping->use(recv, receiver_reg); // make sure recv is in the right register
   updateDebuggingInfo(node);
   _masm->call(entry, relocInfo::ic_type);
   _currentMapping->killRegisters();
   // compute flag settings
   int flags = 0;
-  if (node->isSuperSend())	setNth(flags, super_send_bit_no);
-  if (node->isUninlinable())	setNth(flags, uninlinable_bit_no);
-  if (node->staticReceiver())	setNth(flags, receiver_static_bit_no);
+  if (node->isSuperSend())
+    setNth(flags, super_send_bit_no);
+  if (node->isUninlinable())
+    setNth(flags, uninlinable_bit_no);
+  if (node->staticReceiver())
+    setNth(flags, receiver_static_bit_no);
   // inline cache
   inlineCache(node, node->scope()->nlrTestPoint(), flags);
-  _currentMapping->mapToRegister(node->dst(), result_reg);	// NLR mapping of node->dst is handled in NLRTestNode
+  _currentMapping->mapToRegister(node->dst(), result_reg); // NLR mapping of node->dst is handled in NLRTestNode
 }
-
 
 void CodeGenerator::aPrimNode(PrimNode* node) {
   MergeNode* nlr = node->pdesc()->can_perform_NLR() ? node->scope()->nlrTestPoint() : NULL;
-  _currentMapping->killDeadsAt(node->next());		// free mapping of unused pregs
-  _currentMapping->makeInjective();			// make injective because NLR cannot deal with non-injective mappings yet
-  _currentMapping->saveRegisters();			// make sure none of the remaining preg values are lost
+  _currentMapping->killDeadsAt(node->next()); // free mapping of unused pregs
+  _currentMapping->makeInjective(); // make injective because NLR cannot deal with non-injective mappings yet
+  _currentMapping->saveRegisters(); // make sure none of the remaining preg values are lost
   _currentMapping->killRegisters();
   updateDebuggingInfo(node);
   // Note: cannot use call_C because inline cache code has to come immediately after call instruction!
   _masm->set_last_Delta_frame_before_call();
   _masm->call((char*)(node->pdesc()->fn()), relocInfo::prim_type);
   _currentMapping->killRegisters();
-  if (nlr != NULL) inlineCache(node, nlr);
+  if (nlr != NULL)
+    inlineCache(node, nlr);
   _masm->reset_last_Delta_frame();
-  _currentMapping->mapToRegister(node->dst(), result_reg);	// NLR mapping of node->dst is handled in NLRTestNode
+  _currentMapping->mapToRegister(node->dst(), result_reg); // NLR mapping of node->dst is handled in NLRTestNode
 }
-
 
 void CodeGenerator::aDLLNode(DLLNode* node) {
   // determine entry point depending on whether a run-time lookup is needed or not.
   // Note: do not do a DLL lookup at compile time since this may cause a call back.
-  char* entry = (node->function() == NULL)
-                ? StubRoutines::lookup_DLL_entry(node->async())
-		: StubRoutines::call_DLL_entry(node->async());
+  char* entry = (node->function() == NULL) ? StubRoutines::lookup_DLL_entry(node->async())
+                                           : StubRoutines::call_DLL_entry(node->async());
   // pass arguments for DLL lookup/parameter conversion routine in registers
   // (change this code if the corresponding routines change (StubRoutines))
   // ebx: no. of arguments
@@ -1483,18 +1545,17 @@ void CodeGenerator::aDLLNode(DLLNode* node) {
   // CompiledDLL_Cache
   // This code pattern must correspond to the CompiledDLL_Cache layout
   // (make sure assembler is not optimizing mov reg, 0 into xor reg, reg!)
-  _masm->movl(edx, intptr_t(node->function()));		// part of CompiledDLL_Cache
-  _masm->inline_oop(node->dll_name());			// part of CompiledDLL_Cache
-  _masm->inline_oop(node->function_name());		// part of CompiledDLL_Cache
-  _masm->call(entry, relocInfo::runtime_call_type);	// call lookup/parameter conversion routine
+  _masm->movl(edx, intptr_t(node->function())); // part of CompiledDLL_Cache
+  _masm->inline_oop(node->dll_name()); // part of CompiledDLL_Cache
+  _masm->inline_oop(node->function_name()); // part of CompiledDLL_Cache
+  _masm->call(entry, relocInfo::runtime_call_type); // call lookup/parameter conversion routine
   _currentMapping->killRegisters();
   // For now: ordinary inline cache even though NLRs through DLLs are not allowed yet
   // (make sure somebody is popping arguments if NLRs are used).
   inlineCache(node, node->scope()->nlrTestPoint());
   _currentMapping->mapToRegister(node->dst(), result_reg);
-  _masm->addl(esp, node->nofArguments()*oopSize);	// get rid of arguments
+  _masm->addl(esp, node->nofArguments() * oopSize); // get rid of arguments
 }
-
 
 /*
 static void testForSingleKlass(Register obj, klassOop klass, Register klassReg, Label& success, Label& failure) {
@@ -1521,7 +1582,8 @@ static void testForSingleKlass(Register obj, klassOop klass, Register klassReg, 
   theMacroAssm->jmp(success);	// this jump will be eliminated since this is the likely successor
 }
 */
-void CodeGenerator::testForSingleKlass(Register obj, klassOop klass, Register klassReg, Label& success, Label& failure) {
+void CodeGenerator::testForSingleKlass(Register obj, klassOop klass, Register klassReg, Label& success,
+                                       Label& failure) {
   if (klass == Universe::smiKlassObj()) {
     // check tag
     _masm->test(obj, Mem_Tag);
@@ -1542,9 +1604,8 @@ void CodeGenerator::testForSingleKlass(Register obj, klassOop klass, Register kl
     _masm->cmpl(klassReg, klass);
   }
   _masm->jcc(Assembler::notEqual, failure);
-  _masm->jmp(success);	// this jump will be eliminated since this is the likely successor
+  _masm->jmp(success); // this jump will be eliminated since this is the likely successor
 }
-
 
 void CodeGenerator::generateTypeTests(LoopHeaderNode* node, Label& failure) {
   Unimplemented();
@@ -1552,17 +1613,15 @@ void CodeGenerator::generateTypeTests(LoopHeaderNode* node, Label& failure) {
   int last = 0;
   for (int i = 0; i <= last; i++) {
     HoistedTypeTest* t = node->tests()->at(i);
-    if (t->testedPR->loc == unAllocated) continue;	// optimized away, or ConstPReg
+    if (t->testedPR->loc == unAllocated)
+      continue; // optimized away, or ConstPReg
     if (t->testedPR->isConstPReg()) {
       guarantee(t->testedPR->loc == unAllocated, "code assumes ConstPRegs are unallocated");
       //handleConstantTypeTest((ConstPReg*)t->testedPR, t->klasses);
     } else {
-
-
     }
   }
 }
-
 
 /*
 void LoopHeaderNode::generateTypeTests(Label& cont, Label& failure) {
@@ -1602,7 +1661,6 @@ void LoopHeaderNode::generateTypeTests(Label& cont, Label& failure) {
 }
 */
 
-
 /*
 void CodeGenerator::handleConstantTypeTest(ConstPReg* r, GrowableArray<klassOop>* klasses) {
   // constant r is tested against klasses (efficiency hack: klasses == NULL means {smi})
@@ -1615,7 +1673,6 @@ void CodeGenerator::handleConstantTypeTest(ConstPReg* r, GrowableArray<klassOop>
   }
 }
 */
-
 
 void CodeGenerator::generateIntegerLoopTest(PReg* preg, LoopHeaderNode* node, Label& failure) {
   if (preg != NULL) {
@@ -1637,7 +1694,6 @@ void CodeGenerator::generateIntegerLoopTest(PReg* preg, LoopHeaderNode* node, La
     }
   }
 }
-
 
 /*
 void LoopHeaderNode::generateIntegerLoopTest(PReg* p, Label& prev, Label& failure) {
@@ -1661,14 +1717,12 @@ void LoopHeaderNode::generateIntegerLoopTest(PReg* p, Label& prev, Label& failur
 }
 */
 
-
 void CodeGenerator::generateIntegerLoopTests(LoopHeaderNode* node, Label& failure) {
   assert(node->isIntegerLoop(), "must be integer loop");
   generateIntegerLoopTest(node->lowerBound(), node, failure);
   generateIntegerLoopTest(node->upperBound(), node, failure);
-  generateIntegerLoopTest(node->loopVar   (), node, failure);
+  generateIntegerLoopTest(node->loopVar(), node, failure);
 }
-
 
 /*
 void LoopHeaderNode::generateIntegerLoopTests(Label& prev, Label& failure) {
@@ -1678,7 +1732,6 @@ void LoopHeaderNode::generateIntegerLoopTests(Label& prev, Label& failure) {
   generateIntegerLoopTest(_loopVar   , prev, failure);
 }
 */
-
 
 void CodeGenerator::generateArrayLoopTests(LoopHeaderNode* node, Label& failure) {
   assert(node->isIntegerLoop(), "must be integer loop");
@@ -1690,29 +1743,29 @@ void CodeGenerator::generateArrayLoopTests(LoopHeaderNode* node, Label& failure)
     int i = node->arrayAccesses()->length();
     while (i-- > 0) {
       atNode = node->arrayAccesses()->at(i);
-      if (atNode->src() == loopArray && !atNode->needsBoundsCheck()) break;
+      if (atNode->src() == loopArray && !atNode->needsBoundsCheck())
+        break;
     }
     if (i >= 0) {
       // loopVar is used to index into array; make sure lower & upper bound is within array range
       PReg* lo = node->lowerBound();
       PReg* hi = node->upperBound();
-      if (lo != NULL && lo->isConstPReg() && ((ConstPReg*)lo)->constant->is_smi() && ((ConstPReg*)lo)->constant >= as_smiOop(1)) {
+      if (lo != NULL && lo->isConstPReg() && ((ConstPReg*)lo)->constant->is_smi() &&
+          ((ConstPReg*)lo)->constant >= as_smiOop(1)) {
 
       } else {
         // test lower bound
         //
-	if (lo->loc == unAllocated) {
-	  
-	} else {
-	  //
-	}
+        if (lo->loc == unAllocated) {
+
+        } else {
+          //
+        }
       }
       // test upper bound
-      
     }
   }
 }
-
 
 /*
 void LoopHeaderNode::generateArrayLoopTests(Label& prev, Label& failure) {
@@ -1755,7 +1808,6 @@ void LoopHeaderNode::generateArrayLoopTests(Label& prev, Label& failure) {
 }
 */
 
-
 void CodeGenerator::aLoopHeaderNode(LoopHeaderNode* node) {
   if (node->isActivated()) {
     warning("loop header node not yet implemented");
@@ -1764,7 +1816,7 @@ void CodeGenerator::aLoopHeaderNode(LoopHeaderNode* node) {
     // the loop header node performs all checks hoisted out of the loop:
     // for general loops:
     //   - do all type tests in the list, uncommon branch if they fail
-    //     (common case: true/false tests, single-klass tests) 
+    //     (common case: true/false tests, single-klass tests)
     // additionally for integer loops:
     //   - test lowerBound (may be NULL), upperBound, loopVar for smi-ness (the first two may be ConstPRegs)
     //   - if upperBound is NULL, upperLoad is load of the array size
@@ -1782,7 +1834,6 @@ void CodeGenerator::aLoopHeaderNode(LoopHeaderNode* node) {
     setMapping(NULL);
   }
 }
-
 
 /*
 void LoopHeaderNode::gen() {
@@ -1810,16 +1861,17 @@ void LoopHeaderNode::gen() {
 }
 */
 
-
 void CodeGenerator::aReturnNode(ReturnNode* node) {
   InlinedScope* scope = node->scope();
-  if (scope->needsContextZapping()) zapContext(scope->context());	// <<< still needed? What about ContextZapNode?
+  if (scope->needsContextZapping())
+    zapContext(scope->context()); // <<< still needed? What about ContextZapNode?
   // make sure result is in result_reg, no other pregs are used anymore
   PReg* result = scope->resultPR;
   _currentMapping->killRegisters(result);
   _currentMapping->use(result, result_reg);
   // remove stack frame & return
-  if (VerifyCode || TraceCalls || TraceResults) callVerifyReturn();
+  if (VerifyCode || TraceCalls || TraceResults)
+    callVerifyReturn();
   int no_of_args_to_pop = scope->nofArguments();
   if (scope->method()->is_blockMethod()) {
     // blocks are called via primitiveValue => need to pop first argument
@@ -1833,7 +1885,6 @@ void CodeGenerator::aReturnNode(ReturnNode* node) {
   setMapping(NULL);
 }
 
-
 void CodeGenerator::aNLRSetupNode(NLRSetupNode* node) {
   InlinedScope* scope = node->scope();
   // compute home into a temporary register (NLR_home_reg might still be in use - but try to use it if possible)
@@ -1841,17 +1892,20 @@ void CodeGenerator::aNLRSetupNode(NLRSetupNode* node) {
   //
   // QUESTION: Who is popping the arguments (for an ordinary return it happens automatically in the return).
   // Couldn't that be a problem in loops? How's this done in the old backend? In the interpreter?
-  Label NLR_error;							// for NLRs to non-existing frames
-  Temporary home(_currentMapping, NLR_home_reg);			// try to allocate temporary home into right register
-  uplevelBase(scope->context(), scope->homeContext() + 1, home.reg());	// compute home
-  _masm->testl(home.reg(), home.reg());					// check if zapped
-  _masm->jcc(Assembler::zero, NLR_error);				// zero -> home has been zapped
+  Label NLR_error; // for NLRs to non-existing frames
+  Temporary home(_currentMapping, NLR_home_reg); // try to allocate temporary home into right register
+  uplevelBase(scope->context(), scope->homeContext() + 1, home.reg()); // compute home
+  _masm->testl(home.reg(), home.reg()); // check if zapped
+  _masm->jcc(Assembler::zero, NLR_error); // zero -> home has been zapped
   // load result into temporary register (NLR_result_reg might still be in use - but try to use it if possible)
   PReg* resultPReg = scope->resultPR;
-  _currentMapping->killRegisters(resultPReg);				// no PRegs are used anymore except result
-  Register result;							// temporary result register
-  { Temporary t(_currentMapping, NLR_result_reg); result = t.reg(); }	// try to allocate temporary result into right register
-  _currentMapping->use(resultPReg, result);				// load result into temporary result register
+  _currentMapping->killRegisters(resultPReg); // no PRegs are used anymore except result
+  Register result; // temporary result register
+  {
+    Temporary t(_currentMapping, NLR_result_reg);
+    result = t.reg();
+  } // try to allocate temporary result into right register
+  _currentMapping->use(resultPReg, result); // load result into temporary result register
   // finally assign result and home to the right registers, make sure that they
   // don't overwrite each other (home could be in the result register & vice versa).
   // For now push them and pop them back into the right registers.
@@ -1864,7 +1918,8 @@ void CodeGenerator::aNLRSetupNode(NLRSetupNode* node) {
   // assign home id
   _masm->movl(NLR_homeId_reg, scope->home()->scopeID());
   // issue NLR
-  if (VerifyCode || TraceCalls || TraceResults) callVerifyNLR();
+  if (VerifyCode || TraceCalls || TraceResults)
+    callVerifyNLR();
   _masm->jmp(StubRoutines::continue_NLR_entry(), relocInfo::runtime_call_type);
   // call run-time routine in failure case
   // what about the debugging information? FIX THIS
@@ -1874,48 +1929,59 @@ void CodeGenerator::aNLRSetupNode(NLRSetupNode* node) {
   setMapping(NULL);
 }
 
-
 void CodeGenerator::anInlinedReturnNode(InlinedReturnNode* node) {
   // Not generated anymore for new backend
   ShouldNotReachHere();
 }
 
-
 void CodeGenerator::aNLRContinuationNode(NLRContinuationNode* node) {
   guarantee(_currentMapping->NLRinProgress(), "NLR must be in progress");
   InlinedScope* scope = node->scope();
-  if (scope->needsContextZapping()) zapContext(scope->context());
+  if (scope->needsContextZapping())
+    zapContext(scope->context());
   // continue with NLR
-  if (VerifyCode || TraceCalls || TraceResults) callVerifyNLR();
+  if (VerifyCode || TraceCalls || TraceResults)
+    callVerifyNLR();
   _masm->jmp(StubRoutines::continue_NLR_entry(), relocInfo::runtime_call_type);
   // no pregs accessible anymore
   setMapping(NULL);
 }
 
-
 Assembler::Condition CodeGenerator::mapToCC(BranchOpCode op) {
   switch (op) {
-    case EQBranchOp : return Assembler::equal;
-    case NEBranchOp : return Assembler::notEqual;
-    case LTBranchOp : return Assembler::less;
-    case LEBranchOp : return Assembler::lessEqual;
-    case GTBranchOp : return Assembler::greater;
-    case GEBranchOp : return Assembler::greaterEqual;
-    case LTUBranchOp: return Assembler::below;
-    case LEUBranchOp: return Assembler::belowEqual;
-    case GTUBranchOp: return Assembler::above;
-    case GEUBranchOp: return Assembler::aboveEqual;
-    case VSBranchOp : return Assembler::overflow;
-    case VCBranchOp : return Assembler::noOverflow;
-    default: ShouldNotReachHere(); return Assembler::zero;
+    case EQBranchOp:
+      return Assembler::equal;
+    case NEBranchOp:
+      return Assembler::notEqual;
+    case LTBranchOp:
+      return Assembler::less;
+    case LEBranchOp:
+      return Assembler::lessEqual;
+    case GTBranchOp:
+      return Assembler::greater;
+    case GEBranchOp:
+      return Assembler::greaterEqual;
+    case LTUBranchOp:
+      return Assembler::below;
+    case LEUBranchOp:
+      return Assembler::belowEqual;
+    case GTUBranchOp:
+      return Assembler::above;
+    case GEUBranchOp:
+      return Assembler::aboveEqual;
+    case VSBranchOp:
+      return Assembler::overflow;
+    case VCBranchOp:
+      return Assembler::noOverflow;
+    default:
+      ShouldNotReachHere();
+      return Assembler::zero;
   }
 }
-
 
 void CodeGenerator::aBranchNode(BranchNode* node) {
   jcc(mapToCC(node->op()), node, node->next(1));
 }
-
 
 void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
   // Note 1: This code pattern requires *no* particular order
@@ -1926,11 +1992,11 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
   //         However, for debugging purposes right now all
   //         cases are always explicitly checked.
   const int len = node->classes()->length();
-  
+
   if (ReorderBBs) {
     PRegLocker lock(node->src());
     Register obj = use(node->src());
-      
+
     if (len == 1) {
       // handle all cases where only one klass is involved
       assert(node->hasUnknown(), "should be eliminated if there's no unknown case");
@@ -1957,8 +2023,8 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
         _masm->cmpl(objKlass.reg(), klass);
       }
       jcc(Assembler::notEqual, node, node->next());
-      jmp(node, node->next(1));			// this jump will be eliminated since this is the likely successor
-      bb_needs_jump = false;			// no jump necessary at end of basic block
+      jmp(node, node->next(1)); // this jump will be eliminated since this is the likely successor
+      bb_needs_jump = false; // no jump necessary at end of basic block
       return;
     }
 
@@ -1966,10 +2032,12 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
       // handle pure boolean cases (ifTrue:/ifFalse:)
       klassOop klass1 = node->classes()->at(0);
       klassOop klass2 = node->classes()->at(1);
-      oop      bool1  = Universe::trueObj();
-      oop      bool2  = Universe::falseObj();
+      oop bool1 = Universe::trueObj();
+      oop bool2 = Universe::falseObj();
       if (klass1 == bool2->klass() && klass2 == bool1->klass()) {
-        oop t = bool1; bool1 = bool2; bool2 = t;
+        oop t = bool1;
+        bool1 = bool2;
+        bool2 = t;
       }
       if (klass1 == bool1->klass() && klass2 == bool2->klass()) {
         const bool ignoreNoUnknownForNow = true;
@@ -1981,19 +2049,19 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
         //       this case and then set a "dummy" PRegMapping, since it is not used
         //       anyhow but needs to be there only for assertion checking).
         if (ignoreNoUnknownForNow || node->hasUnknown()) {
-	  assert(ignoreNoUnknownForNow || node->likelySuccessor() == node->next(2), "code pattern is not optimal");
-	  _masm->cmpl(obj, bool1);
-	  jcc(Assembler::equal, node, node->next(1));
+          assert(ignoreNoUnknownForNow || node->likelySuccessor() == node->next(2), "code pattern is not optimal");
+          _masm->cmpl(obj, bool1);
+          jcc(Assembler::equal, node, node->next(1));
           _masm->cmpl(obj, bool2);
           jcc(Assembler::notEqual, node, node->next());
-	  jmp(node, node->next(2));		// this jump will be eliminated since this is the likely successor
-	} else {
-	  assert(node->likelySuccessor() == node->next(1), "code pattern is not optimal");
+          jmp(node, node->next(2)); // this jump will be eliminated since this is the likely successor
+        } else {
+          assert(node->likelySuccessor() == node->next(1), "code pattern is not optimal");
           _masm->cmpl(obj, bool2);
-	  jcc(Assembler::equal, node, node->next(2));
-	  jmp(node, node->next(1));		// this jump will be eliminated since this is the likely successor
-	}
-	bb_needs_jump = false;			// no jump necessary at end of basic block
+          jcc(Assembler::equal, node, node->next(2));
+          jmp(node, node->next(1)); // this jump will be eliminated since this is the likely successor
+        }
+        bb_needs_jump = false; // no jump necessary at end of basic block
         return;
       }
     }
@@ -2011,45 +2079,45 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
     if (klass == trueObj->klass()) {
       // only one instance: compare with trueObj
       _masm->cmpl(obj, trueObj);
-      jcc(Assembler::equal, node, node->next(i+1));
+      jcc(Assembler::equal, node, node->next(i + 1));
     } else if (klass == falseObj->klass()) {
       // only one instance: compare with falseObj
       _masm->cmpl(obj, falseObj);
-      jcc(Assembler::equal, node, node->next(i+1));
+      jcc(Assembler::equal, node, node->next(i + 1));
     } else if (klass == nilObj->klass()) {
       // only one instance: compare with nilObj
       _masm->cmpl(obj, nilObj);
-      jcc(Assembler::equal, node, node->next(i+1));
+      jcc(Assembler::equal, node, node->next(i + 1));
     } else if (klass == smiKlassObj) {
       // check smi tag only if not checked already, otherwise ignore
       if (!smiHasBeenChecked) {
         _masm->test(obj, Mem_Tag);
-        jcc(Assembler::zero, node, node->next(i+1));
+        jcc(Assembler::zero, node, node->next(i + 1));
         smiHasBeenChecked = true;
       }
     } else {
       // compare with klass
       if (!klassHasBeenLoaded) {
         if (!smiHasBeenChecked) {
-	  Node* smiCase = node->smiCase();
-	  if (smiCase != NULL || node->hasUnknown()) {
-	    // smi can actually appear => check for it
+          Node* smiCase = node->smiCase();
+          if (smiCase != NULL || node->hasUnknown()) {
+            // smi can actually appear => check for it
             _masm->test(obj, Mem_Tag);
-	    if (smiCase != NULL) {
-	      // jump to smiCase if there's one
+            if (smiCase != NULL) {
+              // jump to smiCase if there's one
               jcc(Assembler::zero, node, smiCase);
-	    } else {
-	      // node hasUnknown & smiCase cannot happen => jump to unknown case (end of typetest)
-	      _masm->jcc(Assembler::zero, unknownCase);
-	    }
-	  }
-	  smiHasBeenChecked = true;
-	}
-	_masm->movl(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
-	klassHasBeenLoaded = true;
+            } else {
+              // node hasUnknown & smiCase cannot happen => jump to unknown case (end of typetest)
+              _masm->jcc(Assembler::zero, unknownCase);
+            }
+          }
+          smiHasBeenChecked = true;
+        }
+        _masm->movl(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
+        klassHasBeenLoaded = true;
       }
       _masm->cmpl(objKlass.reg(), klass);
-      jcc(Assembler::equal, node, node->next(i+1));
+      jcc(Assembler::equal, node, node->next(i + 1));
     }
   }
   // bind label in any case to avoid unbound label assertion bug
@@ -2064,7 +2132,6 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
   //
   // >>>>> IS A PROBLEM! The temporary is likely to throw out another PReg from a register! FIX THIS!
 }
-
 
 // Note: Maybe should reorganize the way NLRs are treated in the intermediate representation;
 // may be able to avoid some jumps. For example, continuing the NLR is done via a stub routine,
@@ -2093,11 +2160,9 @@ void CodeGenerator::aNLRTestNode(NLRTestNode* node) {
   _masm->bind(L);
 }
 
-
 void CodeGenerator::aMergeNode(MergeNode* node) {
   assert(node->isTrivial() || _currentMapping->isInjective(), "must be injective if more than one predecessor");
 }
-
 
 void CodeGenerator::jcc_error(Assembler::Condition cc, AbstractBranchNode* node, Label& label) {
   assert(node->canFail(), "should not be called if node cannot fail");
@@ -2109,12 +2174,11 @@ void CodeGenerator::jcc_error(Assembler::Condition cc, AbstractBranchNode* node,
   }
 }
 
-
 void CodeGenerator::anArrayAtNode(ArrayAtNode* node) {
-  PReg* array  = node->array();
-  PReg* index  = node->index();
+  PReg* array = node->array();
+  PReg* index = node->index();
   PReg* result = node->dst();
-  PReg* error  = node->error();
+  PReg* error = node->error();
   PRegLocker lock(array, index);
   Register array_reg = use(array);
   // use temporary register for index - will be modified
@@ -2138,45 +2202,43 @@ void CodeGenerator::anArrayAtNode(ArrayAtNode* node) {
   assert(Tag_Size == 2, "check this code");
   const int data_offset = byteOffset(node->data_word_offset());
   switch (node->access_type()) {
-    case ArrayAtNode::byte_at:
-      { Register result_reg = def(result);
-        _masm->sarl(offset.reg(), Tag_Size);	// adjust index
-	if (result_reg.hasByteRegister()) {
-	  // result_reg has byte register -> can use byte load instruction
-          _masm->xorl(result_reg, result_reg);	// clear destination register
-	  _masm->movb(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
-	} else {
-	  // result_reg has no byte register -> cannot use byte load instruction
-	  // instead of doing better register selection use word load & mask for now
-	  _masm->movl(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
-	  _masm->andl(result_reg, 0x000000FF);	// clear uppper 3 bytes
-	}
-	_masm->shll(result_reg, Tag_Size);	// make result a smi
-      }
-      break;
-    case ArrayAtNode::double_byte_at:
-      { Register result_reg = def(result);
-        _masm->sarl(offset.reg(), Tag_Size - 1);// adjust index
+    case ArrayAtNode::byte_at: {
+      Register result_reg = def(result);
+      _masm->sarl(offset.reg(), Tag_Size); // adjust index
+      if (result_reg.hasByteRegister()) {
+        // result_reg has byte register -> can use byte load instruction
+        _masm->xorl(result_reg, result_reg); // clear destination register
+        _masm->movb(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
+      } else {
+        // result_reg has no byte register -> cannot use byte load instruction
+        // instead of doing better register selection use word load & mask for now
         _masm->movl(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
-        _masm->andl(result_reg, 0x0000FFFF);	// clear upper 2 bytes
-        _masm->shll(result_reg, Tag_Size);	// make result a smi
+        _masm->andl(result_reg, 0x000000FF); // clear uppper 3 bytes
       }
-      break;
-    case ArrayAtNode::character_at:
-      { Register result_reg = def(result);
-        _masm->sarl(offset.reg(), Tag_Size - 1);// adjust index
-        _masm->movl(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
-        _masm->andl(result_reg, 0x0000FFFF);	// clear upper 2 bytes
-        // use result_reg as index into asciiCharacters()
-        // check index first, must be 0 <= result_reg < asciiCharacters()->length()
-        objArrayOop chars = Universe::asciiCharacters();
-        _masm->cmpl(result_reg, chars->length());
-	jcc_error(Assembler::aboveEqual, node, indexOutOfBounds);
-	// get character out of chars array
-	_masm->movl(offset.reg(), chars);
-	_masm->movl(result_reg, Address(offset.reg(), result_reg, Address::times_4, byteOffset(chars->klass()->klass_part()->non_indexable_size() + 1)));
-      }
-      break;
+      _masm->shll(result_reg, Tag_Size); // make result a smi
+    } break;
+    case ArrayAtNode::double_byte_at: {
+      Register result_reg = def(result);
+      _masm->sarl(offset.reg(), Tag_Size - 1); // adjust index
+      _masm->movl(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
+      _masm->andl(result_reg, 0x0000FFFF); // clear upper 2 bytes
+      _masm->shll(result_reg, Tag_Size); // make result a smi
+    } break;
+    case ArrayAtNode::character_at: {
+      Register result_reg = def(result);
+      _masm->sarl(offset.reg(), Tag_Size - 1); // adjust index
+      _masm->movl(result_reg, Address(array_reg, offset.reg(), Address::times_1, data_offset));
+      _masm->andl(result_reg, 0x0000FFFF); // clear upper 2 bytes
+      // use result_reg as index into asciiCharacters()
+      // check index first, must be 0 <= result_reg < asciiCharacters()->length()
+      objArrayOop chars = Universe::asciiCharacters();
+      _masm->cmpl(result_reg, chars->length());
+      jcc_error(Assembler::aboveEqual, node, indexOutOfBounds);
+      // get character out of chars array
+      _masm->movl(offset.reg(), chars);
+      _masm->movl(result_reg, Address(offset.reg(), result_reg, Address::times_4,
+                                      byteOffset(chars->klass()->klass_part()->non_indexable_size() + 1)));
+    } break;
     case ArrayAtNode::object_at:
       // offset already shifted => no scaling necessary
       _masm->movl(def(result), Address(array_reg, offset.reg(), Address::times_1, data_offset));
@@ -2208,12 +2270,11 @@ void CodeGenerator::anArrayAtNode(ArrayAtNode* node) {
   }
 }
 
-
 void CodeGenerator::anArrayAtPutNode(ArrayAtPutNode* node) {
-  PReg* array   = node->array();
-  PReg* index   = node->index();
+  PReg* array = node->array();
+  PReg* index = node->index();
   PReg* element = node->element();
-  PReg* error   = node->error();
+  PReg* error = node->error();
   PRegLocker lock(array, index, element);
   Register array_reg = use(array);
   // use temporary register for index - will be modified
@@ -2238,76 +2299,72 @@ void CodeGenerator::anArrayAtPutNode(ArrayAtPutNode* node) {
   const int data_offset = byteOffset(node->data_word_offset());
   Label elementNotSmi, elementOutOfRange;
   switch (node->access_type()) {
-    case ArrayAtPutNode::byte_at_put:
-      { // use temporary register for element - will be modified
-        Temporary elt(_currentMapping, element);
-	_masm->sarl(offset.reg(), Tag_Size);	// adjust index
-	// do element smi check if necessary
-        if (!node->element_is_smi()) {
-          _masm->test(elt.reg(), Mem_Tag);
-	  jcc_error(Assembler::notZero, node, elementNotSmi);
-        }
-	_masm->sarl(elt.reg(), Tag_Size);	// convert element into (int) byte
-	// do element range check if necessary
-	if (node->element_needs_range_check()) {
-	  _masm->cmpl(elt.reg(), 0x100);
-	  jcc_error(Assembler::aboveEqual, node, elementOutOfRange);
-        }
-	// store the element
-	if (elt.reg().hasByteRegister()) {
-	  // elt.reg() has byte register -> can use byte store instruction
-	  _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset), elt.reg());
-	} else {
-	  // elt.reg() has no byte register -> cannot use byte store instruction
-	  // instead of doing a better register selection use word load/store & mask for now
-	  Temporary field(_currentMapping);
-	  _masm->movl(field.reg(), Address(array_reg, offset.reg(), Address::times_1, data_offset));
-          _masm->andl(field.reg(), 0xFFFFFF00);	// mask out lower byte
-	  _masm->orl(field.reg(), elt.reg());	// move elt (elt < 0x100 => no masking of elt needed)
-	  _masm->movl(Address(array_reg, offset.reg(), Address::times_1, data_offset), field.reg());
-	}
-	assert(!node->needs_store_check(), "just checking");
+    case ArrayAtPutNode::byte_at_put: { // use temporary register for element - will be modified
+      Temporary elt(_currentMapping, element);
+      _masm->sarl(offset.reg(), Tag_Size); // adjust index
+      // do element smi check if necessary
+      if (!node->element_is_smi()) {
+        _masm->test(elt.reg(), Mem_Tag);
+        jcc_error(Assembler::notZero, node, elementNotSmi);
       }
-      break;
-    case ArrayAtPutNode::double_byte_at_put:
-      { // use temporary register for element - will be modified
-        Temporary elt(_currentMapping, element);
-	_masm->sarl(offset.reg(), Tag_Size - 1);// adjust index
-	// do element smi check if necessary
-        if (!node->element_is_smi()) {
-          _masm->test(elt.reg(), Mem_Tag);
-	  jcc_error(Assembler::notZero, node, elementNotSmi);
-        }
-	_masm->sarl(elt.reg(), Tag_Size);	// convert element into (int) double byte
-	// do element range check if necessary
-	if (node->element_needs_range_check()) {
-	  _masm->cmpl(elt.reg(), 0x10000);
-	  jcc_error(Assembler::aboveEqual, node, elementOutOfRange);
-        }
-	// store the element
-	if (elt.reg().hasByteRegister()) {
-	  // elt.reg() has byte register -> can use byte store instructions
-	  _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset + 0), elt.reg());
-	  _masm->shrl(elt.reg(), 8);		// shift 2nd byte into low-byte position
-          _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset + 1), elt.reg());
-	} else {
-	  // elt.reg() has no byte register -> cannot use byte store instructions
-	  // instead of doing a better register selection use word load/store & mask for now
-	  Temporary field(_currentMapping);
-	  _masm->movl(field.reg(), Address(array_reg, offset.reg(), Address::times_1, data_offset));
-          _masm->andl(field.reg(), 0xFFFF0000);	// mask out lower two bytes
-	  _masm->orl(field.reg(), elt.reg());	// move elt (elt < 0x10000 => no masking of elt needed)
-	  _masm->movl(Address(array_reg, offset.reg(), Address::times_1, data_offset), field.reg());
-	}
-	assert(!node->needs_store_check(), "just checking");
+      _masm->sarl(elt.reg(), Tag_Size); // convert element into (int) byte
+      // do element range check if necessary
+      if (node->element_needs_range_check()) {
+        _masm->cmpl(elt.reg(), 0x100);
+        jcc_error(Assembler::aboveEqual, node, elementOutOfRange);
       }
-      break;
+      // store the element
+      if (elt.reg().hasByteRegister()) {
+        // elt.reg() has byte register -> can use byte store instruction
+        _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset), elt.reg());
+      } else {
+        // elt.reg() has no byte register -> cannot use byte store instruction
+        // instead of doing a better register selection use word load/store & mask for now
+        Temporary field(_currentMapping);
+        _masm->movl(field.reg(), Address(array_reg, offset.reg(), Address::times_1, data_offset));
+        _masm->andl(field.reg(), 0xFFFFFF00); // mask out lower byte
+        _masm->orl(field.reg(), elt.reg()); // move elt (elt < 0x100 => no masking of elt needed)
+        _masm->movl(Address(array_reg, offset.reg(), Address::times_1, data_offset), field.reg());
+      }
+      assert(!node->needs_store_check(), "just checking");
+    } break;
+    case ArrayAtPutNode::double_byte_at_put: { // use temporary register for element - will be modified
+      Temporary elt(_currentMapping, element);
+      _masm->sarl(offset.reg(), Tag_Size - 1); // adjust index
+      // do element smi check if necessary
+      if (!node->element_is_smi()) {
+        _masm->test(elt.reg(), Mem_Tag);
+        jcc_error(Assembler::notZero, node, elementNotSmi);
+      }
+      _masm->sarl(elt.reg(), Tag_Size); // convert element into (int) double byte
+      // do element range check if necessary
+      if (node->element_needs_range_check()) {
+        _masm->cmpl(elt.reg(), 0x10000);
+        jcc_error(Assembler::aboveEqual, node, elementOutOfRange);
+      }
+      // store the element
+      if (elt.reg().hasByteRegister()) {
+        // elt.reg() has byte register -> can use byte store instructions
+        _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset + 0), elt.reg());
+        _masm->shrl(elt.reg(), 8); // shift 2nd byte into low-byte position
+        _masm->movb(Address(array_reg, offset.reg(), Address::times_1, data_offset + 1), elt.reg());
+      } else {
+        // elt.reg() has no byte register -> cannot use byte store instructions
+        // instead of doing a better register selection use word load/store & mask for now
+        Temporary field(_currentMapping);
+        _masm->movl(field.reg(), Address(array_reg, offset.reg(), Address::times_1, data_offset));
+        _masm->andl(field.reg(), 0xFFFF0000); // mask out lower two bytes
+        _masm->orl(field.reg(), elt.reg()); // move elt (elt < 0x10000 => no masking of elt needed)
+        _masm->movl(Address(array_reg, offset.reg(), Address::times_1, data_offset), field.reg());
+      }
+      assert(!node->needs_store_check(), "just checking");
+    } break;
     case ArrayAtPutNode::object_at_put:
       // offset already shifted => no scaling necessary
       if (node->needs_store_check()) {
         _masm->leal(offset.reg(), Address(array_reg, offset.reg(), Address::times_1, data_offset));
-	_masm->movl(Address(offset.reg()), use(element));
-	storeCheck(offset.reg());
+        _masm->movl(Address(offset.reg()), use(element));
+        storeCheck(offset.reg());
       } else {
         _masm->movl(Address(array_reg, offset.reg(), Address::times_1, data_offset), use(element));
       }
@@ -2347,167 +2404,163 @@ void CodeGenerator::anArrayAtPutNode(ArrayAtPutNode* node) {
   }
 }
 
-
 void CodeGenerator::anInlinedPrimitiveNode(InlinedPrimitiveNode* node) {
   switch (node->op()) {
-    case InlinedPrimitiveNode::obj_klass:
-      { Label is_smi;
-        PRegLocker lock(node->src());
-	Register obj_reg   = use(node->src());
-	Register klass_reg = def(node->dst());
-	_masm->movl(klass_reg, Universe::smiKlassObj());
-	_masm->test(obj_reg, Mem_Tag);
-	_masm->jcc(Assembler::zero, is_smi);
-	_masm->movl(klass_reg, Address(obj_reg, memOopDesc::klass_byte_offset()));
-	_masm->bind(is_smi);
-      };
-      break;
-    case InlinedPrimitiveNode::obj_hash:
-      { Unimplemented();
-        // Implemented for the smi klass only by now - can be resolved in
-	// the PrimInliner for that case without using an InlinedPrimitiveNode.
-      };
-      break;
-    case InlinedPrimitiveNode::proxy_byte_at:
-      { PReg* proxy  = node->src();
-	PReg* index  = node->arg1();
-	PReg* result = node->dst();
-	PReg* error  = node->error();
-	PRegLocker lock(proxy, index);
-	// use Temporary register for proxy & index - will be modified
-	Temporary base  (_currentMapping, proxy);
-	Temporary offset(_currentMapping, index);
-	// do index smi check if necessary
-	Label indexNotSmi;
-	if (!node->arg1_is_smi()) {
-          _masm->test(offset.reg(), Mem_Tag);
-	  jcc_error(Assembler::notZero, node, indexNotSmi);
-	}
-	// load element
-	assert(Tag_Size == 2, "check this code");
-	Register result_reg = def(result);
-        _masm->movl(base.reg(), Address(base.reg(), pointer_offset));	// unbox proxy
-	_masm->sarl(offset.reg(), Tag_Size);				// adjust index
-	if (result_reg.hasByteRegister()) {
-	  // result_reg has byte register -> can use byte load instruction
-	  _masm->xorl(result_reg, result_reg);				// clear destination register
-	  _masm->movb(result_reg, Address(base.reg(), offset.reg(), Address::times_1, 0));
-	} else {
-	  // result_reg has no byte register -> cannot use byte load instruction
-	  // instead of doing better register selection use word load & mask for now
-	  _masm->movl(result_reg, Address(base.reg(), offset.reg(), Address::times_1, 0));
-	  _masm->andl(result_reg, 0x000000FF);				// clear uppper 3 bytes
-	}
-	_masm->shll(result_reg, Tag_Size);				// make result a smi
-	// handle error cases if not uncommon
-	if (node->canFail() && !node->next(1)->isUncommonNode()) {
-          Label exit;
-	  _masm->jmp(exit);
-          // error messages
-	  if (!node->arg1_is_smi()) {
-            _masm->bind(indexNotSmi);
-	    _masm->hlt();
-	  }
-	  // hack for now - jcc so mapping stays alive
-          // must do all the mapping in the program path taken - otherwise
-          // mappings are inconsistent
-          _masm->bind(exit);
-          Register r = def(error);
-          _masm->test(r, 0);
-          jcc(Assembler::notZero, node, node->next(1));
-	}
+    case InlinedPrimitiveNode::obj_klass: {
+      Label is_smi;
+      PRegLocker lock(node->src());
+      Register obj_reg = use(node->src());
+      Register klass_reg = def(node->dst());
+      _masm->movl(klass_reg, Universe::smiKlassObj());
+      _masm->test(obj_reg, Mem_Tag);
+      _masm->jcc(Assembler::zero, is_smi);
+      _masm->movl(klass_reg, Address(obj_reg, memOopDesc::klass_byte_offset()));
+      _masm->bind(is_smi);
+    }; break;
+    case InlinedPrimitiveNode::obj_hash: {
+      Unimplemented();
+      // Implemented for the smi klass only by now - can be resolved in
+      // the PrimInliner for that case without using an InlinedPrimitiveNode.
+    }; break;
+    case InlinedPrimitiveNode::proxy_byte_at: {
+      PReg* proxy = node->src();
+      PReg* index = node->arg1();
+      PReg* result = node->dst();
+      PReg* error = node->error();
+      PRegLocker lock(proxy, index);
+      // use Temporary register for proxy & index - will be modified
+      Temporary base(_currentMapping, proxy);
+      Temporary offset(_currentMapping, index);
+      // do index smi check if necessary
+      Label indexNotSmi;
+      if (!node->arg1_is_smi()) {
+        _masm->test(offset.reg(), Mem_Tag);
+        jcc_error(Assembler::notZero, node, indexNotSmi);
       }
-      break;
-    case InlinedPrimitiveNode::proxy_byte_at_put:
-      { bool const_val = node->arg2()->isConstPReg();
-        PReg* proxy = node->src();
-	PReg* index = node->arg1();
-	PReg* value = node->arg2();
-	PReg* error = node->error();
-	// Locking turned off for now -> blocks too many registers for
-	// this code (however may add unnecessary moves) -> find a better
-	// solution for this
-	//
-	// PRegLocker lock(proxy, index, value);
-	// use Temporary register for proxy & index - will be modified
-	Temporary base  (_currentMapping, proxy);
-	Temporary offset(_currentMapping, index);
-	// use temporary register for value - will be modified
-	// (actually only needed if not const_val - however right now
-	// we can only allocate temps via constructors (i.e., they have
-	// to be allocated/deallocated in a nested manner)).
-	Temporary val(_currentMapping);
-	if (const_val) {
-	  // value doesn't have to be loaded -> do nothing here
-          if (!node->arg2_is_smi()) fatal("proxy_byte_at_put: should not happen - internal error");
-          //if (!node->arg2_is_smi()) fatal("proxy_byte_at_put: should not happen - tell Robert");
-	} else {
-	  _masm->movl(val.reg(), use(value));
-	}
-	// do index smi check if necessary
-	Label indexNotSmi;
-	if (!node->arg1_is_smi()) {
-          _masm->test(offset.reg(), Mem_Tag);
-	  jcc_error(Assembler::notZero, node, indexNotSmi);
-	}
-	// do value smi check if necessary
-	Label valueNotSmi;
-	if (!node->arg2_is_smi()) {
-          assert(!const_val, "constant shouldn't need a smi check");
-          _masm->test(val.reg(), Mem_Tag);
-	  jcc_error(Assembler::notZero, node, valueNotSmi);
-	}
-	// store element
-        assert(Tag_Size == 2, "check this code");
-        _masm->movl(base.reg(), Address(base.reg(), pointer_offset));	// unbox proxy
-	_masm->sarl(offset.reg(), Tag_Size);				// adjust index
-	if (const_val) {
-          smiOop constant = smiOop(((ConstPReg*)value)->constant);
-	  assert(constant->is_smi(), "should be a smi");
-	  _masm->movb(Address(base.reg(), offset.reg(), Address::times_1, 0), constant->value() & 0xFF);
-	} else {
-	  _masm->sarl(val.reg(), Tag_Size);				// convert (smi)value into int
-	  if (val.reg().hasByteRegister()) {
-	    // val.reg() has byte register -> can use byte store instruction
-	    _masm->movb(Address(base.reg(), offset.reg(), Address::times_1, 0), val.reg());
-	  } else {
-	    // val.reg() has no byte register -> cannot use byte store instruction
-	    // instead of doing a better register selection use word load/store & mask for now
-	    Temporary field(_currentMapping);
-	    _masm->movl(field.reg(), Address(base.reg(), offset.reg(), Address::times_1, 0));
-	    _masm->andl(val  .reg(), 0x000000FF);			// make sure value is one byte only
-	    _masm->andl(field.reg(), 0xFFFFFF00);			// mask out lower byte of target field
-	    _masm->orl (field.reg(), val.reg());			// move value byte into target field
-	    _masm->movl(Address(base.reg(), offset.reg(), Address::times_1, 0), field.reg());
-	  }
-	}
-	// handle error cases if not uncommon
-	if (node->canFail() && !node->next(1)->isUncommonNode()) {
-          Label exit;
-	  _masm->jmp(exit);
-          // error messages
-	  if (!node->arg1_is_smi()) {
-            _masm->bind(indexNotSmi);
-	    _masm->hlt();
-	  }
-	  if (!node->arg2_is_smi()) {
-	    _masm->bind(valueNotSmi);
-	    _masm->hlt();
-	  }
-	  // hack for now - jcc so mapping stays alive
-          // must do all the mapping in the program path taken - otherwise
-          // mappings are inconsistent
-          _masm->bind(exit);
-          Register r = def(error);
-          _masm->test(r, 0);
-          jcc(Assembler::notZero, node, node->next(1));
-	}
+      // load element
+      assert(Tag_Size == 2, "check this code");
+      Register result_reg = def(result);
+      _masm->movl(base.reg(), Address(base.reg(), pointer_offset)); // unbox proxy
+      _masm->sarl(offset.reg(), Tag_Size); // adjust index
+      if (result_reg.hasByteRegister()) {
+        // result_reg has byte register -> can use byte load instruction
+        _masm->xorl(result_reg, result_reg); // clear destination register
+        _masm->movb(result_reg, Address(base.reg(), offset.reg(), Address::times_1, 0));
+      } else {
+        // result_reg has no byte register -> cannot use byte load instruction
+        // instead of doing better register selection use word load & mask for now
+        _masm->movl(result_reg, Address(base.reg(), offset.reg(), Address::times_1, 0));
+        _masm->andl(result_reg, 0x000000FF); // clear uppper 3 bytes
       }
-      break;
-    default: ShouldNotReachHere();
+      _masm->shll(result_reg, Tag_Size); // make result a smi
+      // handle error cases if not uncommon
+      if (node->canFail() && !node->next(1)->isUncommonNode()) {
+        Label exit;
+        _masm->jmp(exit);
+        // error messages
+        if (!node->arg1_is_smi()) {
+          _masm->bind(indexNotSmi);
+          _masm->hlt();
+        }
+        // hack for now - jcc so mapping stays alive
+        // must do all the mapping in the program path taken - otherwise
+        // mappings are inconsistent
+        _masm->bind(exit);
+        Register r = def(error);
+        _masm->test(r, 0);
+        jcc(Assembler::notZero, node, node->next(1));
+      }
+    } break;
+    case InlinedPrimitiveNode::proxy_byte_at_put: {
+      bool const_val = node->arg2()->isConstPReg();
+      PReg* proxy = node->src();
+      PReg* index = node->arg1();
+      PReg* value = node->arg2();
+      PReg* error = node->error();
+      // Locking turned off for now -> blocks too many registers for
+      // this code (however may add unnecessary moves) -> find a better
+      // solution for this
+      //
+      // PRegLocker lock(proxy, index, value);
+      // use Temporary register for proxy & index - will be modified
+      Temporary base(_currentMapping, proxy);
+      Temporary offset(_currentMapping, index);
+      // use temporary register for value - will be modified
+      // (actually only needed if not const_val - however right now
+      // we can only allocate temps via constructors (i.e., they have
+      // to be allocated/deallocated in a nested manner)).
+      Temporary val(_currentMapping);
+      if (const_val) {
+        // value doesn't have to be loaded -> do nothing here
+        if (!node->arg2_is_smi())
+          fatal("proxy_byte_at_put: should not happen - internal error");
+        //if (!node->arg2_is_smi()) fatal("proxy_byte_at_put: should not happen - tell Robert");
+      } else {
+        _masm->movl(val.reg(), use(value));
+      }
+      // do index smi check if necessary
+      Label indexNotSmi;
+      if (!node->arg1_is_smi()) {
+        _masm->test(offset.reg(), Mem_Tag);
+        jcc_error(Assembler::notZero, node, indexNotSmi);
+      }
+      // do value smi check if necessary
+      Label valueNotSmi;
+      if (!node->arg2_is_smi()) {
+        assert(!const_val, "constant shouldn't need a smi check");
+        _masm->test(val.reg(), Mem_Tag);
+        jcc_error(Assembler::notZero, node, valueNotSmi);
+      }
+      // store element
+      assert(Tag_Size == 2, "check this code");
+      _masm->movl(base.reg(), Address(base.reg(), pointer_offset)); // unbox proxy
+      _masm->sarl(offset.reg(), Tag_Size); // adjust index
+      if (const_val) {
+        smiOop constant = smiOop(((ConstPReg*)value)->constant);
+        assert(constant->is_smi(), "should be a smi");
+        _masm->movb(Address(base.reg(), offset.reg(), Address::times_1, 0), constant->value() & 0xFF);
+      } else {
+        _masm->sarl(val.reg(), Tag_Size); // convert (smi)value into int
+        if (val.reg().hasByteRegister()) {
+          // val.reg() has byte register -> can use byte store instruction
+          _masm->movb(Address(base.reg(), offset.reg(), Address::times_1, 0), val.reg());
+        } else {
+          // val.reg() has no byte register -> cannot use byte store instruction
+          // instead of doing a better register selection use word load/store & mask for now
+          Temporary field(_currentMapping);
+          _masm->movl(field.reg(), Address(base.reg(), offset.reg(), Address::times_1, 0));
+          _masm->andl(val.reg(), 0x000000FF); // make sure value is one byte only
+          _masm->andl(field.reg(), 0xFFFFFF00); // mask out lower byte of target field
+          _masm->orl(field.reg(), val.reg()); // move value byte into target field
+          _masm->movl(Address(base.reg(), offset.reg(), Address::times_1, 0), field.reg());
+        }
+      }
+      // handle error cases if not uncommon
+      if (node->canFail() && !node->next(1)->isUncommonNode()) {
+        Label exit;
+        _masm->jmp(exit);
+        // error messages
+        if (!node->arg1_is_smi()) {
+          _masm->bind(indexNotSmi);
+          _masm->hlt();
+        }
+        if (!node->arg2_is_smi()) {
+          _masm->bind(valueNotSmi);
+          _masm->hlt();
+        }
+        // hack for now - jcc so mapping stays alive
+        // must do all the mapping in the program path taken - otherwise
+        // mappings are inconsistent
+        _masm->bind(exit);
+        Register r = def(error);
+        _masm->test(r, 0);
+        jcc(Assembler::notZero, node, node->next(1));
+      }
+    } break;
+    default:
+      ShouldNotReachHere();
   }
 }
-
 
 void CodeGenerator::anUncommonNode(UncommonNode* node) {
   //_currentMapping->saveRegisters();
@@ -2517,14 +2570,18 @@ void CodeGenerator::anUncommonNode(UncommonNode* node) {
   setMapping(NULL);
 }
 
-
 void CodeGenerator::aFixedCodeNode(FixedCodeNode* node) {
-  switch(node->kind()) {
-    case FixedCodeNode::dead_end:     _masm->hlt(); setMapping(NULL); break;
-    case FixedCodeNode::inc_counter:  incrementInvocationCounter(); break;
-    default:			      fatal1("unexpected FixedCodeNode kind %d", node->kind());
+  switch (node->kind()) {
+    case FixedCodeNode::dead_end:
+      _masm->hlt();
+      setMapping(NULL);
+      break;
+    case FixedCodeNode::inc_counter:
+      incrementInvocationCounter();
+      break;
+    default:
+      fatal1("unexpected FixedCodeNode kind %d", node->kind());
   }
 }
-
 
 #endif // DELTA_COMPILER

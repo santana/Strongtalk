@@ -28,8 +28,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 template <class E> class GrowableArray;
 
-class weakArrayKlass: public objArrayKlass {
- public:   
+class weakArrayKlass : public objArrayKlass {
+public:
   friend void set_weakArrayKlass_vtbl(Klass* k);
 
   char* name() const { return "weakArray"; }
@@ -42,11 +42,11 @@ class weakArrayKlass: public objArrayKlass {
   // Format
   Format format() { return weakArray_klass; }
 
-  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP 
+  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // testers
@@ -71,14 +71,14 @@ void set_weakArrayKlass_vtbl(Klass* k);
 // Scavenge and Mark Sweep use to disjunct parts of the interface.
 
 // Implementation note:
-//  During phase1 of Mark Sweep pointers are reversed and a objects 
+//  During phase1 of Mark Sweep pointers are reversed and a objects
 //  structure cannot be used (the klass pointer is gone). This makes
 //  it necessary to register weakArrays along with their non indexable sizes.
 //  'nis' contains the non indexable sizes.
 
 // Interface for weak array support
 class WeakArrayRegister : AllStatic {
- public:
+public:
   // Scavenge interface
   static void begin_scavenge();
   static bool scavenge_register(weakArrayOop obj);
@@ -89,11 +89,11 @@ class WeakArrayRegister : AllStatic {
   static bool mark_sweep_register(weakArrayOop obj, int non_indexable_size);
   static void check_and_follow_contents();
 
- private:
+private:
   // Variables
-  static bool                         during_registration;
+  static bool during_registration;
   static GrowableArray<weakArrayOop>* weakArrays;
-  static GrowableArray<intptr_t>*          nis;
+  static GrowableArray<intptr_t>* nis;
 
   // Scavenge operations
   static void scavenge_contents();
@@ -109,21 +109,22 @@ class WeakArrayRegister : AllStatic {
 // The NotificationQueue holds references to weakArrays
 // containing object with a near death experience.
 class NotificationQueue : AllStatic {
- public:
+public:
   // Queue operations
-  static void mark_elements();   // Marks all elements as queued (by using the sentinel bit)
-  static void clear_elements();  // Reset the sentinel bit
+  static void mark_elements(); // Marks all elements as queued (by using the sentinel bit)
+  static void clear_elements(); // Reset the sentinel bit
 
   static bool is_empty();
-  static oop  get();
+  static oop get();
   static void put(oop obj);
   static void put_if_absent(oop obj);
 
   // Memory management
   static void oops_do(void f(oop*));
- private:
+
+private:
   static oop* array;
-  static int size;  
+  static int size;
   static int first;
   static int last;
   static int succ(int index);

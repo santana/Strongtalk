@@ -24,17 +24,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifdef DELTA_COMPILER
 
 #include "compiler/slist.hpp"
-  
+
 GenericSListElem* GenericSList::findL(void* p) const {
   for (GenericSListElem* e = headL(); e; e = e->nextL()) {
-    if (e->dataL() == p) return e;
+    if (e->dataL() == p)
+      return e;
   }
   return NULL;
 }
 
 GenericSListElem* GenericSList::findL(void* token, slistFindFn f) const {
   for (GenericSListElem* e = headL(); e; e = e->nextL()) {
-    if (f(token, e->dataL())) return e;
+    if (f(token, e->dataL()))
+      return e;
   }
   return NULL;
 }
@@ -42,7 +44,8 @@ GenericSListElem* GenericSList::findL(void* token, slistFindFn f) const {
 void* GenericSList::nthL(int n) const {
   assert(n < length(), "non-existing element");
   GenericSListElem* e = headL();
-  for (int i = 0; i < n; i++, e = e->nextL()) ;
+  for (int i = 0; i < n; i++, e = e->nextL())
+    ;
   return e->dataL();
 }
 
@@ -64,7 +67,8 @@ void GenericSList::removeAfterL(GenericSListElem* e) {
   } else {
     GenericSListElem* deletee = e->nextL();
     e->_next = deletee->nextL();
-    if (deletee == tailL()) _tail = e;
+    if (deletee == tailL())
+      _tail = e;
     _len--;
   }
 }
@@ -72,29 +76,34 @@ void GenericSList::removeAfterL(GenericSListElem* e) {
 void GenericSList::removeL(void* p) {
   GenericSListElem* prev = NULL;
   GenericSListElem* e;
-  for (e = headL(); e && e->dataL() != p;
-       prev = e, e = e->nextL()) ;
-  if (e == NULL) fatal("not in list");
+  for (e = headL(); e && e->dataL() != p; prev = e, e = e->nextL())
+    ;
+  if (e == NULL)
+    fatal("not in list");
   removeAfterL(prev);
   assert(!includesL(p), "remove doesn't work");
 }
 
 void GenericSList::applyL(void f(void*)) {
-  GenericSListElem* nexte;	// to permit removing during iteration
+  GenericSListElem* nexte; // to permit removing during iteration
   for (GenericSListElem* e = headL(); e; e = nexte) {
     nexte = e->nextL();
     f(e->dataL());
   }
 }
 
-void GenericSList::print_short() { lprintf("GenericSList %#lx", this); }
+void GenericSList::print_short() {
+  lprintf("GenericSList %#lx", this);
+}
 
 static void print_them(void* p) {
-  ((PrintableResourceObj*)p)->print_short(); lprintf(" ");
+  ((PrintableResourceObj*)p)->print_short();
+  lprintf(" ");
 }
 
 void GenericSList::print() {
-  print_short(); lprintf(": ");
+  print_short();
+  lprintf(": ");
   ((GenericSList*)this)->applyL(print_them);
 }
 

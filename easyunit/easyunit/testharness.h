@@ -34,4 +34,3 @@ barthelemy@prologique.com
 #include "defaulttestprinter.h"
 
 #endif
-

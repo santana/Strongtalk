@@ -25,7 +25,7 @@ extern "C" int PRIM_API returnFirst2(int a, int b) {
   return a;
 }
 
-extern "C" int PRIM_API returnFirstPointer2(int *a, int b) {
+extern "C" int PRIM_API returnFirstPointer2(int* a, int b) {
   return *a;
 }
 
@@ -33,7 +33,7 @@ extern "C" int PRIM_API returnSecond2(int a, int b) {
   return b;
 }
 
-extern "C" int PRIM_API returnSecondPointer2(int a, int *b) {
+extern "C" int PRIM_API returnSecondPointer2(int a, int* b) {
   return *b;
 }
 
@@ -43,13 +43,13 @@ extern "C" int PRIM_API forceScavengeWA(int a, int b) {
 }
 
 extern "C" int PRIM_API argAlignment2(int a, int b) {
-  return ((intptr_t) &a) & 0xF;
+  return ((intptr_t)&a) & 0xF;
 }
 
 DECLARE(AlienIntegerCalloutWithArgumentsTests)
-HeapResourceMark *rm;
-GrowableArray<PersistentHandle**> *handles;
-PersistentHandle *resultAlien, *addressAlien, *pointerAlien, *functionAlien; 
+HeapResourceMark* rm;
+GrowableArray<PersistentHandle**>* handles;
+PersistentHandle *resultAlien, *addressAlien, *pointerAlien, *functionAlien;
 PersistentHandle *directAlien, *invalidFunctionAlien;
 smiOop smi0, smi1, smim1;
 static const int argCount = 2;
@@ -58,7 +58,7 @@ void* intPointerCalloutFunctions[argCount];
 oop zeroes[argCount];
 char address[16];
 
-void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize, void* ptr = NULL) {
+void allocateAlien(PersistentHandle*& alienHandle, int arraySize, int alienSize, void* ptr = NULL) {
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), alien);
   if (ptr)
@@ -80,7 +80,7 @@ void checkIntResult(char* message, int expected, PersistentHandle* alien) {
   snprintf(text, sizeof(text), "Should be: %d, was: %d", expected, actual);
   ASSERT_TRUE_M(actual == expected, text);
 }
-int asInt(bool &ok, oop intOop) {
+int asInt(bool& ok, oop intOop) {
   ok = true;
   if (intOop->is_smi())
     return smiOop(intOop)->value();
@@ -114,7 +114,7 @@ oop callout(oop arg[], oop result, oop address) {
 oop callout(oop arg[]) {
   return callout(arg, resultAlien->as_oop(), functionAlien->as_oop());
 }
-void checkArgnPassed(int argIndex, int argValue, void**functionArray) {
+void checkArgnPassed(int argIndex, int argValue, void** functionArray) {
   setAddress(functionAlien, functionArray[argIndex]);
   oop arg[argCount];
   for (int index = 0; index < argCount; index++)
@@ -124,7 +124,7 @@ void checkArgnPassed(int argIndex, int argValue, void**functionArray) {
   ASSERT_TRUE_M(result == resultAlien->as_oop(), "Should return result alien");
   checkIntResult("wrong result", argValue, resultAlien);
 }
-void checkArgnPtrPassed(int argIndex, oop pointer, void**functionArray) {
+void checkArgnPtrPassed(int argIndex, oop pointer, void** functionArray) {
   setAddress(functionAlien, functionArray[argIndex]);
   oop arg[argCount];
   for (int index = 0; index < argCount; index++)
@@ -149,25 +149,25 @@ SETUP(AlienIntegerCalloutWithArgumentsTests) {
   smi0 = as_smiOop(0);
   smi1 = as_smiOop(1);
   smim1 = as_smiOop(-1);
-  handles = new(true) GrowableArray<PersistentHandle**>(5);
+  handles = new (true) GrowableArray<PersistentHandle**>(5);
 
-  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst2);
-  allocateAlien(resultAlien,         12,  8);
-  allocateAlien(directAlien,         12,  4);
-  allocateAlien(addressAlien,         8, -4, &address);
-  allocateAlien(pointerAlien,         8,  0, &address);
-  allocateAlien(invalidFunctionAlien, 8,  0);
+  allocateAlien(functionAlien, 8, 0, (void*)&returnFirst2);
+  allocateAlien(resultAlien, 12, 8);
+  allocateAlien(directAlien, 12, 4);
+  allocateAlien(addressAlien, 8, -4, &address);
+  allocateAlien(pointerAlien, 8, 0, &address);
+  allocateAlien(invalidFunctionAlien, 8, 0);
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = (void *)returnFirst2;
-  intCalloutFunctions[1] = (void *)returnSecond2;
-  intPointerCalloutFunctions[0] = (void *)returnFirstPointer2;
-  intPointerCalloutFunctions[1] = (void *)returnSecondPointer2;
+  intCalloutFunctions[0] = (void*)returnFirst2;
+  intCalloutFunctions[1] = (void*)returnSecond2;
+  intPointerCalloutFunctions[0] = (void*)returnFirstPointer2;
+  intPointerCalloutFunctions[1] = (void*)returnSecondPointer2;
 }
 
-TEARDOWN(AlienIntegerCalloutWithArgumentsTests){
-  while(!handles->isEmpty())
+TEARDOWN(AlienIntegerCalloutWithArgumentsTests) {
+  while (!handles->isEmpty())
     release(handles->pop());
   free(handles);
   handles = NULL;
@@ -199,13 +199,14 @@ TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldC
     checkArgnPtrPassed(arg, pointerAlien->as_oop(), intPointerCalloutFunctions);
 }
 
-TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldCallFunctionAndIgnoreResultWhenResultAlienNil) {
+TESTF(AlienIntegerCalloutWithArgumentsTests,
+      alienCallResultWithArgumentsShouldCallFunctionAndIgnoreResultWhenResultAlienNil) {
   oop result = callout(zeroes, nilObj, functionAlien->as_oop());
   ASSERT_TRUE_M(!result->is_mark(), "should not be marked");
 }
 
 TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsWithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, (void *)&forceScavengeWA);
+  setAddress(functionAlien, (void*)&forceScavengeWA);
   checkIntResult("incorrect initialization", 0, resultAlien);
   oop result = callout(zeroes, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);
@@ -218,24 +219,27 @@ TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldR
 }
 
 TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldReturnMarkedResultForDirectAlien) {
-oop result = callout(zeroes,  resultAlien->as_oop(), resultAlien->as_oop());
+  oop result = callout(zeroes, resultAlien->as_oop(), resultAlien->as_oop());
 
   checkMarkedSymbol("illegal state", result, vmSymbols::illegal_state());
 }
 
-TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldReturnMarkedResultForNullFunctionPointer) {
+TESTF(AlienIntegerCalloutWithArgumentsTests,
+      alienCallResultWithArgumentsShouldReturnMarkedResultForNullFunctionPointer) {
   oop result = callout(zeroes, resultAlien->as_oop(), invalidFunctionAlien->as_oop());
 
   checkMarkedSymbol("illegal state", result, vmSymbols::illegal_state());
 }
 
-TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldReturnMarkedResultWhenResultNotAlienOrNil) {
+TESTF(AlienIntegerCalloutWithArgumentsTests,
+      alienCallResultWithArgumentsShouldReturnMarkedResultWhenResultNotAlienOrNil) {
   oop result = callout(zeroes, trueObj, functionAlien->as_oop());
 
   checkMarkedSymbol("wrong type", result, vmSymbols::first_argument_has_wrong_type());
 }
 
-TESTF(AlienIntegerCalloutWithArgumentsTests, alienCallResultWithArgumentsShouldReturnMarkedResultWhenFunctionParameterNotAlienOrSMI) {
+TESTF(AlienIntegerCalloutWithArgumentsTests,
+      alienCallResultWithArgumentsShouldReturnMarkedResultWhenFunctionParameterNotAlienOrSMI) {
   for (int arg = 0; arg < argCount; arg++)
     checkIllegalArgnPassed(arg, trueObj);
 }

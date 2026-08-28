@@ -32,7 +32,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 void VM_Operation::evaluate() {
-  EventMarker  em("VM operation %s", name());
+  EventMarker em("VM operation %s", name());
   ResourceMark rm;
   doit();
 }
@@ -45,7 +45,7 @@ void VM_Genesis::doit() {
 
 void VM_Scavenge::doit() {
   // For debugging gc-problems
-  if (false) { 
+  if (false) {
     ResourceMark rm;
     FlagSetting fs(PrintLongFrames, true);
     frame f = calling_process()->last_frame();
@@ -62,10 +62,10 @@ void VM_Scavenge::doit() {
     Processes::print();
     mystd->print_cr("******");
   }
-} 			
- 			
+}
+
 void VM_GarbageCollect::doit() {
-  *addr = MarkSweep::collect(*addr); 
+  *addr = MarkSweep::collect(*addr);
 }
 
 void VM_DeoptimizeStacks::doit() {
@@ -87,7 +87,7 @@ void VM_TerminateProcess::doit() {
 void VM_OptimizeMethod::doit() {
   if (_method->is_blockMethod()) {
     //Compiler c(closure, scope);
-    //return c.compile();  
+    //return c.compile();
     compiler_warning("can't recompile block yet");
     _nm = NULL;
     return;

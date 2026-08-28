@@ -65,35 +65,32 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Calling nmethods through a jump table will cost 10% of the total execution speed
 // (data provided by Urs 4-21-95)
 
+class AbstractCompiledIC : public NativeCall {
+public:
+  char* NLR_testcode() const { return ic_info_at(next_instruction_address())->NLR_target(); }
 
-class AbstractCompiledIC: public NativeCall {
- public:
-   char* NLR_testcode() const		{ return ic_info_at(next_instruction_address())->NLR_target(); }
-   
-   // returns the beginning of the inline cache. 
-   char* begin_addr() const		{ return instruction_address(); }
+  // returns the beginning of the inline cache.
+  char* begin_addr() const { return instruction_address(); }
 };
-
 
 // Flags
 
-const int dirty_send_bit_no		= 0;
-const int optimized_bit_no		= 1;
-const int uninlinable_bit_no		= 2;
-const int super_send_bit_no		= 3;
-const int megamorphic_bit_no		= 4;
-const int receiver_static_bit_no	= 5;
-
+const int dirty_send_bit_no = 0;
+const int optimized_bit_no = 1;
+const int uninlinable_bit_no = 2;
+const int super_send_bit_no = 3;
+const int megamorphic_bit_no = 4;
+const int receiver_static_bit_no = 5;
 
 // CompiledIC isn't a real object; the 'this' pointer points into the compiled code
 // (more precisely, it's the same as the return address of the callee)
 
-class CompiledIC: public AbstractCompiledIC {
- protected:
-  int compiler_info() const		{ return ic_info_at(next_instruction_address())->flags(); }
-  void set_compiler_info(int info)	{ ic_info_at(next_instruction_address())->set_flags(info); }
+class CompiledIC : public AbstractCompiledIC {
+protected:
+  int compiler_info() const { return ic_info_at(next_instruction_address())->flags(); }
+  void set_compiler_info(int info) { ic_info_at(next_instruction_address())->set_flags(info); }
 
- public:
+public:
   // lookup routines for empty inline cache
   static char* normalLookupRoutine();
   static char* superLookupRoutine();
@@ -106,85 +103,83 @@ class CompiledIC: public AbstractCompiledIC {
   // Accessors
 
   // isDirty() --> has had misses
-  bool isDirty() const			{ return isSet(compiler_info(), dirty_send_bit_no); }
-  void setDirty()			{ set_compiler_info(addNth(compiler_info(), dirty_send_bit_no)); }
+  bool isDirty() const { return isSet(compiler_info(), dirty_send_bit_no); }
+  void setDirty() { set_compiler_info(addNth(compiler_info(), dirty_send_bit_no)); }
 
   // isOptimized() --> nmethods called from here should be optimized
-  bool isOptimized() const		{ return isSet(compiler_info(), optimized_bit_no); }	
-  void setOptimized()			{ set_compiler_info(addNth(compiler_info(), optimized_bit_no)); }
-  void resetOptimized()			{ set_compiler_info(subNth(compiler_info(), optimized_bit_no)); }
+  bool isOptimized() const { return isSet(compiler_info(), optimized_bit_no); }
+  void setOptimized() { set_compiler_info(addNth(compiler_info(), optimized_bit_no)); }
+  void resetOptimized() { set_compiler_info(subNth(compiler_info(), optimized_bit_no)); }
 
   // isUninlinable() --> compiler says don't try to inline this send
-  bool isUninlinable() const		{ return isSet(compiler_info(), uninlinable_bit_no); }
-  
+  bool isUninlinable() const { return isSet(compiler_info(), uninlinable_bit_no); }
+
   // isSuperSend() --> send is a super send
-  bool isSuperSend() const		{ return isSet(compiler_info(), super_send_bit_no); }
+  bool isSuperSend() const { return isSet(compiler_info(), super_send_bit_no); }
 
   // isMegamorphic() --> send is megamorphic
-  bool isMegamorphic() const		{ return isSet(compiler_info(), megamorphic_bit_no); }	
-  void setMegamorphic()			{ set_compiler_info(addNth(compiler_info(), megamorphic_bit_no)); }
+  bool isMegamorphic() const { return isSet(compiler_info(), megamorphic_bit_no); }
+  void setMegamorphic() { set_compiler_info(addNth(compiler_info(), megamorphic_bit_no)); }
 
   // isReceiverStatic() --> receiver klass is known statically (connect to verifiedEntryPoint)
-  bool isReceiverStatic() const		{ return isSet(compiler_info(), receiver_static_bit_no); }	
-  void setReceiverStatic()		{ set_compiler_info(addNth(compiler_info(), receiver_static_bit_no)); }
+  bool isReceiverStatic() const { return isSet(compiler_info(), receiver_static_bit_no); }
+  void setReceiverStatic() { set_compiler_info(addNth(compiler_info(), receiver_static_bit_no)); }
 
   bool wasNeverExecuted() const;
 
-  InterpretedIC* inlineCache() const;	// corresponding source-level inline cache (NULL if none, e.g. perform)
-  PIC*	pic() const;			// NULL if 0 or 1 targets
-    
+  InterpretedIC* inlineCache() const; // corresponding source-level inline cache (NULL if none, e.g. perform)
+  PIC* pic() const; // NULL if 0 or 1 targets
+
   // returns the first address after this primitive ic
-  char* end_addr()			{ return ic_info_at(next_instruction_address())->next_instruction_address(); }
+  char* end_addr() { return ic_info_at(next_instruction_address())->next_instruction_address(); }
 
   // sets the destination of the call instruction
   void set_call_destination(char* entry_point);
 
   // Does a lookup in the receiver and patches the inline cache
   char* normalLookup(oop receiver);
-  char* superLookup (oop receiver);
+  char* superLookup(oop receiver);
 
   // Returns the class that holds the current method
   klassOop sending_method_holder();
 
   // replace appropriate target (with key nm->key) by nm
-  void replace(nmethod* nm);	
-  
- public:
-  symbolOop	selector() const;
-  bool 		is_empty() const;
-  bool 		is_monomorphic() const;
-  bool 		is_polymorphic() const;
-  bool 		is_megamorphic() const;
-  
-  nmethod* 	target() const;  	// directly called nmethod or NULL if none/PIC
-  klassOop	targetKlass() const;    // klass of compiled or interpreted target;
-					// can only call if single target
-  int 		ntargets() const;	// number of targets in inline cache or PIC
-  klassOop 	get_klass(int i) const; // receiver klass of ith target (i=0..ntargets()-1)
-  
+  void replace(nmethod* nm);
+
+public:
+  symbolOop selector() const;
+  bool is_empty() const;
+  bool is_monomorphic() const;
+  bool is_polymorphic() const;
+  bool is_megamorphic() const;
+
+  nmethod* target() const; // directly called nmethod or NULL if none/PIC
+  klassOop targetKlass() const; // klass of compiled or interpreted target;
+  // can only call if single target
+  int ntargets() const; // number of targets in inline cache or PIC
+  klassOop get_klass(int i) const; // receiver klass of ith target (i=0..ntargets()-1)
+
   // returns the lookup key for PIC index
-  LookupKey* 	key(int which, bool is_normal_send) const;
-  void 		reset_jump_addr();
-  void 		link(PIC* s);
-  void 		clear();		// clear inline cache
-  void 		cleanup();		// cleanup inline cache
+  LookupKey* key(int which, bool is_normal_send) const;
+  void reset_jump_addr();
+  void link(PIC* s);
+  void clear(); // clear inline cache
+  void cleanup(); // cleanup inline cache
 
   bool verify();
   void print();
 };
 
-inline CompiledIC* CompiledIC_from_return_addr(char* return_addr)
-{ 
-    return (CompiledIC*)nativeCall_from_return_address(return_addr);
+inline CompiledIC* CompiledIC_from_return_addr(char* return_addr) {
+  return (CompiledIC*)nativeCall_from_return_address(return_addr);
 }
 
-inline CompiledIC* CompiledIC_from_relocInfo(char* displacement_address)
-{
-    return (CompiledIC*)nativeCall_from_relocInfo(displacement_address);
+inline CompiledIC* CompiledIC_from_relocInfo(char* displacement_address) {
+  return (CompiledIC*)nativeCall_from_relocInfo(displacement_address);
 }
 
-class PrimitiveIC: public AbstractCompiledIC {
- public:
+class PrimitiveIC : public AbstractCompiledIC {
+public:
   // returns the primitive descriptor (based on the destination of the call).
   primitive_desc* primitive();
 
@@ -199,14 +194,12 @@ class PrimitiveIC: public AbstractCompiledIC {
   void print();
 };
 
-inline PrimitiveIC* PrimitiveIC_from_return_addr(char* return_addr)
-{ 
-    return (PrimitiveIC*)nativeCall_from_return_address(return_addr);
+inline PrimitiveIC* PrimitiveIC_from_return_addr(char* return_addr) {
+  return (PrimitiveIC*)nativeCall_from_return_address(return_addr);
 }
 
-  inline PrimitiveIC* PrimitiveIC_from_relocInfo(char* displacement_address)
-{
-    return (PrimitiveIC*)nativeCall_from_relocInfo(displacement_address);
+inline PrimitiveIC* PrimitiveIC_from_relocInfo(char* displacement_address) {
+  return (PrimitiveIC*)nativeCall_from_relocInfo(displacement_address);
 }
 
 #endif // DELTA_COMPILER

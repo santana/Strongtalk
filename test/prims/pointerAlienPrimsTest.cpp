@@ -15,48 +15,48 @@
 using namespace easyunit;
 
 DECLARE(PointerAlienPrimsTests)
-  HeapResourceMark *rm;
-  byteArrayOop alien, invalidAlien;
-  byteArrayOop largeUnsignedInteger;
-  byteArrayOop largeSignedInteger;
-  u_char alien_byte_region[16];
-  doubleOop    doubleValue;
+HeapResourceMark* rm;
+byteArrayOop alien, invalidAlien;
+byteArrayOop largeUnsignedInteger;
+byteArrayOop largeSignedInteger;
+u_char alien_byte_region[16];
+doubleOop doubleValue;
 
-  int asInteger(oop largeInteger, bool& ok) {
-    Integer* number = &byteArrayOop(largeInteger)->number();
-    return number->as_int(ok);
-  }
-  void checkLargeInteger(oop result, int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
-    bool ok;
-    int actual = asInteger(result, ok);
-    ASSERT_TRUE_M(ok, "should be integer");
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
-  void checkLargeUnsigned(oop result, unsigned int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
-    bool ok;
-    unsigned int actual = byteArrayOop(result)->number().as_unsigned_int(ok);
-    ASSERT_TRUE_M(ok, "should be integer");
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
-  void checkSmallInteger(oop result, int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_smi(), "Should be small integer");
-    int actual = smiOop(result)->value();
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
-  void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
-    char text[200];
-    ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
-    ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
-  }
+int asInteger(oop largeInteger, bool& ok) {
+  Integer* number = &byteArrayOop(largeInteger)->number();
+  return number->as_int(ok);
+}
+void checkLargeInteger(oop result, int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
+  bool ok;
+  int actual = asInteger(result, ok);
+  ASSERT_TRUE_M(ok, "should be integer");
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
+void checkLargeUnsigned(oop result, unsigned int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
+  bool ok;
+  unsigned int actual = byteArrayOop(result)->number().as_unsigned_int(ok);
+  ASSERT_TRUE_M(ok, "should be integer");
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
+void checkSmallInteger(oop result, int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_smi(), "Should be small integer");
+  int actual = smiOop(result)->value();
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
+void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
+  char text[200];
+  ASSERT_TRUE_M(result->is_mark(), "Should be marked");
+  snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+  ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
+}
 END_DECLARE
 
 SETUP(PointerAlienPrimsTests) {
@@ -85,7 +85,7 @@ SETUP(PointerAlienPrimsTests) {
   byteArrayPrimitives::alienSetAddress(as_smiOop(0), invalidAlien);
 }
 
-TEARDOWN(PointerAlienPrimsTests){
+TEARDOWN(PointerAlienPrimsTests) {
   delete rm;
   rm = NULL;
 }
@@ -99,21 +99,21 @@ TESTF(PointerAlienPrimsTests, alienUnsignedByteAtPutShouldSetUnsignedByte) {
 
 TESTF(PointerAlienPrimsTests, alienUnsignedByteAtPutShouldReturnAssignedByte) {
   oop result = byteArrayPrimitives::alienUnsignedByteAtPut(as_smiOop(255), as_smiOop(1), alien);
-  
+
   checkSmallInteger(result, 255);
 }
 
 TESTF(PointerAlienPrimsTests, alienSignedByteAtShouldReturnCorrectByte) {
   byteArrayPrimitives::alienUnsignedByteAtPut(as_smiOop(255), as_smiOop(1), alien);
   oop result = byteArrayPrimitives::alienSignedByteAt(as_smiOop(1), alien);
-  
+
   checkSmallInteger(result, -1);
 }
 
 TESTF(PointerAlienPrimsTests, alienSignedByteAtPutShouldSetCorrectByte) {
   byteArrayPrimitives::alienSignedByteAtPut(as_smiOop(-1), as_smiOop(1), alien);
   oop result = byteArrayPrimitives::alienSignedByteAt(as_smiOop(1), alien);
-  
+
   checkSmallInteger(result, -1);
 }
 
@@ -201,7 +201,7 @@ TESTF(PointerAlienPrimsTests, alienUnsignedByteAtShouldReturnMarkedSymbolWhenAdd
 }
 
 TESTF(PointerAlienPrimsTests, alienUnsignedByteAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienUnsignedByteAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienUnsignedByteAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -213,7 +213,7 @@ TESTF(PointerAlienPrimsTests, alienSignedByteAtShouldReturnMarkedSymbolWhenAddre
 }
 
 TESTF(PointerAlienPrimsTests, alienSignedByteAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienSignedByteAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienSignedByteAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -225,7 +225,7 @@ TESTF(PointerAlienPrimsTests, alienUnsignedShortAtShouldReturnMarkedSymbolWhenAd
 }
 
 TESTF(PointerAlienPrimsTests, alienUnsignedShortAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienUnsignedShortAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienUnsignedShortAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -237,7 +237,7 @@ TESTF(PointerAlienPrimsTests, alienSignedShortAtShouldReturnMarkedSymbolWhenAddr
 }
 
 TESTF(PointerAlienPrimsTests, alienSignedShortAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienSignedShortAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienSignedShortAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -249,7 +249,7 @@ TESTF(PointerAlienPrimsTests, alienUnsignedLongAtShouldReturnMarkedSymbolWhenAdd
 }
 
 TESTF(PointerAlienPrimsTests, alienUnsignedLongAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienUnsignedLongAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienUnsignedLongAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -261,7 +261,7 @@ TESTF(PointerAlienPrimsTests, alienSignedLongAtShouldReturnMarkedSymbolWhenAddre
 }
 
 TESTF(PointerAlienPrimsTests, alienSignedLongAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienSignedLongAtPut(as_smiOop(1), as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienSignedLongAtPut(as_smiOop(1), as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -273,7 +273,7 @@ TESTF(PointerAlienPrimsTests, alienDoubleAtShouldReturnMarkedSymbolWhenAddressIn
 }
 
 TESTF(PointerAlienPrimsTests, alienDoubleAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienDoubleAtPut(doubleValue, as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienDoubleAtPut(doubleValue, as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }
@@ -285,7 +285,7 @@ TESTF(PointerAlienPrimsTests, alienFloatAtShouldReturnMarkedSymbolWhenAddressInv
 }
 
 TESTF(PointerAlienPrimsTests, alienFloatAtPutShouldReturnMarkedSymbolWhenAddressInvalid) {
-  oop result = byteArrayPrimitives::alienFloatAtPut(doubleValue, as_smiOop(1),invalidAlien);
+  oop result = byteArrayPrimitives::alienFloatAtPut(doubleValue, as_smiOop(1), invalidAlien);
 
   checkMarkedSymbol("invalid address", result, vmSymbols::illegal_state());
 }

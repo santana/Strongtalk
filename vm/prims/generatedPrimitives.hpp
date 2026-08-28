@@ -39,15 +39,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // 3. implement the primitive code generator
 // 4. call the generator in init()
 
-class PrimitivesGenerator: StackObj {
+class PrimitivesGenerator : StackObj {
 
-  MacroAssembler* masm;			
-  Address nil_addr()		{ return Address(intptr_t(&nilObj), relocInfo::external_word_type); }
-  Address true_addr()		{ return Address(intptr_t(&trueObj), relocInfo::external_word_type); }
-  Address false_addr()		{ return Address(intptr_t(&falseObj), relocInfo::external_word_type); }
-  Address smiKlass_addr()	{ return Address(intptr_t(&smiKlassObj), relocInfo::external_word_type); }
-  Address doubleKlass_addr()	{ return Address(intptr_t(&doubleKlassObj), relocInfo::external_word_type); }
-  Address contextKlass_addr()	{ return Address(intptr_t(&contextKlassObj), relocInfo::external_word_type); }
+  MacroAssembler* masm;
+  Address nil_addr() { return Address(intptr_t(&nilObj), relocInfo::external_word_type); }
+  Address true_addr() { return Address(intptr_t(&trueObj), relocInfo::external_word_type); }
+  Address false_addr() { return Address(intptr_t(&falseObj), relocInfo::external_word_type); }
+  Address smiKlass_addr() { return Address(intptr_t(&smiKlassObj), relocInfo::external_word_type); }
+  Address doubleKlass_addr() { return Address(intptr_t(&doubleKlassObj), relocInfo::external_word_type); }
+  Address contextKlass_addr() { return Address(intptr_t(&contextKlassObj), relocInfo::external_word_type); }
 
   Label error_receiver_has_wrong_type;
   Label error_first_argument_has_wrong_type;
@@ -57,19 +57,19 @@ class PrimitivesGenerator: StackObj {
 
   void scavenge(int size);
   void test_for_scavenge(Register dst, int size, Label& need_scavenge);
-  
- protected:
+
+protected:
   PrimitivesGenerator(MacroAssembler* _masm) { masm = _masm; }
 
   enum arith_op {
-      op_add,
-      op_sub,
-      op_mul,
-      op_div
+    op_add,
+    op_sub,
+    op_mul,
+    op_div
   };
-  
+
   // add generators here
-  void  error_jumps();
+  void error_jumps();
 
   char* smiOopPrimitives_add();
   char* smiOopPrimitives_subtract();
@@ -78,36 +78,42 @@ class PrimitivesGenerator: StackObj {
   char* smiOopPrimitives_div();
   char* smiOopPrimitives_quo();
   char* smiOopPrimitives_remainder();
-  
+
   char* double_op(arith_op op);
   char* double_from_smi();
-  
+
   char* primitiveNew(int n);
   char* allocateBlock(int n);
   char* allocateContext_var();
   char* allocateContext(int n);
-// slr perf testing
+  // slr perf testing
   char* inline_allocation();
-//
+  //
   friend class GeneratedPrimitives;
 };
 
-class GeneratedPrimitives: AllStatic {
- private:
+class GeneratedPrimitives : AllStatic {
+private:
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   // AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
   // bytes), so the generated primitives need a larger code buffer.
-  enum { _code_size = 40000 };
+  enum {
+    _code_size = 40000
+  };
 #elif DELTA_X86_64
   // x86-64 allocation stubs use 64-bit (REX.W) instructions throughout,
   // making them ~30% larger than the x86-32 versions.
-  enum { _code_size = 16384 };
+  enum {
+    _code_size = 16384
+  };
 #else
-  enum { _code_size = 8192 };			// simply increase if too small (assembler will crash if too small)
+  enum {
+    _code_size = 8192
+  }; // simply increase if too small (assembler will crash if too small)
 #endif
-  static bool _is_initialized;			// true if GeneratedPrimitives has been initialized
-//  static char _code[_code_size];		// the code buffer for the primitives
-  static char* _code;		// the code buffer for the primitives
+  static bool _is_initialized; // true if GeneratedPrimitives has been initialized
+  //  static char _code[_code_size];		// the code buffer for the primitives
+  static char* _code; // the code buffer for the primitives
 
   // add entry points here
   static char* _allocateContext_var;
@@ -119,7 +125,7 @@ class GeneratedPrimitives: AllStatic {
   static char* _smiOopPrimitives_div;
   static char* _smiOopPrimitives_quo;
   static char* _smiOopPrimitives_remainder;
-  
+
   static char* _double_add;
   static char* _double_subtract;
   static char* _double_multiply;
@@ -135,21 +141,20 @@ class GeneratedPrimitives: AllStatic {
   // helpers for generation and patch
   static char* patch(char* name, char* entry_point);
   static char* patch(char* name, char* entry_point, int argument);
-  static oop   invoke(char* op, oop receiver, oop argument);
+  static oop invoke(char* op, oop receiver, oop argument);
   friend class PrimitivesGenerator;
 
- public:
-
+public:
   static void set_primitiveValue(int n, char* entry_point);
 
   // add entry point accessors here
   static char* primitiveValue(int n);
   static char* primitiveNew(int n);
   static char* allocateBlock(int n);
-  static char* allocateContext(int n); 	// -1 for variable size
+  static char* allocateContext(int n); // -1 for variable size
 
   // Support for profiling
-  static bool contains(char* pc)            	{ return (_code <= pc) && (pc < &_code[_code_size]); }
+  static bool contains(char* pc) { return (_code <= pc) && (pc < &_code[_code_size]); }
 
   // Support for compiler constant folding
   static oop smiOopPrimitives_add(oop receiver, oop argument);
@@ -161,6 +166,6 @@ class GeneratedPrimitives: AllStatic {
   static oop smiOopPrimitives_remainder(oop receiver, oop argument);
 
   static void patch_primitiveValue();
-  static void init();				// must be called in system initialization phase
+  static void init(); // must be called in system initialization phase
 };
 #endif // _GENERATED_PRIMITIVES_HPP

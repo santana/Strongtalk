@@ -35,7 +35,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 //char* boot_filename = "delta.bst";
 char* boot_filename = SYSTEM_NAME ".bst";
-char* rc_filename   = "." SYSTEM_NAME "rc";
+char* rc_filename = "." SYSTEM_NAME "rc";
 
 static void set_bool_flag(char* name, bool value) {
   bool s = value;
@@ -50,11 +50,13 @@ static void set_int_flag(char* name, int value) {
 }
 
 static void process_token(char* token) {
-       if (token[0] == '-') set_bool_flag(&token[1], false);
-  else if (token[0] == '+') set_bool_flag(&token[1], true);
+  if (token[0] == '-')
+    set_bool_flag(&token[1], false);
+  else if (token[0] == '+')
+    set_bool_flag(&token[1], true);
   else {
     char name[100];
-    int  value;
+    int value;
     if (sscanf(token, "%[a-zA-Z]=%d", name, &value) == 2) {
       set_int_flag(name, value);
     }
@@ -64,42 +66,45 @@ static void process_token(char* token) {
 void process_settings_file(char* file_name, bool quiet) {
   FILE* stream = fopen(file_name, "rb");
   if (stream == NULL) {
-    if (quiet) return;
+    if (quiet)
+      return;
     fprintf(stderr, "Could not open %s\n", file_name);
     exit(-1);
   }
 
   char token[1024];
-  int  pos = 0;
+  int pos = 0;
 
   bool in_white_space = true;
-  bool in_comment     = false;
+  bool in_comment = false;
 
   int c = getc(stream);
-  while(c != EOF) {
+  while (c != EOF) {
     if (in_white_space) {
       if (in_comment) {
-	if (c == '\n') in_comment = false;
+        if (c == '\n')
+          in_comment = false;
       } else {
-        if (c == '#') in_comment = true;
+        if (c == '#')
+          in_comment = true;
         else if (!isspace(c)) {
           in_white_space = false;
-	  token[pos++] = c;
+          token[pos++] = c;
         }
       }
     } else {
       if (isspace(c)) {
         token[pos] = '\0';
         process_token(token);
-	pos = 0;
-	in_white_space = true;
+        pos = 0;
+        in_white_space = true;
       } else {
         token[pos++] = c;
       }
     }
     c = getc(stream);
   }
-  if (pos>0) {
+  if (pos > 0) {
     token[pos] = '\0';
     process_token(token);
   }
@@ -128,10 +133,10 @@ void parse_arguments(int argc, char* argv[]) {
 
   if (argc > 1 && strcmp(argv[1], "-t") == 0) {
     fprintf(stdout, "Timers turned off, flags file and -f arguments are ignored.\n");
-    UseTimers   = false;
+    UseTimers = false;
     EnableTasks = false;
     parse_files = false;
-  } 
+  }
 
   if (parse_files) {
     process_settings_file(rc_filename, true);
@@ -148,30 +153,31 @@ void parse_arguments(int argc, char* argv[]) {
       index++;
       if (index >= argc) {
         fprintf(stderr, "file name expected after '-b'\n");
-	exit(-1);
+        exit(-1);
       }
       boot_filename = argv[index];
     } else if (strcmp(argv[index], "-f") == 0) {
       index++;
       if (index >= argc) {
         fprintf(stderr, "file name expected after '-f'\n");
-	exit(-1);
+        exit(-1);
       }
       if (parse_files) {
         process_settings_file(argv[index], true);
       }
     } else if (strcmp(argv[index], "-script") == 0) {
-       // The script file name is read and processed by Smalltalk
-       // code, not here.  Here we just recognize it and skip over it.
+      // The script file name is read and processed by Smalltalk
+      // code, not here.  Here we just recognize it and skip over it.
       index++;
       if (index >= argc) {
         fprintf(stderr, "file name expected after '-script'\n");
-	exit(-1);
+        exit(-1);
       }
     } else if (strcmp(argv[index], "-benchmark") == 0) {
-	// signals to ignore the rest of the command line, which will be 
-	// interpreted by Smalltalk code as benchmark commands.
-	return;
-    } else process_token(argv[index]);
+      // signals to ignore the rest of the command line, which will be
+      // interpreted by Smalltalk code as benchmark commands.
+      return;
+    } else
+      process_token(argv[index]);
   }
 }

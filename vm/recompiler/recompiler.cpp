@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #ifdef DELTA_COMPILER
 
 #include "code/nmethod.hpp"
@@ -45,16 +44,17 @@ RecompilationPolicy::RecompilationPolicy(RFrame* first) {
   stack->push(first);
 }
 
-
 Recompilee* RecompilationPolicy::findRecompilee() {
   RFrame* rf = stack->at(0);
   if (PrintRecompilation2) {
-    for (int i = 0; i < 10 && rf; i++, rf = senderOf(rf)) ;   // create 10 frames
+    for (int i = 0; i < 10 && rf; i++, rf = senderOf(rf))
+      ; // create 10 frames
     printStack();
   }
   RFrame* r = findTopInlinableFrame();
   if (r) {
-    if (PrintRecompilation) r->print();
+    if (PrintRecompilation)
+      r->print();
     return Recompilee::new_Recompilee(r);
   } else {
     return NULL;
@@ -63,21 +63,22 @@ Recompilee* RecompilationPolicy::findRecompilee() {
 
 void RecompilationPolicy::cleanupStaleInlineCaches() {
   int len = min(20, stack->length());
-  for (int i = 0; i < len; i++) stack->at(i)->cleanupStaleInlineCaches();
+  for (int i = 0; i < len; i++)
+    stack->at(i)->cleanupStaleInlineCaches();
 }
 
 RFrame* RecompilationPolicy::findTopInlinableFrame() {
   // go up the stack until finding a frame that (probably) won't be inlined into its caller
   RecompilerInliningPolicy p;
-  RFrame* current = stack->at(0);	// current choice for stopping
-  RFrame* prev = NULL;			// prev. value of current
-  RFrame* prevMethod = NULL;		// same as prev, except always holds method frames (not blocks)
-  msg = NULL; 
-  
+  RFrame* current = stack->at(0); // current choice for stopping
+  RFrame* prev = NULL; // prev. value of current
+  RFrame* prevMethod = NULL; // same as prev, except always holds method frames (not blocks)
+  msg = NULL;
+
   while (1) {
     if (current == NULL) {
       // reached end of stack without finding a candidate
-      current = prev; 
+      current = prev;
       break;
     }
 
@@ -91,48 +92,52 @@ RFrame* RecompilationPolicy::findTopInlinableFrame() {
 
     if (next) {
       if (next->num() > MaxRecompilationSearchLength) {
-	// don't go up too high when searching for recompilees
-	msg = "(don't go up any further: next > MaxRecompilationSearchLength)";
-	break;
+        // don't go up too high when searching for recompilees
+        msg = "(don't go up any further: next > MaxRecompilationSearchLength)";
+        break;
       }
       if (next->distance() > MaxInterpretedSearchLength) {
-	// don't go up too high when searching for recompilees
-	msg = "(don't go up any further: next > MaxInterpretedSearchLength)";
-	break;
+        // don't go up too high when searching for recompilees
+        msg = "(don't go up any further: next > MaxInterpretedSearchLength)";
+        break;
       }
       if (current->is_interpreted()) {
-	// Before recompiling any compiled code (next or its callers), first compile the interpreted
-	// method; later, if that gets executed often, it will trigger another recompile that 
-	// will lead to next (or its caller) to be reoptimized.  At that point, optimization can take
-	// advantage of the better type information in the compiled version of current
-	LookupKey* k = next->key();
-	if (next->is_compiled()) {
-	  msg = "(not going up into optimized code)";
-	  break;
-	} else if (k != NULL && Universe::code->lookup(k) != NULL) {
-	  msg = "(already compiled this method)";
-	  break;
-	} 
+        // Before recompiling any compiled code (next or its callers), first compile the interpreted
+        // method; later, if that gets executed often, it will trigger another recompile that
+        // will lead to next (or its caller) to be reoptimized.  At that point, optimization can take
+        // advantage of the better type information in the compiled version of current
+        LookupKey* k = next->key();
+        if (next->is_compiled()) {
+          msg = "(not going up into optimized code)";
+          break;
+        } else if (k != NULL && Universe::code->lookup(k) != NULL) {
+          msg = "(already compiled this method)";
+          break;
+        }
       }
       if (next->is_compiled() && (msg = shouldNotRecompileNMethod(next->nm())) != NULL) {
-	msg = "nmethod should not be recompiled; don't go up";
-	break;
+        msg = "nmethod should not be recompiled; don't go up";
+        break;
       }
       if (next->is_compiled() && next->sends() < MinSendsBeforeRecompile) {
-	msg = "don't recompile -- hasn't sent MinSendsBeforeRecompile messages yet";
-	if (PrintRecompilation && msg) current->print();
-	break;
+        msg = "don't recompile -- hasn't sent MinSendsBeforeRecompile messages yet";
+        if (PrintRecompilation && msg)
+          current->print();
+        break;
       }
     }
     prev = current;
-    
-    if (!current->is_blockMethod()) prevMethod = current;
+
+    if (!current->is_blockMethod())
+      prevMethod = current;
     current = next;
   }
 
-  if (current) checkCurrent(current, prev, prevMethod);
+  if (current)
+    checkCurrent(current, prev, prevMethod);
 
-  if (PrintRecompilation && msg) lprintf("%s\n", msg);
+  if (PrintRecompilation && msg)
+    lprintf("%s\n", msg);
 
   return current;
 }
@@ -142,19 +147,24 @@ void RecompilationPolicy::checkCurrent(RFrame*& current, RFrame*& prev, RFrame*&
   if (current->is_blockMethod() && current->is_interpreted()) {
     // can't recompile blocks in isolation, and this block is too big to inline
     // thus, optimize method called by block
-    if (PrintRecompilation && msg) lprintf("%s\n", msg);
+    if (PrintRecompilation && msg)
+      lprintf("%s\n", msg);
     fixBlockParent(current);
     if (prev && !prev->is_blockMethod()) {
-      current = prev; prev = prevMethod = NULL;
-      if (current) checkCurrent(current, prev, prevMethod);
+      current = prev;
+      prev = prevMethod = NULL;
+      if (current)
+        checkCurrent(current, prev, prevMethod);
       msg = "(can't recompile block in isolation)";
     } else {
       current = NULL;
       msg = "(can't recompile block in isolation, and no callee method found)";
     }
   } else if (current->is_super()) {
-    current = prev; prev = prevMethod = NULL;
-    if (current) checkCurrent(current, prev, prevMethod);
+    current = prev;
+    prev = prevMethod = NULL;
+    if (current)
+      checkCurrent(current, prev, prevMethod);
     msg = "(can't recompile super nmethods yet)";
   } else if (current->is_compiled()) {
     char* msg2;
@@ -166,22 +176,25 @@ void RecompilationPolicy::checkCurrent(RFrame*& current, RFrame*& prev, RFrame*&
       msg = NULL;
     }
   }
-  if (current == NULL) return;	    
+  if (current == NULL)
+    return;
 
   // check if we already recompiled this method (but old one is still on the stack)
   // Inserted after several hours of debugging by Lars
   if (current->is_compiled()) {
     if (EnableOptimizedCodeRecompilation) {
-      LookupKey* k          = current->key();
-      nmethod*   running_nm = current->nm();
-      nmethod*   newest_nm  = k ? Universe::code->lookup(k) : NULL;
+      LookupKey* k = current->key();
+      nmethod* running_nm = current->nm();
+      nmethod* newest_nm = k ? Universe::code->lookup(k) : NULL;
       // NB: newest_nm is always NULL for block nmethods
       if (k && running_nm && running_nm->is_method() && running_nm != newest_nm) {
         // ideally, should determine how many stack frames nm covers, then recompile
         // the next frame
         // for now, try previous method frame
-        current = prevMethod; prev = prevMethod = NULL;
-        if (current) checkCurrent(current, prev, prevMethod);
+        current = prevMethod;
+        prev = prevMethod = NULL;
+        if (current)
+          checkCurrent(current, prev, prevMethod);
       }
     } else {
       current = NULL;
@@ -194,7 +207,7 @@ char* RecompilationPolicy::shouldNotRecompileNMethod(nmethod* nm) {
   if (nm->isUncommonRecompiled()) {
     if (RecompilationPolicy::shouldRecompileUncommonNMethod(nm)) {
       nm->makeOld();
-      return NULL;	  // ok
+      return NULL; // ok
     } else {
       return "uncommon nmethod too young";
     }
@@ -210,7 +223,8 @@ char* RecompilationPolicy::shouldNotRecompileNMethod(nmethod* nm) {
 
 RFrame* RecompilationPolicy::senderOf(RFrame* rf) {
   RFrame* sender = rf->caller();
-  if (sender && sender->num() == stack->length()) stack->push(sender);
+  if (sender && sender->num() == stack->length())
+    stack->push(sender);
   return sender;
 }
 
@@ -223,8 +237,7 @@ void RecompilationPolicy::fixBlockParent(RFrame* rf) {
   count += Interpreter::get_invocation_counter_limit();
   count = min(count, methodOopDesc::_invocation_count_max - 1);
   home->set_invocation_count(count);
-  assert(home->invocation_count() >= Interpreter::get_invocation_counter_limit(),
-         "counter increment didn't work");
+  assert(home->invocation_count() >= Interpreter::get_invocation_counter_limit(), "counter increment didn't work");
 }
 
 RFrame* RecompilationPolicy::senderOrParentOf(RFrame* rf) {
@@ -236,7 +249,7 @@ RFrame* RecompilationPolicy::senderOrParentOf(RFrame* rf) {
     if (parent == NULL) {
       // can't find the parent (e.g. because it's a non-LIFO block)
       fixBlockParent(rf);
-      return senderOf(rf);	// is this a good idea???
+      return senderOf(rf); // is this a good idea???
       // It may be; this way, a parent-less block doesn't prevent its callers from being
       // optimized; on the other hand, it may lead to too much compilation since what we
       // really want to do is recompile the parent.  On the third hand, if a block is non-lifo
@@ -244,11 +257,12 @@ RFrame* RecompilationPolicy::senderOrParentOf(RFrame* rf) {
       // But on the fourth hand, to optimize any block its enclosing method must be optimized.
     } else {
       if (parent->is_compiled() == rf->is_compiled()) {
-	// try to optimize the parent
-        if (CountParentLinksAsOne) parent->set_distance(rf->distance() + 1);
-	return parent;
+        // try to optimize the parent
+        if (CountParentLinksAsOne)
+          parent->set_distance(rf->distance() + 1);
+        return parent;
       } else {
-        return senderOf(rf);	// try sender
+        return senderOf(rf); // try sender
       }
     }
   } else if (rf->hasBlockArgs()) {
@@ -260,10 +274,13 @@ RFrame* RecompilationPolicy::senderOrParentOf(RFrame* rf) {
       blockClosureOop blk = blockArgs->at(i);
       //jumpTableEntry* e = blk->jump_table_entry();
       RFrame* home = parentOfBlock(blk);
-      if (home == NULL) continue;
-      if (max == NULL || home->num() > max->num()) max = home;
+      if (home == NULL)
+        continue;
+      if (max == NULL || home->num() > max->num())
+        max = home;
     }
-    if (max) return max;
+    if (max)
+      return max;
   }
   // default: return sender
   return senderOf(rf);
@@ -283,8 +300,9 @@ RFrame* RecompilationPolicy::parentOf(RFrame* rf) {
   // Yes this assumes that the caller invokes primitiveValue on self; if we change that the
   // code here breaks.
 
-  deltaVFrame* sender = rf->top_vframe()->sender_delta_frame();  
-  if (sender == NULL) return NULL;
+  deltaVFrame* sender = rf->top_vframe()->sender_delta_frame();
+  if (sender == NULL)
+    return NULL;
 
   oop blk = sender->receiver();
   guarantee(blk->is_block(), "should be a block");
@@ -292,36 +310,41 @@ RFrame* RecompilationPolicy::parentOf(RFrame* rf) {
 }
 
 RFrame* RecompilationPolicy::parentOfBlock(blockClosureOop blk) {
-  if (blk->is_pure()) return NULL;
-  
+  if (blk->is_pure())
+    return NULL;
+
   contextOop ctx = blk->lexical_scope();
   assert(ctx->is_context(), "make sure we have a context");
 
   void** fp = ctx->parent_fp();
   if (fp == NULL) {
-    return NULL;	// non-LIFO block
-  } 
+    return NULL; // non-LIFO block
+  }
   // try to find context's RFrame
   RFrame* parent = stack->first();
-  for (int i = 0; i < MaxRecompilationSearchLength; i++ ) {
+  for (int i = 0; i < MaxRecompilationSearchLength; i++) {
     parent = senderOf(parent);
-    if (!parent) break;
+    if (!parent)
+      break;
     frame fr = parent->fr();
-    if (fr.fp() == fp) return parent;	// found it!
+    if (fr.fp() == fp)
+      return parent; // found it!
   }
-  return NULL;	  // parent not found
+  return NULL; // parent not found
 }
 
-
-void RecompilationPolicy::printStack() {	// for debugging
-  for (int i = 0; i < stack->length(); i++ ) stack->at(i)->print();
+void RecompilationPolicy::printStack() { // for debugging
+  for (int i = 0; i < stack->length(); i++)
+    stack->at(i)->print();
 }
 
 bool RecompilationPolicy::needRecompileCounter(Compiler* c) {
-  if (!UseRecompilation) return false;
-  if (c->version() == MaxVersions) return false;    // to prevent endless recompilation
+  if (!UseRecompilation)
+    return false;
+  if (c->version() == MaxVersions)
+    return false; // to prevent endless recompilation
   // also stop counting for "perfect" nmethods where nothing more can be optimized
-  // NB: it is tempting to leave counters in very small methods (so that e.g. accessor functions 
+  // NB: it is tempting to leave counters in very small methods (so that e.g. accessor functions
   // still trigger counters), but that won't work if they're invoked from megamorphic
   // call sites --> put the counters in the caller, not the callee.
   return c->level() < MaxRecompilationLevels - 1;
@@ -346,19 +369,21 @@ bool RecompilationPolicy::shouldRecompileUncommonNMethod(nmethod* nm) {
   // of optimize -- uncommon recompile -- reoptimize.
   const int v = nm->version();
   const int c = nm->invocation_count();
-  return  c >= uncommonNMethodInvocationLimit(v) ||
+  return c >= uncommonNMethodInvocationLimit(v) ||
          (c >= UncommonInvocationLimit && nm->age() > uncommonNMethodAgeLimit(v));
 }
 
 int RecompilationPolicy::uncommonNMethodInvocationLimit(int version) {
   int n = UncommonInvocationLimit;
-  for (int i = 0; i < version; i++) n *= UncommonAgeBackoffFactor;
+  for (int i = 0; i < version; i++)
+    n *= UncommonAgeBackoffFactor;
   return n;
 }
 
 int RecompilationPolicy::uncommonNMethodAgeLimit(int version) {
   int n = NMethodAgeLimit;
-  for (int i = 0; i < version; i++) n *= UncommonAgeBackoffFactor;
+  for (int i = 0; i < version; i++)
+    n *= UncommonAgeBackoffFactor;
   return n;
 }
 

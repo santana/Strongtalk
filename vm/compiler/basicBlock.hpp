@@ -24,7 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifndef _BASIC_BLOCK_HPP
 #define _BASIC_BLOCK_HPP
 
-// BBs (Basic Blocks) are used by the Compiler to perform local optimizations 
+// BBs (Basic Blocks) are used by the Compiler to perform local optimizations
 // and code generation
 
 #ifdef DELTA_COMPILER
@@ -35,28 +35,37 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class NodeVisitor;
 
-class BB: public PrintableResourceObj {
- protected:
+class BB : public PrintableResourceObj {
+protected:
   bool _visited;
 
- public:			// was protected: originally
-  Node	*first, *last;
-  int16	nnodes;			// number of nodes in this BB
- protected:
-  int16	_id;			// unique BB id
-  int16	_loopDepth;		// the loop nesting level
-  int16	_genCount;		// code already generated?
+public: // was protected: originally
+  Node *first, *last;
+  int16 nnodes; // number of nodes in this BB
+protected:
+  int16 _id; // unique BB id
+  int16 _loopDepth; // the loop nesting level
+  int16 _genCount; // code already generated?
 
- public:	
-  BBDUTable  duInfo;		// defs/uses of PRegs
-  static int genCounter;	// to enumerate BBs in code-generation order
+public:
+  BBDUTable duInfo; // defs/uses of PRegs
+  static int genCounter; // to enumerate BBs in code-generation order
 
- public:
-  BB(Node* f, Node* l, int n) { init(f, l, n); _visited = false; }
+public:
+  BB(Node* f, Node* l, int n) {
+    init(f, l, n);
+    _visited = false;
+  }
 
-  BB*  after_visit()			{ _visited = true;  return this; }
-  BB*  before_visit()			{ _visited = false; return this; }
-  bool visited() const			{ return _visited; }
+  BB* after_visit() {
+    _visited = true;
+    return this;
+  }
+  BB* before_visit() {
+    _visited = false;
+    return this;
+  }
+  bool visited() const { return _visited; }
 
   // successor/predecessor functionality
   bool hasSingleSuccessor() const;
@@ -70,11 +79,11 @@ class BB: public PrintableResourceObj {
   BB* next(int i) const;
   BB* firstPrev() const;
   BB* prev(int i) const;
-   
-  int  id() const 		{ return _id; }
-  int  loopDepth() const 	{ return _loopDepth; }
-  void setGenCount()		{ _genCount = genCounter++; }
-  int  genCount() const 	{ return _genCount; }
+
+  int id() const { return _id; }
+  int loopDepth() const { return _loopDepth; }
+  void setGenCount() { _genCount = genCounter++; }
+  int genCount() const { return _genCount; }
 
   void localCopyPropagate();
   void bruteForceCopyPropagate();
@@ -82,18 +91,18 @@ class BB: public PrintableResourceObj {
   void makeUses();
   Use* addUse(NonTrivialNode* n, PReg* r, bool soft = false);
   Def* addDef(NonTrivialNode* n, PReg* r);
-  void remove(Node* n);				// remove node
-  void addAfter(Node* prev, Node* newNode);	// add node after prev
-  void localAlloc(GrowableArray<BitVector*>* hardwired, 
-    		  GrowableArray<PReg*>* localRegs,
-		  GrowableArray<BitVector*>* lives);
- protected:
+  void remove(Node* n); // remove node
+  void addAfter(Node* prev, Node* newNode); // add node after prev
+  void localAlloc(GrowableArray<BitVector*>* hardwired, GrowableArray<PReg*>* localRegs,
+                  GrowableArray<BitVector*>* lives);
+
+protected:
   void init(Node* f, Node* l, int n);
-  void slowLocalAlloc(GrowableArray<BitVector*>* hardwired, 
-    		      GrowableArray<PReg*>* localRegs,
-		      GrowableArray<BitVector*>* lives);
+  void slowLocalAlloc(GrowableArray<BitVector*>* hardwired, GrowableArray<PReg*>* localRegs,
+                      GrowableArray<BitVector*>* lives);
   void doAlloc(PReg* r, Location l);
- public:
+
+public:
   void computeEscapingBlocks(GrowableArray<BlockPReg*>* l);
 
   void apply(NodeVisitor* v);
@@ -106,50 +115,50 @@ class BB: public PrintableResourceObj {
   void print_code(bool suppressTrivial);
   void print();
 
- protected:
+protected:
   int addUDHelper(PReg* r);
   void renumber();
   friend class BBIterator;
 };
 
-
 typedef void (*BBDoFn)(BB* b);
 
-  
-class BBIterator: public PrintableResourceObj {
-  Node* _first;						// first node 
- public:						// was protected: originally
-  GrowableArray<BB*>* bbTable;				// BBs sorted in topological order
-  int bbCount;						// number of BBs
-  GrowableArray<PReg*>* pregTable;			// holds all PRegs; indexed by their id
-  GrowableArray<PReg*>* globals;			// holds globally allocated PRegs; indexed by
-    							// their num()
-  bool usesBuilt; 	    				// true after uses have been built
-  bool blocksBuilt; 	    				// true after basic blocks have been built
-  GrowableArray<BlockPReg*>* exposedBlks;		// list of escaping blocks
+class BBIterator : public PrintableResourceObj {
+  Node* _first; // first node
+public: // was protected: originally
+  GrowableArray<BB*>* bbTable; // BBs sorted in topological order
+  int bbCount; // number of BBs
+  GrowableArray<PReg*>* pregTable; // holds all PRegs; indexed by their id
+  GrowableArray<PReg*>* globals; // holds globally allocated PRegs; indexed by
+  // their num()
+  bool usesBuilt; // true after uses have been built
+  bool blocksBuilt; // true after basic blocks have been built
+  GrowableArray<BlockPReg*>* exposedBlks; // list of escaping blocks
 
- public:
+public:
   BBIterator() {
-    bbTable = NULL; bbCount = 0; usesBuilt = blocksBuilt = false;
+    bbTable = NULL;
+    bbCount = 0;
+    usesBuilt = blocksBuilt = false;
   }
 
-  void build(Node* first);				// build bbTable
+  void build(Node* first); // build bbTable
 
- protected:
+protected:
   void buildBBs();
   void buildTable();
 
   static BB* bb_for(Node* n);
   void add_BBs_to_list(GrowableArray<BB*>& list, GrowableArray<BB*>& work);
 
- public:
-  bool isSequential(int curr, int next) const;		// are the two BB indices sequential in bbTable order?
-  bool isSequentialCode(BB* curr, BB* next) const;	// are the two BBs sequential in codeGen order?
-  GrowableArray<BB*>* code_generation_order();		// list of BBs in code generation order
+public:
+  bool isSequential(int curr, int next) const; // are the two BB indices sequential in bbTable order?
+  bool isSequentialCode(BB* curr, BB* next) const; // are the two BBs sequential in codeGen order?
+  GrowableArray<BB*>* code_generation_order(); // list of BBs in code generation order
 
-  void clear();   	    	    			// clear bbTable
+  void clear(); // clear bbTable
   void apply(BBDoFn f);
-    
+
   void makeUses();
   void eliminateUnneededResults();
   void computeEscapingBlocks();
@@ -168,7 +177,6 @@ class BBIterator: public PrintableResourceObj {
 };
 
 extern BBIterator* bbIterator;
-
 
 // NodeVisitor
 
@@ -210,19 +218,19 @@ class FixedCodeNode;
 class NopNode;
 class CommentNode;
 
-
-class NodeVisitor: public ResourceObj {
- public:
+class NodeVisitor : public ResourceObj {
+public:
   // Basic blocks
-  virtual void beginOfBasicBlock(Node* node) = 0;	// called for the first node in a BB, before the node's method is called
-  virtual void endOfBasicBlock(Node* node) = 0;		// called for the last node in a BB, after the node's method was called
-  
- public:
-  // For all nodes
-  virtual void beginOfNode(Node* node) = 0;		// called for each node, before the node's method is called
-  virtual void endOfNode(Node* node) = 0;		// called for each node, after the node's method was called
+  virtual void
+  beginOfBasicBlock(Node* node) = 0; // called for the first node in a BB, before the node's method is called
+  virtual void endOfBasicBlock(Node* node) = 0; // called for the last node in a BB, after the node's method was called
 
- public:
+public:
+  // For all nodes
+  virtual void beginOfNode(Node* node) = 0; // called for each node, before the node's method is called
+  virtual void endOfNode(Node* node) = 0; // called for each node, after the node's method was called
+
+public:
   // Individual nodes
   virtual void aPrologueNode(PrologueNode* node) = 0;
 
@@ -233,20 +241,20 @@ class NodeVisitor: public ResourceObj {
   virtual void anAssignNode(AssignNode* node) = 0;
   virtual void aStoreOffsetNode(StoreOffsetNode* node) = 0;
   virtual void aStoreUplevelNode(StoreUplevelNode* node) = 0;
-  
+
   virtual void anArithRRNode(ArithRRNode* node) = 0;
   virtual void aFloatArithRRNode(FloatArithRRNode* node) = 0;
   virtual void aFloatUnaryArithNode(FloatUnaryArithNode* node) = 0;
   virtual void anArithRCNode(ArithRCNode* node) = 0;
   virtual void aTArithRRNode(TArithRRNode* node) = 0;
-  
+
   virtual void aContextCreateNode(ContextCreateNode* node) = 0;
   virtual void aContextInitNode(ContextInitNode* node) = 0;
   virtual void aContextZapNode(ContextZapNode* node) = 0;
 
   virtual void aBlockCreateNode(BlockCreateNode* node) = 0;
   virtual void aBlockMaterializeNode(BlockMaterializeNode* node) = 0;
-  
+
   virtual void aSendNode(SendNode* node) = 0;
   virtual void aPrimNode(PrimNode* node) = 0;
   virtual void aDLLNode(DLLNode* node) = 0;
@@ -257,12 +265,12 @@ class NodeVisitor: public ResourceObj {
   virtual void aNLRSetupNode(NLRSetupNode* node) = 0;
   virtual void anInlinedReturnNode(InlinedReturnNode* node) = 0;
   virtual void aNLRContinuationNode(NLRContinuationNode* node) = 0;
-  
+
   virtual void aBranchNode(BranchNode* node) = 0;
   virtual void aTypeTestNode(TypeTestNode* node) = 0;
   virtual void aNLRTestNode(NLRTestNode* node) = 0;
   virtual void aMergeNode(MergeNode* node) = 0;
-  
+
   virtual void anArrayAtNode(ArrayAtNode* node) = 0;
   virtual void anArrayAtPutNode(ArrayAtPutNode* node) = 0;
 
@@ -273,7 +281,6 @@ class NodeVisitor: public ResourceObj {
   virtual void aNopNode(NopNode* node) = 0;
   virtual void aCommentNode(CommentNode* node) = 0;
 };
-
 
 #endif // DELTA_COMPILER
 #endif // _BASIC_BLOCK_HPP

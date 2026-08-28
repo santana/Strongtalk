@@ -37,16 +37,16 @@ class TypeTestNode;
 class ContextInitNode;
 class Inliner;
 
-class NodeBuilder: public CustomizedMethodClosure {
- private:
-  ExprStack*	_exprStack;		// current expression stack
-  Inliner*	_inliner;		// my inliner
-  InlinedScope*	_scope;			// scope for which this NodeBuilder is generating code
-  Node*		_current;		// where new nodes are appended
+class NodeBuilder : public CustomizedMethodClosure {
+private:
+  ExprStack* _exprStack; // current expression stack
+  Inliner* _inliner; // my inliner
+  InlinedScope* _scope; // scope for which this NodeBuilder is generating code
+  Node* _current; // where new nodes are appended
 
-  void append_exit(Node* exitNode);	// append an exit node (UncommonNode, Return, etc.)
+  void append_exit(Node* exitNode); // append an exit node (UncommonNode, Return, etc.)
   void append1(Node* node);
-  void branch (MergeNode* target);
+  void branch(MergeNode* target);
   void comment(char* s);
   GrowableArray<PReg*>* copyCurrentExprStack();
   void access_temporary(int no, int context, bool push);
@@ -56,48 +56,55 @@ class NodeBuilder: public CustomizedMethodClosure {
   GrowableArray<NonTrivialNode*>* nodesBetween(Node* from, Node* to);
   MergeNode* insertMergeBefore(Node* n);
   Expr* copy_into_context(Expr* e, int no);
-  void materialize(PReg* r, GrowableArray<BlockPReg*>* materialized);	// materialize block (always call before storing/assigning PReg)
+  void
+  materialize(PReg* r,
+              GrowableArray<BlockPReg*>* materialized); // materialize block (always call before storing/assigning PReg)
 
-  bool abortIfDead(Expr* e);						// helper function for dead code handling
-  void generate_subinterval(MethodInterval* m, bool produces_result);	// generate subinterval (e.g., code in then branch)
-  void constant_if_node(IfNode* node, ConstantExpr* cond);		// code for if with const condition
-  TypeTestNode* makeTestNode(bool cond, PReg* r);			// make boolean type test node
+  bool abortIfDead(Expr* e); // helper function for dead code handling
+  void generate_subinterval(MethodInterval* m,
+                            bool produces_result); // generate subinterval (e.g., code in then branch)
+  void constant_if_node(IfNode* node, ConstantExpr* cond); // code for if with const condition
+  TypeTestNode* makeTestNode(bool cond, PReg* r); // make boolean type test node
 
   // for Inliner
   void gen_normal_send(SendInfo* info, int nofArgs, SAPReg* result);
-  void gen_self_send  (SendInfo* info, int nofArgs, SAPReg* result);
-  void gen_super_send (SendInfo* info, int nofArgs, SAPReg* result);
+  void gen_self_send(SendInfo* info, int nofArgs, SAPReg* result);
+  void gen_super_send(SendInfo* info, int nofArgs, SAPReg* result);
 
   friend class Inliner;
   friend class CompilerInliningPolicy;
   friend class PrimInliner;
- protected:
+
+protected:
   void abort();
 
- public:
-  static Node*	EndOfCode;		// "at end of code" marker
-  
+public:
+  static Node* EndOfCode; // "at end of code" marker
+
   NodeBuilder();
   void initialize(InlinedScope* scope);
 
-  InlinedScope* scope() const		{ return _scope; }
-  ExprStack* exprStack() const		{ return _exprStack; }
-  Node* current() const			{ return _current; }
-  void setCurrent(Node* n)		{ assert(n != EndOfCode, "bad node"); _current = n; }
-  void append (Node* node);		// append a node
-  bool is_in_dead_code() const		{ return _current == EndOfCode; }
-  Inliner* inliner() const		{ return _inliner; }
-  void removeContextCreation();		// remove context creation node 
+  InlinedScope* scope() const { return _scope; }
+  ExprStack* exprStack() const { return _exprStack; }
+  Node* current() const { return _current; }
+  void setCurrent(Node* n) {
+    assert(n != EndOfCode, "bad node");
+    _current = n;
+  }
+  void append(Node* node); // append a node
+  bool is_in_dead_code() const { return _current == EndOfCode; }
+  Inliner* inliner() const { return _inliner; }
+  void removeContextCreation(); // remove context creation node
   PReg* float_at(int fno);
 
- public:
+public:
   void if_node(IfNode* node);
   void cond_node(CondNode* node);
   void while_node(WhileNode* node);
   void primitive_call_node(PrimitiveCallNode* node);
   void dll_call_node(DLLCallNode* node);
 
- public:
+public:
   void allocate_temporaries(int nofTemps);
 
   void push_self();
@@ -118,8 +125,8 @@ class NodeBuilder: public CustomizedMethodClosure {
   void pop();
 
   void normal_send(InterpretedIC* ic);
-  void self_send  (InterpretedIC* ic);
-  void super_send (InterpretedIC* ic);
+  void self_send(InterpretedIC* ic);
+  void super_send(InterpretedIC* ic);
 
   void double_equal();
   void double_not_equal();
@@ -148,7 +155,6 @@ class NodeBuilder: public CustomizedMethodClosure {
   void float_unaryToOop(Floats::Function f, int fno);
   void float_binaryToOop(Floats::Function f, int fno);
 };
-
 
 #endif // DELTA_COMPILER
 #endif // _NODE_BUILDER_HPP

@@ -35,16 +35,19 @@ void processOopDesc::bootstrap_object(bootstrap* st) {
 }
 
 symbolOop processOopDesc::status_symbol() {
-  if (!is_live()) return vmSymbols::dead();
+  if (!is_live())
+    return vmSymbols::dead();
   return process()->status_symbol();
 }
 
 double processOopDesc::user_time() {
-  if (!is_live()) return 0.0;
+  if (!is_live())
+    return 0.0;
   return process()->user_time();
 }
 
 double processOopDesc::system_time() {
-  if (!is_live()) return 0.0;
+  if (!is_live())
+    return 0.0;
   return process()->system_time();
 }

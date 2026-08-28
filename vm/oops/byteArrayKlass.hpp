@@ -28,24 +28,23 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/byteArrayOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class byteArrayKlass: public memOopKlass {
- public:
+class byteArrayKlass : public memOopKlass {
+public:
   // allocation properties
   bool can_inline_allocation() const { return false; }
 
   // Return the oop size for a byteArrayOop
   int object_size(int number_of_bytes) const {
-    return   non_indexable_size() + 1
-           + roundTo(number_of_bytes, image_oop_size) / image_oop_size;
+    return non_indexable_size() + 1 + roundTo(number_of_bytes, image_oop_size) / image_oop_size;
   }
 
   // Layout
-  int length_offset() const		{ return non_indexable_size(); }
-  int array_offset() const		{ return non_indexable_size() + 1; }
+  int length_offset() const { return non_indexable_size(); }
+  int array_offset() const { return non_indexable_size() + 1; }
 
   // creation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
-  oop allocateObjectSize(int bytes, bool permit_scavenge=true, bool tenured = false);
+  oop allocateObjectSize(int bytes, bool permit_scavenge = true, bool tenured = false);
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -62,13 +61,13 @@ class byteArrayKlass: public memOopKlass {
 
   char* name() const { return "byteArray"; }
 
- // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP 
- public:
+  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
+public:
   // accessors
-  int  oop_size(oop obj) const { return object_size(byteArrayOop(obj)->length()); }
+  int oop_size(oop obj) const { return object_size(byteArrayOop(obj)->length()); }
 
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
 
   bool oop_verify(oop obj);
   void oop_print_value_on(oop obj, outputStream* st);
@@ -83,7 +82,6 @@ class byteArrayKlass: public memOopKlass {
   // testers
   bool oop_is_byteArray() const { return true; }
   bool oop_is_indexable() const { return true; }
-
 };
 void set_byteArrayKlass_vtbl(Klass* k);
 #endif // _BYTE_ARRAY_KLASS_HPP

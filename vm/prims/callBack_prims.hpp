@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for call back
 
 class callBackPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -80,6 +81,5 @@ class callBackPrimitives : AllStatic {
   //   Internal { name = 'callBackPrimitives::invokeC' }
   //%
   static PRIM_DECL_1(invokeC, oop proxy);
-
- }; 
+};
 #endif // _CALLBACK_PRIMS_HPP

@@ -47,7 +47,11 @@ namespace easyunit {
  * telling if there was a failure/error or not at the global
  * level.
  */
-enum headerLevel {complete,normal,off};
+enum headerLevel {
+  complete,
+  normal,
+  off
+};
 
 /**
  * This is the default testprinter used by easyunit testregistry
@@ -63,63 +67,61 @@ enum headerLevel {complete,normal,off};
  * The default header level is normal and by default, the testprinter
  * does not print details about each success.
  */
-class DefaultTestPrinter : public TestPrinter
-{
-	public:
-	
-	/**
+class DefaultTestPrinter : public TestPrinter {
+public:
+  /**
 	 * Default constructor that sets the header level
 	 * to normal and the output source to the standard
 	 * output.
 	 */
-		DefaultTestPrinter();
-		
-	/**
+  DefaultTestPrinter();
+
+  /**
 	 * Empty destructor.
 	 */
-		virtual ~DefaultTestPrinter();
-	/**
+  virtual ~DefaultTestPrinter();
+  /**
 	 * Prints a header depending of the header level and
 	 * details about each test to the output_.
 	 *
 	 * @param testResult Results of all tests that were ran.
 	 */
-		virtual void print(const TestResult *testResult);	
-		
-	/**
+  virtual void print(const TestResult* testResult);
+
+  /**
 	 * Set the header level of the printer.
 	 *
 	 * @param level Header level that will be used during print()
 	 */
-		void setHeaderLevel(headerLevel level);
-		
-	/**
+  void setHeaderLevel(headerLevel level);
+
+  /**
 	 * Set whether or not the printer should display the details
 	 * of test that succeeded.
 	 *
 	 * @param show Set to true to display details about success
 	 */
-		void showSuccessDetail(bool show);
-		
-	/**
+  void showSuccessDetail(bool show);
+
+  /**
 	 * Set the output to which the printer will print results.
 	 *
 	 * @param output Output used to print the results
 	 */
-		void setOutput(FILE *output);
-		
-	protected:
-		virtual void printHeader(const TestResult *testResult);
-		virtual void printTests(TestCase *testCase);
-		virtual void printResults(Test *test);
-		virtual void printCompleteHeader(const TestResult *testResult);
-		virtual void printNormalHeader(const TestResult *testResult);
-		int testsTotal_;
-		int testFailuresTotal_;
-		int failuresTotal_;
-		headerLevel level_;
-		bool showSuccessDetail_;
-		FILE *output_;
+  void setOutput(FILE* output);
+
+protected:
+  virtual void printHeader(const TestResult* testResult);
+  virtual void printTests(TestCase* testCase);
+  virtual void printResults(Test* test);
+  virtual void printCompleteHeader(const TestResult* testResult);
+  virtual void printNormalHeader(const TestResult* testResult);
+  int testsTotal_;
+  int testFailuresTotal_;
+  int failuresTotal_;
+  headerLevel level_;
+  bool showSuccessDetail_;
+  FILE* output_;
 };
 
 } // EasyUnit ns

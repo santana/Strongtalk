@@ -12,19 +12,19 @@
 using namespace easyunit;
 
 DECLARE(UncommonSendNodeTests)
-  HeapResourceMark *mark;
-  UncommonSendNode* node;
-  GrowableArray<PReg*>* exprStack;
-  Notifier* saved;
-  TestNotifier* notifier;
-  InlinedScope* topScope;
-  BB* bb;
-  void checkSingleUse(int index, Node* expected) {
-    DUInfo* info = bb->duInfo.info->at(index);
-    ASSERT_EQUALS(1, info->uses.length());
-    Use* use = info->uses.at(0);
-    ASSERT_TRUE(expected == use->node);
-  }
+HeapResourceMark* mark;
+UncommonSendNode* node;
+GrowableArray<PReg*>* exprStack;
+Notifier* saved;
+TestNotifier* notifier;
+InlinedScope* topScope;
+BB* bb;
+void checkSingleUse(int index, Node* expected) {
+  DUInfo* info = bb->duInfo.info->at(index);
+  ASSERT_EQUALS(1, info->uses.length());
+  Use* use = info->uses.at(0);
+  ASSERT_TRUE(expected == use->node);
+}
 END_DECLARE
 
 SETUP(UncommonSendNodeTests) {
@@ -35,7 +35,7 @@ SETUP(UncommonSendNodeTests) {
 
   LookupKey key(klassOop(Universe::find_global("Object")), reinterpret_cast<oop>(oopFactory::new_symbol("=")));
   LookupResult result = lookupCache::lookup(&key);
-  
+
   theCompiler = new Compiler(&key, result.method());
   topScope = theCompiler->topScope;
   theCompiler->enterScope(topScope);
@@ -45,7 +45,7 @@ SETUP(UncommonSendNodeTests) {
   exprStack = new GrowableArray<PReg*>(10);
 }
 
-TEARDOWN(UncommonSendNodeTests){
+TEARDOWN(UncommonSendNodeTests) {
   theCompiler = NULL;
   node = NULL;
   Notifier::current = saved;
@@ -143,7 +143,6 @@ TESTF(UncommonSendNodeTests, makeUsesShouldAddUseForOneArgument) {
   ASSERT_EQUALS(1, bb->duInfo.info->length());
   checkSingleUse(0, node);
 }
-
 
 TESTF(UncommonSendNodeTests, makeUsesShouldAddUseForTwoArguments) {
   PReg* arg1 = new PReg(topScope);

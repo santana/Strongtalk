@@ -13,14 +13,14 @@ using namespace easyunit;
 
 extern "C" int expansion_count;
 DECLARE(ObjectArrayPrimsTests)
-  klassOop arrayClass;
+klassOop arrayClass;
 END_DECLARE
 
 SETUP(ObjectArrayPrimsTests) {
   arrayClass = klassOop(Universe::find_global("Array"));
 }
 
-TEARDOWN(ObjectArrayPrimsTests){
+TEARDOWN(ObjectArrayPrimsTests) {
   MarkSweep::collect();
 }
 

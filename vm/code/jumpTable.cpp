@@ -40,25 +40,24 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 static const char halt_instruction = '\xF4';
 static const char jump_instruction = '\xE9';
 
-
 char* jumpTable::allocate_jump_entries(int size) {
-//  return AllocateHeap(size * jumpTableEntry::size(), "jump table");
+  //  return AllocateHeap(size * jumpTableEntry::size(), "jump table");
   return os::exec_memory(size * jumpTableEntry::size()); //, "jump table");
 }
 
 jumpTableEntry* jumpTable::jump_entry_for_at(char* entries, int index) {
-  return (jumpTableEntry*) &entries[index * jumpTableEntry::size()];
+  return (jumpTableEntry*)&entries[index * jumpTableEntry::size()];
 }
 
 jumpTable::jumpTable() {
-  length  = Universe::current_sizes.jump_table_size;
+  length = Universe::current_sizes.jump_table_size;
   assert(length < 32 * K, "must change code to handle >32K entries");
   entries = allocate_jump_entries(length);
   init();
 }
 
 jumpTableID jumpTable::allocate(int number_of_entries) {
-  int id                = newID();
+  int id = newID();
   jumpTableEntry* entry = major_at(id);
 
   assert(entry->is_unused(), "cannot allocate used jump entry");
@@ -70,23 +69,26 @@ jumpTableID jumpTable::allocate(int number_of_entries) {
     // Initialize the first entry as a nmethod stub
     jump_entry_for_at(new_block, 0)->initialize_nmethod_stub(NULL);
     // initialize the rest as block closure stubs
-    for(int i = 1; i < number_of_entries; i++) {
+    for (int i = 1; i < number_of_entries; i++) {
       jump_entry_for_at(new_block, i)->initialize_block_closure_stub();
     }
     entry->initialize_as_link(new_block);
-    return jumpTableID(id,0);
+    return jumpTableID(id, 0);
   }
 }
 
-jumpTable::~jumpTable() { free(entries); }
+jumpTable::~jumpTable() {
+  free(entries);
+}
 
-jumpTableEntry* jumpTable::major_at(u_short index) { 
+jumpTableEntry* jumpTable::major_at(u_short index) {
   return jump_entry_for_at(entries, index);
 }
 
 jumpTableEntry* jumpTable::at(jumpTableID id) {
   assert(id.is_valid(), "invalid ID");
-  if (!id.has_minor()) return major_at(id.major_version());
+  if (!id.has_minor())
+    return major_at(id.major_version());
   return jump_entry_for_at(major_at(id._major)->link(), id._minor);
 }
 
@@ -95,12 +97,13 @@ void jumpTable::init() {
   // of next free element, etc.
   firstFree = usedIDs = 0;
   for (int i = 0; i < length; i++)
-    major_at(i)->initialize_as_unused(i+1);
+    major_at(i)->initialize_as_unused(i + 1);
 }
 
 int jumpTable::newID() {
   int id = firstFree;
-  if (id >= length - 2) fatal("grow not implemented");
+  if (id >= length - 2)
+    fatal("grow not implemented");
   firstFree = major_at(firstFree)->next_free();
   usedIDs++;
   return id;
@@ -113,7 +116,7 @@ int jumpTable::peekID() {
 void jumpTable::freeID(int index) {
   assert(index >= 0 && index < length && index != firstFree, "invalid ID");
   if (major_at(index)->is_link()) {
-    // free the chunk 
+    // free the chunk
     free(major_at(index)->link());
   }
   major_at(index)->initialize_as_unused(firstFree);
@@ -145,7 +148,7 @@ char* jumpTable::compile_new_block(blockClosureOop blk) {
 nmethod* jumpTable::compile_block(blockClosureOop closure) {
   // compute the scope for noninlined block
   int index;
-  nmethod* parent = closure->jump_table_entry()->parent_nmethod(index); 
+  nmethod* parent = closure->jump_table_entry()->parent_nmethod(index);
   NonInlinedBlockScopeDesc* scope = parent->noninlined_block_scope_at(index);
 
   // save it in case it gets flushed during allocation!
@@ -164,22 +167,22 @@ nmethod* jumpTable::compile_block(blockClosureOop closure) {
   return nm;
 }
 
-static const char nmethod_entry        = 0;
-static const char block_closure_entry  = 1;
-static const char link_entry           = 2;
-static const char unused_entry         = 3;
+static const char nmethod_entry = 0;
+static const char block_closure_entry = 1;
+static const char link_entry = 2;
+static const char unused_entry = 3;
 
 inline jumpTableEntry* jumpTableEntry::previous_stub() const {
-  return (jumpTableEntry*) (((char*) this) - size());
+  return (jumpTableEntry*)(((char*)this) - size());
 }
 
 inline jumpTableEntry* jumpTableEntry::next_stub() const {
-  return (jumpTableEntry*) (((char*) this) + size());
+  return (jumpTableEntry*)(((char*)this) + size());
 }
 void jumpTableEntry::fill_entry(char instr, char* dest, char state) {
-  *jump_inst_addr()   = instr;
+  *jump_inst_addr() = instr;
   *destination_addr() = dest;
-  *state_addr()       = state;
+  *state_addr() = state;
 }
 
 void jumpTableEntry::initialize_as_unused(int index) {
@@ -191,16 +194,14 @@ void jumpTableEntry::initialize_as_link(char* link) {
 }
 
 void jumpTableEntry::initialize_nmethod_stub(char* dest) {
-  fill_entry(jump_instruction, dest - (intptr_t) state_addr(), nmethod_entry);
+  fill_entry(jump_instruction, dest - (intptr_t)state_addr(), nmethod_entry);
 }
 
 void jumpTableEntry::initialize_block_closure_stub() {
-  fill_entry(jump_instruction,
-	     StubRoutines::compile_block_entry() - (intptr_t) state_addr(),
-             block_closure_entry);
+  fill_entry(jump_instruction, StubRoutines::compile_block_entry() - (intptr_t)state_addr(), block_closure_entry);
 }
 
-bool jumpTableEntry::is_nmethod_stub() const { 
+bool jumpTableEntry::is_nmethod_stub() const {
   return state() == nmethod_entry;
 }
 
@@ -208,11 +209,11 @@ bool jumpTableEntry::is_block_closure_stub() const {
   return state() == block_closure_entry;
 }
 
-bool jumpTableEntry::is_unused() const { 
+bool jumpTableEntry::is_unused() const {
   return state() == unused_entry;
 }
 
-bool jumpTableEntry::is_link() const { 
+bool jumpTableEntry::is_link() const {
   return state() == link_entry;
 }
 
@@ -220,21 +221,21 @@ char* jumpTableEntry::link() const {
   return *destination_addr();
 }
 
-char** jumpTableEntry::destination_addr() const { 
-  return (char**) (((char*) this) + sizeof(char));
+char** jumpTableEntry::destination_addr() const {
+  return (char**)(((char*)this) + sizeof(char));
 }
 
 char* jumpTableEntry::destination() const {
-  return *destination_addr() + (intptr_t) state_addr();
+  return *destination_addr() + (intptr_t)state_addr();
 }
 
 void jumpTableEntry::set_destination(char* dest) {
-  *destination_addr() = dest - (intptr_t) state_addr();
+  *destination_addr() = dest - (intptr_t)state_addr();
 }
 
 intptr_t jumpTableEntry::next_free() const {
   assert(is_unused(), "must be a unused entry");
-  return (intptr_t) *destination_addr();
+  return (intptr_t)*destination_addr();
 }
 
 nmethod* jumpTableEntry::method() const {
@@ -279,8 +280,7 @@ jumpTableEntry* jumpTableEntry::parent_entry(int& index) const {
   do {
     index++;
     result = result->previous_stub();
-  }
-  while(result->is_block_closure_stub());
+  } while (result->is_block_closure_stub());
   return result;
 }
 
@@ -289,8 +289,8 @@ nmethod* jumpTableEntry::parent_nmethod(int& index) const {
 }
 
 void jumpTableEntry::print() {
-  if (is_unused()) { 
-    mystd->print_cr("Unused {next = %d}", (intptr_t) destination());
+  if (is_unused()) {
+    mystd->print_cr("Unused {next = %d}", (intptr_t)destination());
     return;
   }
   if (is_nmethod_stub()) {
@@ -339,22 +339,27 @@ void jumpTableEntry::verify() {
   if (is_nmethod_stub()) {
     // Check nmethod
     char* addr = destination();
-    if (!Universe::code->contains(addr)) report_verify_error("nmethod not in zone");
-    if (method()->entryPoint() != addr)  report_verify_error("destination doesn't point to beginning of nmethod");
+    if (!Universe::code->contains(addr))
+      report_verify_error("nmethod not in zone");
+    if (method()->entryPoint() != addr)
+      report_verify_error("destination doesn't point to beginning of nmethod");
     return;
   }
 
   if (is_link()) {
     // Verify the elements in the list {nmethod} {block_closure}+
     jumpTableEntry* head = jumpTable::jump_entry_for_at(link(), 0);
-    if (!head->is_nmethod_stub()) report_verify_error("must be nmethod stub");
+    if (!head->is_nmethod_stub())
+      report_verify_error("must be nmethod stub");
     head->verify();
     nmethod* nm = method();
-    if (!nm->has_noninlined_blocks()) report_verify_error("nmethod must have noninlined blocks");
+    if (!nm->has_noninlined_blocks())
+      report_verify_error("nmethod must have noninlined blocks");
     for (int index = 1; index <= nm->number_of_noninlined_blocks(); index++) {
-       jumpTableEntry* son = jumpTable::jump_entry_for_at(link(), index);
-       if (!son->is_block_closure_stub()) report_verify_error("must be block closure stub");
-       son->verify();
+      jumpTableEntry* son = jumpTable::jump_entry_for_at(link(), index);
+      if (!son->is_block_closure_stub())
+        report_verify_error("must be block closure stub");
+      son->verify();
     }
     return;
   }
@@ -366,7 +371,7 @@ void jumpTableEntry::verify() {
         report_verify_error("destination points neither into zone nor to compile stub");
     } else {
       nmethod* nm = block_nmethod();
-      if (nm->entryPoint() != addr) 
+      if (nm->entryPoint() != addr)
         report_verify_error("destination doesn't point to beginning of nmethod");
     }
     return;
@@ -376,7 +381,7 @@ void jumpTableEntry::verify() {
 }
 
 void jumpTable::verify() {
-/*
+  /*
   ResourceMark rm;
   int prev = -1;
   bool* check = NEW_RESOURCE_ARRAY(bool, n);

@@ -27,8 +27,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOopKlass.hpp"
 #include "oops/processOop.hpp"
 
-class processKlass: public memOopKlass {
- public:
+class processKlass : public memOopKlass {
+public:
   friend void set_processKlass_vtbl(Klass* k);
 
   // testers
@@ -49,8 +49,8 @@ class processKlass: public memOopKlass {
   Format format() { return process_klass; }
 
   //  memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators
@@ -62,7 +62,7 @@ class processKlass: public memOopKlass {
 
   // printing support
   char* name() const { return "process"; }
-  
+
   // sizing
   int object_size() const;
 };

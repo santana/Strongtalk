@@ -36,50 +36,51 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "memory/allocation.hpp"
 
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  #include "asm/mapping_aarch64.hpp"
+#include "asm/mapping_aarch64.hpp"
 #else
-  // default backend: x86
-  #include "asm/mapping_x86.hpp"
+// default backend: x86
+#include "asm/mapping_x86.hpp"
 #endif
 
 // Mapping specifies the architecture specific constants and
 // code sequences that are valid machine-independently.
 
-class Mapping: AllStatic {
- private:
-  static Location _localRegisters[nofLocalRegisters+1]; // the list of local registers
-  static int      _localRegisterIndex[nofRegisters+1]; 	// the inverse of localRegisters[]
+class Mapping : AllStatic {
+private:
+  static Location _localRegisters[nofLocalRegisters + 1]; // the list of local registers
+  static int _localRegisterIndex[nofRegisters + 1]; // the inverse of localRegisters[]
 
- public:
+public:
   // initialization
   static void initialize();
 
   // register allocation
-  static Location localRegister(int i);      		// the i.th local register (i = 0 .. nofLocalRegisters-1)
-  static int localRegisterIndex(Location l); 		// the index of local register l (localRegisterIndex(localRegister(i)) = i)
+  static Location localRegister(int i); // the i.th local register (i = 0 .. nofLocalRegisters-1)
+  static int localRegisterIndex(Location l); // the index of local register l (localRegisterIndex(localRegister(i)) = i)
 
   // parameter passing
-  static Location incomingArg(int i, int nofArgs);	// incoming argument (excluding receiver; i >= 0, 0 = first arg)
-  static Location outgoingArg(int i, int nofArgs);	// outgoing argument (excluding receiver; i >= 0, 0 = first arg)
+  static Location incomingArg(int i, int nofArgs); // incoming argument (excluding receiver; i >= 0, 0 = first arg)
+  static Location outgoingArg(int i, int nofArgs); // outgoing argument (excluding receiver; i >= 0, 0 = first arg)
 
   // stack allocation
-  static Location localTemporary(int i); 		// the i.th local temporary (i >= 0)
-  static int localTemporaryIndex(Location l);		// the index of the local temporary l (localTemporaryIndex(localTemporary(i)) = i)
-  static Location floatTemporary(int scope_id, int i);	// the i.th float temporary within a scope (i >= 0)
-  
+  static Location localTemporary(int i); // the i.th local temporary (i >= 0)
+  static int
+  localTemporaryIndex(Location l); // the index of the local temporary l (localTemporaryIndex(localTemporary(i)) = i)
+  static Location floatTemporary(int scope_id, int i); // the i.th float temporary within a scope (i >= 0)
+
   // context temporaries
-  static int contextOffset(int tempNo);			// the byte offset of temp from the contextOop
-  static Location contextTemporary(int contextNo, int i, int scope_id);	     // the i.th context temporary (i >= 0)
+  static int contextOffset(int tempNo); // the byte offset of temp from the contextOop
+  static Location contextTemporary(int contextNo, int i, int scope_id); // the i.th context temporary (i >= 0)
   static Location* new_contextTemporary(int contextNo, int i, int scope_id); // ditto, but allocated in resource area
 
   // conversion functions
-  static Location asLocation(Register reg)		{ return Location::registerLocation(reg.number()); }
-  static Register asRegister(Location loc)		{ return Register(loc.number(), ' '); }
+  static Location asLocation(Register reg) { return Location::registerLocation(reg.number()); }
+  static Register asRegister(Location loc) { return Register(loc.number(), ' '); }
 
   // predicates
-  static bool isTemporaryRegister(const Location loc)	{ return false; }	// fix this
-  static bool isTrashedRegister(const Location loc)	{ return true; }	// fix this
-  static bool isLocalRegister(const Location loc)	{ return _localRegisterIndex[loc.number()] != -1; }
+  static bool isTemporaryRegister(const Location loc) { return false; } // fix this
+  static bool isTrashedRegister(const Location loc) { return true; } // fix this
+  static bool isLocalRegister(const Location loc) { return _localRegisterIndex[loc.number()] != -1; }
 
   static bool isNormalTemporary(Location loc);
   static bool isFloatTemporary(Location loc);
@@ -98,18 +99,16 @@ class Mapping: AllStatic {
   static void fstore(Location dst, Register base);
 };
 
-
 // calls
-const Location selfLoc		= Mapping::asLocation(self_reg);	// incoming receiver location (in prologue of callee)
-const Location receiverLoc 	= Mapping::asLocation(receiver_reg);	// outgoing receiver location (before call)
-const Location resultLoc	= Mapping::asLocation(result_reg);	// outgoing result location (before exit)
-const Location frameLoc		= Mapping::asLocation(frame_reg);	// activation frame pointer
-
+const Location selfLoc = Mapping::asLocation(self_reg); // incoming receiver location (in prologue of callee)
+const Location receiverLoc = Mapping::asLocation(receiver_reg); // outgoing receiver location (before call)
+const Location resultLoc = Mapping::asLocation(result_reg); // outgoing result location (before exit)
+const Location frameLoc = Mapping::asLocation(frame_reg); // activation frame pointer
 
 // non-local returns (make sure to adjust the corresponding constants in interpreter_asm.asm when changing these)
-const Location NLRResultLoc	= Mapping::asLocation(NLR_result_reg);	// result being returned
-const Location NLRHomeLoc	= Mapping::asLocation(NLR_home_reg);	// frame ptr of home frame (stack)
-const Location NLRHomeIdLoc	= Mapping::asLocation(NLR_homeId_reg);	// scope id of home scope (inlining)
+const Location NLRResultLoc = Mapping::asLocation(NLR_result_reg); // result being returned
+const Location NLRHomeLoc = Mapping::asLocation(NLR_home_reg); // frame ptr of home frame (stack)
+const Location NLRHomeIdLoc = Mapping::asLocation(NLR_homeId_reg); // scope id of home scope (inlining)
 
 #endif // DELTA_COMPILER
 #endif // _MAPPING_HPP

@@ -13,36 +13,36 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(MemOopKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
-  mixinOop createMixin() {
-    PersistentHandle classMixinClass(Universe::find_global("ClassMixin"));
-    PersistentHandle metaClassMixinClass(Universe::find_global("MetaClassMixin"));
+klassOop theClass;
+oop* oldEdenTop;
+mixinOop createMixin() {
+  PersistentHandle classMixinClass(Universe::find_global("ClassMixin"));
+  PersistentHandle metaClassMixinClass(Universe::find_global("MetaClassMixin"));
 
-    PersistentHandle methods(oopFactory::new_objArray(0));
-    PersistentHandle ivars(oopFactory::new_objArray(0));
-    PersistentHandle classMethods(oopFactory::new_objArray(0));
-    PersistentHandle classIvars(oopFactory::new_objArray(0));
-    PersistentHandle classVars(oopFactory::new_objArray(0));
+  PersistentHandle methods(oopFactory::new_objArray(0));
+  PersistentHandle ivars(oopFactory::new_objArray(0));
+  PersistentHandle classMethods(oopFactory::new_objArray(0));
+  PersistentHandle classIvars(oopFactory::new_objArray(0));
+  PersistentHandle classVars(oopFactory::new_objArray(0));
 
-    PersistentHandle classMixin(classMixinClass.as_klassOop()->klass_part()->allocateObject());
-    PersistentHandle metaClassMixin(metaClassMixinClass.as_klassOop()->klass_part()->allocateObject());
+  PersistentHandle classMixin(classMixinClass.as_klassOop()->klass_part()->allocateObject());
+  PersistentHandle metaClassMixin(metaClassMixinClass.as_klassOop()->klass_part()->allocateObject());
 
-    mixinOop klassMixin = mixinOop(classMixin.as_oop());
-    klassMixin->set_methods(objArrayOop(methods.as_oop()));
-    klassMixin->set_instVars(objArrayOop(ivars.as_oop()));
-    klassMixin->set_classVars(objArrayOop(classVars.as_oop()));
-    klassMixin->set_class_mixin(mixinOop(metaClassMixin.as_oop()));
-    klassMixin->set_installed(falseObj);
+  mixinOop klassMixin = mixinOop(classMixin.as_oop());
+  klassMixin->set_methods(objArrayOop(methods.as_oop()));
+  klassMixin->set_instVars(objArrayOop(ivars.as_oop()));
+  klassMixin->set_classVars(objArrayOop(classVars.as_oop()));
+  klassMixin->set_class_mixin(mixinOop(metaClassMixin.as_oop()));
+  klassMixin->set_installed(falseObj);
 
-    mixinOop metaKlassMixin = mixinOop(classMixin.as_oop());
-    metaKlassMixin->set_methods(objArrayOop(classMethods.as_oop()));
-    metaKlassMixin->set_instVars(objArrayOop(classIvars.as_oop()));
-    metaKlassMixin->set_classVars(objArrayOop(classVars.as_oop()));
-    metaKlassMixin->set_installed(falseObj);
+  mixinOop metaKlassMixin = mixinOop(classMixin.as_oop());
+  metaKlassMixin->set_methods(objArrayOop(classMethods.as_oop()));
+  metaKlassMixin->set_instVars(objArrayOop(classIvars.as_oop()));
+  metaKlassMixin->set_classVars(objArrayOop(classVars.as_oop()));
+  metaKlassMixin->set_installed(falseObj);
 
-    return klassMixin;
-  }
+  return klassMixin;
+}
 END_DECLARE
 
 SETUP(MemOopKlassTests) {
@@ -63,8 +63,8 @@ TESTF(MemOopKlassTests, createSubclassShouldCreateClassWithCorrectSuperForClassA
 
   PersistentHandle classMixin(createMixin());
 
-  klassOop newKlass = kl.as_klassOop()->klass_part()->create_subclass(mixinOop(classMixin.as_oop()), 
-    instSuper.as_klassOop(), mk.as_klassOop(), Klass::mem_klass);
+  klassOop newKlass = kl.as_klassOop()->klass_part()->create_subclass(
+    mixinOop(classMixin.as_oop()), instSuper.as_klassOop(), mk.as_klassOop(), Klass::mem_klass);
 
   ASSERT_TRUE(newKlass);
   ASSERT_TRUE(newKlass->klass_part()->superKlass() == instSuper.as_klassOop());
@@ -82,7 +82,8 @@ TESTF(MemOopKlassTests, oldCreateSubclassShouldCreateClassWithCorrectSuperForCla
 
   PersistentHandle classMixin(createMixin());
 
-  klassOop newKlass = instSuper.as_klassOop()->klass_part()->create_subclass(mixinOop(classMixin.as_oop()), Klass::mem_klass);
+  klassOop newKlass =
+    instSuper.as_klassOop()->klass_part()->create_subclass(mixinOop(classMixin.as_oop()), Klass::mem_klass);
 
   klassOop superClass = instSuper.as_klassOop();
   mixinOop mixin = mixinOop(classMixin.as_oop());

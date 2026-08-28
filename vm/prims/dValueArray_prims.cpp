@@ -54,9 +54,9 @@ PRIM_DECL_2(doubleValueArrayPrimitives::allocateSize, oop receiver, oop argument
 
   int length = smiOop(argument)->value();
 
-  klassOop k        = klassOop(receiver);
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(length * sizeof(double), image_oop_size) / image_oop_size;
+  klassOop k = klassOop(receiver);
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(length * sizeof(double), image_oop_size) / image_oop_size;
   // allocate
   doubleValueArrayOop obj = as_doubleValueArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -88,7 +88,7 @@ PRIM_DECL_2(doubleValueArrayPrimitives::at, oop receiver, oop index) {
 
   // check index value
   if (!doubleValueArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   return oopFactory::new_double(doubleValueArrayOop(receiver)->double_at(smiOop(index)->value()));
 }
@@ -107,10 +107,9 @@ PRIM_DECL_3(doubleValueArrayPrimitives::atPut, oop receiver, oop index, oop valu
 
   // check index value
   if (!doubleValueArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // do the operation
   doubleValueArrayOop(receiver)->double_at_put(smiOop(index)->value(), doubleOop(value)->value());
   return receiver;
 }
-

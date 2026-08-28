@@ -27,10 +27,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 
 class callBack : AllStatic {
- public:
-  static void  initialize(oop receiver, symbolOop selector);
+public:
+  static void initialize(oop receiver, symbolOop selector);
   static void* registerPascalCall(int index, int nofArgs);
   static void* registerCCall(int index);
-  static void  unregister(void* block);
+  static void unregister(void* block);
 };
 #endif // _CALL_BACK_HPP

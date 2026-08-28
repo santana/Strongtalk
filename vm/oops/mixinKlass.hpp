@@ -27,10 +27,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOopKlass.hpp"
 #include "oops/mixinOop.hpp"
 
-class mixinKlass: public memOopKlass {
- public:
+class mixinKlass : public memOopKlass {
+public:
   // testers
-  bool oop_is_mixin()          const { return true;  }
+  bool oop_is_mixin() const { return true; }
 
   // allocation properties
   bool can_inline_allocation() const { return false; }
@@ -38,7 +38,7 @@ class mixinKlass: public memOopKlass {
   // allocation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
   oop oop_shallow_copy(oop obj, bool tenured);
-  
+
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
 
@@ -48,8 +48,8 @@ class mixinKlass: public memOopKlass {
   Format format() { return mixin_klass; }
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators

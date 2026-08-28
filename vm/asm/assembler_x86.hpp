@@ -24,7 +24,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
 
-
 // The x86 assembler encodes both 32-bit and 64-bit instructions. The word
 // size is selected at compile time from the platform pointer size, so that
 // -m32 / -m64 (or LP64) builds automatically pick the right encoding. The
@@ -38,59 +37,61 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // instructions.
 
 #if defined(DELTA_X86_32) && defined(DELTA_X86_64)
-  #error "define only one of DELTA_X86_32 / DELTA_X86_64"
+#error "define only one of DELTA_X86_32 / DELTA_X86_64"
 #endif
 
 #if !defined(DELTA_X86_32) && !defined(DELTA_X86_64)
-  #if defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || \
-      defined(__LP64__) || defined(_LP64) || defined(_M_X64)
-    #define DELTA_X86_64 1
-  #else
-    #define DELTA_X86_32 1
-  #endif
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__LP64__) || defined(_LP64) ||    \
+  defined(_M_X64)
+#define DELTA_X86_64 1
+#else
+#define DELTA_X86_32 1
+#endif
 #endif
 
 // Both macros are always defined (as 0/1) so that tests like
 // "if (DELTA_X86_64)" work on either build.
 #ifndef DELTA_X86_32
-  #define DELTA_X86_32 0
+#define DELTA_X86_32 0
 #endif
 #ifndef DELTA_X86_64
-  #define DELTA_X86_64 0
+#define DELTA_X86_64 0
 #endif
 
 #if DELTA_X86_64
-  const int BytesPerNativeWord = 8;	// size of a native word (pointer) in bytes
-  const int nofRegisters      = 16;	// total number of registers
+const int BytesPerNativeWord = 8; // size of a native word (pointer) in bytes
+const int nofRegisters = 16; // total number of registers
 #else
-  const int BytesPerNativeWord = 4;	// size of a native word (pointer) in bytes
-  const int nofRegisters       = 8;	// total number of registers
+const int BytesPerNativeWord = 4; // size of a native word (pointer) in bytes
+const int nofRegisters = 8; // total number of registers
 #endif
 
-class Register: public ValueObj {
- private:
+class Register : public ValueObj {
+private:
   int _number;
-  
- public:
+
+public:
   // creation
-  Register(void): _number(-1)			{}
-  Register(int number, char f): _number(number)	{}	// f is only to make sure that
-  							// an int is not accidentially
-							// converted into a Register...
+  Register(void) : _number(-1) {}
+  Register(int number, char f) : _number(number) {} // f is only to make sure that
+  // an int is not accidentially
+  // converted into a Register...
 
   // attributes
-  int number() const		{ assert(isValid(), "not a register"); return _number; }
-  bool isValid() const		{ return (0 <= _number) && (_number < nofRegisters); }
-  bool hasByteRegister() const	{ return 0 <= _number && _number <= 3; }
+  int number() const {
+    assert(isValid(), "not a register");
+    return _number;
+  }
+  bool isValid() const { return (0 <= _number) && (_number < nofRegisters); }
+  bool hasByteRegister() const { return 0 <= _number && _number <= 3; }
 
   // comparison
-  friend bool operator == (Register x, Register y) { return x._number == y._number; }
-  friend bool operator != (Register x, Register y) { return x._number != y._number; }
+  friend bool operator==(Register x, Register y) { return x._number == y._number; }
+  friend bool operator!=(Register x, Register y) { return x._number != y._number; }
 
   // debugging
   char* name() const;
 };
-
 
 // Available registers
 const Register eax = Register(0, ' ');
@@ -103,8 +104,8 @@ const Register esi = Register(6, ' ');
 const Register edi = Register(7, ' ');
 
 #if DELTA_X86_64
-const Register r8  = Register( 8, ' ');
-const Register r9  = Register( 9, ' ');
+const Register r8 = Register(8, ' ');
+const Register r9 = Register(9, ' ');
 const Register r10 = Register(10, ' ');
 const Register r11 = Register(11, ' ');
 const Register r12 = Register(12, ' ');
@@ -115,41 +116,40 @@ const Register r15 = Register(15, ' ');
 
 const Register noreg; // Dummy register used in Load, LoadAddr, and Store.
 
-
 // Address operands for assembler
 
-class Address: public ValueObj {
- public:
+class Address : public ValueObj {
+public:
   enum ScaleFactor {
-    no_scale	= -1,
-    times_1	=  0,
-    times_2	=  1,
-    times_4	=  2,
-    times_8	=  3
+    no_scale = -1,
+    times_1 = 0,
+    times_2 = 1,
+    times_4 = 2,
+    times_8 = 3
   };
 
- private:
-  Register		_base;
-  Register		_index;
-  ScaleFactor		_scale;
-  intptr_t		_disp;
-  relocInfo::relocType	_rtype;
+private:
+  Register _base;
+  Register _index;
+  ScaleFactor _scale;
+  intptr_t _disp;
+  relocInfo::relocType _rtype;
 
- public:
+public:
   Address();
   Address(intptr_t disp, relocInfo::relocType rtype);
   Address(Register base, intptr_t disp = 0, relocInfo::relocType rtype = relocInfo::none);
-  Address(Register base, Register index, ScaleFactor scale, intptr_t disp = 0, relocInfo::relocType rtype = relocInfo::none);
+  Address(Register base, Register index, ScaleFactor scale, intptr_t disp = 0,
+          relocInfo::relocType rtype = relocInfo::none);
 
   friend class X86Assembler;
 };
 
-
 // The x86 assembler. It extends the common AbstractAssembler with the
 // x86 instruction set and the x86 specific label fixup machinery.
 
-class X86Assembler: public AbstractAssembler {
- protected:
+class X86Assembler : public AbstractAssembler {
+protected:
   void emit_arith_b(int op1, int op2, Register dst, int imm8);
 
   void emit_arith(int op1, int op2, Register dst, int imm32, bool rex_w = false);
@@ -163,48 +163,49 @@ class X86Assembler: public AbstractAssembler {
   // marks an instruction operating on 64-bit operands. On 32-bit builds
   // rex_bits() is always 0 and emit_rex() emits nothing, so the 32-bit
   // encoding is byte-identical to the pre-REX encoder.
-  int  rex_bits(Register reg, Register base = noreg, Register index = noreg);
+  int rex_bits(Register reg, Register base = noreg, Register index = noreg);
   void emit_rex(int rex);
   void emit_rex_w(Register reg = noreg, Register base = noreg, Register index = noreg);
 
-  void emit_quad_data(intptr_t data, relocInfo::relocType rtype);	// 64-bit immediate + relocation
+  void emit_quad_data(intptr_t data, relocInfo::relocType rtype); // 64-bit immediate + relocation
 
-  int _last_rex;	// the most recently emitted REX prefix byte (0 if none)
+  int _last_rex; // the most recently emitted REX prefix byte (0 if none)
 
-  void emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, intptr_t disp, relocInfo::relocType rtype);
+  void emit_operand(Register reg, Register base, Register index, Address::ScaleFactor scale, intptr_t disp,
+                    relocInfo::relocType rtype);
   void emit_operand(Register reg, Address adr);
 
   void emit_farith(int b1, int b2, int i);
 
   // x86 label fixup
-  void print  (Label& L);
+  void print(Label& L);
   void bind_to(Label& L, int pos);
   void link_to(Label& L, Label& appendix);
 
- public:
+public:
   enum Condition {
-    zero	= 0x4,
-    notZero	= 0x5,
-    equal	= 0x4,
-    notEqual	= 0x5,
-    less	= 0xc,
-    lessEqual	= 0xe,
-    greater	= 0xf,
-    greaterEqual= 0xd,
-    below	= 0x2,
-    belowEqual	= 0x6,
-    above	= 0x7,
-    aboveEqual	= 0x3,
-    overflow	= 0x0,
-    noOverflow	= 0x1,
-    carrySet	= 0x2,
-    carryClear	= 0x3,
-    negative	= 0x8,
-    positive	= 0x9,
+    zero = 0x4,
+    notZero = 0x5,
+    equal = 0x4,
+    notEqual = 0x5,
+    less = 0xc,
+    lessEqual = 0xe,
+    greater = 0xf,
+    greaterEqual = 0xd,
+    below = 0x2,
+    belowEqual = 0x6,
+    above = 0x7,
+    aboveEqual = 0x3,
+    overflow = 0x0,
+    noOverflow = 0x1,
+    carrySet = 0x2,
+    carryClear = 0x3,
+    negative = 0x8,
+    positive = 0x9,
   };
 
   enum Constants {
-    sizeOfCall = 5			// length of call instruction in bytes
+    sizeOfCall = 5 // length of call instruction in bytes
   };
 
   X86Assembler(CodeBuffer* code);
@@ -252,11 +253,11 @@ class X86Assembler: public AbstractAssembler {
   void movq(Register dst, Register src);
   void movq(Register dst, Address src);
   void movq(Address dst, Register src);
-  void movq(Address dst, int imm32);		// sign-extended 32-bit immediate
-  void movq(Register dst, intptr_t imm);	// full 64-bit immediate (movabs)
-  void movq(Register dst, oop obj);		// full 64-bit immediate (movabs)
+  void movq(Address dst, int imm32); // sign-extended 32-bit immediate
+  void movq(Register dst, intptr_t imm); // full 64-bit immediate (movabs)
+  void movq(Register dst, oop obj); // full 64-bit immediate (movabs)
 
-  void movsxq(Register dst, Register src);	// sign-extend 32-bit src into 64-bit dst
+  void movsxq(Register dst, Register src); // sign-extend 32-bit src into 64-bit dst
 
   void movsxb(Register dst, Address src);
   void movsxb(Register dst, Register src);
@@ -379,11 +380,11 @@ class X86Assembler: public AbstractAssembler {
   void orq(Register dst, Address src);
 
   void sarq(Register dst, int imm8);
-  void sarq(Register dst);                  // CL-shift (64-bit)
+  void sarq(Register dst); // CL-shift (64-bit)
   void shlq(Register dst, int imm8);
-  void shlq(Register dst);                  // CL-shift (64-bit)
+  void shlq(Register dst); // CL-shift (64-bit)
   void shrq(Register dst, int imm8);
-  void shrq(Register dst);                  // CL-shift (64-bit)
+  void shrq(Register dst); // CL-shift (64-bit)
 
   void subq(Register dst, int imm32);
   void subq(Register dst, Register src);
@@ -397,7 +398,7 @@ class X86Assembler: public AbstractAssembler {
 
   // Miscellaneous
   void cdq();
-  void cqo();	// sign-extend rax into rdx:rax (x86-64)
+  void cqo(); // sign-extend rax into rdx:rax (x86-64)
   void hlt();
   void int3();
   void nop();
@@ -405,22 +406,22 @@ class X86Assembler: public AbstractAssembler {
 
   // Labels
 
-  void bind(Label& L);			// binds an unbound label L to the current code position
-  virtual void merge(Label& L, Label& with);	// merges L and with, L is the merged label
+  void bind(Label& L); // binds an unbound label L to the current code position
+  virtual void merge(Label& L, Label& with); // merges L and with, L is the merged label
 
   // Calls
   void call(Label& L);
   void call(char* entry, relocInfo::relocType rtype);
   void call(Register reg);
   void call(Address adr);
-  
+
   // Jumps
   void jmp(char* entry, relocInfo::relocType rtype);
   void jmp(Register reg);
   void jmp(Address adr);
 
   // Label operations & relative jumps (PPUM Appendix D)
-  void jmp(Label& L);		// unconditional jump to L
+  void jmp(Label& L); // unconditional jump to L
 
   // jccI is the generic conditional branch generator to run-
   // time routines, jcc is used for branches to labels. jcc
@@ -442,7 +443,7 @@ class X86Assembler: public AbstractAssembler {
 
   // Support for inline cache information (see also IC_Info)
   void ic_info(Label& L, int flags);
-  
+
   // Floating-point operations
   void fld1();
   void fldz();
@@ -462,12 +463,12 @@ class X86Assembler: public AbstractAssembler {
 
   void fabs();
   void fchs();
-  
+
   void fadd_d(Address adr);
   void fsub_d(Address adr);
   void fmul_d(Address adr);
   void fdiv_d(Address adr);
-  
+
   void fadd(int i);
   void fsub(int i);
   void fmul(int i);
@@ -491,16 +492,15 @@ class X86Assembler: public AbstractAssembler {
   void fwait();
 
   // For compatibility with old assembler only - should be removed at some point
-  void Load (Register base, intptr_t disp, Register dst) { movl(dst, Address(base, disp)); }
+  void Load(Register base, intptr_t disp, Register dst) { movl(dst, Address(base, disp)); }
   void Store(Register src, Register base, intptr_t disp) { movl(Address(base, disp), src); }
 };
-
 
 // X86MacroAssembler extends X86Assembler by a few macros used for
 // generating the interpreter and for compiled code.
 
-class X86MacroAssembler: public X86Assembler {
- public:
+class X86MacroAssembler : public X86Assembler {
+public:
   X86MacroAssembler(CodeBuffer* code) : X86Assembler(code) {}
 
 #if DELTA_X86_64
@@ -515,51 +515,51 @@ class X86MacroAssembler: public X86Assembler {
   void movl(Register dst, Register src) { movq(dst, src); }
   // movl(Address, int) must also store 64 bits; materialise via r10 (temp3).
   void movl(Address dst, int imm32) {
-    movl(r10, imm32);   // zero-extends to 64-bit
-    movq(dst, r10);     // 64-bit store
+    movl(r10, imm32); // zero-extends to 64-bit
+    movq(dst, r10); // 64-bit store
   }
 
   using X86Assembler::addl;
-  void addl(Register dst, int imm)       { addq(dst, imm); }
-  void addl(Register dst, Register src)  { addq(dst, src); }
-  void addl(Register dst, Address src)   { addq(dst, src); }
+  void addl(Register dst, int imm) { addq(dst, imm); }
+  void addl(Register dst, Register src) { addq(dst, src); }
+  void addl(Register dst, Address src) { addq(dst, src); }
 
   using X86Assembler::subl;
-  void subl(Register dst, int imm)       { subq(dst, imm); }
-  void subl(Register dst, Register src)  { subq(dst, src); }
-  void subl(Register dst, Address src)   { subq(dst, src); }
+  void subl(Register dst, int imm) { subq(dst, imm); }
+  void subl(Register dst, Register src) { subq(dst, src); }
+  void subl(Register dst, Address src) { subq(dst, src); }
 
   using X86Assembler::leal;
-  void leal(Register dst, Address src)   { leaq(dst, src); }
+  void leal(Register dst, Address src) { leaq(dst, src); }
 
   using X86Assembler::cmpl;
-  void cmpl(Register dst, Register src)  { cmpq(dst, src); }
-  void cmpl(Register dst, Address src)   { cmpq(dst, src); }
+  void cmpl(Register dst, Register src) { cmpq(dst, src); }
+  void cmpl(Register dst, Address src) { cmpq(dst, src); }
 
   using X86Assembler::andl;
-  void andl(Register dst, int imm)       { andq(dst, imm); }
-  void andl(Register dst, Register src)  { andq(dst, src); }
+  void andl(Register dst, int imm) { andq(dst, imm); }
+  void andl(Register dst, Register src) { andq(dst, src); }
 
   using X86Assembler::orl;
-  void orl(Register dst, int imm)       { orq(dst, imm); }
-  void orl(Register dst, Register src)  { orq(dst, src); }
-  void orl(Register dst, Address src)   { orq(dst, src); }
+  void orl(Register dst, int imm) { orq(dst, imm); }
+  void orl(Register dst, Register src) { orq(dst, src); }
+  void orl(Register dst, Address src) { orq(dst, src); }
 
   using X86Assembler::xorl;
-  void xorl(Register dst, int imm)       { xorq(dst, imm); }
-  void xorl(Register dst, Register src)  { xorq(dst, src); }
+  void xorl(Register dst, int imm) { xorq(dst, imm); }
+  void xorl(Register dst, Register src) { xorq(dst, src); }
 
   using X86Assembler::shll;
-  void shll(Register dst, int imm)       { shlq(dst, imm); }
-  void shll(Register dst)                { shlq(dst); }
+  void shll(Register dst, int imm) { shlq(dst, imm); }
+  void shll(Register dst) { shlq(dst); }
 
   using X86Assembler::sarl;
-  void sarl(Register dst, int imm)       { sarq(dst, imm); }
-  void sarl(Register dst)                { sarq(dst); }
+  void sarl(Register dst, int imm) { sarq(dst, imm); }
+  void sarl(Register dst) { sarq(dst); }
 
   using X86Assembler::shrl;
-  void shrl(Register dst, int imm)       { shrq(dst, imm); }
-  void shrl(Register dst)                { shrq(dst); }
+  void shrl(Register dst, int imm) { shrq(dst, imm); }
+  void shrl(Register dst) { shrq(dst); }
 
   using X86Assembler::incl;
   void incl(Register dst) { incq(dst); }
@@ -580,8 +580,8 @@ class X86MacroAssembler: public X86Assembler {
   void align(int modulus);
 
   // Test-Instructions optimized for length
-  void test (Register dst, int imm8);		// use testb if possible, testl otherwise
-  
+  void test(Register dst, int imm8); // use testb if possible, testl otherwise
+
   // Stack frame operations
   void enter();
   void leave();
@@ -591,8 +591,8 @@ class X86MacroAssembler: public X86Assembler {
   void inline_oop(oop o);
 
   // C calls
-  void set_last_Delta_frame_before_call();	// assumes that the return address has not been pushed yet
-  void set_last_Delta_frame_after_call();	// assumes that the return address has been pushed already
+  void set_last_Delta_frame_before_call(); // assumes that the return address has not been pushed yet
+  void set_last_Delta_frame_after_call(); // assumes that the return address has been pushed already
   void reset_last_Delta_frame();
 
   void call_C(Label& L);
@@ -624,8 +624,8 @@ class X86MacroAssembler: public X86Assembler {
   // Float-stack depth management is a no-op on x86 (the FPU stack is
   // hardware); the calls exist so the shared interpreter/Floats code can set
   // the generation-time depth uniformly across backends.
-  int  float_depth() const		{ return 0; }
-  void set_float_depth(int d)		{ }
+  int float_depth() const { return 0; }
+  void set_float_depth(int d) {}
 
   // debugging
   static void print_reg(char* name, oop obj);

@@ -27,13 +27,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOopKlass.hpp"
 #include "oops/objArrayOop.hpp"
 
-class objArrayKlass: public memOopKlass {
- public:
+class objArrayKlass : public memOopKlass {
+public:
   // allocation properties
   bool can_inline_allocation() const { return false; }
 
   // creation operation
-  oop allocateObjectSize(int size, bool permit_scavenge=true, bool tenured = false);
+  oop allocateObjectSize(int size, bool permit_scavenge = true, bool tenured = false);
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -47,28 +47,28 @@ class objArrayKlass: public memOopKlass {
   static objArrayOop allocate_tenured_pic(int size);
 
   // Return the oop size for a objArrayOop
-  int object_size(int size) const	{ return non_indexable_size() + 1 + size; }
+  int object_size(int size) const { return non_indexable_size() + 1 + size; }
 
   // Layout
-  int length_offset() const		{ return non_indexable_size(); }
-  int array_offset() const		{ return non_indexable_size() + 1; }
+  int length_offset() const { return non_indexable_size(); }
+  int array_offset() const { return non_indexable_size() + 1; }
 
   friend void set_objArrayKlass_vtbl(Klass* k);
 
   char* name() const { return "objArray"; }
 
-  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP 
-  
+  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
+
   // size operation
   int oop_size(oop obj) const { return object_size(objArrayOop(obj)->length()); }
 
   // Memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // testers
-  bool oop_is_objArray()  const { return true; }
+  bool oop_is_objArray() const { return true; }
   bool oop_is_indexable() const { return true; }
 
   void oop_short_print_on(oop obj, outputStream* st);

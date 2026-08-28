@@ -27,7 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 void HCodeBuffer::align() {
-  while(!isAligned())
+  while (!isAligned())
     _bytes->append(0xFF);
 }
 bool HCodeBuffer::isAligned() {
@@ -51,8 +51,8 @@ byteArrayOop HCodeBuffer::bytes() {
   byteArrayOop result = byteArrayOop(klass->allocateObjectSize(byteLength()));
 
   for (int index = 0; index < byteLength(); index++)
-    result->byte_at_put(index + 1, (unsigned char) _bytes->at(index));
-  
+    result->byte_at_put(index + 1, (unsigned char)_bytes->at(index));
+
   return result;
 }
 objArrayOop HCodeBuffer::oops() {

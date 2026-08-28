@@ -12,8 +12,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(MixinKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(MixinKlassTests) {
@@ -21,7 +21,7 @@ SETUP(MixinKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(MixinKlassTests){
+TEARDOWN(MixinKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

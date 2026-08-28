@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(ProcessKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(ProcessKlassTests) {
@@ -20,7 +20,7 @@ SETUP(ProcessKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(ProcessKlassTests){
+TEARDOWN(ProcessKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

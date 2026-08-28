@@ -49,27 +49,29 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //       three arrays that are used right now. Likely to speed up the implementation
 //       (at() and at_put() are not cheap compared to indirection ->. See class Entry).
 
-
 int PRegMapping::index(PReg* preg) {
   assert(preg != NULL, "no preg specified");
   // try cashed index first
   int i = preg->_map_index_cash;
   assert(0 <= i, "_map_index_cash must always be > 0");
-  if (i < size() && _pregs->at(i) == preg) return i;
+  if (i < size() && _pregs->at(i) == preg)
+    return i;
   // otherwise search for it
   i = size();
-  while (i-- > 0 && _pregs->at(i) != preg) ;
+  while (i-- > 0 && _pregs->at(i) != preg)
+    ;
   // (-1 <= i < size() && (i >= 0 => _pregs->at(i) == preg)
   // if found, set cash for next time
-  if (i >= 0) preg->_map_index_cash = i;
+  if (i >= 0)
+    preg->_map_index_cash = i;
   return i;
 }
-
 
 void PRegMapping::set_entry(int i, PReg* preg, int rloc, int sloc) {
   assert(preg != NULL, "no preg specified");
   assert(!_locs->isLocation(rloc) || _locs->isRegister(rloc), "should be a register location if at all");
-  assert(!_locs->isLocation(sloc) || _locs->isArgument(sloc) || _locs->isStackTmp(sloc), "should be a stack location if at all");
+  assert(!_locs->isLocation(sloc) || _locs->isArgument(sloc) || _locs->isStackTmp(sloc),
+         "should be a stack location if at all");
   assert(_locs->isLocation(rloc) || _locs->isLocation(sloc), "at least one location expected");
   _pregs->at_put(i, preg);
   _regLocs->at_put(i, rloc);
@@ -78,11 +80,11 @@ void PRegMapping::set_entry(int i, PReg* preg, int rloc, int sloc) {
   preg->_map_index_cash = i;
 }
 
-
 int PRegMapping::freeSlot() {
   // search for an unused slot
   int i = size();
-  while (i-- > 0 && used(i)) ;
+  while (i-- > 0 && used(i))
+    ;
   // (-1 <= i < size()) && (i >= 0 => !used(i))
   if (i < 0) {
     // no free slot => grow arrays
@@ -95,7 +97,6 @@ int PRegMapping::freeSlot() {
   return i;
 }
 
-
 int PRegMapping::spillablePRegIndex() {
   // Finds a PReg that is mapped to a register location and that is not locked.
   // Returns a value < 0 if there's no such PReg.
@@ -105,8 +106,7 @@ int PRegMapping::spillablePRegIndex() {
   while (i-- > 0) {
     PReg* preg = _pregs->at(i);
     int rloc = regLoc(i);
-    if (preg != NULL && _locs->isRegister(rloc) && !PRegLocker::locks(preg) &&
-        _locs->nofUses(rloc) < uses) {
+    if (preg != NULL && _locs->isRegister(rloc) && !PRegLocker::locks(preg) && _locs->nofUses(rloc) < uses) {
       uses = _locs->nofUses(rloc);
       i0 = i;
     }
@@ -114,19 +114,18 @@ int PRegMapping::spillablePRegIndex() {
   return i0;
 }
 
-
 void PRegMapping::ensureOneFreeRegister() {
   if (!_locs->freeRegisters()) {
     // no free registers available => find a register to spill
     int i = spillablePRegIndex();
-    if (i < 0) fatal("too many temporaries or locked pregs: out of spillable registers");
+    if (i < 0)
+      fatal("too many temporaries or locked pregs: out of spillable registers");
     // mystd->print("WARNING: Register spilling - check if this works\n");
     spillRegister(regLoc(i));
     assert(_locs->freeRegisters(), "at least one register should be available now");
     verify();
   }
 }
-
 
 void PRegMapping::spillRegister(int loc) {
   assert(_locs->isRegister(loc), "must be a register");
@@ -139,7 +138,7 @@ void PRegMapping::spillRegister(int loc) {
       _regLocs->at_put(i, _locs->noLocation);
       if (!hasStkLoc(i)) {
         _locs->use(spillLoc);
-	_stkLocs->at_put(i, spillLoc);
+        _stkLocs->at_put(i, spillLoc);
       }
     }
   }
@@ -150,7 +149,6 @@ void PRegMapping::spillRegister(int loc) {
   _assm->movl(_locs->locationAsAddress(spillLoc), reg);
   verify();
 }
-
 
 int PRegMapping::allocateTemporary(Register hint) {
   ensureOneFreeRegister();
@@ -164,12 +162,12 @@ int PRegMapping::allocateTemporary(Register hint) {
       regLoc = hintLoc;
     }
   }
-  if (!_locs->isLocation(regLoc)) regLoc = _locs->allocateRegister();
+  if (!_locs->isLocation(regLoc))
+    regLoc = _locs->allocateRegister();
   assert(_locs->isLocation(regLoc) && _locs->nofUses(regLoc) == 1, "should be allocated exactly once");
   _tmpLocs->push(regLoc);
   return regLoc;
 }
-
 
 void PRegMapping::releaseTemporary(int regLoc) {
   if (_tmpLocs->pop() == regLoc) {
@@ -181,35 +179,32 @@ void PRegMapping::releaseTemporary(int regLoc) {
   }
 }
 
-
 void PRegMapping::releaseAllTemporaries() {
-  while (_tmpLocs->nonEmpty()) _locs->release(_tmpLocs->pop());
+  while (_tmpLocs->nonEmpty())
+    _locs->release(_tmpLocs->pop());
 }
-
 
 void PRegMapping::destroy() {
-  _pregs   = NULL;
+  _pregs = NULL;
 }
-
 
 PRegMapping::PRegMapping(MacroAssembler* assm, int nofArgs, int nofRegs, int nofTemps) {
   const int initialSize = 8;
-  _assm    = assm;
+  _assm = assm;
   _NLRinProgress = false;
-  _locs    = new Locations(nofArgs, nofRegs, nofTemps);
-  _pregs   = new GrowableArray<PReg*>(initialSize);
+  _locs = new Locations(nofArgs, nofRegs, nofTemps);
+  _pregs = new GrowableArray<PReg*>(initialSize);
   _regLocs = new GrowableArray<intptr_t>(initialSize);
   _stkLocs = new GrowableArray<intptr_t>(initialSize);
   _tmpLocs = new GrowableArray<intptr_t>(2);
   verify();
 }
 
-
 PRegMapping::PRegMapping(PRegMapping* m) {
-  _assm    = m->_assm;
+  _assm = m->_assm;
   _NLRinProgress = m->_NLRinProgress;
-  _locs    = new Locations(m->_locs);
-  _pregs   = m->_pregs->copy();
+  _locs = new Locations(m->_locs);
+  _pregs = m->_pregs->copy();
   _regLocs = m->_regLocs->copy();
   _stkLocs = m->_stkLocs->copy();
   _tmpLocs = m->_tmpLocs->copy();
@@ -217,34 +212,35 @@ PRegMapping::PRegMapping(PRegMapping* m) {
   verify();
 }
 
-
 bool PRegMapping::isInjective() {
   int i = size();
   while (i-- > 0) {
     if (used(i)) {
-      if (hasRegLoc(i) && _locs->nofUses(regLoc(i)) > 1) return false;
-      if (hasStkLoc(i) && _locs->nofUses(stkLoc(i)) > 1) return false;
+      if (hasRegLoc(i) && _locs->nofUses(regLoc(i)) > 1)
+        return false;
+      if (hasStkLoc(i) && _locs->nofUses(stkLoc(i)) > 1)
+        return false;
     }
   }
   return true;
 }
 
-
 bool PRegMapping::isConformant(PRegMapping* with) {
   // checks conformity on the intersection of this and with
-  if (NLRinProgress() != with->NLRinProgress()) return false;
+  if (NLRinProgress() != with->NLRinProgress())
+    return false;
   int j = with->size();
   while (j-- > 0) {
     if (with->used(j)) {
       int i = index(with->_pregs->at(j));
       if (i >= 0) {
-        if (regLoc(i) != with->regLoc(j) || stkLoc(i) != with->stkLoc(j)) return false;
+        if (regLoc(i) != with->regLoc(j) || stkLoc(i) != with->stkLoc(j))
+          return false;
       }
     }
   }
   return true;
 }
-
 
 void PRegMapping::mapToArgument(PReg* preg, int argNo) {
   assert(index(preg) < 0, "preg for argument defined twice");
@@ -254,7 +250,6 @@ void PRegMapping::mapToArgument(PReg* preg, int argNo) {
   verify();
 }
 
-
 void PRegMapping::mapToTemporary(PReg* preg, int tempNo) {
   assert(index(preg) < 0, "preg for argument defined twice");
   int loc = _locs->temporaryAsLocation(tempNo);
@@ -263,7 +258,6 @@ void PRegMapping::mapToTemporary(PReg* preg, int tempNo) {
   verify();
 }
 
-
 void PRegMapping::mapToRegister(PReg* preg, Register reg) {
   assert(index(preg) < 0, "preg for register defined twice");
   int loc = _locs->registerAsLocation(reg);
@@ -271,7 +265,6 @@ void PRegMapping::mapToRegister(PReg* preg, Register reg) {
   set_entry(freeSlot(), preg, loc, _locs->noLocation);
   verify();
 }
-
 
 void PRegMapping::kill(PReg* preg) {
   int i = index(preg);
@@ -282,13 +275,14 @@ void PRegMapping::kill(PReg* preg) {
     }
     int rloc = regLoc(i);
     int sloc = stkLoc(i);
-    if (_locs->isLocation(rloc)) _locs->release(rloc);
-    if (_locs->isLocation(sloc)) _locs->release(sloc);
+    if (_locs->isLocation(rloc))
+      _locs->release(rloc);
+    if (_locs->isLocation(sloc))
+      _locs->release(sloc);
     _pregs->at_put(i, NULL);
     verify();
   }
 }
-
 
 void PRegMapping::killAll(PReg* exception) {
   int i = size();
@@ -301,17 +295,19 @@ void PRegMapping::killAll(PReg* exception) {
       }
       int rloc = regLoc(i);
       int sloc = stkLoc(i);
-      if (_locs->isLocation(rloc)) _locs->release(rloc);
-      if (_locs->isLocation(sloc)) _locs->release(sloc);
+      if (_locs->isLocation(rloc))
+        _locs->release(rloc);
+      if (_locs->isLocation(sloc))
+        _locs->release(sloc);
       _pregs->at_put(i, NULL);
     }
   }
   verify();
 }
 
-
 void PRegMapping::killDeadsAt(Node* node, PReg* exception) {
-  while (node->isTrivial() || node->isMergeNode()) node = node->next();
+  while (node->isTrivial() || node->isMergeNode())
+    node = node->next();
   // In case of a ReturnNode resultPR & scope context are needed
   // -> maybe use a better solution?
   //
@@ -323,10 +319,10 @@ void PRegMapping::killDeadsAt(Node* node, PReg* exception) {
   int i = size();
   while (i-- > 0) {
     PReg* preg = _pregs->at(i);
-    if (preg != NULL && preg != exception && (!preg->isLiveAt(node) || preg->isConstPReg())) kill(preg);
+    if (preg != NULL && preg != exception && (!preg->isLiveAt(node) || preg->isConstPReg()))
+      kill(preg);
   }
 }
-
 
 void PRegMapping::cleanupContextReferences() {
   int i = size();
@@ -339,7 +335,6 @@ void PRegMapping::cleanupContextReferences() {
   }
 }
 
-
 // Note: Right now, if there's a hint register given, def() and use() make sure that the
 // preg will be mapped to the hint register; and hint must be unallocated. This is not the
 // same behaviour as in Temporary, where the hint register is only used if it is actually
@@ -348,7 +343,7 @@ void PRegMapping::cleanupContextReferences() {
 // (kind of academic subtlety).
 
 Register PRegMapping::def(PReg* preg, Register hint) {
-//  assert(!preg->isSAPReg() || index(preg) < 0, "SAPRegs can be defined only once");
+  //  assert(!preg->isSAPReg() || index(preg) < 0, "SAPRegs can be defined only once");
   int i = index(preg);
   assert(i < 0 || !hasStkLoc(i) || !_locs->isArgument(stkLoc(i)), "cannot assign to parameters");
   kill(preg);
@@ -365,7 +360,6 @@ Register PRegMapping::def(PReg* preg, Register hint) {
   verify();
   return hint;
 }
-
 
 Register PRegMapping::use(PReg* preg, Register hint) {
   int i = index(preg);
@@ -389,8 +383,7 @@ Register PRegMapping::use(PReg* preg, Register hint) {
     set_entry(freeSlot(), preg, loc, _locs->noLocation);
   }
   i = index(preg);
-  assert(i >= 0, "preg must have been defined")
-  if (hasRegLoc(i)) {
+  assert(i >= 0, "preg must have been defined") if (hasRegLoc(i)) {
     Register old = _locs->locationAsRegister(regLoc(i));
     if (hint == noreg || hint == old) {
       hint = old;
@@ -401,7 +394,8 @@ Register PRegMapping::use(PReg* preg, Register hint) {
       _regLocs->at_put(i, loc);
       _assm->movl(hint, old);
     }
-  } else {
+  }
+  else {
     // copy into register
     assert(hasStkLoc(i), "must have at least one location");
     int loc;
@@ -420,7 +414,6 @@ Register PRegMapping::use(PReg* preg, Register hint) {
   return hint;
 }
 
-
 Register PRegMapping::use(PReg* preg) {
   Register reg;
   if (preg->isConstPReg() && !isDefined(preg)) {
@@ -432,7 +425,6 @@ Register PRegMapping::use(PReg* preg) {
   return reg;
 }
 
-
 void PRegMapping::move(PReg* dst, PReg* src) {
   assert(dst->loc != topOfStack, "parameter passing cannot be handled here");
   kill(dst); // remove any previous definition
@@ -440,12 +432,13 @@ void PRegMapping::move(PReg* dst, PReg* src) {
   assert(i >= 0, "src must be defined");
   int rloc = regLoc(i);
   int sloc = stkLoc(i);
-  if (_locs->isLocation(rloc)) _locs->use(rloc);
-  if (_locs->isLocation(sloc)) _locs->use(sloc);
+  if (_locs->isLocation(rloc))
+    _locs->use(rloc);
+  if (_locs->isLocation(sloc))
+    _locs->use(sloc);
   set_entry(freeSlot(), dst, rloc, sloc);
   verify();
 }
-
 
 void PRegMapping::saveRegister(int loc) {
   assert(_locs->isRegister(loc), "must be a register");
@@ -466,7 +459,6 @@ void PRegMapping::saveRegister(int loc) {
   verify();
 }
 
-
 void PRegMapping::saveRegisters(PReg* exception) {
   int i = size();
   while (i-- > 0) {
@@ -477,7 +469,6 @@ void PRegMapping::saveRegisters(PReg* exception) {
   verify();
 }
 
-
 void PRegMapping::killRegisters(PReg* exception) {
   int i = size();
   while (i-- > 0) {
@@ -487,18 +478,16 @@ void PRegMapping::killRegisters(PReg* exception) {
       _regLocs->at_put(i, _locs->noLocation);
       if (!hasStkLoc(i)) {
         // remove entry for preg alltogether
-	_pregs->at_put(i, NULL);
+        _pregs->at_put(i, NULL);
       }
     }
   }
   verify();
 }
 
-
 void PRegMapping::killRegister(PReg* preg) {
   int i = index(preg);
-  assert(i >= 0, "preg must have been defined")
-  if (hasRegLoc(i)) {
+  assert(i >= 0, "preg must have been defined") if (hasRegLoc(i)) {
     // remove that register from mapping & release it
     _locs->release(regLoc(i));
     _regLocs->at_put(i, _locs->noLocation);
@@ -510,24 +499,21 @@ void PRegMapping::killRegister(PReg* preg) {
   verify();
 }
 
-
 void PRegMapping::acquireNLRRegisters() {
   guarantee(!NLRinProgress(), "no NLR must be in progress");
   _NLRinProgress = true;
   _locs->allocate(_locs->registerAsLocation(NLR_result_reg));
-  _locs->allocate(_locs->registerAsLocation(NLR_home_reg  ));
+  _locs->allocate(_locs->registerAsLocation(NLR_home_reg));
   _locs->allocate(_locs->registerAsLocation(NLR_homeId_reg));
 }
-
 
 void PRegMapping::releaseNLRRegisters() {
   guarantee(NLRinProgress(), "NLR must be in progress");
   _NLRinProgress = false;
   _locs->release(_locs->registerAsLocation(NLR_result_reg));
-  _locs->release(_locs->registerAsLocation(NLR_home_reg  ));
+  _locs->release(_locs->registerAsLocation(NLR_home_reg));
   _locs->release(_locs->registerAsLocation(NLR_homeId_reg));
 }
-
 
 void PRegMapping::makeInjective() {
   // Note: This routine must not generate any code that modifies CPU flags!
@@ -539,45 +525,45 @@ void PRegMapping::makeInjective() {
       assert(_locs->isLocation(rloc) || _locs->isLocation(sloc), "must have at least one location");
       if (_locs->isLocation(rloc) && _locs->isLocation(sloc)) {
         if (_locs->nofUses(rloc) > 1 && _locs->nofUses(sloc) > 1) {
-	  // preg is mapped to both register and stack location that are shared with other pregs
-	  // => map to a new stack location
+          // preg is mapped to both register and stack location that are shared with other pregs
+          // => map to a new stack location
           int newLoc = _locs->allocateStackTmp();
-	  _assm->movl(_locs->locationAsAddress(newLoc), _locs->locationAsRegister(rloc));
-	  _locs->release(rloc);
-	  _locs->release(sloc);
-	  _regLocs->at_put(i, _locs->noLocation);
-	  _stkLocs->at_put(i, newLoc);
-	} else if (_locs->nofUses(rloc) > 1) {
-	  // preg mapped to a register that is shared with other pregs => use stack location only
-	  _locs->release(rloc);
-	  _regLocs->at_put(i, _locs->noLocation);
-	} else if (_locs->nofUses(sloc) > 1) {
+          _assm->movl(_locs->locationAsAddress(newLoc), _locs->locationAsRegister(rloc));
+          _locs->release(rloc);
+          _locs->release(sloc);
+          _regLocs->at_put(i, _locs->noLocation);
+          _stkLocs->at_put(i, newLoc);
+        } else if (_locs->nofUses(rloc) > 1) {
+          // preg mapped to a register that is shared with other pregs => use stack location only
+          _locs->release(rloc);
+          _regLocs->at_put(i, _locs->noLocation);
+        } else if (_locs->nofUses(sloc) > 1) {
           // preg mapped to a stack location that is shared with other pregs => use register location only
-	  _locs->release(sloc);
-	  _stkLocs->at_put(i, _locs->noLocation);
-	}
+          _locs->release(sloc);
+          _stkLocs->at_put(i, _locs->noLocation);
+        }
       } else if (_locs->isLocation(rloc)) {
         if (_locs->nofUses(rloc) > 1) {
-	  // preg is mapped to a register that shared with other pregs => map to a new stack location
+          // preg is mapped to a register that shared with other pregs => map to a new stack location
           int newLoc = _locs->allocateStackTmp();
-	  _assm->movl(_locs->locationAsAddress(newLoc), _locs->locationAsRegister(rloc));
-	  _locs->release(rloc);
-	  _regLocs->at_put(i, _locs->noLocation);
-	  _stkLocs->at_put(i, newLoc);
-	}
+          _assm->movl(_locs->locationAsAddress(newLoc), _locs->locationAsRegister(rloc));
+          _locs->release(rloc);
+          _regLocs->at_put(i, _locs->noLocation);
+          _stkLocs->at_put(i, newLoc);
+        }
       } else if (_locs->isLocation(sloc)) {
         if (_locs->nofUses(sloc) > 1) {
-	  // preg is mapped to a stack location that is shared with other pregs => map to a new stack location
+          // preg is mapped to a stack location that is shared with other pregs => map to a new stack location
           ensureOneFreeRegister();
-	  int tmpLoc = _locs->allocateRegister();
-	  int newLoc = _locs->allocateStackTmp();
-	  Register t = _locs->locationAsRegister(tmpLoc);
-	  _assm->movl(t, _locs->locationAsAddress(sloc));
-	  _assm->movl(_locs->locationAsAddress(newLoc), t);
-	  _locs->release(tmpLoc);
-	  _locs->release(sloc);
-	  _regLocs->at_put(i, _locs->noLocation);
-	  _stkLocs->at_put(i, newLoc);
+          int tmpLoc = _locs->allocateRegister();
+          int newLoc = _locs->allocateStackTmp();
+          Register t = _locs->locationAsRegister(tmpLoc);
+          _assm->movl(t, _locs->locationAsAddress(sloc));
+          _assm->movl(_locs->locationAsAddress(newLoc), t);
+          _locs->release(tmpLoc);
+          _locs->release(sloc);
+          _regLocs->at_put(i, _locs->noLocation);
+          _stkLocs->at_put(i, newLoc);
         }
       } else {
         ShouldNotReachHere();
@@ -587,7 +573,6 @@ void PRegMapping::makeInjective() {
   verify();
   assert(isInjective(), "mapping not injective");
 }
-
 
 void PRegMapping::old_makeConformant(PRegMapping* with) {
   // determine which entries have to be adjusted (save values on the stack)
@@ -602,35 +587,37 @@ void PRegMapping::old_makeConformant(PRegMapping* with) {
         assert(_pregs->at(i) == with->_pregs->at(j), "should be the same");
         if (regLoc(i) != with->regLoc(j) || stkLoc(i) != with->stkLoc(j)) {
           // push value if necessary
-	  // (not necessary if one of the locations is conformant)
+          // (not necessary if one of the locations is conformant)
           if (hasRegLoc(i) && regLoc(i) == with->regLoc(j)) {
-	    // register locations conform => not necessary to save a value
-	    if (hasStkLoc(i)) {
-	      assert(stkLoc(i) != with->stkLoc(j), "error in program logic");
+            // register locations conform => not necessary to save a value
+            if (hasStkLoc(i)) {
+              assert(stkLoc(i) != with->stkLoc(j), "error in program logic");
               _locs->release(stkLoc(i));
-	    }
-	  } else if (hasStkLoc(i) && stkLoc(i) == with->stkLoc(j)) {
-	    // stack locations conform => not necessary to save a value
-	    if (hasRegLoc(i)) {
-	      assert(regLoc(i) != with->regLoc(j), "error in program logic");
-	      _locs->release(regLoc(i));
-	    }
-	  } else {
-	    // none of the locations conform => push value
-	    if (hasRegLoc(i)) {
-	      _assm->pushl(_locs->locationAsRegister(regLoc(i)));
-	    } else {
-	      assert(hasStkLoc(i), "must have at least one location");
-	      _assm->pushl(_locs->locationAsAddress(stkLoc(i)));
-	    }
+            }
+          } else if (hasStkLoc(i) && stkLoc(i) == with->stkLoc(j)) {
+            // stack locations conform => not necessary to save a value
+            if (hasRegLoc(i)) {
+              assert(regLoc(i) != with->regLoc(j), "error in program logic");
+              _locs->release(regLoc(i));
+            }
+          } else {
+            // none of the locations conform => push value
+            if (hasRegLoc(i)) {
+              _assm->pushl(_locs->locationAsRegister(regLoc(i)));
+            } else {
+              assert(hasStkLoc(i), "must have at least one location");
+              _assm->pushl(_locs->locationAsAddress(stkLoc(i)));
+            }
             // free allocated locations
-            if (hasRegLoc(i)) _locs->release(regLoc(i));
-            if (hasStkLoc(i)) _locs->release(stkLoc(i));
-	  }
-	  // mapping differs for this preg => remember entries
-	  src.push(i);
-	  dst.push(j);
-	}
+            if (hasRegLoc(i))
+              _locs->release(regLoc(i));
+            if (hasStkLoc(i))
+              _locs->release(stkLoc(i));
+          }
+          // mapping differs for this preg => remember entries
+          src.push(i);
+          dst.push(j);
+        }
       }
     }
   }
@@ -644,31 +631,33 @@ void PRegMapping::old_makeConformant(PRegMapping* with) {
       assert(stkLoc(i) != with->stkLoc(j), "error in program logic");
       if (with->hasStkLoc(j)) {
         _assm->movl(with->_locs->locationAsAddress(with->stkLoc(j)), _locs->locationAsRegister(regLoc(i)));
-	_locs->allocate(with->stkLoc(j));
+        _locs->allocate(with->stkLoc(j));
       }
     } else if (hasStkLoc(i) && stkLoc(i) == with->stkLoc(j)) {
       // stack locations conform => must have non-conformant register location
       assert(regLoc(i) != with->regLoc(j), "error in program logic");
       if (with->hasRegLoc(j)) {
         _assm->movl(with->_locs->locationAsRegister(with->regLoc(j)), _locs->locationAsAddress(stkLoc(i)));
-	_locs->allocate(with->regLoc(j));
+        _locs->allocate(with->regLoc(j));
       }
     } else {
       // none of the locations conform => pop value
       if (with->hasRegLoc(j)) {
         Register reg = with->_locs->locationAsRegister(with->regLoc(j));
         _assm->popl(reg);
-	if (with->hasStkLoc(j)) {
-	  // copy register on stack
-	  _assm->movl(with->_locs->locationAsAddress(with->stkLoc(j)), reg);
-	}
+        if (with->hasStkLoc(j)) {
+          // copy register on stack
+          _assm->movl(with->_locs->locationAsAddress(with->stkLoc(j)), reg);
+        }
       } else {
         assert(with->hasStkLoc(j), "must have at least one location");
-	_assm->popl(with->_locs->locationAsAddress(with->stkLoc(j)));
+        _assm->popl(with->_locs->locationAsAddress(with->stkLoc(j)));
       }
       // allocate locations
-      if (with->hasRegLoc(j)) _locs->allocate(with->regLoc(j));
-      if (with->hasStkLoc(j)) _locs->allocate(with->stkLoc(j));
+      if (with->hasRegLoc(j))
+        _locs->allocate(with->regLoc(j));
+      if (with->hasStkLoc(j))
+        _locs->allocate(with->stkLoc(j));
     }
     // adjust mapping
     _regLocs->at_put(i, with->regLoc(j));
@@ -685,20 +674,18 @@ void PRegMapping::old_makeConformant(PRegMapping* with) {
   assert(isConformant(with), "mapping not conformant");
 }
 
-
 // Helper class to make mappings conformant
 
-class ConformanceHelper: public MapConformance {
- private:
+class ConformanceHelper : public MapConformance {
+private:
   MacroAssembler* _masm;
 
- public:
+public:
   void generate(MacroAssembler* masm, Variable temp1, Variable temp2);
   void move(Variable src, Variable dst);
   void push(Variable src);
-  void pop (Variable dst);
+  void pop(Variable dst);
 };
-
 
 void ConformanceHelper::generate(MacroAssembler* masm, Variable temp1, Variable temp2) {
   _masm = masm;
@@ -706,12 +693,11 @@ void ConformanceHelper::generate(MacroAssembler* masm, Variable temp1, Variable 
   _masm = NULL;
 };
 
-
 void ConformanceHelper::move(Variable src, Variable dst) {
   Register src_reg = src.in_register() ? Register(src.register_number(), ' ') : noreg;
   Register dst_reg = dst.in_register() ? Register(dst.register_number(), ' ') : noreg;
-  Address  src_adr = src.on_stack() ? Address(ebp, src.stack_offset()) : Address();
-  Address  dst_adr = dst.on_stack() ? Address(ebp, dst.stack_offset()) : Address();
+  Address src_adr = src.on_stack() ? Address(ebp, src.stack_offset()) : Address();
+  Address dst_adr = dst.on_stack() ? Address(ebp, dst.stack_offset()) : Address();
 
   if (src.in_register()) {
     if (dst.in_register()) {
@@ -732,7 +718,6 @@ void ConformanceHelper::move(Variable src, Variable dst) {
   }
 }
 
-
 void ConformanceHelper::push(Variable src) {
   if (src.in_register()) {
     _masm->pushl(Register(src.register_number(), ' '));
@@ -743,7 +728,6 @@ void ConformanceHelper::push(Variable src) {
   }
 }
 
-
 void ConformanceHelper::pop(Variable dst) {
   if (dst.in_register()) {
     _masm->popl(Register(dst.register_number(), ' '));
@@ -753,7 +737,6 @@ void ConformanceHelper::pop(Variable dst) {
     ShouldNotReachHere();
   }
 }
-
 
 void PRegMapping::new_makeConformant(PRegMapping* with) {
   // set up ConformanceHelper
@@ -767,13 +750,15 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
       if (i >= 0) {
         assert(_pregs->at(i) == with->_pregs->at(j), "should be the same");
         if (regLoc(i) != with->regLoc(j) || stkLoc(i) != with->stkLoc(j)) {
-	  Variable src_reg =       hasRegLoc(i) ? Variable::new_register(      _locs->locationAsRegisterNo(      regLoc(i))) : unused;
-	  Variable src_stk =       hasStkLoc(i) ? Variable::new_stack   (      _locs->locationAsByteOffset(      stkLoc(i))) : unused;
-	  Variable dst_reg = with->hasRegLoc(j) ? Variable::new_register(with->_locs->locationAsRegisterNo(with->regLoc(j))) : unused;
-	  Variable dst_stk = with->hasStkLoc(j) ? Variable::new_stack   (with->_locs->locationAsByteOffset(with->stkLoc(j))) : unused;
-	  chelper.append_mapping(src_reg, src_stk, dst_reg, dst_stk);
-	  makeConformant = true;
-	}
+          Variable src_reg = hasRegLoc(i) ? Variable::new_register(_locs->locationAsRegisterNo(regLoc(i))) : unused;
+          Variable src_stk = hasStkLoc(i) ? Variable::new_stack(_locs->locationAsByteOffset(stkLoc(i))) : unused;
+          Variable dst_reg =
+            with->hasRegLoc(j) ? Variable::new_register(with->_locs->locationAsRegisterNo(with->regLoc(j))) : unused;
+          Variable dst_stk =
+            with->hasStkLoc(j) ? Variable::new_stack(with->_locs->locationAsByteOffset(with->stkLoc(j))) : unused;
+          chelper.append_mapping(src_reg, src_stk, dst_reg, dst_stk);
+          makeConformant = true;
+        }
       }
     }
   }
@@ -781,7 +766,7 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
   if (makeConformant) {
     // mappings differ -> generate code to make them conformant
     // first: find free registers that can be used for "make conformance" code
-    int this_mask =       _locs->freeRegisterMask();
+    int this_mask = _locs->freeRegisterMask();
     int with_mask = with->_locs->freeRegisterMask();
     int both_mask = this_mask & with_mask;
     Variable temp1 = unused;
@@ -789,17 +774,21 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
     if (both_mask != 0) {
       // free registers in common
       int i = 0;
-      while ((both_mask & (1 << i)) == 0) i++;
-      #ifdef ASSERT
-        // make sure register can actually be used in both mappings
-        { Register reg = Register(i, ' ');
-          int this_rloc =       _locs->registerAsLocation(reg);
-          int with_rloc = with->_locs->registerAsLocation(reg);
-          // allocate & deallocate them - will fail if registers are already in use
-	        _locs->allocate(this_rloc);       _locs->release(this_rloc);
-          with->_locs->allocate(with_rloc); with->_locs->release(with_rloc);
-        }
-      #endif
+      while ((both_mask & (1 << i)) == 0)
+        i++;
+#ifdef ASSERT
+      // make sure register can actually be used in both mappings
+      {
+        Register reg = Register(i, ' ');
+        int this_rloc = _locs->registerAsLocation(reg);
+        int with_rloc = with->_locs->registerAsLocation(reg);
+        // allocate & deallocate them - will fail if registers are already in use
+        _locs->allocate(this_rloc);
+        _locs->release(this_rloc);
+        with->_locs->allocate(with_rloc);
+        with->_locs->release(with_rloc);
+      }
+#endif
       temp1 = Variable::new_register(i);
       clearNth(both_mask, i);
     }
@@ -807,17 +796,21 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
     if (both_mask != 0) {
       // free registers in common
       int i = 0;
-      while ((both_mask & (1 << i)) == 0) i++;
-      #ifdef ASSERT
-        // make sure register can actually be used in both mappings
-        { Register reg = Register(i, ' ');
-          int this_rloc =       _locs->registerAsLocation(reg);
-          int with_rloc = with->_locs->registerAsLocation(reg);
-	  // allocate & deallocate them - will fail if registers are already in use
-	        _locs->allocate(this_rloc);       _locs->release(this_rloc);
-	  with->_locs->allocate(with_rloc); with->_locs->release(with_rloc);
-        }
-      #endif
+      while ((both_mask & (1 << i)) == 0)
+        i++;
+#ifdef ASSERT
+      // make sure register can actually be used in both mappings
+      {
+        Register reg = Register(i, ' ');
+        int this_rloc = _locs->registerAsLocation(reg);
+        int with_rloc = with->_locs->registerAsLocation(reg);
+        // allocate & deallocate them - will fail if registers are already in use
+        _locs->allocate(this_rloc);
+        _locs->release(this_rloc);
+        with->_locs->allocate(with_rloc);
+        with->_locs->release(with_rloc);
+      }
+#endif
       temp2 = Variable::new_register(i);
       clearNth(both_mask, i);
     }
@@ -841,7 +834,6 @@ void PRegMapping::new_makeConformant(PRegMapping* with) {
   }
 }
 
-
 void PRegMapping::makeConformant(PRegMapping* with) {
   //guarantee(NLRinProgress() == with->NLRinProgress(), "cannot be made conformant");
 
@@ -857,7 +849,7 @@ void PRegMapping::makeConformant(PRegMapping* with) {
   assert(_locs->nofRegisters() == with->_locs->nofRegisters(), "must be the same");
   assert(_locs->nofStackTmps() >= with->_locs->nofStackTmps(), "must be greater or equal");
   assert(with->isInjective(), "'with' mapping not injective");
-  
+
   // strip mapping so that it contains the same pregs as 'with' mapping
   int i = size();
   while (i-- > 0) {
@@ -865,7 +857,7 @@ void PRegMapping::makeConformant(PRegMapping* with) {
       int j = with->index(_pregs->at(i));
       if (j < 0) {
         // entry not found in 'with' mapping -> remove it from this mapping
-	kill(_pregs->at(i));
+        kill(_pregs->at(i));
       }
     }
   }
@@ -877,9 +869,8 @@ void PRegMapping::makeConformant(PRegMapping* with) {
   }
 }
 
-
 void PRegMapping::iterate(PRegClosure* closure) {
-  for (int i = size(); i-- > 0; ) {
+  for (int i = size(); i-- > 0;) {
     PReg* preg = _pregs->at(i);
     if (preg != NULL) {
       preg->_map_index_cash = i;
@@ -887,7 +878,6 @@ void PRegMapping::iterate(PRegClosure* closure) {
     }
   }
 }
-
 
 Location PRegMapping::locationFor(PReg* preg) {
   int i = index(preg);
@@ -903,28 +893,25 @@ Location PRegMapping::locationFor(PReg* preg) {
   return loc;
 }
 
-
 int PRegMapping::nofPRegs() {
   int i = size();
   int n = 0;
   while (i-- > 0) {
-    if (used(i)) n++;
+    if (used(i))
+      n++;
   };
   return n;
 }
 
-
 int PRegMapping::maxNofStackTmps() {
   return _locs->nofStackTmps();
 }
-
 
 void PRegMapping::my_print() {
   // This is only here for debugging because print() cannot
   // be called from within the debugger for some strange reason...
   print();
 }
-
 
 void PRegMapping::print(int i) {
   assert(used(i), "unused slot");
@@ -935,20 +922,22 @@ void PRegMapping::print(int i) {
     mystd->print(_locs->locationAsRegister(rloc).name());
   }
   if (sloc >= 0) {
-    if (rloc >= 0) mystd->print(", ");
+    if (rloc >= 0)
+      mystd->print(", ");
     int offs = _locs->locationAsByteOffset(sloc);
     mystd->print("[ebp%s%d]", (offs < 0 ? "" : "+"), offs);
   }
   mystd->cr();
 }
 
-
 void PRegMapping::print() {
-  if (WizardMode) _locs->print();
+  if (WizardMode)
+    _locs->print();
   if (nofPRegs() > 0) {
     mystd->print("PReg mapping:\n");
     for (int i = 0; i < size(); i++) {
-      if (used(i)) print(i);
+      if (used(i))
+        print(i);
     }
   } else {
     mystd->print("PReg mapping is empty\n");
@@ -969,9 +958,9 @@ void PRegMapping::print() {
   }
 }
 
-
 void PRegMapping::verify() {
-  if (!CompilerDebug) return;
+  if (!CompilerDebug)
+    return;
   _locs->verify();
   int totalUses = 0;
   int i = size();
@@ -980,106 +969,113 @@ void PRegMapping::verify() {
       // verify mapping for entry i
       int rloc = regLoc(i);
       int sloc = stkLoc(i);
-      if (rloc < 0 && sloc < 0) fatal("no location associated with preg");
+      if (rloc < 0 && sloc < 0)
+        fatal("no location associated with preg");
       int rlocUses = 0;
       int slocUses = 0;
       int j = size();
       while (j-- > 0) {
         if (used(j)) {
-          if (i != j && _pregs->at(i) == _pregs->at(j)) fatal("preg found twice in mapping");
-	    if (rloc >= 0 && regLoc(j) == rloc) rlocUses++;
-	    if (sloc >= 0 && stkLoc(j) == sloc) slocUses++;
-	  }
+          if (i != j && _pregs->at(i) == _pregs->at(j))
+            fatal("preg found twice in mapping");
+          if (rloc >= 0 && regLoc(j) == rloc)
+            rlocUses++;
+          if (sloc >= 0 && stkLoc(j) == sloc)
+            slocUses++;
+        }
       }
       // check locations usage counter
-      if (rloc >= 0 && _locs->nofUses(rloc) != rlocUses) fatal("inconsistent nofUses (register locations)");
-      if (sloc >= 0 && _locs->nofUses(sloc) != slocUses) fatal("inconsistent nofUses (stack locations)");
+      if (rloc >= 0 && _locs->nofUses(rloc) != rlocUses)
+        fatal("inconsistent nofUses (register locations)");
+      if (sloc >= 0 && _locs->nofUses(sloc) != slocUses)
+        fatal("inconsistent nofUses (stack locations)");
       // compute total usage
-      if (rloc >= 0) totalUses++;
-      if (sloc >= 0) totalUses++;
+      if (rloc >= 0)
+        totalUses++;
+      if (sloc >= 0)
+        totalUses++;
     }
   }
   // check allocated temporaries
   i = _tmpLocs->length();
   while (i-- > 0) {
     int rloc = _tmpLocs->at(i);
-    if (_locs->nofUses(rloc) != 1) fatal("inconsistent nofUses (temporaries)");
+    if (_locs->nofUses(rloc) != 1)
+      fatal("inconsistent nofUses (temporaries)");
     totalUses++;
   }
   // check NLR registers if in use
   if (NLRinProgress()) {
-    if (_locs->nofUses(_locs->registerAsLocation(NLR_result_reg)) != 1) fatal("inconsistent nofUses (NLR_result_reg)");
-    if (_locs->nofUses(_locs->registerAsLocation(NLR_home_reg  )) != 1) fatal("inconsistent nofUses (NLR_home_reg  )");
-    if (_locs->nofUses(_locs->registerAsLocation(NLR_homeId_reg)) != 1) fatal("inconsistent nofUses (NLR_homeId_reg)");
+    if (_locs->nofUses(_locs->registerAsLocation(NLR_result_reg)) != 1)
+      fatal("inconsistent nofUses (NLR_result_reg)");
+    if (_locs->nofUses(_locs->registerAsLocation(NLR_home_reg)) != 1)
+      fatal("inconsistent nofUses (NLR_home_reg  )");
+    if (_locs->nofUses(_locs->registerAsLocation(NLR_homeId_reg)) != 1)
+      fatal("inconsistent nofUses (NLR_homeId_reg)");
     totalUses += 3;
   }
   // check total uses
-  if (_locs->nofTotalUses() != totalUses) fatal("inconsistent totalUses");
+  if (_locs->nofTotalUses() != totalUses)
+    fatal("inconsistent totalUses");
 }
-
 
 // Implementation of PRegLocker
 
 PRegLocker* PRegLocker::_top;
-
 
 PRegLocker::PRegLocker(PReg* r0) {
   assert(r0 != NULL, "PReg must be defined");
   lock(r0, NULL, NULL);
 }
 
-
 PRegLocker::PRegLocker(PReg* r0, PReg* r1) {
   assert(r0 != NULL && r1 != NULL, "PRegs must be defined");
   lock(r0, r1, NULL);
 }
-
 
 PRegLocker::PRegLocker(PReg* r0, PReg* r1, PReg* r2) {
   assert(r0 != NULL && r1 != NULL && r2 != NULL, "PRegs must be defined");
   lock(r0, r1, r2);
 }
 
-
 bool PRegLocker::holds(PReg* preg) const {
   assert(preg != NULL, "undefined preg");
-  int i = sizeof(_pregs)/sizeof(PReg*);
+  int i = sizeof(_pregs) / sizeof(PReg*);
   while (i-- > 0) {
-    if (preg == _pregs[i]) return true;
+    if (preg == _pregs[i])
+      return true;
   }
   return false;
 }
 
-
 bool PRegLocker::locks(PReg* preg) {
   assert(preg != NULL, "undefined preg");
   PRegLocker* p = _top;
-  while (p != NULL && !p->holds(preg)) p = p->_prev;
+  while (p != NULL && !p->holds(preg))
+    p = p->_prev;
   // p == NULL || p->holds(preg)
   return p != NULL;
 }
-
 
 // Implementation of Temporary
 
 Temporary::Temporary(PRegMapping* mapping, Register hint) {
   _mapping = mapping;
-  _regLoc  = mapping->allocateTemporary(hint);
+  _regLoc = mapping->allocateTemporary(hint);
 }
-
 
 Temporary::Temporary(PRegMapping* mapping, PReg* preg) {
   // old code - keep around for time comparison purposes
   const bool old_code = false;
   if (old_code) {
     _mapping = mapping;
-    _regLoc  = mapping->allocateTemporary(noreg);
+    _regLoc = mapping->allocateTemporary(noreg);
     mapping->assembler()->movl(Temporary::reg(), mapping->use(preg));
     return;
   }
 
   _mapping = mapping;
-  Register reg  = mapping->use(preg);
+  Register reg = mapping->use(preg);
   // preg is guaranteed to be in a register
   if (mapping->onStack(preg)) {
     // preg is also on stack -> release register location from mapping and use it as copy
@@ -1091,7 +1087,6 @@ Temporary::Temporary(PRegMapping* mapping, PReg* preg) {
     mapping->assembler()->movl(Temporary::reg(), reg);
   }
 }
-
 
 Temporary::~Temporary() {
   _mapping->releaseTemporary(_regLoc);

@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(DByteArrayKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(DByteArrayKlassTests) {
@@ -20,7 +20,7 @@ SETUP(DByteArrayKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(DByteArrayKlassTests){
+TEARDOWN(DByteArrayKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

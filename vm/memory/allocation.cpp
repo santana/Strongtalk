@@ -43,12 +43,11 @@ void PrintableStackObj::print_short() {
 }
 
 void* CHeapObj::operator new(size_t size) {
-  return (void *) AllocateHeap(size, "operator-new");
+  return (void*)AllocateHeap(size, "operator-new");
 }
 
 void CHeapObj::operator delete(void* p) {
-  assert( !resources.contains((char*)p),
-      "CHeapObj should not be in resource area");
+  assert(!resources.contains((char*)p), "CHeapObj should not be in resource area");
   FreeHeap(p);
 }
 
@@ -74,13 +73,11 @@ void ValueObj::operator delete(void* p) {
   ShouldNotCallThis();
 };
 
-ResourceAreaChunk::ResourceAreaChunk(int min_capacity,
-    ResourceAreaChunk* previous) {
+ResourceAreaChunk::ResourceAreaChunk(int min_capacity, ResourceAreaChunk* previous) {
   // lprintf("Resources cap=%d used=%d\n", resources.capacity(), resources.used());
 
-  int size =
-      max(min_capacity + min_resource_free_size, min_resource_chunk_size);
-  bottom = (char*) AllocateHeap(size, "resourceAreaChunk");
+  int size = max(min_capacity + min_resource_free_size, min_resource_chunk_size);
+  bottom = (char*)AllocateHeap(size, "resourceAreaChunk");
   top = bottom + size;
   initialize(previous);
 }
@@ -113,9 +110,9 @@ void ResourceAreaChunk::print_alloc(char* addr, int size) {
 
 ResourceArea::ResourceArea() {
   chunk = NULL;
-# ifdef ASSERT
+#ifdef ASSERT
   nesting = 0;
-# endif
+#endif
 }
 
 ResourceArea::~ResourceArea() {
@@ -192,8 +189,7 @@ ResourceAreaChunk* Resources::getFromFreeList(int min_capacity) {
   return NULL;
 }
 
-ResourceAreaChunk* Resources::new_chunk(int min_capacity,
-    ResourceAreaChunk* previous) {
+ResourceAreaChunk* Resources::new_chunk(int min_capacity, ResourceAreaChunk* previous) {
   _in_consistent_state = false;
   ResourceAreaChunk* res = getFromFreeList(min_capacity);
   if (res) {
@@ -202,7 +198,8 @@ ResourceAreaChunk* Resources::new_chunk(int min_capacity,
     res = new ResourceAreaChunk(min_capacity, previous);
     _allocated += res->capacity();
     if (PrintResourceChunkAllocation) {
-      mystd->print("*allocating new resource area chunk of >=%d bytes, new total = %d bytes\n", min_capacity, _allocated);
+      mystd->print("*allocating new resource area chunk of >=%d bytes, new total = %d bytes\n", min_capacity,
+                   _allocated);
     }
   }
   _in_consistent_state = true;
@@ -212,11 +209,11 @@ ResourceAreaChunk* Resources::new_chunk(int min_capacity,
   return res;
 }
 
-void ResourceAreaChunk::freeTo(char *new_first_free) {
+void ResourceAreaChunk::freeTo(char* new_first_free) {
   assert(new_first_free <= first_free, "unfreeing in resource area");
   if (ZapResourceArea)
     clear(new_first_free, first_free);
-  first_free= new_first_free;
+  first_free = new_first_free;
 }
 
 Resources::Resources() {
@@ -232,19 +229,19 @@ ResourceMark::ResourceMark() {
   area = &resource_area;
   chunk = area->chunk;
   top = chunk ? chunk->first_free : NULL;
-# ifdef ASSERT
+#ifdef ASSERT
   area->nesting++;
-  assert(area->nesting> 0, "nesting must be positive");
-# endif
+  assert(area->nesting > 0, "nesting must be positive");
+#endif
 }
 
 ResourceMark::~ResourceMark() {
   if (!enabled)
     return;
-# ifdef ASSERT
-  assert(area->nesting> 0, "nesting must be positive");
+#ifdef ASSERT
+  assert(area->nesting > 0, "nesting must be positive");
   area->nesting--;
-# endif
+#endif
   if (PrintResourceAllocation) {
     lprintf("deallocating to mark %#lx\n", top);
   }
@@ -297,7 +294,7 @@ char* AllocatePageAligned(int size, char* name) {
 char* AllocateHeap(int size, char* name) {
   if (PrintHeapAllocation)
     lprintf("Heap %7d %s\n", size, name);
-  return (char*) os::malloc(size);
+  return (char*)os::malloc(size);
 }
 
 void FreeHeap(void* p) {

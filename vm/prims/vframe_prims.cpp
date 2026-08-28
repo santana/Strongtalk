@@ -65,7 +65,6 @@ PRIM_DECL_1(vframeOopPrimitives::time_stamp, oop receiver) {
   return as_smiOop(vframeOop(receiver)->time_stamp());
 }
 
-
 PRIM_DECL_1(vframeOopPrimitives::is_smalltalk_activation, oop receiver) {
   PROLOGUE_1("is_smalltalk_activation", receiver);
   ASSERT_RECEIVER;
@@ -76,7 +75,7 @@ PRIM_DECL_1(vframeOopPrimitives::is_smalltalk_activation, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   return vf->is_delta_frame() ? trueObj : falseObj;
 }
 
@@ -90,11 +89,11 @@ PRIM_DECL_1(vframeOopPrimitives::byte_code_index, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
-  
-  return as_smiOop(((deltaVFrame*) vf)->bci());
+
+  return as_smiOop(((deltaVFrame*)vf)->bci());
 }
 
 PRIM_DECL_1(vframeOopPrimitives::expression_stack, oop receiver) {
@@ -107,13 +106,13 @@ PRIM_DECL_1(vframeOopPrimitives::expression_stack, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
 
   BlockScavenge bs;
 
-  GrowableArray<oop>* stack = ((deltaVFrame*) vf)->expression_stack();
+  GrowableArray<oop>* stack = ((deltaVFrame*)vf)->expression_stack();
 
   return oopFactory::new_objArray(stack);
 }
@@ -128,11 +127,11 @@ PRIM_DECL_1(vframeOopPrimitives::method, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
 
-  return ((deltaVFrame*) vf)->method();
+  return ((deltaVFrame*)vf)->method();
 }
 
 PRIM_DECL_1(vframeOopPrimitives::receiver, oop recv) {
@@ -140,17 +139,17 @@ PRIM_DECL_1(vframeOopPrimitives::receiver, oop recv) {
 
   assert(recv->is_vframe(), "receiver must be vframe")
 
-  ResourceMark rm;
+    ResourceMark rm;
 
   vframe* vf = vframeOop(recv)->get_vframe();
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
 
-  return ((deltaVFrame*) vf)->receiver();
+  return ((deltaVFrame*)vf)->receiver();
 }
 
 PRIM_DECL_1(vframeOopPrimitives::temporaries, oop receiver) {
@@ -165,32 +164,30 @@ PRIM_DECL_1(vframeOopPrimitives::temporaries, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
 
-  deltaVFrame* df = (deltaVFrame*) vf;
-  GrowableArray<oop> *temps = new GrowableArray<oop>(10);
+  deltaVFrame* df = (deltaVFrame*)vf;
+  GrowableArray<oop>* temps = new GrowableArray<oop>(10);
   methodOop method = df->method();
   int tempCount = method->number_of_stack_temporaries();
-  
+
   for (int offset = (method->activation_has_context() ? 1 : 0); offset < tempCount; offset++) {
     byteArrayOop name = find_stack_temp(method, df->bci(), offset);
     if (name)
-      temps->append(reinterpret_cast<oop>(oopFactory::new_association(oopFactory::new_symbol(name),
-                                                df->temp_at(offset),
-                                                false)));
+      temps->append(
+        reinterpret_cast<oop>(oopFactory::new_association(oopFactory::new_symbol(name), df->temp_at(offset), false)));
   }
-  
-  while(df) {
+
+  while (df) {
     if (method->allocatesInterpretedContext()) {
       int contextTempCount = method->number_of_context_temporaries();
       for (int offset = 0; offset < contextTempCount; offset++) {
         byteArrayOop name = find_heap_temp(method, df->bci(), offset);
         if (name)
-          temps->append(reinterpret_cast<oop>(oopFactory::new_association(oopFactory::new_symbol(name),
-                                                    df->context_temp_at(offset),
-                                                    false)));
+          temps->append(reinterpret_cast<oop>(
+            oopFactory::new_association(oopFactory::new_symbol(name), df->context_temp_at(offset), false)));
       }
     }
     df = df->parent();
@@ -211,20 +208,26 @@ PRIM_DECL_1(vframeOopPrimitives::arguments, oop receiver) {
 
   if (vf == NULL)
     return markSymbol(vmSymbols::activation_is_invalid());
-    
+
   if (!vf->is_delta_frame())
     return markSymbol(vmSymbols::external_activation());
 
   BlockScavenge bs;
 
-  GrowableArray<oop>* stack = ((deltaVFrame*) vf)->arguments();
+  GrowableArray<oop>* stack = ((deltaVFrame*)vf)->arguments();
 
   return oopFactory::new_objArray(stack);
 }
 
-class vframeStream: public byteArrayPrettyPrintStream {
-  void begin_highlight() { set_highlight(true); print_char(27); }
-  void end_highlight()   { set_highlight(false); print_char(27); }
+class vframeStream : public byteArrayPrettyPrintStream {
+  void begin_highlight() {
+    set_highlight(true);
+    print_char(27);
+  }
+  void end_highlight() {
+    set_highlight(false);
+    print_char(27);
+  }
 };
 
 PRIM_DECL_1(vframeOopPrimitives::pretty_print, oop receiver) {
@@ -243,14 +246,15 @@ PRIM_DECL_1(vframeOopPrimitives::pretty_print, oop receiver) {
     return markSymbol(vmSymbols::external_activation());
 
   byteArrayPrettyPrintStream* stream = new vframeStream;
-  prettyPrinter::print_body((deltaVFrame*) vf, stream);
+  prettyPrinter::print_body((deltaVFrame*)vf, stream);
 
   return stream->asByteArray();
 }
 
-class DeoptimizeProcess: public FrameClosure {
+class DeoptimizeProcess : public FrameClosure {
 private:
   DeltaProcess* theProcess;
+
 public:
   void begin_process(Process* process) {
     if (process->is_deltaProcess())
@@ -258,9 +262,7 @@ public:
     else
       theProcess = NULL;
   }
-  void end_process(Process* process) {
-    theProcess = NULL;
-  }
+  void end_process(Process* process) { theProcess = NULL; }
   void do_frame(frame* fr) {
     if (theProcess && fr->is_compiled_frame())
       theProcess->deoptimize_stretch(fr, fr);
@@ -314,7 +316,7 @@ PRIM_DECL_1(vframeOopPrimitives::step_next, oop activation) {
   deoptimize(proc);
 
   vframe* vf = vframeOop(activation)->get_vframe();
-  
+
   proc->setupStepNext(vf->fr().fp());
 
   return process;
@@ -346,7 +348,7 @@ PRIM_DECL_1(vframeOopPrimitives::step_return, oop activation) {
 
     vframe* vf = vframeOop(activationHandle.as_oop())->get_vframe();
     void** framePointer = vf->fr().fp();
-    
+
     proc->setupStepReturn(framePointer);
 
     return activationHandle.as_oop();

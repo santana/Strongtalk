@@ -32,7 +32,7 @@ class CodeBuffer;
 // code position. A label can be bound only once.
 
 class Label : public ValueObj {
- private:
+private:
   // _pos encodes both the binding state (via its sign)
   // and the binding position (via its value) of a label.
   //
@@ -42,23 +42,31 @@ class Label : public ValueObj {
   int _pos;
 
   int pos() const {
-    if (_pos < 0) return -_pos - 1;
-    if (_pos > 0) return  _pos - 1;
+    if (_pos < 0)
+      return -_pos - 1;
+    if (_pos > 0)
+      return _pos - 1;
     ShouldNotReachHere();
     return 0;
   }
 
-  void bind_to(int pos)		{ assert(pos >= 0, "illegal position"); _pos = -pos - 1; }
-  void link_to(int pos)		{ assert(pos >= 0, "illegal position"); _pos =  pos + 1; }
-  void unuse()			{ _pos = 0; }
+  void bind_to(int pos) {
+    assert(pos >= 0, "illegal position");
+    _pos = -pos - 1;
+  }
+  void link_to(int pos) {
+    assert(pos >= 0, "illegal position");
+    _pos = pos + 1;
+  }
+  void unuse() { _pos = 0; }
 
- public:
-  bool is_bound() const		{ return _pos <  0; }
-  bool is_unbound() const	{ return _pos >  0; }
-  bool is_unused() const	{ return _pos == 0; }
+public:
+  bool is_bound() const { return _pos < 0; }
+  bool is_unbound() const { return _pos > 0; }
+  bool is_unused() const { return _pos == 0; }
 
-  Label() : _pos(0)		{}
-  ~Label()			{ assert(!is_unbound(), "unbound label"); }
+  Label() : _pos(0) {}
+  ~Label() { assert(!is_unbound(), "unbound label"); }
 
   friend class AbstractAssembler;
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
@@ -72,56 +80,55 @@ class Label : public ValueObj {
 #endif
 };
 
-
 // AbstractAssembler provides the backend-independent assembler
 // infrastructure: the code buffer, byte emission primitives and label
 // handling. Label fixup (bind_to/link_to/bind/finalize/print) is
 // backend-specific because it depends on the instruction encoding and
 // is therefore virtual and overridden by concrete backends.
 
-class AbstractAssembler: public ResourceObj {
- protected:
+class AbstractAssembler : public ResourceObj {
+protected:
   CodeBuffer* _code;
 
-  char* _code_begin;			// first byte of code buffer
-  char* _code_limit;			// first byte after code buffer
-  char* _code_pos;			// current code generation position
+  char* _code_begin; // first byte of code buffer
+  char* _code_limit; // first byte after code buffer
+  char* _code_pos; // current code generation position
 
-  Label _unbound_label;			// the last label to be bound to _binding_pos, if unbound
-  int	_binding_pos;			// the position to which _unbound_label has to be bound, if there
+  Label _unbound_label; // the last label to be bound to _binding_pos, if unbound
+  int _binding_pos; // the position to which _unbound_label has to be bound, if there
 
-  char* addr_at(int pos) 		{ return _code_begin + pos; }
+  char* addr_at(int pos) { return _code_begin + pos; }
 
-  int  byte_at(int pos)			{ return *(unsigned char*)addr_at(pos); }
-  void byte_at_put(int pos, int x)	{ *(unsigned char*)addr_at(pos) = (unsigned char)x; }
+  int byte_at(int pos) { return *(unsigned char*)addr_at(pos); }
+  void byte_at_put(int pos, int x) { *(unsigned char*)addr_at(pos) = (unsigned char)x; }
 
-  int  long_at(int pos)			{ return *(int*)addr_at(pos); }
-  void long_at_put(int pos, int x)	{ *(int*)addr_at(pos) = x; }
+  int long_at(int pos) { return *(int*)addr_at(pos); }
+  void long_at_put(int pos, int x) { *(int*)addr_at(pos) = x; }
 
-  bool is8bit(int x)			{ return -0x80 <= x && x < 0x80; }
-  bool isByte(int x)			{ return 0 <= x && x < 0x100; }
-  bool isShiftCount(int x)		{ return 0 <= x && x < 32; }
+  bool is8bit(int x) { return -0x80 <= x && x < 0x80; }
+  bool isByte(int x) { return 0 <= x && x < 0x100; }
+  bool isShiftCount(int x) { return 0 <= x && x < 32; }
 
   void emit_byte(int x);
   void emit_long(int x);
   void emit_data(int data, relocInfo::relocType rtype);
 
   // Label fixup - backend specific.
-  virtual void print  (Label& L);
+  virtual void print(Label& L);
   virtual void bind_to(Label& L, int pos);
   virtual void link_to(Label& L, Label& appendix);
 
- public:
+public:
   AbstractAssembler(CodeBuffer* code);
   ~AbstractAssembler();
 
-  void		finalize();		// call this before using/copying the code
-  CodeBuffer*	code() const		{ return _code; }
-  char*		pc() const		{ return _code_pos; }
-  int		offset() const		{ return _code_pos - _code_begin; }
+  void finalize(); // call this before using/copying the code
+  CodeBuffer* code() const { return _code; }
+  char* pc() const { return _code_pos; }
+  int offset() const { return _code_pos - _code_begin; }
 
   // Labels
-  virtual void bind(Label& L);		// binds an unbound label L to the current code position
-  virtual void merge(Label& L, Label& with);	// merges L and with, L is the merged label
+  virtual void bind(Label& L); // binds an unbound label L to the current code position
+  virtual void merge(Label& L, Label& with); // merges L and with, L is the merged label
 };
 #endif // _ABSTRACT_ASSEMBLER_HPP

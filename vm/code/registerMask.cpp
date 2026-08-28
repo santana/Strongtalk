@@ -28,13 +28,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 Location pick(RegisterMask& alloc, RegisterMask mask) {
   Unimplemented();
   unsigned r = mask & ~alloc;
-  if (r == 0) return unAllocated;
-  for (int reg = 0; ! isSet(r, 0); reg ++, r >>= 1) ;
+  if (r == 0)
+    return unAllocated;
+  for (int reg = 0; !isSet(r, 0); reg++, r >>= 1)
+    ;
   setNth(alloc, reg);
   // return Location(ireg, reg); /// fix this
   return Location();
 }
- 
+
 void printAllocated(RegisterMask rs) {
   Unimplemented();
   /*
@@ -64,12 +66,15 @@ void printAllocated(RegisterMask rs) {
   */
 }
 
-
-inline int tempToIndex(Location temp) { Unimplemented(); return 0;
+inline int tempToIndex(Location temp) {
+  Unimplemented();
+  return 0;
   // return temp - FirstStackLocation + 32;
 }
 
-inline Location indexToTemp(int temp) { Unimplemented(); return Location(); 
+inline Location indexToTemp(int temp) {
+  Unimplemented();
+  return Location();
   // return Location(temp + FirstStackLocation - 32);
 }
 
@@ -83,7 +88,8 @@ void LongRegisterMask::allocate(Location l) {
   } else {
     assert(l.isStackLocation(), "should be stack reg");
     int i = tempToIndex(l);
-    if (i >= bv->length) grow();
+    if (i >= bv->length)
+      grow();
     bv->add(i);
   }
 }
@@ -120,21 +126,19 @@ void LongRegisterMask::grow() {
   bv = bv->copy(bv->length * 2);
 }
 
-void LongRegisterMask::print() {
-}
-
+void LongRegisterMask::print() {}
 
 // find the first bit >= start that is unused in all strings[0..len-1]
-int findFirstUnused(LongRegisterMask** masks, int len,
-		    int start) {
+int findFirstUnused(LongRegisterMask** masks, int len, int start) {
   // currently quite unoptimized
   BitVector* b = masks[0]->bv->copy(masks[0]->bv->maxLength);
   for (int i = 1; i < len; i++) {
     b->unionWith(masks[i]->bv);
   }
-    for (i = start; i < b->length; i++) {
-      if (!b->includes(i)) break;
-    }
+  for (i = start; i < b->length; i++) {
+    if (!b->includes(i))
+      break;
+  }
   return i;
 }
 

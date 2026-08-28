@@ -51,14 +51,16 @@ methodOop LookupResult::method() const {
 }
 
 methodOop LookupResult::method_or_null() const {
-  if (is_empty())  return NULL;
-  if (is_method()) return methodOop(_result);
+  if (is_empty())
+    return NULL;
+  if (is_method())
+    return methodOop(_result);
   return get_nmethod()->method();
 }
 
 jumpTableEntry* LookupResult::entry() const {
   assert(!is_empty(), "cannot be empty");
-  return is_entry() ? (jumpTableEntry*) _result : NULL;
+  return is_entry() ? (jumpTableEntry*)_result : NULL;
 }
 
 nmethod* LookupResult::get_nmethod() const {
@@ -67,12 +69,14 @@ nmethod* LookupResult::get_nmethod() const {
 }
 
 bool LookupResult::matches(methodOop m) const {
-  if (is_empty()) return false;
+  if (is_empty())
+    return false;
   return is_method() ? method() == m : false;
 }
 
 bool LookupResult::matches(nmethod* nm) const {
-  if (is_empty()) return false;
+  if (is_empty())
+    return false;
   return is_entry() ? entry()->method() == nm : false;
 }
 
@@ -94,45 +98,45 @@ void LookupResult::print_short_on(outputStream* st) const {
 }
 
 class cacheElement { // : ValueObj {
- public:
-  LookupKey    key;
+public:
+  LookupKey key;
   LookupResult result;
-  long          filler;
+  long filler;
 
   cacheElement() : key(), result() {}
 
   void verify() {
     assert(sizeof(cacheElement) == 32, "checking structure layout");
     assert(reinterpret_cast<intptr_t>(&this->key) - reinterpret_cast<intptr_t>(this) == 0, "checking structure layout");
-    assert(reinterpret_cast<intptr_t>(&this->result) - reinterpret_cast<intptr_t>(this) == 16, "checking structure layout");
+    assert(reinterpret_cast<intptr_t>(&this->result) - reinterpret_cast<intptr_t>(this) == 16,
+           "checking structure layout");
 
     if (key.klass() || key.selector_or_method()) {
       if (result.is_empty()) {
-         mystd->print("Verify failed in lookupCache: ");
-	 mystd->cr();
-	 mystd->print("  element = (");
-	 key.klass()->print_value_on(mystd);
-         mystd->print("::");
-         key.selector_or_method()->print_value_on(mystd);
-         mystd->print(")");
-         mystd->cr();
-	 mystd->print("  result = (");
-         result.print_on(mystd);
-         mystd->print_cr(")");
-	 fatal("lookupCache verify failed");
+        mystd->print("Verify failed in lookupCache: ");
+        mystd->cr();
+        mystd->print("  element = (");
+        key.klass()->print_value_on(mystd);
+        mystd->print("::");
+        key.selector_or_method()->print_value_on(mystd);
+        mystd->print(")");
+        mystd->cr();
+        mystd->print("  result = (");
+        result.print_on(mystd);
+        mystd->print_cr(")");
+        fatal("lookupCache verify failed");
       }
       nmethod* nm = Universe::code->lookup(&key);
       if (result.is_method() && nm) {
-	error("key %s has interpreted method in lookupTable but should have nmethod %#x", key.print_string(), nm);
+        error("key %s has interpreted method in lookupTable but should have nmethod %#x", key.print_string(), nm);
       } else if (result.is_entry() && result.get_nmethod() != nm) {
-	error("key %s: nmethod does not match codeTable nmethod", key.print_string());
+        error("key %s: nmethod does not match codeTable nmethod", key.print_string());
       }
       if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(&key)) {
-	error("key %s: interpreted method in lookupTable despite inlining DB entry", key.print_string());
+        error("key %s: interpreted method in lookupTable despite inlining DB entry", key.print_string());
       }
     }
   }
-
 
   void clear() {
     key.initialize(NULL, NULL);
@@ -140,7 +144,7 @@ class cacheElement { // : ValueObj {
   }
 
   void initialize(LookupKey* k, LookupResult r) {
-    key    = *k;
+    key = *k;
     result = r;
   }
 };
@@ -148,28 +152,31 @@ class cacheElement { // : ValueObj {
 static cacheElement primary[primary_cache_size];
 static cacheElement secondary[secondary_cache_size];
 
-int lookupCache::primary_cache_address() { return intptr_t(&primary[0]); }
-int lookupCache::secondary_cache_address() { return intptr_t(&secondary[0]); }
+int lookupCache::primary_cache_address() {
+  return intptr_t(&primary[0]);
+}
+int lookupCache::secondary_cache_address() {
+  return intptr_t(&secondary[0]);
+}
 
 void lookupCache::flush() {
   int index;
   // Clear primary cache
-  for (index = 0; index < primary_cache_size; index ++)
+  for (index = 0; index < primary_cache_size; index++)
     primary[index].clear();
   // Clear secondary cache
-  for (index = 0; index < secondary_cache_size; index ++)
+  for (index = 0; index < secondary_cache_size; index++)
     secondary[index].clear();
   // Clear counters
-  number_of_primary_hits   = 0;
+  number_of_primary_hits = 0;
   number_of_secondary_hits = 0;
-  number_of_misses         = 0;
+  number_of_misses = 0;
 }
-
 
 void lookupCache::flush(LookupKey* key) {
   // Flush the entry associated the the lookup key k
-  int primary_index   = hash_value(key) % primary_cache_size;
-  int secondary_index = primary_index   % secondary_cache_size;
+  int primary_index = hash_value(key) % primary_cache_size;
+  int secondary_index = primary_index % secondary_cache_size;
 
   if (primary[primary_index].key.equal(key)) {
     // If we have a hit in the primary cache
@@ -185,19 +192,16 @@ void lookupCache::flush(LookupKey* key) {
   }
 }
 
-
 void lookupCache::verify() {
   int index;
-  for (index = 0; index < primary_cache_size; index ++)
+  for (index = 0; index < primary_cache_size; index++)
     primary[index].verify();
-  for (index = 0; index < secondary_cache_size; index ++)
+  for (index = 0; index < secondary_cache_size; index++)
     secondary[index].verify();
 }
 
 inline unsigned int lookupCache::hash_value(LookupKey* key) {
-  return
-    ((uintptr_t) key->klass() ^ (uintptr_t) key->selector_or_method())
-    / sizeof(cacheElement);
+  return ((uintptr_t)key->klass() ^ (uintptr_t)key->selector_or_method()) / sizeof(cacheElement);
 }
 
 inline LookupResult lookupCache::lookup_probe(LookupKey* key) {
@@ -213,8 +217,8 @@ inline LookupResult lookupCache::lookup_probe(LookupKey* key) {
   if (secondary[secondary_index].key.equal(key)) {
     cacheElement tmp;
     // swap primary <-> secondary.
-    tmp                        = primary[primary_index];
-    primary[primary_index]     = secondary[secondary_index];
+    tmp = primary[primary_index];
+    primary[primary_index] = secondary[secondary_index];
     secondary[secondary_index] = tmp;
     return primary[primary_index].result;
   }
@@ -251,8 +255,8 @@ inline LookupResult lookupCache::lookup(LookupKey* key, bool compile) {
 #endif
     cacheElement tmp;
     // swap primary <-> secondary.
-    tmp                        = primary[primary_index];
-    primary[primary_index]     = secondary[secondary_index];
+    tmp = primary[primary_index];
+    primary[primary_index] = secondary[secondary_index];
     secondary[secondary_index] = tmp;
     return primary[primary_index].result;
   }
@@ -264,7 +268,7 @@ inline LookupResult lookupCache::lookup(LookupKey* key, bool compile) {
     if (UseInliningDatabaseEagerly && result.is_method() && InliningDatabase::lookup(key)) {
       // don't update the cache during inliningDB compiles if the result is a methodOop
       // contained in the inlining DB -- otherwise method won't be compiled eagerly
-      assert(theCompiler, "should only happen during compilation");   // otherwise ic lookup is broken
+      assert(theCompiler, "should only happen during compilation"); // otherwise ic lookup is broken
     } else {
       secondary[secondary_index] = primary[primary_index];
       primary[primary_index].initialize(key, result);
@@ -297,15 +301,16 @@ LookupResult lookupCache::cache_miss_lookup(LookupKey* key, bool compile) {
     if (rs) {
       if (TraceInliningDatabase) {
         mystd->print("ID compile: ");
-	key->print();
-	mystd->cr();
+        key->print();
+        mystd->cr();
       }
 
       // Remove old nmethod if present
       nmethod* old_nm = Universe::code->lookup(rs->key());
       VM_OptimizeRScope op(rs);
       VMProcess::execute(&op);
-      if (old_nm) old_nm->makeZombie(true);
+      if (old_nm)
+        old_nm->makeZombie(true);
 
       if (op.result()) {
         LookupResult result(op.result());
@@ -323,9 +328,7 @@ LookupResult lookupCache::cache_miss_lookup(LookupKey* key, bool compile) {
   }
 
   // Last resort is searching class for the method
-  methodOop method = key->is_normal_type()
-                   ? key->klass()->klass_part()->lookup(key->selector())
-                   : key->method();
+  methodOop method = key->is_normal_type() ? key->klass()->klass_part()->lookup(key->selector()) : key->method();
 
   if (!method) {
     LookupResult result;
@@ -353,7 +356,8 @@ methodOop lookupCache::compile_time_normal_lookup(klassOop receiver_klass, symbo
 
 methodOop lookupCache::compile_time_super_lookup(klassOop receiver_klass, symbolOop selector) {
   methodOop method = method_lookup(receiver_klass->klass_part()->superKlass(), selector);
-  if (method == NULL) return NULL;
+  if (method == NULL)
+    return NULL;
   LookupKey key(receiver_klass, method);
   LookupResult res = lookup(&key, false);
   return res.method_or_null();
@@ -365,11 +369,11 @@ methodOop lookupCache::method_lookup(klassOop receiver_klass, symbolOop selector
   return method;
 }
 
-nmethod* lookupCache::compile_method(LookupKey *key, methodOop method) {
+nmethod* lookupCache::compile_method(LookupKey* key, methodOop method) {
   if (!DeltaProcess::active()->in_vm_operation()) {
     VM_OptimizeMethod op(key, method);
     VMProcess::execute(&op);
-    assert(op.result(),                 "nmethod must be there");
+    assert(op.result(), "nmethod must be there");
     assert(Universe::code->lookup(key), "nmethod must be there");
     return op.result();
   }
@@ -442,25 +446,19 @@ oop lookupCache::normal_lookup(klassOop receiver_klass, symbolOop selector) {
 }
 
 static void print_counter(char* title, int counter, int total) {
-  lprintf("%20s: %3.1f%% (%d)\n",
-	  title,
-	  total == 0 ? 0.0 : 100.0 * (double) counter / (double) total,
-	  counter);
+  lprintf("%20s: %3.1f%% (%d)\n", title, total == 0 ? 0.0 : 100.0 * (double)counter / (double)total, counter);
 }
 
 void lookupCache::clear_statistics() {
-  number_of_primary_hits    = 0;
-  number_of_secondary_hits  = 0;
-  number_of_misses          = 0;
+  number_of_primary_hits = 0;
+  number_of_secondary_hits = 0;
+  number_of_misses = 0;
 }
 
 void lookupCache::print_statistics() {
-  int total = number_of_primary_hits
-            + number_of_secondary_hits
-            + number_of_misses;
-  lprintf("Lookup Cache: size(%d, %d)\n",
-	  primary_cache_size, secondary_cache_size);
-  print_counter("Primary Hit Ratio",   number_of_primary_hits,   total);
+  int total = number_of_primary_hits + number_of_secondary_hits + number_of_misses;
+  lprintf("Lookup Cache: size(%d, %d)\n", primary_cache_size, secondary_cache_size);
+  print_counter("Primary Hit Ratio", number_of_primary_hits, total);
   print_counter("Secondary Hit Ratio", number_of_secondary_hits, total);
-  print_counter("Miss Ratio",          number_of_misses,         total);
+  print_counter("Miss Ratio", number_of_misses, total);
 }

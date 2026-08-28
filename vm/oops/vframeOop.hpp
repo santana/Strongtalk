@@ -35,36 +35,38 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [index       ]
 //    [timestamp   ]
 
-class vframeOopDesc: public memOopDesc {
- private:
+class vframeOopDesc : public memOopDesc {
+private:
   processOop _process;
-  smiOop     _index;
-  smiOop     _time_stamp;
+  smiOop _index;
+  smiOop _time_stamp;
 
- protected:
+protected:
   vframeOopDesc* addr() const { return (vframeOopDesc*)memOopDesc::addr(); }
 
- public:
+public:
   // accessors
-  processOop process() const 		{ return addr()->_process; }
-  void set_process(processOop p)	{ STORE_OOP(&addr()->_process,p);}
+  processOop process() const { return addr()->_process; }
+  void set_process(processOop p) { STORE_OOP(&addr()->_process, p); }
 
-  int index() const			{ return addr()->_index->value(); }
-  void set_index(int i)			{ STORE_OOP(&addr()->_index, as_smiOop(i)); }
+  int index() const { return addr()->_index->value(); }
+  void set_index(int i) { STORE_OOP(&addr()->_index, as_smiOop(i)); }
 
-  int time_stamp() const		{ return addr()->_time_stamp->value(); }
-  void set_time_stamp(int t)		{ STORE_OOP(&addr()->_time_stamp, as_smiOop(t)); }
+  int time_stamp() const { return addr()->_time_stamp->value(); }
+  void set_time_stamp(int t) { STORE_OOP(&addr()->_time_stamp, as_smiOop(t)); }
   friend vframeOop as_vframeOop(void* p);
 
   // sizing
-  static int header_size() { return sizeof(vframeOopDesc)/oopSize; }
+  static int header_size() { return sizeof(vframeOopDesc) / oopSize; }
 
   // get the corresponding vframe, returns NULL it fails.
   vframe* get_vframe();
 
- private:
-   friend class vframeKlass;
+private:
+  friend class vframeKlass;
 };
-inline vframeOop as_vframeOop(void* p) { return vframeOop(as_memOop(p)); }
+inline vframeOop as_vframeOop(void* p) {
+  return vframeOop(as_memOop(p));
+}
 
 #endif // _VFRAME_OOP_HPP

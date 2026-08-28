@@ -31,16 +31,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // SnapshotDesc is the class handling readin and writing of snapshots
 
 class SnapshotDesc : StackObj {
- private:
+private:
   FILE* file;
-  bool  _has_error;
+  bool _has_error;
 
   // HEADER
   void read_header();
   void write_header();
 
   void read_sizes();
-  void write_sizes();  
+  void write_sizes();
 
   void read_revision();
   void write_revision();
@@ -57,7 +57,7 @@ class SnapshotDesc : StackObj {
   void read_zone();
   void write_zone();
 
- public:
+public:
   void read_from(char* name);
   void write_on(char* name);
 

@@ -61,7 +61,7 @@ void set_symbolKlass_vtbl(Klass* k) {
 oop symbolKlass::scavenge(oop obj) {
   Unused(obj);
   ShouldNotCallThis(); // shouldn't need to scavenge canonical symbols
-                       // (should be tenured)
+  // (should be tenured)
   return NULL;
 }
 
@@ -73,14 +73,17 @@ void symbolKlass::oop_print_value_on(oop obj, outputStream* st) {
   assert_symbol(obj, "dispatch check");
   symbolOop array = symbolOop(obj);
   int len = array->length();
-  int n   = min(MaxElementPrintSize, len);
+  int n = min(MaxElementPrintSize, len);
   st->print("#");
-  for(int index = 1; index <= n; index++) {
+  for (int index = 1; index <= n; index++) {
     char c = array->byte_at(index);
-    if (isprint(c)) st->print("%c",   c);
-    else            st->print("\\%o", c);
+    if (isprint(c))
+      st->print("%c", c);
+    else
+      st->print("\\%o", c);
   }
- if (n < len) st->print("...");
+  if (n < len)
+    st->print("...");
 }
 
 void symbolKlass::print(oop obj) {

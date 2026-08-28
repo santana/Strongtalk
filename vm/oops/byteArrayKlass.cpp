@@ -43,15 +43,15 @@ oop byteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 }
 
 oop byteArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool permit_tenured) {
-  klassOop k        = as_klassOop();
-  int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size, image_oop_size) / image_oop_size;
+  klassOop k = as_klassOop();
+  int ni_size = non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(size, image_oop_size) / image_oop_size;
   // allocate
-  oop* result = permit_tenured ?
-    Universe::allocate_tenured(obj_size, false):
-    Universe::allocate(obj_size, (memOop*)&k, permit_scavenge);
-  
-  if (!result) return NULL;
+  oop* result = permit_tenured ? Universe::allocate_tenured(obj_size, false)
+                               : Universe::allocate(obj_size, (memOop*)&k, permit_scavenge);
+
+  if (!result)
+    return NULL;
 
   byteArrayOop obj = as_byteArrayOop(result);
   // header
@@ -59,14 +59,15 @@ oop byteArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool perm
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // indexables
-  oop* base = (oop*) obj->addr();
-  oop* end  = base + obj_size;
+  oop* base = (oop*)obj->addr();
+  oop* end = base + obj_size;
   // %optimized 'obj->set_length(size)'
   base[ni_size] = as_smiOop(size);
   // %optimized 'for (int index = 1; index <= size; index++)
   //               obj->byte_at_put(index, '\000')'
-  base = &base[ni_size+1];
-  while (base < end) *base++ = (oop) 0;
+  base = &base[ni_size + 1];
+  while (base < end)
+    *base++ = (oop)0;
   return obj;
 }
 
@@ -82,9 +83,9 @@ klassOop byteArrayKlass::create_class(klassOop super_class, mixinOop mixin) {
   return create_generic_class(super_class, mixin, o.vtbl_value());
 }
 
-void byteArrayKlass::initialize_object(byteArrayOop obj, char* value, int len){
+void byteArrayKlass::initialize_object(byteArrayOop obj, char* value, int len) {
   for (int index = 1; index <= len; index++) {
-    obj->byte_at_put(index, value[index-1]);
+    obj->byte_at_put(index, value[index - 1]);
   }
 }
 
@@ -94,29 +95,32 @@ void set_byteArrayKlass_vtbl(Klass* k) {
 }
 
 bool byteArrayKlass::oop_verify(oop obj) {
-  assert_byteArray(obj,"Argument must be byteArray");
+  assert_byteArray(obj, "Argument must be byteArray");
   return byteArrayOop(obj)->verify();
 }
 
 void byteArrayKlass::oop_print_value_on(oop obj, outputStream* st) {
-  assert_byteArray(obj,"Argument must be byteArray");
+  assert_byteArray(obj, "Argument must be byteArray");
   byteArrayOop array = byteArrayOop(obj);
   int len = array->length();
-  int n   = min(MaxElementPrintSize, len);
+  int n = min(MaxElementPrintSize, len);
   st->print("'");
-  for(int index = 1; index <= n; index++) {
+  for (int index = 1; index <= n; index++) {
     char c = array->byte_at(index);
-    if (isprint(c)) st->print("%c",   c);
-    else            st->print("\\%o", c);
+    if (isprint(c))
+      st->print("%c", c);
+    else
+      st->print("\\%o", c);
   }
-  if (n < len) st->print("...");
+  if (n < len)
+    st->print("...");
   st->print("'");
 }
 
 void byteArrayKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
-  u_char* p   = byteArrayOop(obj)->bytes();
-  oop*  l   = byteArrayOop(obj)->length_addr();
-  int   len = byteArrayOop(obj)->length();
+  u_char* p = byteArrayOop(obj)->bytes();
+  oop* l = byteArrayOop(obj)->length_addr();
+  int len = byteArrayOop(obj)->length();
   // header + instance variables
   memOopKlass::oop_layout_iterate(obj, blk);
   // indexables
@@ -138,11 +142,11 @@ void byteArrayKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
 int byteArrayKlass::oop_scavenge_contents(oop obj) {
   // header + instance variables
   memOopKlass::oop_scavenge_contents(obj);
-  return object_size(byteArrayOop(obj)->length());  
+  return object_size(byteArrayOop(obj)->length());
 }
 
 int byteArrayKlass::oop_scavenge_tenured_contents(oop obj) {
   // header + instance variables
   memOopKlass::oop_scavenge_tenured_contents(obj);
-  return object_size(byteArrayOop(obj)->length());  
+  return object_size(byteArrayOop(obj)->length());
 }

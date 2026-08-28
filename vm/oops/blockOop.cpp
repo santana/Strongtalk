@@ -36,18 +36,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/generation.inline.hpp"
 #include "oops/oop.inline.hpp"
 
-methodOop blockClosureOopDesc::method() const { 
+methodOop blockClosureOopDesc::method() const {
   oop m = addr()->_methodOrJumpAddr;
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   if (isCompiledBlock()) {
-    jumpTableEntry* e = (jumpTableEntry*) m;
+    jumpTableEntry* e = (jumpTableEntry*)m;
     assert(e->is_block_closure_stub(), "must be block stub");
     return e->block_method();
   }
-# endif
+#endif
 
-  return methodOop(m); 
+  return methodOop(m);
 }
 
 int blockClosureOopDesc::number_of_arguments() {
@@ -61,15 +61,16 @@ bool blockClosureOopDesc::is_pure() const {
 void blockClosureOopDesc::verify() {
   memOopDesc::verify();
   oop m = addr()->_methodOrJumpAddr;
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   if (isCompiledBlock()) {
-    jumpTableEntry* e = (jumpTableEntry*) m;
+    jumpTableEntry* e = (jumpTableEntry*)m;
     e->verify();
-    if (!e->is_block_closure_stub()) error("stub %#x of block %#x isn't a closure stub", e, this);
+    if (!e->is_block_closure_stub())
+      error("stub %#x of block %#x isn't a closure stub", e, this);
   } else {
     m->verify();
   }
-# endif
+#endif
 }
 
 blockClosureOop blockClosureOopDesc::create_clean_block(int nofArgs, char* entry_point) {
@@ -80,13 +81,15 @@ blockClosureOop blockClosureOopDesc::create_clean_block(int nofArgs, char* entry
 }
 
 void blockClosureOopDesc::deoptimize() {
-  if (!isCompiledBlock()) return; // do nothing if unoptimized
+  if (!isCompiledBlock())
+    return; // do nothing if unoptimized
 
   contextOop con = lexical_scope();
-  if (con == nilObj) return;     // do nothing if lexical scope is nil
+  if (con == nilObj)
+    return; // do nothing if lexical scope is nil
 
   int index;
-  nmethod* nm = jump_table_entry()->parent_nmethod(index); 
+  nmethod* nm = jump_table_entry()->parent_nmethod(index);
   NonInlinedBlockScopeDesc* scope = nm->noninlined_block_scope_at(index);
 
   LOG_EVENT1("Deoptimized context in blockClosure -> switch to methodOop 0x%lx", nm);
@@ -104,7 +107,7 @@ void blockClosureOopDesc::deoptimize() {
 }
 
 // -------------- contextOop --------------------
-bool contextOopDesc::is_dead() const { 
+bool contextOopDesc::is_dead() const {
   // assert(!mark()->has_context_forward(), "checking if context is deoptimized");
   return parent() == oop(smiOop_zero) || parent() == nilObj;
 }
@@ -137,7 +140,7 @@ void contextOopDesc::set_unoptimized_context(contextOop con) {
 
 contextOop contextOopDesc::unoptimized_context() {
   if (mark()->has_context_forward()) {
-    contextOop con =  contextOop(parent());
+    contextOop con = contextOop(parent());
     assert(con->is_context(), "must be context");
     return con;
   }
@@ -149,8 +152,7 @@ int contextOopDesc::chain_length() const {
 #ifdef ASSERT
   GrowableArray<contextOop>* path = new GrowableArray<contextOop>(10);
   for (contextOop cc = contextOop(this); cc->has_outer_context(); cc = cc->outer_context()) {
-    assert(path->find(cc) < 0, "cycle has been detected in a context chain")
-    path->append(cc);
+    assert(path->find(cc) < 0, "cycle has been detected in a context chain") path->append(cc);
   }
 #endif
   for (contextOop con = contextOop(this); con->has_outer_context(); con = con->outer_context()) {

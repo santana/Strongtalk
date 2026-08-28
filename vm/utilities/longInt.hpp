@@ -25,18 +25,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define _LONG_INT_HPP
 
 class long_int {
- private:
+private:
   unsigned int low;
   unsigned int high;
   inline long_int();
- public:
+
+public:
   long_int(unsigned int low, unsigned int high);
   long_int(double value);
 
-  long_int operator -(long_int arg);
-  long_int operator +(long_int arg);
-  bool operator ==(long_int arg);
-  bool operator !=(long_int arg);
+  long_int operator-(long_int arg);
+  long_int operator+(long_int arg);
+  bool operator==(long_int arg);
+  bool operator!=(long_int arg);
 
   double as_double();
 };

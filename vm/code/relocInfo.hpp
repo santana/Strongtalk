@@ -24,7 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifndef _RELOC_INFO_HPP
 #define _RELOC_INFO_HPP
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 #include "code/compiledIC.hpp"
 #include "memory/allocation.hpp"
@@ -41,7 +41,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   3) primitive caches  (isPrimitive()    == true)
 //   4) uncommom traps    (isUncommonTrap() == true)
 //   5) runtime calls     (isRuntimeCall()  == true)
-//   6) internal word ref (isInternalWord() == true) 
+//   6) internal word ref (isInternalWord() == true)
 //   7) external word ref (isExternalWord() == true)
 // when objects move (GC) or if code moves (compacting the code heap)
 //
@@ -49,61 +49,57 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   3 bits indicating the relocation type
 //  13 bits indicating the byte offset from the previous relocInfo address
 
-const int reloc_type_width   =  3;
+const int reloc_type_width = 3;
 const int reloc_offset_width = 13;
 
 class relocInfo : ValueObj {
- protected:
+protected:
   unsigned short _value;
- public:
 
+public:
   // constructor
   relocInfo(int type, int offset);
 
   enum relocType {
-    none	       = -1,
-    oop_type           =  0,	// embedded oop (non-smi)
-    ic_type            =  1,	// inline cache
-    prim_type          =  2,	// primitive call
-    runtime_call_type  =  3, 	// Relative reference to external segment
-    external_word_type =  4, 	// Absolute reference to external segment
-    internal_word_type =  5, 	// Absolute reference to local    segment
-    uncommon_type      =  6,	// uncommon branch
-    dll_type           =  7  	// DLL call
+    none = -1,
+    oop_type = 0, // embedded oop (non-smi)
+    ic_type = 1, // inline cache
+    prim_type = 2, // primitive call
+    runtime_call_type = 3, // Relative reference to external segment
+    external_word_type = 4, // Absolute reference to external segment
+    internal_word_type = 5, // Absolute reference to local    segment
+    uncommon_type = 6, // uncommon branch
+    dll_type = 7 // DLL call
   };
 
   // accessors
-  int offset() const { 
-    return get_unsigned_bitfield((int)_value, 0, reloc_offset_width);
-  }
-  int type() const { 
-    return get_unsigned_bitfield((int)_value, reloc_offset_width, reloc_type_width);
-  }
+  int offset() const { return get_unsigned_bitfield((int)_value, 0, reloc_offset_width); }
+  int type() const { return get_unsigned_bitfield((int)_value, reloc_offset_width, reloc_type_width); }
 
   // marks inline cache?
-  bool isIC()           const { return type() == ic_type; }
+  bool isIC() const { return type() == ic_type; }
   // marks primitive call?
-  bool isPrimitive()    const { return type() == prim_type; }
+  bool isPrimitive() const { return type() == prim_type; }
   // marks uncommon trap?
   bool isUncommonTrap() const { return type() == uncommon_type; }
   // is oop encoded in instruction?
-  bool isOop()          const { return type() == oop_type;  }
+  bool isOop() const { return type() == oop_type; }
   // is runtime call?
-  bool isRuntimeCall()  const { return type() == runtime_call_type; }
+  bool isRuntimeCall() const { return type() == runtime_call_type; }
   // is internal word reference?
   bool isInternalWord() const { return type() == internal_word_type; }
   // is external word reference?
   bool isExternalWord() const { return type() == external_word_type; }
   // is external word reference?
-  bool isDLL()          const { return type() == dll_type; }
+  bool isDLL() const { return type() == dll_type; }
 
   // marks any call?
-  bool isCall()         const { return !isOop(); }
+  bool isCall() const { return !isOop(); }
 
   // If the offset is 0 the relocInfo is invalid.
   // Only used for padding (relocInfo array is oop aligned in nmethod).
-  bool isValid()        const { return offset() != 0; } 
-  
+  bool isValid() const { return offset() != 0; }
+
   // prints the relocation with retrieved information from the nmethod.
   int print(nmethod* c, int last_offset);
 };
@@ -118,25 +114,26 @@ class relocInfo : ValueObj {
 //       case relocInfo::prim_type:
 //       case relocInfo::uncommon_type:
 //       case relocInfo::runtime_call_type:
-//       case relocInfo::internal_word_type: 
-//       case relocInfo::external_word_type: 
+//       case relocInfo::internal_word_type:
+//       case relocInfo::external_word_type:
 //      }
 //    }
 
 class relocIterator : StackObj {
- private:
-   char*      addr;	  // this is the first instance variable comment  -Lars
-   relocInfo* current;	  // this is the 2nd instance variable comment  -Lars
-   relocInfo* end;
- public:
+private:
+  char* addr; // this is the first instance variable comment  -Lars
+  relocInfo* current; // this is the 2nd instance variable comment  -Lars
+  relocInfo* end;
 
+public:
   // constructor
   relocIterator(const nmethod* nm);
 
   // get next reloc info, return !eos
   bool next() {
     current++;
-    if (current == end) return false;
+    if (current == end)
+      return false;
     addr += current->offset();
     return current->isValid();
   }
@@ -146,11 +143,11 @@ class relocIterator : StackObj {
 
   bool is_call() const { return current->isCall(); }
 
-  int* word_addr() const { return (int*) addr; }
+  int* word_addr() const { return (int*)addr; }
 
   oop* oop_addr() const {
     assert(type() == relocInfo::oop_type, "must be oop");
-    return (oop*) addr;
+    return (oop*)addr;
   }
 
   CompiledIC* ic() const {
@@ -172,12 +169,12 @@ class relocIterator : StackObj {
 
   char* call_end() const {
     assert(type() != relocInfo::oop_type, "must be call");
-    return addr + 4;	// INTEL-SPECIFIC
+    return addr + 4; // INTEL-SPECIFIC
   }
 
   char* callDestination() const {
     assert(type() != relocInfo::oop_type, "must be call");
-    return *(char**)addr + intptr_t(addr) + 4;	// INTEL-SPECIFIC
+    return *(char**)addr + intptr_t(addr) + 4; // INTEL-SPECIFIC
   }
 
   // for uncommon traps only: was it ever executed?

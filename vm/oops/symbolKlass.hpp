@@ -29,13 +29,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // symbolOops are canonical symbols; all symbolOops are registered in the
 // symbol table
 
-class symbolKlass: public byteArrayKlass {
- public:
+class symbolKlass : public byteArrayKlass {
+public:
   // testers
-  bool oop_is_symbol()               const { return true;  }
-  
+  bool oop_is_symbol() const { return true; }
+
   // allocation properties
-  bool can_inline_allocation()       const { return false; }
+  bool can_inline_allocation() const { return false; }
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -47,7 +47,7 @@ class symbolKlass: public byteArrayKlass {
 
   // reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // allocation operation
   symbolOop allocateSymbol(char* name, int len);

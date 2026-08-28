@@ -54,19 +54,15 @@ struct symbolTableLink {
 
 struct symbolTableEntry {
   void* symbol_or_link;
-  bool is_empty()  { return symbol_or_link == NULL; }
+  bool is_empty() { return symbol_or_link == NULL; }
   bool is_symbol() { return oop(symbol_or_link)->is_mem(); }
-  void clear()     { symbol_or_link = NULL; }
+  void clear() { symbol_or_link = NULL; }
 
-  symbolOop get_symbol() {
-    return symbolOop(symbol_or_link); }
-  void set_symbol(symbolOop s) {
-    symbol_or_link = (void*) s; }
+  symbolOop get_symbol() { return symbolOop(symbol_or_link); }
+  void set_symbol(symbolOop s) { symbol_or_link = (void*)s; }
 
-  symbolTableLink* get_link() {
-    return (symbolTableLink*) symbol_or_link; }
-  void set_link(symbolTableLink* l) {
-    symbol_or_link = (void*) l; }
+  symbolTableLink* get_link() { return (symbolTableLink*)symbol_or_link; }
+  void set_link(symbolTableLink* l) { symbol_or_link = (void*)l; }
 
   // memory operations
   bool verify(int i);
@@ -75,14 +71,15 @@ struct symbolTableEntry {
   int length();
 };
 
-class symbolTable: public CHeapObj {
- private:
+class symbolTable : public CHeapObj {
+private:
   // instance variables
   symbolTableEntry buckets[symbol_table_size];
   symbolTableLink* free_list;
   symbolTableLink* first_free_link;
   symbolTableLink* end_block;
- public:
+
+public:
   // constructor
   symbolTable();
 
@@ -91,17 +88,20 @@ class symbolTable: public CHeapObj {
 
   // Used in bootstrap for checking
   bool is_present(symbolOop sym);
- protected:
+
+protected:
   void add_symbol(symbolOop s); // Only used by bootstrap
 
-  symbolOop basic_add(char *name, int len, int hashValue);
+  symbolOop basic_add(char* name, int len, int hashValue);
   symbolOop basic_add(symbolOop s, int hashValue);
   symbolTableEntry* bucketFor(int hashValue) {
     assert(hashValue % symbol_table_size >= 0, "must be positive");
-    return &buckets[hashValue % symbol_table_size]; }
+    return &buckets[hashValue % symbol_table_size];
+  }
   symbolTableEntry* firstBucket() { return &buckets[0]; }
-  symbolTableEntry* lastBucket()  { return &buckets[symbol_table_size-1]; }
- public:
+  symbolTableEntry* lastBucket() { return &buckets[symbol_table_size - 1]; }
+
+public:
   void add(symbolOop s);
 
   // memory operations
@@ -113,7 +113,7 @@ class symbolTable: public CHeapObj {
 
   // memory management for symbolTableLinks
   symbolTableLink* new_link(symbolOop s, symbolTableLink* n = NULL);
-  void             delete_link(symbolTableLink* l);
+  void delete_link(symbolTableLink* l);
 
   // histogram
   void print_histogram();

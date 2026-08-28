@@ -33,29 +33,29 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 // The following variables are used to do NLRs through C code
-extern "C" bool       have_nlr_through_C;
-extern "C" oop        nlr_result;
-extern "C" int        nlr_home;
-extern "C" int        nlr_home_id;
+extern "C" bool have_nlr_through_C;
+extern "C" oop nlr_result;
+extern "C" int nlr_home;
+extern "C" int nlr_home_id;
 extern "C" contextOop nlr_home_context;
 
-bool        have_nlr_through_C = false;
-oop         nlr_result;
-int         nlr_home;
-int         nlr_home_id;
-contextOop  nlr_home_context;
+bool have_nlr_through_C = false;
+oop nlr_result;
+int nlr_home;
+int nlr_home_id;
+contextOop nlr_home_context;
 
 void ErrorHandler::abort_compilation() {
   Unimplemented();
 }
 
-typedef oop (xxx_nlr_at_func)(void** frame_pointer, oop* stack_pointer);
+typedef oop(xxx_nlr_at_func)(void** frame_pointer, oop* stack_pointer);
 
 void ErrorHandler::abort_current_process() {
   xxx_nlr_at_func* provoke_nlr_at = (xxx_nlr_at_func*)StubRoutines::provoke_nlr_at();
-  nlr_home    = 0;
+  nlr_home = 0;
   nlr_home_id = aborting_nlr_home_id();
-  nlr_result  = smiOop_zero;
+  nlr_result = smiOop_zero;
   provoke_nlr_at(DeltaProcess::active()->last_Delta_fp(), DeltaProcess::active()->last_Delta_sp());
   ShouldNotReachHere();
 }
@@ -74,4 +74,3 @@ void ErrorHandler::genesis() {
   Universe::flush_inline_caches_in_methods();
   Processes::start(new VMProcess);
 }
-

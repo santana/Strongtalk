@@ -27,20 +27,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/dByteArrayOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class doubleByteArrayKlass: public memOopKlass {
- public:
+class doubleByteArrayKlass : public memOopKlass {
+public:
   // allocation properties
   bool can_inline_allocation() const { return false; }
 
   // Return the oop size for a doubleByteArrayOop
   int object_size(int number_of_doubleBytes) const {
-    return   non_indexable_size() + 1
-           + roundTo(number_of_doubleBytes * 2, image_oop_size) / image_oop_size;
+    return non_indexable_size() + 1 + roundTo(number_of_doubleBytes * 2, image_oop_size) / image_oop_size;
   }
- 
+
   // creation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
-  oop allocateObjectSize(int bytes, bool permit_scavenge=true, bool tenured = false);
+  oop allocateObjectSize(int bytes, bool permit_scavenge = true, bool tenured = false);
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -54,11 +53,11 @@ class doubleByteArrayKlass: public memOopKlass {
 
   char* name() const { return "doubleByteArray"; }
 
- // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP 
- public:
+  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
+public:
   // accessors
   int oop_scavenge_contents(oop obj);
-  int oop_scavenge_tenured_contents(oop obj); 
+  int oop_scavenge_tenured_contents(oop obj);
 
   bool oop_verify(oop obj);
   void oop_print_value_on(oop obj, outputStream* st);
@@ -73,7 +72,7 @@ class doubleByteArrayKlass: public memOopKlass {
 
   // testers
   bool oop_is_doubleByteArray() const { return true; }
-  bool oop_is_indexable() const       { return true; }
+  bool oop_is_indexable() const { return true; }
 };
 void set_doubleByteArrayKlass_vtbl(Klass* k);
 #endif // _DBYTE_ARRAY_KLASS_HPP

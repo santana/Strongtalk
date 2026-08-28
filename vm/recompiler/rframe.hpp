@@ -25,7 +25,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define _RFRAME_HPP
 
 // rframes ("recompiler frames") decorate stack frames with some extra information
-// needed by the recompiler.  The recompiler views the stack (at the time of recompilation) 
+// needed by the recompiler.  The recompiler views the stack (at the time of recompilation)
 // as a list of rframes.
 
 #ifdef DELTA_COMPILER
@@ -36,52 +36,54 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 template <class E> class GrowableArray;
 
 class RFrame : public PrintableResourceObj {
- protected:
-  frame _fr;			// my frame
-  RFrame* _caller, *_callee;	// caller / callee rframes (or NULL)
-  int _num;			// stack frame number (0 = most recent)
-  int _distance;                // recompilation search "distance" (measured in # of interpreted frames)
-  int _invocations;		// current invocation estimate (for this frame)
-  				// (i.e., how often was thus frame called)
-  int _ncallers;		// number of callers
-  int _sends;			// sends caused by this frame
-  int _cumulSends;		// sends including sends from nested blocks
-  int _loopDepth;		// loop depth of callee
+protected:
+  frame _fr; // my frame
+  RFrame *_caller, *_callee; // caller / callee rframes (or NULL)
+  int _num; // stack frame number (0 = most recent)
+  int _distance; // recompilation search "distance" (measured in # of interpreted frames)
+  int _invocations; // current invocation estimate (for this frame)
+  // (i.e., how often was thus frame called)
+  int _ncallers; // number of callers
+  int _sends; // sends caused by this frame
+  int _cumulSends; // sends including sends from nested blocks
+  int _loopDepth; // loop depth of callee
 
   RFrame(frame fr, const RFrame* callee);
-  virtual void init() = 0;	// compute invocations, loopDepth, etc.
+  virtual void init() = 0; // compute invocations, loopDepth, etc.
   void print(const char* name);
 
- public:
-
+public:
   static RFrame* new_RFrame(frame fr, const RFrame* callee);
 
-  virtual bool is_interpreted() const	{ return false; }
-  virtual bool is_compiled() const	{ return false; }
-  bool is_super() const;		// invoked by super send?
-  int invocations() const		{ return _invocations; }
-  int sends() const			{ return _sends; }
-  int cumulSends() const		{ return _cumulSends; }
-  int loopDepth() const			{ return _loopDepth; }
-  int num() const			{ return _num; }
-  int distance() const			{ return _distance; }
+  virtual bool is_interpreted() const { return false; }
+  virtual bool is_compiled() const { return false; }
+  bool is_super() const; // invoked by super send?
+  int invocations() const { return _invocations; }
+  int sends() const { return _sends; }
+  int cumulSends() const { return _cumulSends; }
+  int loopDepth() const { return _loopDepth; }
+  int num() const { return _num; }
+  int distance() const { return _distance; }
   void set_distance(int d);
-  int nCallers() const			{ return _ncallers; }
+  int nCallers() const { return _ncallers; }
   bool is_blockMethod() const;
-  frame fr() const			{ return _fr; }
-  virtual LookupKey* key() const	= 0;	// lookup key or NULL (for block invoc.)
-  virtual int cost() const		= 0;	// estimated inlining cost (size)
-  virtual methodOop top_method() const	= 0;
+  frame fr() const { return _fr; }
+  virtual LookupKey* key() const = 0; // lookup key or NULL (for block invoc.)
+  virtual int cost() const = 0; // estimated inlining cost (size)
+  virtual methodOop top_method() const = 0;
   virtual deltaVFrame* top_vframe() const = 0;
   virtual void cleanupStaleInlineCaches() = 0;
-  virtual nmethod* nm() const		{ ShouldNotCallThis(); return NULL; }
-  bool hasBlockArgs() const;		// does top method receive block arguments?
-  GrowableArray<blockClosureOop>* blockArgs() const;  // return list of all block args
+  virtual nmethod* nm() const {
+    ShouldNotCallThis();
+    return NULL;
+  }
+  bool hasBlockArgs() const; // does top method receive block arguments?
+  GrowableArray<blockClosureOop>* blockArgs() const; // return list of all block args
 
   RFrame* caller();
-  RFrame* callee() const		{ return _callee; }
-  RFrame* parent() const;		// rframe containing lexical scope (if any)
-  void print()				= 0;
+  RFrame* callee() const { return _callee; }
+  RFrame* parent() const; // rframe containing lexical scope (if any)
+  void print() = 0;
 
   static int computeSends(methodOop m);
   static int computeSends(nmethod* nm);
@@ -89,44 +91,44 @@ class RFrame : public PrintableResourceObj {
   static int computeCumulSends(nmethod* nm);
 };
 
-class CompiledRFrame : public RFrame {		// frame containing a compiled method
- protected:
+class CompiledRFrame : public RFrame { // frame containing a compiled method
+protected:
   nmethod* _nm;
-  deltaVFrame* _vf;		// top vframe; may be NULL (for most recent frame)
+  deltaVFrame* _vf; // top vframe; may be NULL (for most recent frame)
 
   CompiledRFrame(frame fr, const RFrame* callee);
   void init();
   friend class RFrame;
 
- public:
-  CompiledRFrame(frame fr);	// for nmethod triggering its counter (callee == NULL)
-  bool is_compiled() const		{ return true; }
+public:
+  CompiledRFrame(frame fr); // for nmethod triggering its counter (callee == NULL)
+  bool is_compiled() const { return true; }
   methodOop top_method() const;
-  deltaVFrame* top_vframe() const	{ return _vf; }
-  nmethod* nm() const			{ return _nm; }
+  deltaVFrame* top_vframe() const { return _vf; }
+  nmethod* nm() const { return _nm; }
   LookupKey* key() const;
   int cost() const;
   void cleanupStaleInlineCaches();
   void print();
 };
 
-class InterpretedRFrame : public RFrame {	// interpreter frame
- protected:
+class InterpretedRFrame : public RFrame { // interpreter frame
+protected:
   methodOop _method;
-  int _bci;			// current bci
+  int _bci; // current bci
   klassOop _receiverKlass;
-  deltaVFrame* _vf;		// may be NULL (for most recent frame)
-  LookupKey* _key;		// cached value of key()
- 
+  deltaVFrame* _vf; // may be NULL (for most recent frame)
+  LookupKey* _key; // cached value of key()
+
   InterpretedRFrame(frame fr, const RFrame* callee);
   void init();
   friend class RFrame;
 
- public:
-  InterpretedRFrame(frame fr, methodOop m, klassOop rcvrKlass);	// for method triggering its invocation counter
-  bool is_interpreted() const		{ return true; }
-  methodOop top_method() const		{ return _method; }
-  deltaVFrame* top_vframe() const	{ return _vf; }
+public:
+  InterpretedRFrame(frame fr, methodOop m, klassOop rcvrKlass); // for method triggering its invocation counter
+  bool is_interpreted() const { return true; }
+  methodOop top_method() const { return _method; }
+  deltaVFrame* top_vframe() const { return _vf; }
   LookupKey* key() const;
   int cost() const;
   void cleanupStaleInlineCaches();

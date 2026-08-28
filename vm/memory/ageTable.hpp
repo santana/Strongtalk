@@ -30,22 +30,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Age table for feedback-mediated tenuring (generation scavenging).
 // Note: all sizes are in oopSize
-class ageTable: public CHeapObj {
- public:
+class ageTable : public CHeapObj {
+public:
   // instance variables
-  enum { table_size = markOopDesc::max_age + 1 };
+  enum {
+    table_size = markOopDesc::max_age + 1
+  };
   int sizes[table_size];
-  
+
   // constructor
   ageTable();
-  
+
   // operations
   void clear() { set_words(&sizes[0], table_size, 0); }
   void add(memOop p, int oop_size) {
     int age = p->mark()->age();
     assert(age >= 0 && age < table_size, "invalid age of object");
-    sizes[age] += oop_size; }
-  
+    sizes[age] += oop_size;
+  }
+
   int tenure_size(int age);
   int tenuring_threshold(int oop_size);
 };

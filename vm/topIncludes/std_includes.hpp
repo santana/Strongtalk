@@ -21,46 +21,44 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-#include <stddef.h> 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
 #include "utilities/ostream.hpp"
 
-
 #if defined(_MSC_VER)
 
-  #define int64_t __int64
+#define int64_t __int64
 
 #elif defined(__GNUC__)
 
-  #ifndef _WIN32 // mingw 
-    #define _isnan(n) isnan(n)
-    #if defined(__APPLE__)
-      // Apple's math.h has no finite(); use the C99 isfinite()
-      #define _finite(n) isfinite(n)
-    #else
-      #define _finite(n) finite(n)
-    #endif
-  #endif
+#ifndef _WIN32 // mingw
+#define _isnan(n) isnan(n)
+#if defined(__APPLE__)
+// Apple's math.h has no finite(); use the C99 isfinite()
+#define _finite(n) isfinite(n)
+#else
+#define _finite(n) finite(n)
+#endif
+#endif
 
-  #define _vsnprintf   vsnprintf
+#define _vsnprintf vsnprintf
 
-  // __stdcall is a real calling convention only on 32-bit x86; on 64-bit
-  // targets (x86-64, AArch64) the attribute is meaningless and clang flags it
-  // with -Wignored-attributes. Leave it empty so the primitive/trampoline
-  // declarations below don't emit noise on the ports this VM actually builds.
-  #if defined(__i386__) || defined(_M_IX86)
-    #define __stdcall __attribute__((stdcall))
-  #else
-    #define __stdcall
-  #endif
-  #define mystd _mystd
+// __stdcall is a real calling convention only on 32-bit x86; on 64-bit
+// targets (x86-64, AArch64) the attribute is meaningless and clang flags it
+// with -Wignored-attributes. Leave it empty so the primitive/trampoline
+// declarations below don't emit noise on the ports this VM actually builds.
+#if defined(__i386__) || defined(_M_IX86)
+#define __stdcall __attribute__((stdcall))
+#else
+#define __stdcall
+#endif
+#define mystd _mystd
 
 #else
 
-  #error Unrecognized compiler
+#error Unrecognized compiler
 
 #endif

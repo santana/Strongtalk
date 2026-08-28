@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "memory/iterator.hpp"
 #include "memory/universe.hpp"
 #include "memory/space.hpp"
@@ -35,7 +34,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 oop* OldWaterMark::pseudo_allocate(int size) {
   oop* p = _point;
-  if (p + size  < _space->end()) {
+  if (p + size < _space->end()) {
     _point = p + size;
   } else {
     lprintf("crossing space\n");
@@ -46,10 +45,10 @@ oop* OldWaterMark::pseudo_allocate(int size) {
 
 void space::clear() {
   set_top(bottom());
-# ifdef ASSERT 
+#ifdef ASSERT
   // to detect scavenging bugs
-  set_oops(bottom(), capacity()/oopSize, oop(1));
-# endif
+  set_oops(bottom(), capacity() / oopSize, oop(1));
+#endif
 }
 
 void space::switch_pointers(oop from, oop to) {
@@ -72,32 +71,32 @@ void space::prepare_for_compaction(OldWaterMark* mark) {
   // Used by universe::mark_sweep_phase2()
   // %profiling note:
   //    the garbage collectior spends 55% of its time in this function
-  oop* q          = bottom();
-  oop* t          = top();
-  oop* new_top    = mark->_point;
+  oop* q = bottom();
+  oop* t = top();
+  oop* new_top = mark->_point;
   memOop first_free = NULL;
   while (q < t) {
     memOop m = as_memOop(q);
     if (m->is_gc_marked()) {
-      if (first_free) { 
+      if (first_free) {
         first_free->set_mark(q);
         // lprintf("[%#lx] = %#lx, %#lx\n", first_free, first_free->mark(), q);
         first_free = NULL;
       }
 
       // Reverse the list with the mark at the end
-      oop* root_or_mark = (oop*) m->mark();
+      oop* root_or_mark = (oop*)m->mark();
       while (is_oop_root(root_or_mark)) {
-        oop* next = (oop*) *root_or_mark;
-        *root_or_mark = (oop) as_memOop(new_top);
+        oop* next = (oop*)*root_or_mark;
+        *root_or_mark = (oop)as_memOop(new_top);
         root_or_mark = next;
       }
       m->set_mark(markOop(root_or_mark));
 
-      int size = m->gc_retrieve_size(); // The mark has to be restored before 
+      int size = m->gc_retrieve_size(); // The mark has to be restored before
       // the size is retrieved
       new_top += size;
-      q       += size;
+      q += size;
     } else {
       if (!first_free) {
         first_free = m;
@@ -106,7 +105,7 @@ void space::prepare_for_compaction(OldWaterMark* mark) {
       q += m->size();
     }
   }
-  if (first_free) { 
+  if (first_free) {
     first_free->set_mark(q);
     // lprintf("[%#lx] = %#lx, %#lx\n", first_free, first_free->mark(), q);
   }
@@ -118,15 +117,15 @@ void space::compact(OldWaterMark* mark) {
   // Used by universe::mark_sweep_phase3()
   // %profiling note:
   //    the garbage collectior spends 23% of its time in this function
-  oop* q       = bottom();
-  oop* t       = top();
+  oop* q = bottom();
+  oop* t = top();
   oop* new_top = mark->_point;
 
   while (q < t) {
     memOop m = as_memOop(q);
     if (m->mark()->is_smi()) {
       // lprintf("Expanding %#lx -> %#lx\n", q, *q);
-      q = (oop*) *q;
+      q = (oop*)*q;
     } else {
       int size = m->gc_retrieve_size();
       // make sure we don't run out of old space!
@@ -139,7 +138,7 @@ void space::compact(OldWaterMark* mark) {
         assert((*new_top)->is_mark(), "should be header");
       }
       mark->_space->update_offsets(new_top, new_top + size);
-      q       += size;
+      q += size;
       new_top += size;
     }
   }
@@ -149,13 +148,14 @@ void space::compact(OldWaterMark* mark) {
 }
 
 oop* newSpace::object_start(oop* p) {
-  assert (bottom() <= p && p < top(), "p must be in space");
+  assert(bottom() <= p && p < top(), "p must be in space");
   oop* q = bottom();
   oop* t = top();
   while (q < t) {
     oop* prev = q;
     q += as_memOop(q)->size();
-    if (q > p) return prev;
+    if (q > p)
+      return prev;
   }
   fatal("should never reach this point");
   return NULL;
@@ -178,12 +178,12 @@ edenSpace::edenSpace() {}
 survivorSpace::survivorSpace() {}
 
 void survivorSpace::scavenge_contents_from(NewWaterMark* mark) {
-# ifdef VERBOSE_SCAVENGING  
-  lprintf("{scavenge_contents [ %#lx <= %#lx <= %#lx]}\n",
-    bottom(), mark->_point, top());
-# endif
+#ifdef VERBOSE_SCAVENGING
+  lprintf("{scavenge_contents [ %#lx <= %#lx <= %#lx]}\n", bottom(), mark->_point, top());
+#endif
 
-  if (top() == mark->_point) return;
+  if (top() == mark->_point)
+    return;
   assert(mark->_point < top(), "scavenging past top");
 
   oop* p = mark->_point; // for performance
@@ -192,49 +192,48 @@ void survivorSpace::scavenge_contents_from(NewWaterMark* mark) {
   do {
     memOop m = as_memOop(p);
 
-# ifdef VERBOSE_SCAVENGING  
+#ifdef VERBOSE_SCAVENGING
     lprintf("{scavenge %#lx (%#lx)} ", p, m->klass());
     lprintf("%s\n", m->klass()->name());
-    oop *prev = p;
-# endif
+    oop* prev = p;
+#endif
 
     assert((*p)->is_mark(), "Header should be mark");
     p += m->scavenge_contents();
 
-# ifdef VERBOSE_SCAVENGING  
+#ifdef VERBOSE_SCAVENGING
     if (p - prev != m->size())
       fatal("scavenge_contents is not returning the right size");
-# endif
+#endif
 
   } while (p < t);
   mark->_point = p;
 }
 
 void oldSpace::initialize_threshold() {
-  next_offset_index                 = 0;
+  next_offset_index = 0;
   offset_array[next_offset_index++] = 0;
   next_offset_treshold = _bottom + card_size_in_oops;
 }
 
-oldSpace::oldSpace(char *name, int &size) {
-  next_space= NULL;
+oldSpace::oldSpace(char* name, int& size) {
+  next_space = NULL;
 
-  int offset_array_size = Universe::old_gen.virtual_space.reserved_size()/card_size;
+  int offset_array_size = Universe::old_gen.virtual_space.reserved_size() / card_size;
   offset_array = NEW_C_HEAP_ARRAY(u_char, offset_array_size);
   memset(offset_array, 0, offset_array_size);
   set_name(name);
-  set_bottom((oop*) Universe::old_gen.virtual_space.low());
-  set_top((oop*)    Universe::old_gen.virtual_space.low());
-  set_end((oop*)    Universe::old_gen.virtual_space.high());
+  set_bottom((oop*)Universe::old_gen.virtual_space.low());
+  set_top((oop*)Universe::old_gen.virtual_space.low());
+  set_end((oop*)Universe::old_gen.virtual_space.high());
   initialize_threshold();
 }
 
 void oldSpace::update_offset_array(oop* p, oop* p_end) {
-  assert( p_end >= next_offset_treshold, "should be past threshold");
+  assert(p_end >= next_offset_treshold, "should be past threshold");
   //  [    ][    ][   ]       "card pages"
   //    ^p  ^t     ^p_end
-  assert((next_offset_treshold - p) <= card_size_in_oops,
-    "Offset should be <= card_size_in_oops");
+  assert((next_offset_treshold - p) <= card_size_in_oops, "Offset should be <= card_size_in_oops");
   offset_array[next_offset_index++] = next_offset_treshold - p;
   next_offset_treshold += card_size_in_oops;
   while (next_offset_treshold < p_end) {
@@ -251,16 +250,17 @@ int oldSpace::expand(int size) {
   int min_size = ReservedSpace::page_align_size(size);
   int expand_size = ReservedSpace::align_size(min_size, ObjectHeapExpandSize * K);
   Universe::old_gen.virtual_space.expand(expand_size);
-  set_end((oop*) Universe::old_gen.virtual_space.high());
+  set_end((oop*)Universe::old_gen.virtual_space.high());
   expansion_count++;
   return expand_size;
 }
 
 int oldSpace::shrink(int size) {
   int shrink_size = ReservedSpace::align_size(size, ObjectHeapExpandSize * K);
-  if (shrink_size > free()) return 0;
+  if (shrink_size > free())
+    return 0;
   Universe::old_gen.virtual_space.shrink(shrink_size);
-  set_end((oop*) Universe::old_gen.virtual_space.high());
+  set_end((oop*)Universe::old_gen.virtual_space.high());
   return shrink_size;
 }
 
@@ -277,7 +277,7 @@ void oldSpace::scavenge_contents_from(OldWaterMark* mark) {
   assert(this == mark->_space, "Match does not match space");
   oop* p = mark->_point;
   while (p < _top) {
-    assert(oop(*p)->is_mark(),"must be mark");
+    assert(oop(*p)->is_mark(), "must be mark");
     memOop x = as_memOop(p);
     p += x->scavenge_tenured_contents();
   }
@@ -298,13 +298,12 @@ void oldSpace::object_iterate_from(OldWaterMark* mark, ObjectClosure* blk) {
   blk->end_space(this);
 }
 
-
 void space::oops_do(oopsDoFn f) {
   oop* p = bottom();
   oop* t = top();
   while (p < t) {
     memOop m = as_memOop(p);
-    f((oop*) &m);
+    f((oop*)&m);
     p += m->size();
   }
 }
@@ -318,7 +317,8 @@ void space::print() {
 }
 
 void space::object_iterate(ObjectClosure* blk) {
-  if (is_empty()) return;
+  if (is_empty())
+    return;
   blk->begin_space(this);
   oop* p = bottom();
   oop* t = top();
@@ -370,7 +370,7 @@ public:
 
 void oldSpace::verify() {
   lprintf("%s ", name());
-  oop*   p = _bottom;
+  oop* p = _bottom;
   memOop m;
   VerifyOldOopClosure blk;
   while (p < _top) {
@@ -378,7 +378,7 @@ void oldSpace::verify() {
     m = as_memOop(p);
 
     int size = m->size();
-    assert(m == as_memOop(Universe::object_start(p + (size/2))), "check offset computation");
+    assert(m == as_memOop(Universe::object_start(p + (size / 2))), "check offset computation");
 
     m->verify();
     blk.the_obj = m;
@@ -391,14 +391,14 @@ void oldSpace::verify() {
 oop* oldSpace::object_start(oop* p) {
   // Find the page start
   oop* q = p;
-  intptr_t b = (intptr_t) q;
+  intptr_t b = (intptr_t)q;
   clearBits(b, nthMask(card_shift));
-  q = (oop*) b;
+  q = (oop*)b;
   assert(contains(q), "q must be in this space");
-  int index  = (q - bottom()) / card_size_in_oops;
+  int index = (q - bottom()) / card_size_in_oops;
 
   int offset = offset_array[index--];
-  while(offset == card_size_in_oops) {
+  while (offset == card_size_in_oops) {
     q -= card_size_in_oops;
     offset = offset_array[index--];
   }
@@ -409,12 +409,12 @@ oop* oldSpace::object_start(oop* p) {
     q = n;
     n += as_memOop(n)->size();
   }
-  assert( as_memOop(q)->mark()->is_mark(), "Must be mark");
+  assert(as_memOop(q)->mark()->is_mark(), "Must be mark");
   return q;
 }
 
 extern "C" {
 oop* eden_bottom = NULL;
-oop* eden_top    = NULL;
-oop* eden_end    = NULL;
+oop* eden_top = NULL;
+oop* eden_end = NULL;
 }

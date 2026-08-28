@@ -25,111 +25,120 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "compiler/bitVector.hpp"
 
-  bool BitVector::unionWith(BitVector* other) {
-    while (length < other->length) bits[length++] = 0;
-    assert(length <= maxLength, "grew too much");
-    bool changed = false;
-    for (int i = indexFromNumber(other->length-1); i >= 0; i--) {
-      int old = bits[i];
-      bits[i] |= other->bits[i];
-      changed |= (old != bits[i]);
-    }
-    return changed;
+bool BitVector::unionWith(BitVector* other) {
+  while (length < other->length)
+    bits[length++] = 0;
+  assert(length <= maxLength, "grew too much");
+  bool changed = false;
+  for (int i = indexFromNumber(other->length - 1); i >= 0; i--) {
+    int old = bits[i];
+    bits[i] |= other->bits[i];
+    changed |= (old != bits[i]);
   }
+  return changed;
+}
 
-  bool BitVector::intersectWith(BitVector* other) {
-    bool changed = false;
-    for (int i = indexFromNumber(min(length, other->length)-1); i >= 0; i--) {
-      int old = bits[i];
-      bits[i] &= other->bits[i];
-      changed |= (old != bits[i]);
-    }
-    return changed;
+bool BitVector::intersectWith(BitVector* other) {
+  bool changed = false;
+  for (int i = indexFromNumber(min(length, other->length) - 1); i >= 0; i--) {
+    int old = bits[i];
+    bits[i] &= other->bits[i];
+    changed |= (old != bits[i]);
   }
+  return changed;
+}
 
-  bool BitVector::isDisjointFrom(BitVector* other) {
-    for (int i = indexFromNumber(min(length, other->length)-1); i >= 0; i--) {
-      if ((bits[i] & other->bits[i]) != 0) return false;
-    }
-    return true;
+bool BitVector::isDisjointFrom(BitVector* other) {
+  for (int i = indexFromNumber(min(length, other->length) - 1); i >= 0; i--) {
+    if ((bits[i] & other->bits[i]) != 0)
+      return false;
   }
+  return true;
+}
 
-  void BitVector::addFromTo(int first, int last) {
-    // mark bits [first..last]
-    assert(first >= 0 && first < length, "wrong index");
-    assert(last >= 0 && last < length, "wrong index");
-    int startIndex = indexFromNumber(first);
-    int   endIndex = indexFromNumber(last);
-    if (startIndex == endIndex) {
-      assert(last - first < BitsPerWord, "oops");
-      int mask = (int) nthMask(last - first + 1);
-      bits[startIndex] |= mask << offsetFromNumber(first);
-    } else {
-      bits[startIndex] |= (int) (AllBits << offsetFromNumber(first));
-      for (int i = startIndex + 1; i < endIndex; i++) bits[i] = (int) AllBits;
-      bits[endIndex] |= nthMask(offsetFromNumber(last) + 1);
-    }
-#   ifdef ASSERT
-      for (int i = first; i <= last; i++)
-	assert(includes(i), "bit should be set");
-#   endif
+void BitVector::addFromTo(int first, int last) {
+  // mark bits [first..last]
+  assert(first >= 0 && first < length, "wrong index");
+  assert(last >= 0 && last < length, "wrong index");
+  int startIndex = indexFromNumber(first);
+  int endIndex = indexFromNumber(last);
+  if (startIndex == endIndex) {
+    assert(last - first < BitsPerWord, "oops");
+    int mask = (int)nthMask(last - first + 1);
+    bits[startIndex] |= mask << offsetFromNumber(first);
+  } else {
+    bits[startIndex] |= (int)(AllBits << offsetFromNumber(first));
+    for (int i = startIndex + 1; i < endIndex; i++)
+      bits[i] = (int)AllBits;
+    bits[endIndex] |= nthMask(offsetFromNumber(last) + 1);
   }
+#ifdef ASSERT
+  for (int i = first; i <= last; i++)
+    assert(includes(i), "bit should be set");
+#endif
+}
 
-# ifdef UNUSED
-  void BitVector::removeFromTo(int first, int last) {
-    assert(first >= 0 && first < length, "wrong index");
-    assert(last >= 0 && last < length, "wrong index");
-    int startIndex = indexFromNumber(first);
-    int   endIndex = indexFromNumber(last);
-    if (startIndex == endIndex) {
-      assert(last - first < BitsPerWord, "oops");
-      int mask = ~nthMask(last - first + 1);
-      bits[startIndex] &= mask << offsetFromNumber(first);
-    } else {
-      bits[startIndex] &= ~(AllBits << offsetFromNumber(first));
-      for (int i = startIndex + 1; i < endIndex; i++) bits[i] = 0;
-      bits[endIndex] &= ~nthMask(offsetFromNumber(last) + 1);
-    }
-#   ifdef ASSERT
-      for (int i = first; i <= last; i++)
-	assert(!includes(i), "bit shouldn't be set");
-#   endif
+#ifdef UNUSED
+void BitVector::removeFromTo(int first, int last) {
+  assert(first >= 0 && first < length, "wrong index");
+  assert(last >= 0 && last < length, "wrong index");
+  int startIndex = indexFromNumber(first);
+  int endIndex = indexFromNumber(last);
+  if (startIndex == endIndex) {
+    assert(last - first < BitsPerWord, "oops");
+    int mask = ~nthMask(last - first + 1);
+    bits[startIndex] &= mask << offsetFromNumber(first);
+  } else {
+    bits[startIndex] &= ~(AllBits << offsetFromNumber(first));
+    for (int i = startIndex + 1; i < endIndex; i++)
+      bits[i] = 0;
+    bits[endIndex] &= ~nthMask(offsetFromNumber(last) + 1);
   }
-# endif
+#ifdef ASSERT
+  for (int i = first; i <= last; i++)
+    assert(!includes(i), "bit shouldn't be set");
+#endif
+}
+#endif
 
-  void BitVector::print_short() { lprintf("BitVector %#lx", this); }
-  
-  void BitVector::doForAllOnes(intDoFn f) {
-    for (int i = indexFromNumber(length-1); i >= 0; i--) {
-      int b = bits[i];
-      for (int j = 0; j < BitsPerWord; j++) {
-	if (isSet(b, j)) {
-	  f(i * BitsPerWord + j);
-	  clearNth(b, j);
-	  if (!b) break;
-	}
+void BitVector::print_short() {
+  lprintf("BitVector %#lx", this);
+}
+
+void BitVector::doForAllOnes(intDoFn f) {
+  for (int i = indexFromNumber(length - 1); i >= 0; i--) {
+    int b = bits[i];
+    for (int j = 0; j < BitsPerWord; j++) {
+      if (isSet(b, j)) {
+        f(i * BitsPerWord + j);
+        clearNth(b, j);
+        if (!b)
+          break;
       }
     }
   }
-  
-  void BitVector::print() {
-    print_short();
-    lprintf(": {");
-    int last = -1;
-    int i;
-    for (i = 0; i < length; i ++) {
-      if (includes(i)) {
-	if (last < 0) {
-	  lprintf(" %ld", i);	// first bit after string of 0s
-	  last = i;
-	}
-      } else {
-	if (last >= 0) lprintf("..%ld", i - 1);	// ended a group
-	last = -1;
+}
+
+void BitVector::print() {
+  print_short();
+  lprintf(": {");
+  int last = -1;
+  int i;
+  for (i = 0; i < length; i++) {
+    if (includes(i)) {
+      if (last < 0) {
+        lprintf(" %ld", i); // first bit after string of 0s
+        last = i;
       }
+    } else {
+      if (last >= 0)
+        lprintf("..%ld", i - 1); // ended a group
+      last = -1;
     }
-    if (last >= 0) lprintf("..%ld", i - 1);
-    lprintf(" }");
   }
-  
+  if (last >= 0)
+    lprintf("..%ld", i - 1);
+  lprintf(" }");
+}
+
 #endif // DELTA_COMPILER

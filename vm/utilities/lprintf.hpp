@@ -40,8 +40,8 @@ extern "C" void compiler_warning(char* m, ...);
 
 // like sprintf, but updates the buf pointer so that subsequent
 // sprintf invocations append to the string
-extern "C" void my_sprintf    (char*& buf, const char* format, ...);
-extern "C" void my_sprintf_len(char*& buf, const int len, const char* format, ...);	// make output len chars long
+extern "C" void my_sprintf(char*& buf, const char* format, ...);
+extern "C" void my_sprintf_len(char*& buf, const int len, const char* format, ...); // make output len chars long
 
 void flush_logFile();
 

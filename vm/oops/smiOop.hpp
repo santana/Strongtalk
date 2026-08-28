@@ -29,44 +29,44 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // 0, 1 in smiOop format
 
-# define smiOop_zero  smiOop((0L << Tag_Size) + Int_Tag)
-# define smiOop_one   smiOop((1L << Tag_Size) + Int_Tag)
+#define smiOop_zero smiOop((0L << Tag_Size) + Int_Tag)
+#define smiOop_one smiOop((1L << Tag_Size) + Int_Tag)
 
 // minimum and maximum smiOops
-# define smi_min  (-(1L << (BitsPerWord - 3)))
-# define smi_max  ( (1L << (BitsPerWord - 3)) - 1)
+#define smi_min (-(1L << (BitsPerWord - 3)))
+#define smi_max ((1L << (BitsPerWord - 3)) - 1)
 
-# define smiOop_min   smiOop((smi_min << Tag_Size) + Int_Tag)
-# define smiOop_max   smiOop((smi_max << Tag_Size) + Int_Tag)
+#define smiOop_min smiOop((smi_min << Tag_Size) + Int_Tag)
+#define smiOop_max smiOop((smi_max << Tag_Size) + Int_Tag)
 
-class smiOopDesc: public oopDesc {
- public:
+class smiOopDesc : public oopDesc {
+public:
   // constructors
   friend smiOop as_smiOop(smi value);
 
   // accessors
   // %note: value() depends on an arithmetic shift to preserve sign.
-  smi value()      const { return smi(this) >> Tag_Size; }
-  
+  smi value() const { return smi(this) >> Tag_Size; }
+
   smi identity_hash() const { return value(); }
-  
+
   // arithmetic
   smiOop increment() { return smiOop(smi(this) + smi(smiOop_one)); }
   smiOop decrement() { return smiOop(smi(this) - smi(smiOop_one)); }
-  
+
   // printing
   void print_on(outputStream* st);
 
   // operations provided for the optimizing compiler.
   friend smiOop as_byte_count_smiOop(smi value) {
     assert(lowerBits(value, Tag_Size) == 0, "not a legal byte count");
-    return smiOop(value + Int_Tag); }
+    return smiOop(value + Int_Tag);
+  }
 
-  smi byte_count() const { return smi(this) - Int_Tag;   }
+  smi byte_count() const { return smi(this) - Int_Tag; }
 };
 
-inline smiOop as_smiOop(smi value)
-{
-    return smiOop((value << Tag_Size) + Int_Tag);
+inline smiOop as_smiOop(smi value) {
+  return smiOop((value << Tag_Size) + Int_Tag);
 }
 #endif // _SMI_OOP_HPP

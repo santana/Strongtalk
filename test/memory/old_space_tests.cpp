@@ -13,10 +13,9 @@ extern "C" int expansion_count;
 DECLARE(OldSpaceTests)
 END_DECLARE
 
-SETUP(OldSpaceTests) {
-}
+SETUP(OldSpaceTests) {}
 
-TEARDOWN(OldSpaceTests){
+TEARDOWN(OldSpaceTests) {
   MarkSweep::collect();
 }
 

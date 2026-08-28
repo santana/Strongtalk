@@ -36,26 +36,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 relocInfo::relocInfo(int t, int off) {
   assert(0 <= t && t < (1 << reloc_type_width), "wrong type");
   assert(off <= nthMask(reloc_offset_width), "offset out off bounds");
-  _value =  (t << reloc_offset_width) | off;
+  _value = (t << reloc_offset_width) | off;
 }
 
-
 int relocInfo::print(nmethod* m, int last_offset) {
-  if (!isValid()) return 0;
+  if (!isValid())
+    return 0;
   int current_offset = offset() + last_offset;
-  int* addr = (int*) (m->insts() + current_offset);
+  int* addr = (int*)(m->insts() + current_offset);
   printIndent();
   if (isOop()) {
     mystd->print("embedded oop   @0x%lx = ", addr);
     oop((intptr_t)*addr)->print_value();
   } else {
     assert(isCall(), "must be a call");
-    char* target = (char*) (*addr + (intptr_t) addr + oopSize);
+    char* target = (char*)(*addr + (intptr_t)addr + oopSize);
     if (isIC()) {
       mystd->print("inline cache   @0x%lx", addr);
     } else if (isPrimitive()) {
       mystd->print("primitive call @0x%lx = ", addr);
-      primitive_desc* pd = primitives::lookup((fntype) target);
+      primitive_desc* pd = primitives::lookup((fntype)target);
       if (pd != NULL) {
         mystd->print("(%s)", pd->name());
       } else {
@@ -73,9 +73,9 @@ int relocInfo::print(nmethod* m, int last_offset) {
 }
 
 relocIterator::relocIterator(const nmethod* nm) {
-  current = nm->locs()-1;
-  end     = nm->locsEnd();
-  addr    = nm->insts();
+  current = nm->locs() - 1;
+  end = nm->locsEnd();
+  addr = nm->insts();
 }
 
 bool relocIterator::wasUncommonTrapExecuted() const {
@@ -96,6 +96,5 @@ bool relocIterator::is_position_dependent() const {
   }
   return false;
 }
-
 
 #endif // DELTA_COMPILER

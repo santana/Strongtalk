@@ -48,23 +48,19 @@ class BaseHandle {
   oop saved;
   BaseHandle* next;
   BaseHandle* prev;
+
 protected:
   void push();
   virtual BaseHandle* first() = 0;
   virtual void setFirst(BaseHandle*) = 0;
   BaseHandle(oop toSave, bool log, const char* label);
   void oops_do(void f(oop*));
+
 public:
   void pop();
-  oop* asPointer() {
-    return &saved;
-  }
-  oop as_oop() {
-    return saved;
-  }
-  klassOop as_klassOop() {
-    return klassOop(saved);
-  }
+  oop* asPointer() { return &saved; }
+  oop as_oop() { return saved; }
+  klassOop as_klassOop() { return klassOop(saved); }
   friend class FunctionProcessClosure;
   friend volatile void* handleCallBack(int index, int params);
 };
@@ -73,6 +69,7 @@ class StackHandle : public BaseHandle, StackObj {
 protected:
   BaseHandle* first();
   void setFirst(BaseHandle* handle);
+
 public:
   StackHandle(oop toSave, bool log = false, const char* label = "");
   ~StackHandle();
@@ -80,7 +77,7 @@ public:
 };
 // PersistentHandles can preserve a memOop without occupying space in the Handles
 // array and do not require a HandleMark. This means they can be used in contexts
-// where a thread switch may occur (eg. surrounding a delta call). 
+// where a thread switch may occur (eg. surrounding a delta call).
 class PersistentHandle : public CHeapObj {
   oop saved;
   PersistentHandle* next;
@@ -88,56 +85,47 @@ class PersistentHandle : public CHeapObj {
   static PersistentHandle* first;
 
 public:
-  static intptr_t savedOffset() {
-    return (intptr_t)&((PersistentHandle*)NULL)->saved;
-  }
+  static intptr_t savedOffset() { return (intptr_t)&((PersistentHandle*)NULL)->saved; }
   PersistentHandle(oop toSave);
   ~PersistentHandle();
-  oop as_oop() {
-    return saved;
-  }
-  klassOop as_klassOop() {
-    return klassOop(saved);
-  }
-  oop* asPointer() {
-    return &saved;
-  }
+  oop as_oop() { return saved; }
+  klassOop as_klassOop() { return klassOop(saved); }
+  oop* asPointer() { return &saved; }
   static void oops_do(void f(oop*));
 };
 
 class Handles : AllStatic {
-  static int  _top;
-  static int  _size;
-  static oop  _array[];
-  static oop  oop_at(int index);
-  static int  push_oop(oop value);
-  static int  top() { return _top; }
+  static int _top;
+  static int _size;
+  static oop _array[];
+  static oop oop_at(int index);
+  static int push_oop(oop value);
+  static int top() { return _top; }
   static void set_top(int t);
 
   friend class HandleMark;
   friend class Handle;
- public:
+
+public:
   // Memory managment
   static void oops_do(void f(oop*));
 };
 
 class HandleMark {
   int top;
- public:
-  HandleMark()  { top = Handles::top(); }
-  ~HandleMark() { Handles::set_top(top);}
+
+public:
+  HandleMark() { top = Handles::top(); }
+  ~HandleMark() { Handles::set_top(top); }
 };
 
 class Handle : StackObj {
   int index;
- public:
-  Handle(oop value) {
-    index = Handles::push_oop(value);
-  }
-  
-  oop as_oop() {
-    return Handles::oop_at(index);
-  }
+
+public:
+  Handle(oop value) { index = Handles::push_oop(value); }
+
+  oop as_oop() { return Handles::oop_at(index); }
 
   objArrayOop as_objArray() {
     assert(Handles::oop_at(index)->is_objArray(), "type check");

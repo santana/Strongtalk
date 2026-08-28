@@ -32,15 +32,16 @@ void set_vframeKlass_vtbl(Klass* k) {
   k->set_vtbl_value(o.vtbl_value());
 }
 oop vframeKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
   // allocate
   oop* result = basicAllocate(size, &k, permit_scavenge, tenured);
-  if (!result) return NULL;
+  if (!result)
+    return NULL;
   vframeOop obj = as_vframeOop(result);
   // header
   memOop(obj)->initialize_header(true, k);
- 
+
   obj->set_process(processOop(nilObj));
   obj->set_index(0);
   obj->set_time_stamp(1);
@@ -67,7 +68,7 @@ int vframeKlass::oop_scavenge_contents(oop obj) {
   // header + instance variables
   memOop(obj)->scavenge_header();
   memOop(obj)->scavenge_body(memOopDesc::header_size(), size);
-  return size;  
+  return size;
 }
 
 int vframeKlass::oop_scavenge_tenured_contents(oop obj) {
@@ -88,9 +89,9 @@ void vframeKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
   vframeOop vf = vframeOop(obj);
-  blk->do_oop("process",    (oop*) &vf->addr()->_process);
-  blk->do_oop("index",      (oop*) &vf->addr()->_index);
-  blk->do_oop("time stamp", (oop*) &vf->addr()->_time_stamp);
+  blk->do_oop("process", (oop*)&vf->addr()->_process);
+  blk->do_oop("index", (oop*)&vf->addr()->_index);
+  blk->do_oop("time stamp", (oop*)&vf->addr()->_time_stamp);
   memOop(obj)->layout_iterate_body(blk, vframeOopDesc::header_size(), non_indexable_size());
 }
 
@@ -98,9 +99,9 @@ void vframeKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
   vframeOop vf = vframeOop(obj);
-  blk->do_oop((oop*) &vf->addr()->_process);
-  blk->do_oop((oop*) &vf->addr()->_index);
-  blk->do_oop((oop*) &vf->addr()->_time_stamp);
+  blk->do_oop((oop*)&vf->addr()->_process);
+  blk->do_oop((oop*)&vf->addr()->_index);
+  blk->do_oop((oop*)&vf->addr()->_time_stamp);
   // instance variables
   memOop(obj)->oop_iterate_body(blk, vframeOopDesc::header_size(), non_indexable_size());
 }

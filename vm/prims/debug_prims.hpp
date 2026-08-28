@@ -30,25 +30,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for debugging
 
 class debugPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
   // <NoReceiver> primitiveBooleanFlagAt: name      <Symbol>
   //                              ifFail: failBlock <PrimFailBlock> ^<Boolean> =
-  //   Internal { 
+  //   Internal {
   //      error = #(NotFound)
   //      name  = 'debugPrimitives::boolAt' }
   //%
-  static PRIM_DECL_1(boolAt,    oop name);
+  static PRIM_DECL_1(boolAt, oop name);
 
   //%prim
   // <NoReceiver> primitiveBooleanFlagAt: name      <Symbol>
   //                                 put: value     <Boolean>
   //                              ifFail: failBlock <PrimFailBlock> ^<Boolean> =
-  //   Internal { 
+  //   Internal {
   //      error = #(NotFound)
   //      name  = 'debugPrimitives::boolAtPut' }
   //%
@@ -57,21 +58,21 @@ class debugPrimitives : AllStatic {
   //%prim
   // <NoReceiver> primitiveSmallIntegerFlagAt: name      <Symbol>
   //                                   ifFail: failBlock <PrimFailBlock> ^<SmallInteger> =
-  //   Internal { 
+  //   Internal {
   //      error = #(NotFound)
   //      name  = 'debugPrimitives::smiAt' }
   //%
-  static PRIM_DECL_1(smiAt,     oop name);
+  static PRIM_DECL_1(smiAt, oop name);
 
   //%prim
   // <NoReceiver> primitiveSmallIntegerFlagAt: name      <Symbol>
   //                                      put: value     <Boolean>
   //                                   ifFail: failBlock <PrimFailBlock> ^<Boolean> =
-  //   Internal { 
+  //   Internal {
   //      error = #(NotFound)
   //      name  = 'debugPrimitives::smiAtPut' }
   //%
-  static PRIM_DECL_2(smiAtPut,  oop name, oop value);
+  static PRIM_DECL_2(smiAtPut, oop name, oop value);
 
   //%prim
   // <NoReceiver> primitiveClearLookupCache ^<Object> =
@@ -173,7 +174,7 @@ class debugPrimitives : AllStatic {
   static PRIM_DECL_0(clearInvocationCounters);
 
   //%prim
-  // <NoReceiver> primitivePrintInvocationCounterHistogram: size <SmallInteger> 
+  // <NoReceiver> primitivePrintInvocationCounterHistogram: size <SmallInteger>
   //                                                ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { name  = 'debugPrimitives::printInvocationCounterHistogram' }
   //%
@@ -198,7 +199,7 @@ class debugPrimitives : AllStatic {
   static PRIM_DECL_0(clearNMethodCounters);
 
   //%prim
-  // <NoReceiver> primitivePrintNMethodCounterHistogram: size <SmallInteger> 
+  // <NoReceiver> primitivePrintNMethodCounterHistogram: size <SmallInteger>
   //                                        ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { name  = 'debugPrimitives::printNMethodCounterHistogram' }
   //%

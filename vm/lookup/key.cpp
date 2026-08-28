@@ -60,15 +60,14 @@ bool LookupKey::verify() const {
   return flag;
 }
 
-
 void LookupKey::switch_pointers(oop from, oop to) {
   SWITCH_POINTERS_TEMPLATE(&_klass);
   SWITCH_POINTERS_TEMPLATE(&_selector_or_method);
 }
 
 void LookupKey::oops_do(void f(oop*)) {
-  f((oop*) &_klass);
-  f((oop*) &_selector_or_method);
+  f((oop*)&_klass);
+  f((oop*)&_selector_or_method);
 }
 
 void LookupKey::print_on(outputStream* st) const {
@@ -110,4 +109,3 @@ LookupKey* LookupKey::allocate(klassOop klass, oop selector_or_method) {
   result->initialize(klass, selector_or_method);
   return result;
 }
-

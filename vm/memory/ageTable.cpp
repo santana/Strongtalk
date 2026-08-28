@@ -26,11 +26,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
 
-ageTable::ageTable() { clear(); }
+ageTable::ageTable() {
+  clear();
+}
 
 int ageTable::tenure_size(int age) {
   int total = 0;
-  for (; age < table_size; age ++) {
+  for (; age < table_size; age++) {
     total += sizes[age];
   }
   return total;
@@ -39,12 +41,11 @@ int ageTable::tenure_size(int age) {
 int ageTable::tenuring_threshold(int size) {
   int total = 0;
   int age;
-  for (age = 1; age < table_size; age ++) {
+  for (age = 1; age < table_size; age++) {
     total += sizes[age];
     if (total > size)
       // zero will promote too much garbage
-      return age == 1  ?  1  :  age - 1;
+      return age == 1 ? 1 : age - 1;
   }
   return age;
 }
-

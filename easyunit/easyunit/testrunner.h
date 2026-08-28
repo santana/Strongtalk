@@ -27,20 +27,18 @@ barthelemy@prologique.com
 
 namespace easyunit {
 
-
 /**
  * Test runner used to determine which test to run.
  * 
  * User may extends this class to provide a custom test runner
  * to TestRegistry.
  */
-class TestRunner: public CHeap
-{
+class TestRunner : public CHeap {
 public:
-	TestRunner();
-	virtual ~TestRunner();
-	
-	/**
+  TestRunner();
+  virtual ~TestRunner();
+
+  /**
 	 * Method used to run testcases by TestRegistry.
 	 * 
 	 * User should override this method in order to provide custom
@@ -49,10 +47,9 @@ public:
 	 * @param testCase Linked list of testcases
 	 * @param size Size of the linked list
 	 */
-	virtual void run(TestCase *testCase, int size);
-
+  virtual void run(TestCase* testCase, int size);
 };
 
 } // EasyUnit ns
 
-#endif	// TestRunner_H
+#endif // TestRunner_H

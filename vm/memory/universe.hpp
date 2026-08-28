@@ -21,9 +21,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-#ifndef  _UNIVERSE_HPP
-#define  _UNIVERSE_HPP
+#ifndef _UNIVERSE_HPP
+#define _UNIVERSE_HPP
 
 #include "memory/allocation.hpp"
 #include "memory/generation.hpp"
@@ -31,10 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/spaceSize.hpp"
 #include "oops/oop.hpp"
 
-extern bool NeedScavenge;       // set when eden overflows
+extern bool NeedScavenge; // set when eden overflows
 
-extern  bool GCInProgress;       // GC/scavenge in progress
-extern  bool bootstrapping;      // true only at the very beginning
+extern bool GCInProgress; // GC/scavenge in progress
+extern bool bootstrapping; // true only at the very beginning
 
 // When you add a new root is added to Universe remember to:
 //   1. add a private static variable prefixed with _.
@@ -67,8 +66,8 @@ extern "C" klassOop nineArgumentBlockKlassObj;
 
 extern "C" klassOop doubleValueArrayKlassObj;
 
-class Universe: AllStatic {
- private:
+class Universe : AllStatic {
+private:
   // Known classes in the VM
   static klassOop _memOopKlassObj;
   static klassOop _objArrayKlassObj;
@@ -83,81 +82,79 @@ class Universe: AllStatic {
   static objArrayOop _asciiCharacters;
   static objArrayOop _systemDictionaryObj;
   static objArrayOop _objectIDTable;
-  static objArrayOop _pic_free_list; 
+  static objArrayOop _pic_free_list;
 
-  static oop         _callBack_receiver;
-  static symbolOop   _callBack_selector;
+  static oop _callBack_receiver;
+  static symbolOop _callBack_selector;
 
-  static oop         _dll_lookup_receiver;
-  static symbolOop   _dll_lookup_selector;
+  static oop _dll_lookup_receiver;
+  static symbolOop _dll_lookup_selector;
 
-  static methodOop   _sweeper_method; // Variable used by Sweeper only
-  static bool        _scavenge_blocked;
+  static methodOop _sweeper_method; // Variable used by Sweeper only
+  static bool _scavenge_blocked;
 
   friend class bootstrap;
- public:
+
+public:
   // Known classes in tbe VM
-  static klassOop smiKlassObj()                { return ::smiKlassObj;               }
-  static klassOop contextKlassObj()            { return ::contextKlassObj;           }
-  static klassOop doubleKlassObj()             { return ::doubleKlassObj;            }
-  static klassOop memOopKlassObj()             { return _memOopKlassObj;             }
-  static klassOop objArrayKlassObj()           { return _objArrayKlassObj;           }
-  static klassOop byteArrayKlassObj()          { return _byteArrayKlassObj;          }
-  static klassOop symbolKlassObj()             { return ::symbolKlassObj;            }
-  static klassOop associationKlassObj()        { return _associationKlassObj;        }
-  static klassOop zeroArgumentBlockKlassObj()  { return ::zeroArgumentBlockKlassObj; }
-  static klassOop oneArgumentBlockKlassObj()   { return ::oneArgumentBlockKlassObj;  }
-  static klassOop twoArgumentBlockKlassObj()   { return ::twoArgumentBlockKlassObj;  }
-  static klassOop threeArgumentBlockKlassObj() { return ::threeArgumentBlockKlassObj;}
-  static klassOop fourArgumentBlockKlassObj()  { return ::fourArgumentBlockKlassObj; }
-  static klassOop fiveArgumentBlockKlassObj()  { return ::fiveArgumentBlockKlassObj; }
-  static klassOop sixArgumentBlockKlassObj()   { return ::sixArgumentBlockKlassObj;  }
-  static klassOop sevenArgumentBlockKlassObj() { return ::sevenArgumentBlockKlassObj;}
-  static klassOop eightArgumentBlockKlassObj() { return ::eightArgumentBlockKlassObj;}
-  static klassOop nineArgumentBlockKlassObj()  { return ::nineArgumentBlockKlassObj; }
-  static klassOop methodKlassObj()             { return _methodKlassObj;             }
-  static klassOop characterKlassObj()          { return _characterKlassObj;          }
-  static klassOop doubleValueArrayKlassObj()   { return ::doubleValueArrayKlassObj;  }
-  static klassOop vframeKlassObj()             { return _vframeKlassObj;             }
+  static klassOop smiKlassObj() { return ::smiKlassObj; }
+  static klassOop contextKlassObj() { return ::contextKlassObj; }
+  static klassOop doubleKlassObj() { return ::doubleKlassObj; }
+  static klassOop memOopKlassObj() { return _memOopKlassObj; }
+  static klassOop objArrayKlassObj() { return _objArrayKlassObj; }
+  static klassOop byteArrayKlassObj() { return _byteArrayKlassObj; }
+  static klassOop symbolKlassObj() { return ::symbolKlassObj; }
+  static klassOop associationKlassObj() { return _associationKlassObj; }
+  static klassOop zeroArgumentBlockKlassObj() { return ::zeroArgumentBlockKlassObj; }
+  static klassOop oneArgumentBlockKlassObj() { return ::oneArgumentBlockKlassObj; }
+  static klassOop twoArgumentBlockKlassObj() { return ::twoArgumentBlockKlassObj; }
+  static klassOop threeArgumentBlockKlassObj() { return ::threeArgumentBlockKlassObj; }
+  static klassOop fourArgumentBlockKlassObj() { return ::fourArgumentBlockKlassObj; }
+  static klassOop fiveArgumentBlockKlassObj() { return ::fiveArgumentBlockKlassObj; }
+  static klassOop sixArgumentBlockKlassObj() { return ::sixArgumentBlockKlassObj; }
+  static klassOop sevenArgumentBlockKlassObj() { return ::sevenArgumentBlockKlassObj; }
+  static klassOop eightArgumentBlockKlassObj() { return ::eightArgumentBlockKlassObj; }
+  static klassOop nineArgumentBlockKlassObj() { return ::nineArgumentBlockKlassObj; }
+  static klassOop methodKlassObj() { return _methodKlassObj; }
+  static klassOop characterKlassObj() { return _characterKlassObj; }
+  static klassOop doubleValueArrayKlassObj() { return ::doubleValueArrayKlassObj; }
+  static klassOop vframeKlassObj() { return _vframeKlassObj; }
 
   // Known objects in tbe VM
-  static oop         nilObj()                  { return ::nilObj;                    }
-  static oop         trueObj()                 { return ::trueObj;                   }
-  static oop         falseObj()                { return ::falseObj;                  }
-  static objArrayOop asciiCharacters()         { return _asciiCharacters;            }
-  static objArrayOop systemDictionaryObj()     { return _systemDictionaryObj;        }
-  static objArrayOop pic_free_list()           { return _pic_free_list;              }
+  static oop nilObj() { return ::nilObj; }
+  static oop trueObj() { return ::trueObj; }
+  static oop falseObj() { return ::falseObj; }
+  static objArrayOop asciiCharacters() { return _asciiCharacters; }
+  static objArrayOop systemDictionaryObj() { return _systemDictionaryObj; }
+  static objArrayOop pic_free_list() { return _pic_free_list; }
 
-  
-  static oop         callBack_receiver()       { return _callBack_receiver;          }
-  static symbolOop   callBack_selector()       { return _callBack_selector;          }
+  static oop callBack_receiver() { return _callBack_receiver; }
+  static symbolOop callBack_selector() { return _callBack_selector; }
   static void set_callBack(oop receiver, symbolOop selector) {
     _callBack_receiver = receiver;
     _callBack_selector = selector;
   }
 
-  static oop         dll_lookup_receiver()     { return _dll_lookup_receiver;        }
-  static symbolOop   dll_lookup_selector()     { return _dll_lookup_selector;        }
+  static oop dll_lookup_receiver() { return _dll_lookup_receiver; }
+  static symbolOop dll_lookup_selector() { return _dll_lookup_selector; }
   static void set_dll_lookup(oop receiver, symbolOop selector) {
     _dll_lookup_receiver = receiver;
     _dll_lookup_selector = selector;
   }
 
-  static methodOop         sweeper_method()        { return _sweeper_method;         }
-  static void set_sweeper_method(methodOop method) { _sweeper_method = method;       }
+  static methodOop sweeper_method() { return _sweeper_method; }
+  static void set_sweeper_method(methodOop method) { _sweeper_method = method; }
 
-  static objArrayOop objectIDTable()           { return _objectIDTable;              }
-  static void set_objectIDTable(objArrayOop array) {
-    _objectIDTable = array;
-  }
+  static objArrayOop objectIDTable() { return _objectIDTable; }
+  static void set_objectIDTable(objArrayOop array) { _objectIDTable = array; }
 
   // Version numbers
   //   increment snapshot_version whenever old snapshots will break; reset
   //   it to zero when changing the minor or major version
-  static int major_version()    { return 1; }
-  static int minor_version()    { return 1; }
+  static int major_version() { return 1; }
+  static int minor_version() { return 1; }
   //static int minor_version()    { return 0; }
-  static char* beta_version()   { return "alpha5"; }
+  static char* beta_version() { return "alpha5"; }
   static int snapshot_version() { return 3; }
 
   // Check root is not badOop
@@ -175,20 +172,19 @@ class Universe: AllStatic {
 
   static void methods_do(void f(methodOop method));
 
- private:
+private:
   static void classes_for_do(klassOop klass, klassOopClosure* iterator);
   static void methods_in_array_do(objArrayOop array, void f(methodOop method));
   static void methods_for_do(klassOop klass, void f(methodOop method));
   friend class MethodsClosure;
 
- public:
-
+public:
   static newGeneration new_gen;
   static oldGeneration old_gen;
 
   static symbolTable* symbol_table;
-  static rSet*        remembered_set;
-  static ageTable*    age_table;
+  static rSet* remembered_set;
+  static ageTable* age_table;
 
 #ifdef DELTA_COMPILER
   static zone* code;
@@ -198,31 +194,30 @@ class Universe: AllStatic {
   static int tenuring_threshold;
   static int scavengeCount;
 
-    // space operations
-  static bool is_heap(oop* p) {
-    return new_gen.contains(p) || old_gen.contains(p); }
+  // space operations
+  static bool is_heap(oop* p) { return new_gen.contains(p) || old_gen.contains(p); }
 
   static oop* object_start(oop* p);
-  
+
   // relocate is used for moving objects around after reading in a snapshot
   static memOop relocate(memOop p);
 
   static bool verify_oop(memOop p);
-  static bool really_contains(void *p) {
-    return new_gen.contains(p) || old_gen.contains(p);
-  }
+  static bool really_contains(void* p) { return new_gen.contains(p) || old_gen.contains(p); }
   static space* spaceFor(void* p);
 
   static generation* generation_containing(oop p) {
-    return new_gen.contains(p) ? (generation*)&new_gen : (generation*)&old_gen; }
-  
+    return new_gen.contains(p) ? (generation*)&new_gen : (generation*)&old_gen;
+  }
+
   // allocators
   static oop* allocate(int size, memOop* p = NULL, bool permit_scavenge = true) {
     if (_scavenge_blocked && can_scavenge() && permit_scavenge)
-      return scavenge_and_allocate(size, (oop*) p);
+      return scavenge_and_allocate(size, (oop*)p);
     oop* obj = new_gen.allocate(size);
-    if (!permit_scavenge) return obj;
-    return obj ? obj : scavenge_and_allocate(size, (oop*) p);
+    if (!permit_scavenge)
+      return obj;
+    return obj ? obj : scavenge_and_allocate(size, (oop*)p);
   }
 
   static oop* allocate_without_scavenge(int size) {
@@ -230,8 +225,8 @@ class Universe: AllStatic {
     return obj ? obj : allocate_tenured(size);
   }
 
-  static oop* allocate_tenured(int size, bool permit_expansion=true) {
-    return old_gen.allocate(size, permit_expansion); 
+  static oop* allocate_tenured(int size, bool permit_expansion = true) {
+    return old_gen.allocate(size, permit_expansion);
   }
 
   // Tells whether we should force a garbage collection
@@ -245,41 +240,42 @@ class Universe: AllStatic {
 
   static void scavenge(oop* p = NULL);
   static oop tenure(oop p = NULL);
-  static void default_low_space_handler(oop p= NULL);
-  
+  static void default_low_space_handler(oop p = NULL);
+
   static void need_scavenge() {
-    if (! NeedScavenge) {
+    if (!NeedScavenge) {
       NeedScavenge = true;
       // setupPreemption();
     }
   }
   static bool needs_scavenge() { return NeedScavenge; }
-  
+
   static bool should_scavenge(memOop p) {
-    return !(((char*) p > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(p)); }
+    return !(((char*)p > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(p));
+  }
 
-  static inline oop* allocate_in_survivor_space(memOop p, int size, bool &is_new);
-  
-  static int free()      { return old_gen.free();      }
-  
+  static inline oop* allocate_in_survivor_space(memOop p, int size, bool& is_new);
+
+  static int free() { return old_gen.free(); }
+
 private:
-  static void  get_space_sizes();
+  static void get_space_sizes();
 
-  static char* check_eden_size(spaceSizes &snap_sizes);
-  static char* check_surv_size(spaceSizes &snap_sizes);
-  static char* check_old_size(spaceSizes &snap_sizes);
+  static char* check_eden_size(spaceSizes& snap_sizes);
+  static char* check_surv_size(spaceSizes& snap_sizes);
+  static char* check_old_size(spaceSizes& snap_sizes);
 
 public:
-  static void  genesis();
+  static void genesis();
   static spaceSizes current_sizes;
 
-public:  
+public:
   // operations: we need extras because of include file orderings
-  static void store(oop* p, smiOop contents) { *(smiOop*)p = contents;}
-  static inline void store(oop* p, oop contents, bool cs= true);
-  
+  static void store(oop* p, smiOop contents) { *(smiOop*)p = contents; }
+  static inline void store(oop* p, oop contents, bool cs = true);
+
   static void cleanup_after_bootstrap();
-  
+
   static void switch_pointers(oop from, oop to);
 
   static void verify(bool postScavenge = false);
@@ -301,7 +297,7 @@ public:
 public:
   static char* printAddr; // used for debug printing
 
-  static void printRegion(char *&caddr, int count= 16);
+  static void printRegion(char*& caddr, int count = 16);
 
   // for debugging
   static void print_klass_name(klassOop k);
@@ -311,7 +307,7 @@ public:
   static oop find_global(char* name, bool must_be_constant = false);
   static associationOop find_global_association(char* name);
 
- public:
+public:
   static void scavenge_oop(oop* p);
 
   // flushes inline caches in all methodOops
@@ -320,17 +316,19 @@ public:
   // clean all inline caches in methodOops and nmethods
   static void cleanup_all_inline_caches();
 
- private:
+private:
   static void flush_inline_caches_in_method(methodOop method);
 
- public:
+public:
   static void methodOops_do(void f(methodOop));
   static bool on_page_boundary(void* addr);
-  static int  page_size();
+  static int page_size();
 };
 
-# define STORE_OOP(ADDR, VALUE) Universe::store((oop*) ADDR, (oop) VALUE)
-inline void scavenge_oop(oop* p) { *p = (*p)->scavenge(); }
+#define STORE_OOP(ADDR, VALUE) Universe::store((oop*)ADDR, (oop)VALUE)
+inline void scavenge_oop(oop* p) {
+  *p = (*p)->scavenge();
+}
 
 inline void scavenge_tenured_oop(oop* p) {
   scavenge_oop(p);
@@ -339,110 +337,101 @@ inline void scavenge_tenured_oop(oop* p) {
   }
 }
 
-inline oop* min(oop* a, oop* b) { return a > b ? b : a; }
-inline oop* max(oop* a, oop* b) { return a > b ? a : b; }
-  
+inline oop* min(oop* a, oop* b) {
+  return a > b ? b : a;
+}
+inline oop* max(oop* a, oop* b) {
+  return a > b ? a : b;
+}
 
 class BlockScavenge {
- private:
+private:
   static int counter;
- public:
+
+public:
   static int* counter_addr() { return &counter; }
   static bool is_blocked() { return counter > 0; }
 
-  BlockScavenge()  { counter++; }
+  BlockScavenge() { counter++; }
   ~BlockScavenge() { counter--; }
 };
 
-
 // Lars, please complete this at some point
 class VerifyNoScavenge : public StackObj {
- private:
-  int  _scavengeCount;
+private:
+  int _scavengeCount;
 
- public:
-  VerifyNoScavenge() {
-    _scavengeCount   = Universe::scavengeCount;
-  }
+public:
+  VerifyNoScavenge() { _scavengeCount = Universe::scavengeCount; }
 
   virtual ~VerifyNoScavenge() {
-    if (_scavengeCount != Universe::scavengeCount ) {
+    if (_scavengeCount != Universe::scavengeCount) {
       fatal("scavenge should not have happened");
     }
   }
 };
 
 class VerifyNoAllocation : public VerifyNoScavenge {
- private:
+private:
   oop* _top_of_eden;
 
- public:
-  VerifyNoAllocation()	{
-    _top_of_eden     = Universe::new_gen.eden()->top();
-  }
+public:
+  VerifyNoAllocation() { _top_of_eden = Universe::new_gen.eden()->top(); }
 
-  virtual ~VerifyNoAllocation()	{
+  virtual ~VerifyNoAllocation() {
     if (_top_of_eden != Universe::new_gen.eden()->top()) {
       fatal("allocation should not have happened");
     }
   }
 };
 
+#define OOPS_DO_TEMPLATE(p, f) (*f)((oop*)p);
 
-# define OOPS_DO_TEMPLATE(p, f)                                               \
-    (*f)((oop*)p);
+#define SCAVENGE_TEMPLATE(p) *((oop*)p) = oop(*p)->scavenge();
 
-# define SCAVENGE_TEMPLATE(p)                                                 \
-    *((oop*) p) = oop(*p)->scavenge();
+#define VERIFY_TEMPLATE(p)                                                                                             \
+  if (!oop(*p)->verify())                                                                                              \
+    lprintf("\tof object at %#lx\n", p);
 
-# define VERIFY_TEMPLATE(p)                                                   \
-    if (!oop(*p)->verify()) lprintf("\tof object at %#lx\n", p);
+#define SWITCH_POINTERS_TEMPLATE(p)                                                                                    \
+  if ((oop) * p == (oop)from)                                                                                          \
+    *((oop*)p) = (oop)to;
 
-# define SWITCH_POINTERS_TEMPLATE(p)                                          \
-    if ((oop) *p == (oop) from) *((oop*) p) = (oop) to;
+#define RELOCATE_TEMPLATE(p) *((oop*)p) = oop(*p)->relocate();
 
-# define RELOCATE_TEMPLATE(p)                                                 \
-    *((oop*) p) = oop(*p)->relocate();
-    
-# define APPLY_TO_YOUNG_SPACE_NAMES(template)                                 \
-    template(eden())                                                            \
-    template(from())                                                            \
-    template(to())                                                      
+#define APPLY_TO_YOUNG_SPACE_NAMES(template) template(eden()) template(from()) template(to())
 
-# define APPLY_TO_YOUNG_SPACES(template)                                      \
-    template(new_gen.eden())                                             \
-    template(new_gen.from())                                             \
-    template(new_gen.to())                                               
+#define APPLY_TO_YOUNG_SPACES(template) template(new_gen.eden()) template(new_gen.from()) template(new_gen.to())
 
-#define APPLY_TO_OLD_SPACES(template)                                         \
-    {FOR_EACH_OLD_SPACE(s) {template(s);}}
+#define APPLY_TO_OLD_SPACES(template)                                                                                  \
+  {FOR_EACH_OLD_SPACE(s){template(s);                                                                                  \
+  }                                                                                                                    \
+  }
 
-# define APPLY_TO_SPACES(template)                                            \
-    APPLY_TO_YOUNG_SPACES(template)                                           \
-    APPLY_TO_OLD_SPACES(template)
+#define APPLY_TO_SPACES(template)                                                                                      \
+  APPLY_TO_YOUNG_SPACES(template)                                                                                      \
+  APPLY_TO_OLD_SPACES(template)
 
-# define YOUNG_SPACE_COMPACT_TEMPLATE(s)                                      \
-    c2= s; s->compact(c2, d);
+#define YOUNG_SPACE_COMPACT_TEMPLATE(s)                                                                                \
+  c2 = s;                                                                                                              \
+  s->compact(c2, d);
 
-# define OLD_SPACE_COMPACT_TEMPLATE(s)                                        \
-    s->compact(c2, d);
+#define OLD_SPACE_COMPACT_TEMPLATE(s) s->compact(c2, d);
 
-# define SPACE_VERIFY_TEMPLATE(s)                                             \
-    s->verify();
+#define SPACE_VERIFY_TEMPLATE(s) s->verify();
 
-# define SPACE_RELOCATE_TEMPLATE(s)                                           \
-    s->relocate();
+#define SPACE_RELOCATE_TEMPLATE(s) s->relocate();
 
-# define SPACE_NEED_TO_RELOCATE_TEMPLATE(s)                                   \
-    need_to_relocate |= s->need_to_relocate();
+#define SPACE_NEED_TO_RELOCATE_TEMPLATE(s) need_to_relocate |= s->need_to_relocate();
 
-# define SPACE_FIXUP_KILLABLES_TEMPLATE(s)                                    \
-    s->fixup_killables(okZone);
+#define SPACE_FIXUP_KILLABLES_TEMPLATE(s) s->fixup_killables(okZone);
 
-# define SPACE_OOP_RELOCATE_TEMPLATE(s)                                       \
-    if (s->old_contains(p)) return s->relocate_objs(p);
+#define SPACE_OOP_RELOCATE_TEMPLATE(s)                                                                                 \
+  if (s->old_contains(p))                                                                                              \
+    return s->relocate_objs(p);
 
-# define SPACE_VERIFY_OOP_TEMPLATE(s)                                         \
-    if (s->contains(p)) return true;
+#define SPACE_VERIFY_OOP_TEMPLATE(s)                                                                                   \
+  if (s->contains(p))                                                                                                  \
+    return true;
 
 #endif // _UNIVERSE_HPP

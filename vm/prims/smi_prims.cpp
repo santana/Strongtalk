@@ -36,13 +36,13 @@ TRACE_FUNC(TraceSmiPrims, "smi")
 
 int smiOopPrimitives::number_of_calls;
 
-# define ASSERT_RECEIVER assert(receiver->is_smi(), "receiver must be smi")
+#define ASSERT_RECEIVER assert(receiver->is_smi(), "receiver must be smi")
 
-# define SMI_RELATIONAL_OP(op)                                     \
-  if (!argument->is_smi())                                         \
-    return markSymbol(vmSymbols::first_argument_has_wrong_type()); \
-  int a = (intptr_t) receiver;                                     \
-  int b = (intptr_t) argument;                                     \
+#define SMI_RELATIONAL_OP(op)                                                                                          \
+  if (!argument->is_smi())                                                                                             \
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
+  int a = (intptr_t)receiver;                                                                                          \
+  int b = (intptr_t)argument;                                                                                          \
   return a op b ? trueObj : falseObj
 
 PRIM_DECL_2(smiOopPrimitives::lessThan, oop receiver, oop argument) {
@@ -51,7 +51,7 @@ PRIM_DECL_2(smiOopPrimitives::lessThan, oop receiver, oop argument) {
   SMI_RELATIONAL_OP(<);
 }
 
-PRIM_DECL_2(smiOopPrimitives::greaterThan, oop receiver, oop argument){
+PRIM_DECL_2(smiOopPrimitives::greaterThan, oop receiver, oop argument) {
   PROLOGUE_2("greaterThan", receiver, argument);
   ASSERT_RECEIVER;
   SMI_RELATIONAL_OP(>);
@@ -94,7 +94,7 @@ PRIM_DECL_2(smiOopPrimitives::bitOr, oop receiver, oop argument) {
   ASSERT_RECEIVER;
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return smiOop(intptr_t(receiver) | intptr_t(argument));  
+  return smiOop(intptr_t(receiver) | intptr_t(argument));
 }
 
 PRIM_DECL_2(smiOopPrimitives::bitXor, oop receiver, oop argument) {
@@ -102,7 +102,7 @@ PRIM_DECL_2(smiOopPrimitives::bitXor, oop receiver, oop argument) {
   ASSERT_RECEIVER;
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
-  return smiOop(intptr_t(receiver) ^ intptr_t(argument));  
+  return smiOop(intptr_t(receiver) ^ intptr_t(argument));
 }
 
 PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
@@ -111,25 +111,26 @@ PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   assert(Int_Tag == 0, "check this code");
-  const int bitsPerWord = oopSize*8;
+  const int bitsPerWord = oopSize * 8;
   const int maxShiftCnt = bitsPerWord - Tag_Size - 1;
   int n = smiOop(argument)->value();
   if (n > 0) {
     // arithmetic shift left
     if (n < maxShiftCnt) {
       // 0 < n < maxShiftCnt < bitsPerWord	// |<- n ->|<- 1 ->|<- 32-(n+1) ->|
-      int mask1 =  1 << (bitsPerWord - (n+1));	// |00...00|   1   |00..........00|
-      int mask2 = -1 << (bitsPerWord - n);	// |11...11|   0   |00..........00|
+      int mask1 = 1 << (bitsPerWord - (n + 1)); // |00...00|   1   |00..........00|
+      int mask2 = -1 << (bitsPerWord - n); // |11...11|   0   |00..........00|
       if (((intptr_t(receiver) + mask1) & mask2) == 0) {
         // i.e., the bit at position (32-(n+1)) is the same as the upper n bits, thus
-	// after shifting out the upper n bits the sign hasn't changed -> no overflow
+        // after shifting out the upper n bits the sign hasn't changed -> no overflow
         return smiOop(intptr_t(receiver) << n);
       }
     }
     return markSymbol(vmSymbols::smi_overflow());
   } else {
     // arithmetic shift right
-    if (n < -maxShiftCnt) n = -maxShiftCnt;
+    if (n < -maxShiftCnt)
+      n = -maxShiftCnt;
     return smiOop((intptr_t(receiver) >> -n) & ((uintptr_t)-1 << Tag_Size));
   }
 }
@@ -140,7 +141,7 @@ PRIM_DECL_2(smiOopPrimitives::rawBitShift, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   assert(Int_Tag == 0, "check this code");
-  const int bitsPerWord = oopSize*8;
+  const int bitsPerWord = oopSize * 8;
   int n = smiOop(argument)->value();
   if (n >= 0) {
     // logical shift right
@@ -156,7 +157,7 @@ PRIM_DECL_1(smiOopPrimitives::asObject, oop receiver) {
   ASSERT_RECEIVER;
   int id = smiOop(receiver)->value();
   if (objectIDTable::is_index_ok(id))
-     return objectIDTable::at(id);
+    return objectIDTable::at(id);
   return markSymbol(vmSymbols::index_not_valid());
 }
 
@@ -167,12 +168,35 @@ PRIM_DECL_1(smiOopPrimitives::printCharacter, oop receiver) {
   return receiver;
 }
 
-static void trap() { assert(false, "This primitive should be patched"); };
+static void trap() {
+  assert(false, "This primitive should be patched");
+};
 
-extern "C" oop PRIM_API smiOopPrimitives_add(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_subtract(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_multiply(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_mod(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_div(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_quo(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API smiOopPrimitives_remainder(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
+extern "C" oop PRIM_API smiOopPrimitives_add(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_subtract(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_multiply(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_mod(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_div(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_quo(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API smiOopPrimitives_remainder(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};

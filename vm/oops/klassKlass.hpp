@@ -27,11 +27,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/klassOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class klassKlass: public memOopKlass {
- public:
+class klassKlass : public memOopKlass {
+public:
   friend void set_klassKlass_vtbl(Klass* k);
   // testers
-  bool oop_is_klass() const  { return true; }
+  bool oop_is_klass() const { return true; }
 
   // allocation properties
   bool can_inline_allocation() const { return false; }
@@ -46,11 +46,11 @@ class klassKlass: public memOopKlass {
   Format format() { return klass_klass; }
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
-  oop oop_primitive_allocate(oop obj, bool allow_scavenge=true, bool tenured=false);
+  oop oop_primitive_allocate(oop obj, bool allow_scavenge = true, bool tenured = false);
   oop oop_primitive_allocate_size(oop obj, int size);
 
   oop oop_shallow_copy(oop obj, bool tenured);

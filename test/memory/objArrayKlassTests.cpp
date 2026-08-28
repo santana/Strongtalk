@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(ObjArrayKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(ObjArrayKlassTests) {
@@ -20,7 +20,7 @@ SETUP(ObjArrayKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(ObjArrayKlassTests){
+TEARDOWN(ObjArrayKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }
@@ -47,7 +47,7 @@ TESTF(ObjArrayKlassTests, allocateShouldNotFailWhenNotAllowedAndNoSpace) {
 TESTF(ObjArrayKlassTests, allocateShouldExpandOldSpaceDuringTenuredAllocWhenAllowed) {
   OldSpaceMark mark = Universe::old_gen.memo();
   oldSpace* space = mark.theSpace;
-  int free = Universe::old_gen.free()/oopSize;
+  int free = Universe::old_gen.free() / oopSize;
   oop* temp = Universe::allocate_tenured(free - 1, false);
   ASSERT_TRUE(temp != NULL);
   ASSERT_TRUE(Universe::old_gen.contains(theClass->klass_part()->allocateObjectSize(100, true, true)));
@@ -56,7 +56,7 @@ TESTF(ObjArrayKlassTests, allocateShouldExpandOldSpaceDuringTenuredAllocWhenAllo
 TESTF(ObjArrayKlassTests, allocateShouldFailDuringTenuredAllocWhenOldSpaceExpansionNotAllowed) {
   OldSpaceMark mark = Universe::old_gen.memo();
   oldSpace* space = mark.theSpace;
-  int free = Universe::old_gen.free()/oopSize;
+  int free = Universe::old_gen.free() / oopSize;
   oop* temp = Universe::allocate_tenured(free - 1, false);
   ASSERT_TRUE(temp != NULL);
   ASSERT_TRUE(NULL == theClass->klass_part()->allocateObjectSize(100, false, true));

@@ -58,13 +58,12 @@ PRIM_DECL_3(objArrayPrimitives::allocateSize2, oop receiver, oop argument, oop t
   if (tenured != Universe::trueObj() && tenured != Universe::falseObj())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
-  klassOop k        = klassOop(receiver);
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + smiOop(argument)->value();
+  klassOop k = klassOop(receiver);
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + smiOop(argument)->value();
   // allocate
-  oop* result = (tenured == Universe::trueObj()) ?
-    Universe::allocate_tenured(obj_size, false):
-    Universe::allocate(obj_size, (memOop*)&k, false);
+  oop* result = (tenured == Universe::trueObj()) ? Universe::allocate_tenured(obj_size, false)
+                                                 : Universe::allocate(obj_size, (memOop*)&k, false);
   if (result == NULL)
     return markSymbol(vmSymbols::failed_allocation());
 
@@ -74,9 +73,9 @@ PRIM_DECL_3(objArrayPrimitives::allocateSize2, oop receiver, oop argument, oop t
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // %optimized 'obj->set_length(size)'
-  oop* base = (oop*) obj->addr();
+  oop* base = (oop*)obj->addr();
   base[ni_size] = argument;
-  memOop(obj)->initialize_body(ni_size+1, obj_size);
+  memOop(obj)->initialize_body(ni_size + 1, obj_size);
   return obj;
 }
 
@@ -90,9 +89,9 @@ PRIM_DECL_2(objArrayPrimitives::allocateSize, oop receiver, oop argument) {
   if (smiOop(argument)->value() < 0)
     return markSymbol(vmSymbols::negative_size());
 
-  klassOop k        = klassOop(receiver);
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + smiOop(argument)->value();
+  klassOop k = klassOop(receiver);
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + smiOop(argument)->value();
   // allocate
   objArrayOop obj = as_objArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -100,9 +99,9 @@ PRIM_DECL_2(objArrayPrimitives::allocateSize, oop receiver, oop argument) {
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // %optimized 'obj->set_length(size)'
-  oop* base = (oop*) obj->addr();
+  oop* base = (oop*)obj->addr();
   base[ni_size] = argument;
-  memOop(obj)->initialize_body(ni_size+1, obj_size);
+  memOop(obj)->initialize_body(ni_size + 1, obj_size);
   return obj;
 }
 
@@ -123,7 +122,7 @@ PRIM_DECL_2(objArrayPrimitives::at, oop receiver, oop index) {
 
   // check index value
   if (!objArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // do the operation
   return objArrayOop(receiver)->obj_at(smiOop(index)->value());
@@ -146,16 +145,15 @@ PRIM_DECL_3(objArrayPrimitives::atPut, oop receiver, oop index, oop value) {
   return receiver;
 }
 
-
 PRIM_DECL_2(objArrayPrimitives::at_all_put, oop receiver, oop obj) {
   PROLOGUE_2("at_all_put", receiver, obj);
   ASSERT_RECEIVER;
 
-  int  length = objArrayOop(receiver)->length();
+  int length = objArrayOop(receiver)->length();
   if (obj->is_new() && receiver->is_old()) {
     // Do store checks
     for (int index = 1; index <= length; index++) {
-      objArrayOop(receiver)->obj_at_put(index, obj); 
+      objArrayOop(receiver)->obj_at_put(index, obj);
     }
   } else {
     // Ignore store check for speed
@@ -201,7 +199,8 @@ PRIM_DECL_5(objArrayPrimitives::replace_from_to, oop receiver, oop from, oop to,
     return markSymbol(vmSymbols::out_of_bounds());
 
   // Dispatch the operation to the array
-  objArrayOop(receiver)->replace_from_to(smiOop(from)->value(), smiOop(to)->value(), objArrayOop(source), smiOop(start)->value());
+  objArrayOop(receiver)->replace_from_to(smiOop(from)->value(), smiOop(to)->value(), objArrayOop(source),
+                                         smiOop(start)->value());
 
   return receiver;
 }
@@ -229,18 +228,18 @@ PRIM_DECL_4(objArrayPrimitives::copy_size, oop receiver, oop from, oop start, oo
   // check start > 0
   if (smiOop(start)->value() <= 0)
     return markSymbol(vmSymbols::out_of_bounds());
-  
+
   // Check size is positive
   if (smiOop(size)->value() < 0)
     return markSymbol(vmSymbols::negative_size());
 
   HandleMark hm;
-  Handle saved_receiver(receiver); 
+  Handle saved_receiver(receiver);
 
   // allocation of object array
-  klassOop k        = receiver->klass();
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + smiOop(size)->value();
+  klassOop k = receiver->klass();
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + smiOop(size)->value();
   // allocate
   objArrayOop obj = as_objArrayOop(Universe::allocate(obj_size, (memOop*)&k));
 
@@ -249,8 +248,8 @@ PRIM_DECL_4(objArrayPrimitives::copy_size, oop receiver, oop from, oop start, oo
   // header
   memOop(obj)->initialize_header(k->klass_part()->has_untagged_contents(), k);
   // copy instance variables
-  for (int index = memOopDesc::header_size(); index < ni_size; index++ ) {
-     obj->raw_at_put(index, src->raw_at(index));
+  for (int index = memOopDesc::header_size(); index < ni_size; index++) {
+    obj->raw_at_put(index, src->raw_at(index));
   }
   // length
   obj->set_length(smiOop(size)->value());

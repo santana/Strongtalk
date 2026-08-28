@@ -30,8 +30,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // bootstrap parses and allocates memOops from a text file
 
-class bootstrap: CHeapObj {
- private:
+class bootstrap : CHeapObj {
+private:
   // Tables
   oop* oop_table;
   int number_of_oops;
@@ -46,14 +46,14 @@ class bootstrap: CHeapObj {
   void initialize_tables(int initial_table_size);
 
   void add(oop obj);
-  oop  at(int index);
+  oop at(int index);
 
   // File
   char* file_name;
   FILE* stream;
-//  int   file_size;
+  //  int   file_size;
   char get_char();
-  int  get_integer();
+  int get_integer();
 
   // Error handline
   bool _has_error;
@@ -61,11 +61,12 @@ class bootstrap: CHeapObj {
   // Parsing
   void open_file();
   void parse_file();
-  oop  get_object();
+  oop get_object();
   void close_file();
   void insert_symbol(memOop obj);
- public:
-  bootstrap(char *name);
+
+public:
+  bootstrap(char* name);
   ~bootstrap();
 
   bool has_error() { return _has_error; }
@@ -74,12 +75,12 @@ class bootstrap: CHeapObj {
   void read_oop(oop* oop_addr) { *oop_addr = get_object(); }
 
   void set_oop_replacement(oop m) { _oop_replacement = m; }
-  oop get_oop_replacement()       { return _oop_replacement; }
+  oop get_oop_replacement() { return _oop_replacement; }
 
-  char       read_byte()       { return get_char(); }
-  doubleByte read_doubleByte() { return (doubleByte) get_integer(); }
-  long       read_long()       { return get_integer(); } 
-  double     read_double();
+  char read_byte() { return get_char(); }
+  doubleByte read_doubleByte() { return (doubleByte)get_integer(); }
+  long read_long() { return get_integer(); }
+  double read_double();
 
   bool new_format() const { return _new_format; }
 

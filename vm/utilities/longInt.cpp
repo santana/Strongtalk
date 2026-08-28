@@ -27,33 +27,33 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 inline long_int::long_int() {}
 
 long_int::long_int(unsigned int low, unsigned int high) {
-  this->low  = low;
+  this->low = low;
   this->high = high;
 }
 
 #ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4244 ) // conversion between __int64/double, possible loss of data
+#pragma warning(push)
+#pragma warning(disable : 4244) // conversion between __int64/double, possible loss of data
 #endif
 
 long_int::long_int(double value) {
-  *(int64_t*)&low  = value;
+  *(int64_t*)&low = value;
 }
 
-long_int long_int::operator +(long_int arg) {
+long_int long_int::operator+(long_int arg) {
   return long_int(*(int64_t*)&low + *(int64_t*)&arg.low);
 }
 
-long_int long_int::operator -(long_int arg) {
+long_int long_int::operator-(long_int arg) {
   long_int result = *(int64_t*)&low - *(int64_t*)&arg.low;
   return result;
 }
 
-bool long_int::operator ==(long_int arg) {
+bool long_int::operator==(long_int arg) {
   return *(int64_t*)&low == *(int64_t*)&arg.low;
 }
 
-bool long_int::operator !=(long_int arg) {
+bool long_int::operator!=(long_int arg) {
   return *(int64_t*)&low != *(int64_t*)&arg.low;
 }
 
@@ -62,5 +62,5 @@ double long_int::as_double() {
 }
 
 #ifdef _MSC_VER
-#pragma warning( pop ) 
+#pragma warning(pop)
 #endif

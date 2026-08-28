@@ -49,23 +49,21 @@ void InliningDatabase::set_directory(char* dir) {
 }
 
 char* InliningDatabase::directory() {
-  return _directory == NULL 
-       ? default_directory() 
-       : _directory;
+  return _directory == NULL ? default_directory() : _directory;
 }
 
-# include <ctype.h>
+#include <ctype.h>
 
-const char  quote = '_';
+const char quote = '_';
 const char* quote_string = "_\\/:; *?~|><,+=@%&!-";
 
-char* InliningDatabase::mangle_name(char *str) {
+char* InliningDatabase::mangle_name(char* str) {
   char* result = NEW_RESOURCE_ARRAY(char, 100);
   int i = 0;
   int j = 0;
   while (str[i] != '\0') {
     int c = str[i];
-    if (strchr(quote_string,c)) {
+    if (strchr(quote_string, c)) {
       result[j++] = quote;
       result[j++] = get_unsigned_bitfield(c, 6, 3) + '0';
       result[j++] = get_unsigned_bitfield(c, 3, 3) + '0';
@@ -75,7 +73,7 @@ char* InliningDatabase::mangle_name(char *str) {
       result[j++] = c + ('a' - 'A');
     } else {
       result[j++] = c;
-    } 
+    }
     i++;
   }
   result[j++] = '\0';
@@ -97,11 +95,11 @@ char* InliningDatabase::unmangle_name(char* str) {
         i++;
         assert(str[i] != '\0', "we cannot end with a quote");
         c = str[i];
-	value += (c - '0') << 3;
+        value += (c - '0') << 3;
         i++;
         assert(str[i] != '\0', "we cannot end with a quote");
         c = str[i];
-	value += (c - '0');
+        value += (c - '0');
         result[j++] = value;
       } else {
         result[j++] = c - ('a' - 'A');
@@ -141,11 +139,12 @@ char* InliningDatabase::compute_file_name(LookupKey* outer, LookupKey* inner, bo
   char* name = NEW_RESOURCE_ARRAY(char, 1024);
 
   // Outer key
-  char* outer_klass_name    = mangle_name(klass_string(outer->klass()));
+  char* outer_klass_name = mangle_name(klass_string(outer->klass()));
   char* outer_selector_name = mangle_name(selector_string(outer->selector()));
 
   if (create_directories) {
-    if (!check_directory(directory())) return NULL;
+    if (!check_directory(directory()))
+      return NULL;
   }
 
   strcpy(name, directory());
@@ -153,7 +152,8 @@ char* InliningDatabase::compute_file_name(LookupKey* outer, LookupKey* inner, bo
   strcat(name, outer_klass_name);
 
   if (create_directories) {
-    if (!check_directory(name)) return NULL;
+    if (!check_directory(name))
+      return NULL;
   }
 
   strcat(name, "\\");
@@ -161,17 +161,19 @@ char* InliningDatabase::compute_file_name(LookupKey* outer, LookupKey* inner, bo
 
   if (inner) {
     // Inner key
-    char* inner_klass_name  = mangle_name(klass_string(inner->klass()));
+    char* inner_klass_name = mangle_name(klass_string(inner->klass()));
     char* inner_method_name = mangle_name(method_string(inner->method()));
 
     if (create_directories) {
-      if (!check_directory(name)) return NULL;
+      if (!check_directory(name))
+        return NULL;
     }
     strcat(name, "\\");
     strcat(name, inner_klass_name);
 
     if (create_directories) {
-      if (!check_directory(name)) return NULL;
+      if (!check_directory(name))
+        return NULL;
     }
     strcat(name, "\\");
     strcat(name, inner_method_name);
@@ -188,7 +190,8 @@ bool InliningDatabase::file_out(nmethod* nm, outputStream* index_st) {
 
   if (nm->is_block()) {
     nmethod* outer = nm->outermost();
-    if (outer->isZombie()) return false;
+    if (outer->isZombie())
+      return false;
     outer_key = &outer->key;
     inner_key = &nm->key;
   } else {
@@ -196,12 +199,11 @@ bool InliningDatabase::file_out(nmethod* nm, outputStream* index_st) {
     inner_key = NULL;
   }
 
-
   // construct nmethod's RScope tree; we only want the inlined scopes, so use trusted = false
   RScope* rs = RNonDummyScope::constructRScopes(nm, false);
   // Ignore nmethods with small inlining trees
-  if (rs->inlining_database_size() < InliningDatabasePruningLimit) return false;
-  
+  if (rs->inlining_database_size() < InliningDatabasePruningLimit)
+    return false;
 
   add_lookup_entry(outer_key, inner_key);
 
@@ -215,7 +217,8 @@ bool InliningDatabase::file_out(nmethod* nm, outputStream* index_st) {
   }
 
   char* file_name = compute_file_name(outer_key, inner_key, true);
-  if (file_name == NULL) return false;
+  if (file_name == NULL)
+    return false;
 
   if (TraceInliningDatabase) {
     mystd->print_cr("Dumping %s", file_name);
@@ -232,21 +235,21 @@ bool InliningDatabase::file_out(nmethod* nm, outputStream* index_st) {
 
 char* find_type(char* line, bool* is_super, bool* is_block) {
   // Find "::", "^^" or "->"
-  char* sub = strstr(line+1, "::");
+  char* sub = strstr(line + 1, "::");
   if (sub) {
     *is_super = false;
     *is_block = false;
     return sub;
   }
 
-  sub = strstr(line+1, "^^");
+  sub = strstr(line + 1, "^^");
   if (sub) {
     *is_super = true;
     *is_block = false;
     return sub;
   }
 
-  sub = strstr(line+1, "->");
+  sub = strstr(line + 1, "->");
   if (sub) {
     *is_super = false;
     *is_block = true;
@@ -268,8 +271,8 @@ bool scan_key(RScope* sender, char* line, klassOop* receiver_klass, methodOop* m
   *sub = '\0';
 
   char* class_name = line;
-  char* method_id  = sub + 2;
-  
+  char* method_id = sub + 2;
+
   bool class_side = false;
   char* class_start = strstr(class_name, " class");
   if (class_start != NULL) {
@@ -278,10 +281,12 @@ bool scan_key(RScope* sender, char* line, klassOop* receiver_klass, methodOop* m
   }
 
   klassOop rec = klassOop(Universe::find_global(class_name, true));
-  if (rec == NULL || !rec->is_klass()) return false;
-  if (class_side) rec = rec->klass();
+  if (rec == NULL || !rec->is_klass())
+    return false;
+  if (class_side)
+    rec = rec->klass();
   *receiver_klass = rec;
- 
+
   GrowableArray<intptr_t>* bcis = new GrowableArray<intptr_t>(10);
 
   char* bcis_string = strstr(method_id, " ");
@@ -291,37 +296,39 @@ bool scan_key(RScope* sender, char* line, klassOop* receiver_klass, methodOop* m
     while (*bcis_string != '\0') {
       int index;
       int bci;
-      if (sscanf(bcis_string, "%d%n", &bci, &index) != 1) return 0;
+      if (sscanf(bcis_string, "%d%n", &bci, &index) != 1)
+        return 0;
       bcis->push(bci);
       bcis_string += index;
-      if (*bcis_string == ' ') 
+      if (*bcis_string == ' ')
         bcis_string++;
     }
   }
   symbolOop selector = oopFactory::new_symbol(method_id);
 
-
   if (is_super) {
     assert(sender, "sender must be present");
     klassOop method_holder = sender->receiverKlass()->klass_part()->lookup_method_holder_for(sender->method());
-    
+
     if (method_holder) {
       methodOop met = method_holder->klass_part()->superKlass()->klass_part()->lookup(selector);
       if (met) {
         *method = met;
-	return true;
+        return true;
       }
     }
     return false;
   }
 
   methodOop met = rec->klass_part()->lookup(selector);
-  if (met == NULL) return false;
+  if (met == NULL)
+    return false;
 
   for (int index = 0; index < bcis->length(); index++) {
     int bci = bcis->at(index);
     met = met->block_method_at(bci);
-    if (met == NULL) return false;
+    if (met == NULL)
+      return false;
   }
 
   *method = met;
@@ -338,7 +345,8 @@ int scan_prefix(char* line, int* bci, int* level) {
     line++;
     l++;
   }
-  if (sscanf(line, "%d %n", bci, &index) != 1) return 0;
+  if (sscanf(line, "%d %n", bci, &index) != 1)
+    return 0;
   *level = l / 2;
   return l + index;
 }
@@ -351,26 +359,28 @@ bool scan_uncommon(char* line) {
 static bool create_rscope(char* line, GrowableArray<RDatabaseScope*>* stack) {
   // remove the cr
   int len = strlen(line);
-  if (len > 1 && line[len-1] == '\n') 
-    line[len-1] = '\0';
+  if (len > 1 && line[len - 1] == '\n')
+    line[len - 1] = '\0';
 
-  int       bci            = 0;
-  int       level          = 0;
-  methodOop method         = NULL;
-  klassOop  receiver_klass = NULL;
+  int bci = 0;
+  int level = 0;
+  methodOop method = NULL;
+  klassOop receiver_klass = NULL;
 
   RScope* result = NULL;
 
   if (stack->isEmpty()) {
     // the root scope
-    if (!scan_key(NULL, line, &receiver_klass, &method)) return false;
+    if (!scan_key(NULL, line, &receiver_klass, &method))
+      return false;
     stack->push(new RDatabaseScope(NULL, -1, receiver_klass, method, 0));
   } else {
     // sub scope
     int index = scan_prefix(line, &bci, &level);
-    if (index <= 0) return false;
+    if (index <= 0)
+      return false;
 
-    while (stack->length() > level) 
+    while (stack->length() > level)
       stack->pop();
     RDatabaseScope* sender = stack->top();
     if (scan_uncommon(&line[index])) {
@@ -386,11 +396,12 @@ static bool create_rscope(char* line, GrowableArray<RDatabaseScope*>* stack) {
 
 outputStream* InliningDatabase::index_st = NULL;
 
-int      InliningDatabase::local_number_of_nmethods_written = 0;
-klassOop InliningDatabase::local_klass                      = NULL;
+int InliningDatabase::local_number_of_nmethods_written = 0;
+klassOop InliningDatabase::local_klass = NULL;
 
 void InliningDatabase::local_file_out_all(nmethod* nm) {
-  if (nm->isZombie()) return;
+  if (nm->isZombie())
+    return;
   if (file_out(nm)) {
     local_number_of_nmethods_written++;
   }
@@ -398,7 +409,8 @@ void InliningDatabase::local_file_out_all(nmethod* nm) {
 
 char* InliningDatabase::index_file_name() {
   char* name = NEW_RESOURCE_ARRAY(char, 1024);
-  if (!check_directory(directory())) return NULL;
+  if (!check_directory(directory()))
+    return NULL;
   strcpy(name, directory());
   strcat(name, "\\index.txt");
   return name;
@@ -406,8 +418,8 @@ char* InliningDatabase::index_file_name() {
 
 bool scan_key(char* line, LookupKey* key) {
   int len = strlen(line);
-  if (len > 1 && line[len-1] == '\n') 
-    line[len-1] = '\0';
+  if (len > 1 && line[len - 1] == '\n')
+    line[len - 1] = '\0';
 
   bool is_super;
   bool is_block;
@@ -419,8 +431,8 @@ bool scan_key(char* line, LookupKey* key) {
   *sub = '\0';
 
   char* class_name = line;
-  char* method_id  = sub + 2;
-  
+  char* method_id = sub + 2;
+
   bool class_side = false;
   char* class_start = strstr(class_name, " class");
   if (class_start != NULL) {
@@ -429,9 +441,10 @@ bool scan_key(char* line, LookupKey* key) {
   }
 
   klassOop rec = klassOop(Universe::find_global(class_name, true));
-  if (rec == NULL || !rec->is_klass()) return false;
-  if (class_side) rec = rec->klass();
-
+  if (rec == NULL || !rec->is_klass())
+    return false;
+  if (class_side)
+    rec = rec->klass();
 
   GrowableArray<intptr_t>* bcis = new GrowableArray<intptr_t>(10);
 
@@ -442,22 +455,25 @@ bool scan_key(char* line, LookupKey* key) {
     while (*bcis_string != '\0') {
       int index;
       int bci;
-      if (sscanf(bcis_string, "%d%n", &bci, &index) != 1) return 0;
+      if (sscanf(bcis_string, "%d%n", &bci, &index) != 1)
+        return 0;
       bcis->push(bci);
       bcis_string += index;
-      if (*bcis_string == ' ') 
+      if (*bcis_string == ' ')
         bcis_string++;
     }
   }
   symbolOop selector = oopFactory::new_symbol(method_id);
- 
+
   if (is_block) {
     methodOop met = rec->klass_part()->lookup(selector);
-    if (met == NULL) return false;
+    if (met == NULL)
+      return false;
     for (int index = 0; index < bcis->length(); index++) {
       int bci = bcis->at(index);
       met = met->block_method_at(bci);
-      if (met == NULL) return false;
+      if (met == NULL)
+        return false;
     }
     key->initialize(rec, met);
   } else {
@@ -466,37 +482,37 @@ bool scan_key(char* line, LookupKey* key) {
   return true;
 }
 
-
 void InliningDatabase::load_index_file() {
   ResourceMark rm;
   TraceTime t("Loading index for inlining database");
 
   // Open the file
   FILE* stream = fopen(index_file_name(), "rt");
-  if (!stream) return;
+  if (!stream)
+    return;
 
   char line[1000];
 
   LookupKey first;
   LookupKey second;
 
-  while (fgets( line, 1000, stream)) {
+  while (fgets(line, 1000, stream)) {
     if (scan_key(line, &first)) {
       if (first.is_block_type()) {
-        if (fgets( line, 1000, stream)) {
+        if (fgets(line, 1000, stream)) {
           if (scan_key(line, &second)) {
-	    // mystd->print("Block ");
+            // mystd->print("Block ");
             // first.print_on(mystd);
-	    // mystd->print(" outer ");
+            // mystd->print(" outer ");
             // second.print_on(mystd);
             // mystd->cr();
             add_lookup_entry(&second, &first);
-	  } else {
+          } else {
             mystd->print_cr("Index file parsing block failed for %s", line);
-	  }
-	}
+          }
+        }
       } else {
-	// mystd->print("Method ");
+        // mystd->print("Method ");
         // first.print_on(mystd);
         // mystd->cr();
         add_lookup_entry(&first);
@@ -509,7 +525,8 @@ void InliningDatabase::load_index_file() {
 }
 
 void InliningDatabase::local_file_out_klass(nmethod* nm) {
-  if (nm->isZombie()) return;
+  if (nm->isZombie())
+    return;
   if (nm->receiver_klass() == local_klass) {
     if (file_out(nm)) {
       local_number_of_nmethods_written++;
@@ -519,7 +536,7 @@ void InliningDatabase::local_file_out_klass(nmethod* nm) {
 
 int InliningDatabase::file_out(klassOop klass) {
   local_number_of_nmethods_written = 0;
-  local_klass                      = klass;
+  local_klass = klass;
   Universe::code->nmethods_do(local_file_out_klass);
   return local_number_of_nmethods_written;
 }
@@ -530,12 +547,15 @@ RScope* InliningDatabase::file_in_from(FILE* stream) {
   char line[1000];
 
   // Read the first top scope
-  if (!fgets( line, 1000, stream)) return NULL;
-  if (!create_rscope(line, stack)) return NULL;
+  if (!fgets(line, 1000, stream))
+    return NULL;
+  if (!create_rscope(line, stack))
+    return NULL;
 
   // Read the sub scopes
-  while (fgets( line, 1000, stream)) {
-    if (!create_rscope(line, stack)) return NULL;
+  while (fgets(line, 1000, stream)) {
+    if (!create_rscope(line, stack))
+      return NULL;
   }
 
   // Return the top scope
@@ -569,7 +589,7 @@ RScope* InliningDatabase::file_in(LookupKey* outer, LookupKey* inner) {
     return NULL;
   }
   RScope* result = file_in(file_name);
-  
+
   if (TraceInliningDatabase && result == NULL) {
     mystd->print("Failed parsing file for ");
     if (inner) {
@@ -579,53 +599,49 @@ RScope* InliningDatabase::file_in(LookupKey* outer, LookupKey* inner) {
     outer->print();
     mystd->cr();
   }
- 
+
   return result;
 }
 
 class InliningDatabaseKey {
- public:
+public:
   LookupKey outer;
   LookupKey inner;
 
-  bool is_empty()   const { return outer.selector_or_method() == smiOop_zero; }
-  bool is_filled()  const { return smiOop(outer.klass())      != smiOop_zero; }
-  bool is_deleted() const { return outer.selector_or_method() == smiOop_one;  }
+  bool is_empty() const { return outer.selector_or_method() == smiOop_zero; }
+  bool is_filled() const { return smiOop(outer.klass()) != smiOop_zero; }
+  bool is_deleted() const { return outer.selector_or_method() == smiOop_one; }
 
-  bool is_inner()   const { return inner.selector_or_method() != smiOop_zero; }
-  bool is_outer()   const { return !is_inner(); }
+  bool is_inner() const { return inner.selector_or_method() != smiOop_zero; }
+  bool is_outer() const { return !is_inner(); }
 
   void clear() {
     outer.initialize(NULL, smiOop_zero);
     inner.initialize(NULL, smiOop_zero);
   }
 
-  void set_deleted() {
-    outer.initialize(NULL, smiOop_one);
-  }
+  void set_deleted() { outer.initialize(NULL, smiOop_one); }
 
-  bool equal(LookupKey* o, LookupKey* i) {
-    return outer.equal(o) && (is_outer() || inner.equal(i));
-  }
+  bool equal(LookupKey* o, LookupKey* i) { return outer.equal(o) && (is_outer() || inner.equal(i)); }
 
   void oops_do(void f(oop*)) {
     if (is_filled()) {
-     outer.oops_do(f);
-     if(is_inner()) 
-       inner.oops_do(f);
+      outer.oops_do(f);
+      if (is_inner())
+        inner.oops_do(f);
     }
   }
 };
 
-InliningDatabaseKey*   InliningDatabase::table = NULL;
-unsigned int InliningDatabase::table_size      = 0;
+InliningDatabaseKey* InliningDatabase::table = NULL;
+unsigned int InliningDatabase::table_size = 0;
 unsigned int InliningDatabase::table_size_mask = 0;
-unsigned int InliningDatabase::table_no        = 0;
+unsigned int InliningDatabase::table_no = 0;
 
 inline unsigned int InliningDatabase::index_for(LookupKey* outer, LookupKey* inner) {
-  unsigned int hash = (unsigned int) outer->klass()->identity_hash() ^ (unsigned int) outer->selector()->identity_hash();
+  unsigned int hash = (unsigned int)outer->klass()->identity_hash() ^ (unsigned int)outer->selector()->identity_hash();
   if (inner) {
-    hash ^= (unsigned int) inner->klass()->identity_hash() ^ (unsigned int) inner->selector()->identity_hash();
+    hash ^= (unsigned int)inner->klass()->identity_hash() ^ (unsigned int)inner->selector()->identity_hash();
   }
   return hash & table_size_mask;
 }
@@ -637,17 +653,18 @@ inline unsigned int InliningDatabase::next_index(unsigned int index) {
 void InliningDatabase::reset_lookup_table() {
   if (table) {
     FreeHeap(table);
-    table           = NULL;
-    table_size      = 0;
+    table = NULL;
+    table_size = 0;
     table_size_mask = 0;
-    table_no        = 0;
+    table_no = 0;
   }
 }
 
 RScope* InliningDatabase::select_and_remove(bool* end_of_table) {
-  if (table_no == 0) return NULL;  // Skim the cream
+  if (table_no == 0)
+    return NULL; // Skim the cream
 
-  for (unsigned int index = 0 ; index < table_size; index++) {
+  for (unsigned int index = 0; index < table_size; index++) {
     if (table[index].is_filled() && table[index].is_outer()) {
       RScope* result = file_in(&table[index].outer);
       table[index].set_deleted();
@@ -664,12 +681,12 @@ void InliningDatabase::allocate_table(unsigned int size) {
   if (TraceInliningDatabase) {
     mystd->print_cr("InliningDatabase::allocate_table(%d)", size);
   }
-  table_size      = size;
+  table_size = size;
   table_size_mask = size - 1;
-  table_no        = 0;
-  table           = NEW_C_HEAP_ARRAY(InliningDatabaseKey, table_size);
+  table_no = 0;
+  table = NEW_C_HEAP_ARRAY(InliningDatabaseKey, table_size);
   // clear the table
-  for (unsigned int index = 0 ; index < table_size; index++) {
+  for (unsigned int index = 0; index < table_size; index++) {
     table[index].clear();
   }
 }
@@ -680,22 +697,23 @@ void InliningDatabase::add_lookup_entry(LookupKey* outer, LookupKey* inner) {
       allocate_table(4 * K);
     } else {
       // Expand table
-      InliningDatabaseKey* old_table      = table;
-      unsigned int         old_table_size = table_size;
+      InliningDatabaseKey* old_table = table;
+      unsigned int old_table_size = table_size;
       allocate_table(table_size * 2);
-      for (unsigned int index = 0 ; index < old_table_size; index++) {
+      for (unsigned int index = 0; index < old_table_size; index++) {
         if (old_table[index].is_filled())
-	  add_lookup_entry(&old_table[index].outer, &old_table[index].inner);
+          add_lookup_entry(&old_table[index].outer, &old_table[index].inner);
       }
       FreeHeap(old_table);
     }
   }
   assert(table_no * 2 < table_size, "just checking density");
-  
+
   unsigned int index = index_for(outer, inner);
 
   while (table[index].is_filled()) {
-    if (table[index].equal(outer, inner)) return;
+    if (table[index].equal(outer, inner))
+      return;
     index = next_index(index);
   }
 
@@ -717,26 +735,31 @@ void InliningDatabase::add_lookup_entry(LookupKey* outer, LookupKey* inner) {
 }
 
 bool InliningDatabase::lookup(LookupKey* outer, LookupKey* inner) {
-  if (table_no == 0) return false;  // Skim the cream
+  if (table_no == 0)
+    return false; // Skim the cream
 
   unsigned int index = index_for(outer, inner);
-  if (!table[index].is_filled()) return false; 
+  if (!table[index].is_filled())
+    return false;
   while (!table[index].equal(outer, inner)) {
     index = next_index(index);
-    if (table[index].is_empty()) return false;
+    if (table[index].is_empty())
+      return false;
   }
   return true;
 }
 
-
 RScope* InliningDatabase::lookup_and_remove(LookupKey* outer, LookupKey* inner) {
-  if (table_no == 0) return NULL;  // Skim the cream
+  if (table_no == 0)
+    return NULL; // Skim the cream
 
   unsigned int index = index_for(outer, inner);
-  if (!table[index].is_filled()) return NULL; 
+  if (!table[index].is_filled())
+    return NULL;
   while (!table[index].equal(outer, inner)) {
     index = next_index(index);
-    if (table[index].is_empty()) return NULL;
+    if (table[index].is_empty())
+      return NULL;
   }
   table[index].set_deleted();
   table_no--;
@@ -766,7 +789,7 @@ bool InliningDatabase::file_out_all() {
   fileStream index(index_file_name());
 
   // File out the index file.
-  for (unsigned int i = 0 ; i < table_size; i++) {
+  for (unsigned int i = 0; i < table_size; i++) {
     if (table[i].is_filled()) {
       if (table[i].is_inner()) {
         table[i].inner.print_inlining_database_on(&index);

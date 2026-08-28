@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(MemOopAllocationTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(MemOopAllocationTests) {
@@ -20,7 +20,7 @@ SETUP(MemOopAllocationTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(MemOopAllocationTests){
+TEARDOWN(MemOopAllocationTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

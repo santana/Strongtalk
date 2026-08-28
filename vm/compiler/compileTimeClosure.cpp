@@ -57,8 +57,8 @@ NonInlinedBlockScopeNode* CompileTimeClosure::noninlined_block_scope() {
 
 void CompileTimeClosure::generateDebugInfo() {
   assert(_noninlined_block_scope == NULL, "debug info generated twice");
-  _noninlined_block_scope = theCompiler->scopeDescRecorder()->
-                  addNonInlinedBlockScope(method(), parent_scope()->scopeInfo());
+  _noninlined_block_scope =
+    theCompiler->scopeDescRecorder()->addNonInlinedBlockScope(method(), parent_scope()->scopeInfo());
 }
 
 void CompileTimeClosure::print() {

@@ -19,117 +19,116 @@ using namespace easyunit;
 class BlockMethodFinder : public SpecializedMethodClosure {
 public:
   methodOop method;
-  BlockMethodFinder() {
-    method = NULL;
-  }
-  void allocate_closure(AllocationType type, int nofArgs, methodOop meth) {
-    method = meth;
-  }
+  BlockMethodFinder() { method = NULL; }
+  void allocate_closure(AllocationType type, int nofArgs, methodOop meth) { method = meth; }
 };
 
 DECLARE(CompilerTests)
-  HeapResourceMark *rm;
-  int count;
-  nmethod* seed;
-  nmethod* alloc_nmethod(LookupKey* key, int size) {
-    Heap* heap = Universe::code->methodHeap;
-    nmethod* nm = NULL;
-    nm = (nmethod*) heap->allocate(size);
-    if (!nm) return NULL;
-    *((void**)nm) = *((void**)seed); // ugly hack to copy the vftable
-    nm->initForTesting(size - sizeof(nmethod), key);
-    nm->makeZombie(false);
-    return nm;
-  }
-  void initializeSmalltalkEnvironment() {
-    //HandleMark mark;
-    //Handle _new(oopFactory::new_symbol("new"));
-    //Handle initialize(oopFactory::new_symbol("initialize"));
-    //Handle processorScheduler(Universe::find_global("ProcessorScheduler"));
-    //Handle run(oopFactory::new_symbol("run"));
-    //Handle systemInitializer(Universe::find_global("SystemInitializer"));
-    //
-    //Handle processor(Delta::call(processorScheduler.as_oop(), _new.as_oop()));
-    //associationOop processorAssoc = Universe::find_global_association("Processor");
-    //processorAssoc->set_value(processor.as_oop());
+HeapResourceMark* rm;
+int count;
+nmethod* seed;
+nmethod* alloc_nmethod(LookupKey* key, int size) {
+  Heap* heap = Universe::code->methodHeap;
+  nmethod* nm = NULL;
+  nm = (nmethod*)heap->allocate(size);
+  if (!nm)
+    return NULL;
+  *((void**)nm) = *((void**)seed); // ugly hack to copy the vftable
+  nm->initForTesting(size - sizeof(nmethod), key);
+  nm->makeZombie(false);
+  return nm;
+}
+void initializeSmalltalkEnvironment() {
+  //HandleMark mark;
+  //Handle _new(oopFactory::new_symbol("new"));
+  //Handle initialize(oopFactory::new_symbol("initialize"));
+  //Handle processorScheduler(Universe::find_global("ProcessorScheduler"));
+  //Handle run(oopFactory::new_symbol("run"));
+  //Handle systemInitializer(Universe::find_global("SystemInitializer"));
+  //
+  //Handle processor(Delta::call(processorScheduler.as_oop(), _new.as_oop()));
+  //associationOop processorAssoc = Universe::find_global_association("Processor");
+  //processorAssoc->set_value(processor.as_oop());
 
-    //Delta::call(processor.as_oop(), initialize.as_oop());
-    //Delta::call(systemInitializer.as_oop(), run.as_oop());
-  }
-  void exhaustMethodHeap(LookupKey& key, int requiredSize) {
-    GrowableArray<nmethod*>* nmethods = new GrowableArray<nmethod*>;
-    int blockSize = Universe::code->methodHeap->blockSize;
-    int size = Universe::code->methodHeap->freeBytes();
+  //Delta::call(processor.as_oop(), initialize.as_oop());
+  //Delta::call(systemInitializer.as_oop(), run.as_oop());
+}
+void exhaustMethodHeap(LookupKey& key, int requiredSize) {
+  GrowableArray<nmethod*>* nmethods = new GrowableArray<nmethod*>;
+  int blockSize = Universe::code->methodHeap->blockSize;
+  int size = Universe::code->methodHeap->freeBytes();
 
-    bool hasFailed = false;
-    while(!hasFailed) {
-      nmethod* newnm = alloc_nmethod(&key, size);
-      if (newnm) {
-        nmethods->append(newnm);
-      } else {
-        if (size == requiredSize) hasFailed = true;
-        size /= 2;
-        if (size < requiredSize) size = requiredSize;
-      }
+  bool hasFailed = false;
+  while (!hasFailed) {
+    nmethod* newnm = alloc_nmethod(&key, size);
+    if (newnm) {
+      nmethods->append(newnm);
+    } else {
+      if (size == requiredSize)
+        hasFailed = true;
+      size /= 2;
+      if (size < requiredSize)
+        size = requiredSize;
     }
   }
-  nmethod* compile(char* className, char* selectorName) {
-    HandleMark mark;
-    Handle toCompile(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
-    Handle varClass(Universe::find_global(className));
-    return compile(varClass,  toCompile);
-  }
-  nmethod* compile(Handle& klassHandle, Handle& selectorHandle) {
-    klassOop  klass    = klassHandle.as_klass();
-    symbolOop selector = symbolOop(selectorHandle.as_oop());
+}
+nmethod* compile(char* className, char* selectorName) {
+  HandleMark mark;
+  Handle toCompile(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
+  Handle varClass(Universe::find_global(className));
+  return compile(varClass, toCompile);
+}
+nmethod* compile(Handle& klassHandle, Handle& selectorHandle) {
+  klassOop klass = klassHandle.as_klass();
+  symbolOop selector = symbolOop(selectorHandle.as_oop());
 
-    LookupResult result = interpreter_normal_lookup(klass, selector);
-    LookupKey key(klass, reinterpret_cast<oop>(selector));
+  LookupResult result = interpreter_normal_lookup(klass, selector);
+  LookupKey key(klass, reinterpret_cast<oop>(selector));
 
-    VM_OptimizeMethod op(&key, result.method());
-    VMProcess::execute(&op);
-    DeltaCallCache::clearAll();
-    lookupCache::flush();
+  VM_OptimizeMethod op(&key, result.method());
+  VMProcess::execute(&op);
+  DeltaCallCache::clearAll();
+  lookupCache::flush();
 
-    return op.result();
-  }
-  void clearICs(char* className, char* selectorName) {
-    HandleMark mark;
-    Handle varClass(Universe::find_global(className));
-    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
-    clearICs(varClass, setup);
-  }
-  void clearICs(Handle& klassHandle, Handle& selectorHandle) {
-    klassOop  klass    = klassHandle.as_klass();
-    symbolOop selector = symbolOop(selectorHandle.as_oop());
-    LookupResult result = interpreter_normal_lookup(klass, selector);
-    
-    result.method()->cleanup_inline_caches();
-  }
-  nmethod* lookup(char* className, char* selectorName) {
-    HandleMark mark;
-    Handle classHandle(Universe::find_global(className));
-    Handle selectorHandle(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
+  return op.result();
+}
+void clearICs(char* className, char* selectorName) {
+  HandleMark mark;
+  Handle varClass(Universe::find_global(className));
+  Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
+  clearICs(varClass, setup);
+}
+void clearICs(Handle& klassHandle, Handle& selectorHandle) {
+  klassOop klass = klassHandle.as_klass();
+  symbolOop selector = symbolOop(selectorHandle.as_oop());
+  LookupResult result = interpreter_normal_lookup(klass, selector);
 
-    klassOop  klass    = classHandle.as_klass();
-    symbolOop selector = symbolOop(selectorHandle.as_oop());
+  result.method()->cleanup_inline_caches();
+}
+nmethod* lookup(char* className, char* selectorName) {
+  HandleMark mark;
+  Handle classHandle(Universe::find_global(className));
+  Handle selectorHandle(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
 
-    LookupKey key(klass, reinterpret_cast<oop>(selector));
-    return Universe::code->lookup(&key);
-  }
-  void call(char* className, char* selectorName) {
-    HandleMark mark;
-    Handle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
-    Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
-    Handle testClass(Universe::find_global(className));
+  klassOop klass = classHandle.as_klass();
+  symbolOop selector = symbolOop(selectorHandle.as_oop());
 
-    Handle newTest(Delta::call(testClass.as_klass(), _new.as_oop()));
-    
-    Delta::call(newTest.as_oop(), setup.as_oop());
-  }
-  static void resetInvocationCounter(methodOop method) {
-    method->set_invocation_count(0);
-  }
+  LookupKey key(klass, reinterpret_cast<oop>(selector));
+  return Universe::code->lookup(&key);
+}
+void call(char* className, char* selectorName) {
+  HandleMark mark;
+  Handle _new(reinterpret_cast<oop>(oopFactory::new_symbol("new")));
+  Handle setup(reinterpret_cast<oop>(oopFactory::new_symbol(selectorName)));
+  Handle testClass(Universe::find_global(className));
+
+  Handle newTest(Delta::call(testClass.as_klass(), _new.as_oop()));
+
+  Delta::call(newTest.as_oop(), setup.as_oop());
+}
+static void resetInvocationCounter(methodOop method) {
+  method->set_invocation_count(0);
+}
 END_DECLARE
 
 SETUP(CompilerTests) {
@@ -137,7 +136,7 @@ SETUP(CompilerTests) {
   count = 0;
 }
 
-TEARDOWN(CompilerTests){
+TEARDOWN(CompilerTests) {
   count = 0;
   Universe::code->methodHeap->combineMode = true;
   Universe::code->flush(); // free all nmethods
@@ -191,8 +190,8 @@ TESTF(CompilerTests, invalidJumptableID) {
     initializeSmalltalkEnvironment();
     call("BlockMaterializeTest", "testIgnoredBlock");
     compile("BlockMaterializeTest", "testIgnoredBlock");
-      // was causing assertion failure in CompileTimeClosure::jump_table_entry()
-      // due to no _id
+    // was causing assertion failure in CompileTimeClosure::jump_table_entry()
+    // due to no _id
   }
 }
 
@@ -218,7 +217,7 @@ TESTF(CompilerTests, toplevelBlockScopeWithContextContainingBlockReferencingCont
   {
     initializeSmalltalkEnvironment();
     call("NonInlinedBlockTest", "testSetup2");
-    compile("NonInlinedBlockTest",  "exercise2:value:");
+    compile("NonInlinedBlockTest", "exercise2:value:");
     clearICs("NonInlinedBlockTest", "testSetup2");
     call("NonInlinedBlockTest", "testSetup2");
 
@@ -273,10 +272,10 @@ TESTF(CompilerTests, recompileZombieWhenMethodHeapExhausted) {
   {
     initializeSmalltalkEnvironment();
     call("CompilerTest", "testOnce");
-    compile("CompilerTest",  "with:");
+    compile("CompilerTest", "with:");
     clearICs("CompilerTest", "testOnce");
     call("CompilerTest", "testOnce");
-    seed = lookup("CompilerTest",  "with:");
+    seed = lookup("CompilerTest", "with:");
     seed->inc_uncommon_trap_counter();
     seed->inc_uncommon_trap_counter();
     seed->inc_uncommon_trap_counter();
@@ -289,7 +288,7 @@ TESTF(CompilerTests, recompileZombieWhenMethodHeapExhausted) {
     // forces deoptimization and recompilation.
     call("CompilerTest", "testTwice");
     ASSERT_TRUE(seed->isZombie());
-    nmethod* nm = lookup("CompilerTest",  "with:");
+    nmethod* nm = lookup("CompilerTest", "with:");
     ASSERT_FALSE((nm == seed));
   }
 }

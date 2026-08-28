@@ -50,12 +50,11 @@ smi Scope::_currentScopeID;
 
 SendInfo::SendInfo(InlinedScope* sen, LookupKey* lkup, Expr* r) {
   senderScope = sen;
-  rcvr = r; 
-  sel = lkup->selector(); 
+  rcvr = r;
+  sel = lkup->selector();
   key = lkup;
   init();
 }
-
 
 void SendInfo::computeNSends(RScope* rscope, int bci) {
   GrowableArray<RScope*>* lst = rscope->subScopes(bci);
@@ -66,8 +65,10 @@ void SendInfo::computeNSends(RScope* rscope, int bci) {
 }
 
 void SendInfo::init() {
-  resReg = NULL; needRealSend = counting = false; 
-  nsends = -1; receiverStatic = predicted = uninlinable = false;
+  resReg = NULL;
+  needRealSend = counting = false;
+  nsends = -1;
+  receiverStatic = predicted = uninlinable = false;
   inPrimFailure = senderScope && senderScope->gen()->in_prim_failure_block();
 }
 
@@ -76,58 +77,59 @@ void SendInfo::init() {
 
 InlinedScope::InlinedScope() {}
 
-void InlinedScope::initialize(methodOop method, klassOop methodHolder, InlinedScope* sender, RScope* rs, SendInfo* info) {
-  _scopeID 		= currentScopeID();
+void InlinedScope::initialize(methodOop method, klassOop methodHolder, InlinedScope* sender, RScope* rs,
+                              SendInfo* info) {
+  _scopeID = currentScopeID();
   theCompiler->scopes->append(this);
   assert(theCompiler->scopes->at(_scopeID) == this, "bad list");
-  _sender 		= sender;
-  _scopeInfo 		= NULL;
+  _sender = sender;
+  _scopeInfo = NULL;
   if (sender) {
-    _senderBCI 		= sender->bci();
+    _senderBCI = sender->bci();
     sender->addSubScope(this);
-    depth 		= _sender->depth + 1;
-    loopDepth 		= _sender->loopDepth;
+    depth = _sender->depth + 1;
+    loopDepth = _sender->loopDepth;
   } else {
-    _senderBCI 		= IllegalBCI;
-    depth = loopDepth 	= 0;
+    _senderBCI = IllegalBCI;
+    depth = loopDepth = 0;
   }
-  result = nlrResult 	= NULL;	// these are set during compilation
+  result = nlrResult = NULL; // these are set during compilation
   if (info && info->resReg) {
-    resultPR 		= info->resReg;
+    resultPR = info->resReg;
   } else {
     // potential bug: live range of resultPR is bogus
     assert(isTop(), "should have resReg for inlined scope");
-    resultPR 		= new SAPReg(this, resultLoc, false, false, PrologueBCI, EpilogueBCI);
+    resultPR = new SAPReg(this, resultLoc, false, false, PrologueBCI, EpilogueBCI);
   }
-  rscope 		= rs;
+  rscope = rs;
   rs->extend();
-      
-  predicted 		= info ? info->predicted : false;
+
+  predicted = info ? info->predicted : false;
 
   assert(info->key->klass(), "must have klass");
-  _key			= info->key;	
-  _method		= method;
-  _methodHolder		= methodHolder;	// NB: can be NULL if method is in Object
-  _nofSends		= 0;
-  _nofInterruptPoints	= 0;
-  _primFailure		= sender ? sender->_primFailure : false;
-  _endsDead		= false;
-  _self			= NULL;		// initialized by createTemps or by sender scope
+  _key = info->key;
+  _method = method;
+  _methodHolder = methodHolder; // NB: can be NULL if method is in Object
+  _nofSends = 0;
+  _nofInterruptPoints = 0;
+  _primFailure = sender ? sender->_primFailure : false;
+  _endsDead = false;
+  _self = NULL; // initialized by createTemps or by sender scope
   _gen.initialize(this);
 
-  _temporaries		= NULL;		// allocated by createTemporaries
-  _floatTemporaries	= NULL;		// allocated by createFloatTemporaries
-  _contextTemporaries	= NULL;		// allocated by createContextTemporaries
-  _context		= NULL;		// set for blocks and used/set by createContextTemporaries
-  _exprStackElems	= new GrowableArray<Expr*>(nofBytes());
-  _subScopes		= new GrowableArray<InlinedScope*>(5);
-  _loops		= new GrowableArray<CompiledLoop*>(5);
-  _typeTests		= new GrowableArray<NonTrivialNode*>(10);
+  _temporaries = NULL; // allocated by createTemporaries
+  _floatTemporaries = NULL; // allocated by createFloatTemporaries
+  _contextTemporaries = NULL; // allocated by createContextTemporaries
+  _context = NULL; // set for blocks and used/set by createContextTemporaries
+  _exprStackElems = new GrowableArray<Expr*>(nofBytes());
+  _subScopes = new GrowableArray<InlinedScope*>(5);
+  _loops = new GrowableArray<CompiledLoop*>(5);
+  _typeTests = new GrowableArray<NonTrivialNode*>(10);
 
-  _pregsBegSorted	= new GrowableArray<PReg*>(5);
-  _pregsEndSorted	= new GrowableArray<PReg*>(5);
-  _firstFloatIndex	= -1;		// set during float allocation
-  _hasBeenGenerated     = false;
+  _pregsBegSorted = new GrowableArray<PReg*>(5);
+  _pregsEndSorted = new GrowableArray<PReg*>(5);
+  _firstFloatIndex = -1; // set during float allocation
+  _hasBeenGenerated = false;
 
   theCompiler->nofBytesCompiled(nofBytes());
   if (!rs->isNullScope() && rs->method() != method) {
@@ -147,14 +149,13 @@ void MethodScope::initialize(methodOop method, klassOop methodHolder, InlinedSco
   InlinedScope::initialize(method, methodHolder, sen, rs, info);
 }
 
-
 MethodScope::MethodScope() {}
 BlockScope::BlockScope() {}
 
-
-void BlockScope::initialize(methodOop method, klassOop methodHolder, Scope* p, InlinedScope* s, RScope* rs, SendInfo* info) {
+void BlockScope::initialize(methodOop method, klassOop methodHolder, Scope* p, InlinedScope* s, RScope* rs,
+                            SendInfo* info) {
   InlinedScope::initialize(method, methodHolder, s, rs, info);
-  _parent = p; 
+  _parent = p;
   _self_is_initialized = false;
   if (s == NULL) {
     // top scope: create a context (currently always initialized for blocks)
@@ -164,42 +165,44 @@ void BlockScope::initialize(methodOop method, klassOop methodHolder, Scope* p, I
     // set up for context passed in by caller
     // (_context may be changed later if this scope allocates its own context)
     switch (method->block_info()) {
-      case methodOopDesc::expects_nil:		// no context needed
-   	_context = NULL; break;
+      case methodOopDesc::expects_nil: // no context needed
+        _context = NULL;
+        break;
       case methodOopDesc::expects_self:
-   	_context = self()->preg(); fatal("self not known yet -- fix this"); break;
-      case methodOopDesc::expects_parameter:	// fix this -- should find which
-	Unimplemented();
-	break;
+        _context = self()->preg();
+        fatal("self not known yet -- fix this");
+        break;
+      case methodOopDesc::expects_parameter: // fix this -- should find which
+        Unimplemented();
+        break;
       case methodOopDesc::expects_context:
-   	if (p->isInlinedScope()) {
-	  _context = ((InlinedScope*)p)->context(); 
-	} else {
-	  fatal("shouldn't inline");  	// shouldn't inline block unless parent was inlined, too
-	}
-	break;
+        if (p->isInlinedScope()) {
+          _context = ((InlinedScope*)p)->context();
+        } else {
+          fatal("shouldn't inline"); // shouldn't inline block unless parent was inlined, too
+        }
+        break;
       default:
-   	fatal("unexpected incoming info");
+        fatal("unexpected incoming info");
     }
   }
 }
 
-
-MethodScope* MethodScope::new_MethodScope(methodOop method, klassOop methodHolder, InlinedScope* sen, RScope* rs, SendInfo* info) {
+MethodScope* MethodScope::new_MethodScope(methodOop method, klassOop methodHolder, InlinedScope* sen, RScope* rs,
+                                          SendInfo* info) {
   MethodScope* new_scope = new MethodScope;
   new_scope->initialize(method, methodHolder, sen, rs, info);
   new_scope->initializeArguments();
   return new_scope;
-}	   
+}
 
-
-BlockScope* BlockScope::new_BlockScope(methodOop method, klassOop methodHolder, Scope* p, InlinedScope* s, RScope* rs, SendInfo* info) {
+BlockScope* BlockScope::new_BlockScope(methodOop method, klassOop methodHolder, Scope* p, InlinedScope* s, RScope* rs,
+                                       SendInfo* info) {
   BlockScope* new_scope = new BlockScope;
   new_scope->initialize(method, methodHolder, p, s, rs, info);
   new_scope->initializeArguments();
   return new_scope;
-}	   
-
+}
 
 void InlinedScope::addSubScope(InlinedScope* s) {
   // assert(_subScopes->isEmpty() || _subScopes->last()->senderBCI() <= s->senderBCI(),
@@ -249,7 +252,6 @@ MergeNode* InlinedScope::nlrTestPoint() {
   return _nlrTestPoint;
 }
 
-
 void InlinedScope::addResult(Expr* e) {
   // e is a possible return value; add it to our return expression to keep track of all possible return types
   assert(e->preg() == resultPR || resultPR == NULL || e->isNoResultExpr(), "bad result PReg");
@@ -260,7 +262,6 @@ void InlinedScope::addResult(Expr* e) {
   }
 }
 
-
 void InlinedScope::initializeArguments() {
   const int nofArgs = _method->number_of_arguments();
   _arguments = new GrowableArray<Expr*>(nofArgs, nofArgs, NULL);
@@ -268,9 +269,7 @@ void InlinedScope::initializeArguments() {
     // create expr for self but do not allocate a location yet
     // (self is setup by the prologue node)
     _self =
-      new KlassExpr(klassOop(selfKlass()),
-		    new SAPReg(this, unAllocated, false, false, PrologueBCI, EpilogueBCI),
-		    NULL);
+      new KlassExpr(klassOop(selfKlass()), new SAPReg(this, unAllocated, false, false, PrologueBCI, EpilogueBCI), NULL);
     // preallocate incoming arguments, i.e., create their expressions
     // using SAPRegs that are already allocated
     for (int i = 0; i < nofArgs; i++) {
@@ -278,7 +277,7 @@ void InlinedScope::initializeArguments() {
       _arguments->at_put(i, new UnknownExpr(arg));
     }
   } else {
-    _self = NULL;	// will be initialized by sender
+    _self = NULL; // will be initialized by sender
     // get args from sender's expression stack; top of expr stack = last arg, etc.
     const int top = sender()->exprStack()->length();
     for (int i = 0; i < nofArgs; i++) {
@@ -286,7 +285,6 @@ void InlinedScope::initializeArguments() {
     }
   }
 }
-
 
 void BlockScope::initializeSelf() {
   // for non-inlined top-level scope, make sure self is initialized
@@ -298,7 +296,6 @@ void BlockScope::initializeSelf() {
     _gen.set_self_via_context();
   }
 }
-
 
 void InlinedScope::createTemporaries(int nofTemps) {
   // add nofTemps temporaries (may be called multiple times)
@@ -315,17 +312,18 @@ void InlinedScope::createTemporaries(int nofTemps) {
     } else {
       firstNew = 0;
     }
- } else {
+  } else {
     // grow existing temp array
     const GrowableArray<Expr*>* oldTemps = _temporaries;
     const int n = nofTemps + oldTemps->length();
     _temporaries = new GrowableArray<Expr*>(n, n, NULL);
     firstNew = oldTemps->length();
     nofTemps += oldTemps->length();
-    for (int i = 0; i < firstNew; i++) _temporaries->at_put(i, oldTemps->at(i));
+    for (int i = 0; i < firstNew; i++)
+      _temporaries->at_put(i, oldTemps->at(i));
   }
   // initialize new temps
- ConstPReg* nil = new_ConstPReg(this, nilObj);
+  ConstPReg* nil = new_ConstPReg(this, nilObj);
   for (int i = firstNew; i < nofTemps; i++) {
     PReg* r = new PReg(this);
     _temporaries->at_put(i, new UnknownExpr(r, NULL));
@@ -336,7 +334,6 @@ void InlinedScope::createTemporaries(int nofTemps) {
     }
   }
 }
-
 
 void InlinedScope::createFloatTemporaries(int nofFloats) {
   assert(!hasFloatTemporaries(), "cannot be called twice");
@@ -349,10 +346,9 @@ void InlinedScope::createFloatTemporaries(int nofFloats) {
       // floats are initialized by PrologueNode
     } else {
       warning("float initialization of floats in inlined scopes not implemented yet");
-    } 
+    }
   }
 }
-
 
 void InlinedScope::createContextTemporaries(int nofTemps) {
   // create _contextTemporaries and initialize all elements immediately;
@@ -381,14 +377,14 @@ void InlinedScope::createContextTemporaries(int nofTemps) {
   _temporaries->at_put(0, new ContextExpr(_context));
 }
 
-void InlinedScope::contextTemporariesAtPut(int no, Expr* e) { 
+void InlinedScope::contextTemporariesAtPut(int no, Expr* e) {
   assert(!e->preg()->isSAPReg() || e->preg()->isBlockPReg() || ((SAPReg*)e->preg())->isInContext(), "not in context");
-  _contextTemporaries->at_put(no, e); 
+  _contextTemporaries->at_put(no, e);
 }
 
-
 bool InlinedScope::allocatesCompiledContext() const {
-  if (!allocatesInterpretedContext()) return false;
+  if (!allocatesInterpretedContext())
+    return false;
   ContextCreateNode* c = _contextInitializer->creator();
   if (bbIterator->usesBuilt && c->deleted) {
     // logically has a context, but it has been optimized away
@@ -398,22 +394,19 @@ bool InlinedScope::allocatesCompiledContext() const {
   }
 }
 
-
 void InlinedScope::prologue() {
   theCompiler->enterScope(this);
   initializeSelf();
 }
 
-
 static int compare_scopeBCIs(InlinedScope** a, InlinedScope** b) {
-  // put unused scopes at the end so they can be deleted 
+  // put unused scopes at the end so they can be deleted
   if ((*a)->hasBeenGenerated() == (*b)->hasBeenGenerated()) {
     return (*a)->senderBCI() - (*b)->senderBCI();
   } else {
     return (*a)->hasBeenGenerated() ? -1 : 1;
   }
 }
-
 
 void InlinedScope::epilogue() {
   // generate epilogue code (i.e., everything after last byte code has been processed)
@@ -423,10 +416,12 @@ void InlinedScope::epilogue() {
   _subScopes->sort(compare_scopeBCIs);
 
   // now remove all subscopes that were created but not used (not inlined)
-  while (! _subScopes->isEmpty() && !_subScopes->last()->hasBeenGenerated()) _subScopes->pop();
+  while (!_subScopes->isEmpty() && !_subScopes->last()->hasBeenGenerated())
+    _subScopes->pop();
 #ifdef ASSERT
   for (int i = 0; i < _subScopes->length(); i++) {
-    if (!_subScopes->at(i)->hasBeenGenerated()) fatal("unused scopes should be at end");
+    if (!_subScopes->at(i)->hasBeenGenerated())
+      fatal("unused scopes should be at end");
   }
 #endif
 
@@ -451,32 +446,34 @@ void InlinedScope::epilogue() {
     // scopes have somewhere to jump to
     (void)nlrTestPoint();
   }
-  if (!result) result = new NoResultExpr;
+  if (!result)
+    result = new NoResultExpr;
   theCompiler->exitScope(this);
 }
 
-
 bool InlinedScope::isSenderOf(InlinedScope* callee) const {
   assert(callee, "should have a scope");
-  if (depth > callee->depth) return false;
+  if (depth > callee->depth)
+    return false;
   int d = callee->depth - 1;
   for (InlinedScope* s = callee->sender(); s && d >= depth; s = s->sender(), d--) {
-    if (this == s) return true;
+    if (this == s)
+      return true;
   }
   return false;
 }
 
-
 void InlinedScope::addSend(GrowableArray<PReg*>* expStk, bool isSend) {
   // add send or prim. call / uncommon branch to this scope and mark locals as debug-visible
-  if (!expStk) return;    		// not an exposing send
+  if (!expStk)
+    return; // not an exposing send
   for (InlinedScope* s = this; s && s->isInlinedScope(); s = s->sender()) {
-    if (isSend) s->_nofSends++;
+    if (isSend)
+      s->_nofSends++;
     s->_nofInterruptPoints++;
-    s->markLocalsDebugVisible(expStk);	// mark locals as debug-visible
+    s->markLocalsDebugVisible(expStk); // mark locals as debug-visible
   }
 }
-
 
 void InlinedScope::markLocalsDebugVisible(GrowableArray<PReg*>* exprStack) {
   // this scope has at least one send - mark params & locals as debug-visible
@@ -491,7 +488,7 @@ void InlinedScope::markLocalsDebugVisible(GrowableArray<PReg*>* exprStack) {
       temporary(i)->preg()->debug = true;
     }
     // if there's a context, mark all context variables as debug-visible too.
-    GrowableArray<Expr*>*  ct = contextTemporaries();
+    GrowableArray<Expr*>* ct = contextTemporaries();
     if (ct != NULL) {
       for (i = 0; i < ct->length(); i++) {
         ct->at(i)->preg()->debug = true;
@@ -506,24 +503,20 @@ void InlinedScope::markLocalsDebugVisible(GrowableArray<PReg*>* exprStack) {
   }
 }
 
-
 void InlinedScope::setExprForBCI(int bci, Expr* expr) {
   assert(_exprStackElems->at_grow(bci) == NULL, "only one expr per BCI allowed");
   _exprStackElems->at_put_grow(bci, expr);
 }
 
-
 void InlinedScope::set2ndExprForBCI(int bci, Expr* expr) {
   _exprStackElems->at_put_grow(bci, expr);
 }
 
-
-void InlinedScope::set_self(Expr* e) { 
-  assert(!_self, "self already set"); 
+void InlinedScope::set_self(Expr* e) {
+  assert(!_self, "self already set");
   assert(e->scope()->isSenderOrSame(this), "must be in sender scope");
-  _self = e; 
+  _self = e;
 }
-
 
 int InlinedScope::homeContext() const {
   // count the number of logical (i.e. interpreter) contexts from here up to the home method
@@ -531,18 +524,19 @@ int InlinedScope::homeContext() const {
   int context = -1;
   methodOop method = _method;
   while (method != NULL) {
-    if (method->allocatesInterpretedContext()) { context++; }
+    if (method->allocatesInterpretedContext()) {
+      context++;
+    }
     method = method->parent();
   }
   assert(context >= 0, "there must be at least one context");
   return context;
 }
 
-
 InlinedScope* InlinedScope::find_scope(int c, int& nofIndirections, OutlinedScope*& out) {
   // return the InlinedScope that contains context c
   // IN : context no. c for this scope (in interpreter terms)
-  // OUT: number of indirections required at run time (-1 = in same stack frame, 
+  // OUT: number of indirections required at run time (-1 = in same stack frame,
   //      0 = in context of this frame, 1 = in parent context of this frame's context, etc.)
   // if the inlined scope is found (nofIndirections = -1) it is returned as the result
   // if the inlined scope is not found (nofIndirections >= 0), the highest possible scope
@@ -550,23 +544,26 @@ InlinedScope* InlinedScope::find_scope(int c, int& nofIndirections, OutlinedScop
   assert(c >= 0, "context must be >= 0");
   int distance = _method->lexicalDistance(c);
   nofIndirections = -1;
-  Scope* 	s = this;
+  Scope* s = this;
   out = NULL;
   // first, go up as far as possible
   int d;
-  for (d = distance; d > 0 && s->parent()->isInlinedScope(); d--, s = s->parent()) ;
+  for (d = distance; d > 0 && s->parent()->isInlinedScope(); d--, s = s->parent())
+    ;
   if (d == 0) {
     // found scope in our nmethod
     return (InlinedScope*)s;
   }
 
-  // InlinedScope not found; go up the rest of the scopes and count how many 
+  // InlinedScope not found; go up the rest of the scopes and count how many
   // stack frames are traversed
   InlinedScope* top = (InlinedScope*)s;
-  if (top->allocatesCompiledContext()) nofIndirections++;
+  if (top->allocatesCompiledContext())
+    nofIndirections++;
   Scope* prev = s;
   for (s = s->parent(); d > 0; d--, prev = s, s = s->parent()) {
-    if (s->allocatesCompiledContext()) nofIndirections++;
+    if (s->allocatesCompiledContext())
+      nofIndirections++;
   }
   assert(prev->isOutlinedScope(), "must be outlined scope");
   out = (OutlinedScope*)prev;
@@ -574,46 +571,44 @@ InlinedScope* InlinedScope::find_scope(int c, int& nofIndirections, OutlinedScop
   return top;
 }
 
-
 void InlinedScope::collectContextInfo(GrowableArray<InlinedScope*>* contextList) {
   // collect all scopes with contexts
-  if (allocatesInterpretedContext()) contextList->append(this);
+  if (allocatesInterpretedContext())
+    contextList->append(this);
   for (int i = _subScopes->length() - 1; i >= 0; i--) {
     _subScopes->at(i)->collectContextInfo(contextList);
   }
 }
-
 
 int InlinedScope::number_of_noninlined_blocks() {
   // return the number of non-inlined blocks in this scope or its callees
   int nblocks = 0;
   for (int i = bbIterator->exposedBlks->length() - 1; i >= 0; i--) {
     BlockPReg* blk = bbIterator->exposedBlks->at(i);
-    if (blk->isUsed() && isSenderOrSame(blk->scope())) nblocks++;
+    if (blk->isUsed() && isSenderOrSame(blk->scope()))
+      nblocks++;
   }
   return nblocks;
 }
 
-
 void InlinedScope::generateDebugInfoForNonInlinedBlocks() {
   for (int i = bbIterator->exposedBlks->length() - 1; i >= 0; i--) {
     BlockPReg* blk = bbIterator->exposedBlks->at(i);
-    if (blk->isUsed()) blk->closure()->generateDebugInfo();
+    if (blk->isUsed())
+      blk->closure()->generateDebugInfo();
   }
 }
-
 
 void InlinedScope::copy_noninlined_block_info(nmethod* nm) {
   for (int i = bbIterator->exposedBlks->length() - 1; i >= 0; i--) {
     BlockPReg* blk = bbIterator->exposedBlks->at(i);
     if (blk->isUsed()) {
-      int offset = theCompiler->scopeDescRecorder()->
-                     offset_for_noninlined_scope_node(blk->closure()->noninlined_block_scope());
+      int offset =
+        theCompiler->scopeDescRecorder()->offset_for_noninlined_scope_node(blk->closure()->noninlined_block_scope());
       nm->noninlined_block_at_put(blk->closure()->id().minor_version(), offset);
     }
   }
 }
-
 
 // loop optimizations
 
@@ -638,78 +633,71 @@ void InlinedScope::optimizeLoops() {
       cout(PrintLoopOpts)->print("*optimizing integer loop %d in scope %s\n", i, key()->print_string());
       loop->optimizeIntegerLoop();
     }
-    if (OptimizeLoops) loop->optimize();
+    if (OptimizeLoops)
+      loop->optimize();
   }
   for (int i = _subScopes->length() - 1; i >= 0; i--) {
     _subScopes->at(i)->optimizeLoops();
   }
 }
 
-
-
 // register allocation
 
-void InlinedScope::addToPRegsBegSorted(PReg* r)	{
+void InlinedScope::addToPRegsBegSorted(PReg* r) {
   assert(PrologueBCI <= r->begBCI() && r->begBCI() <= EpilogueBCI, "illegal bci");
   assert(_pregsBegSorted->isEmpty() || _pregsBegSorted->last()->begBCI() <= r->begBCI(), "sort order wrong");
   _pregsBegSorted->append(r);
 }
 
-
-void InlinedScope::addToPRegsEndSorted(PReg* r)	{
+void InlinedScope::addToPRegsEndSorted(PReg* r) {
   assert(PrologueBCI <= r->endBCI() && r->endBCI() <= EpilogueBCI, "illegal bci");
   assert(_pregsEndSorted->isEmpty() || _pregsEndSorted->last()->endBCI() <= r->endBCI(), "sort order wrong");
   _pregsEndSorted->append(r);
 }
 
-
 void InlinedScope::allocatePRegs(IntFreeList* f) {
-  int bci  = PrologueBCI;
-  int bi   = 0;
-  int si   = 0;
-  int ei   = 0;
+  int bci = PrologueBCI;
+  int bi = 0;
+  int si = 0;
+  int ei = 0;
   int blen = _pregsBegSorted->length();
   int slen = _subScopes->length();
   int elen = _pregsEndSorted->length();
-  int n    = f->allocated();
+  int n = f->allocated();
   assert(blen == elen, "should be the same");
   while (bci <= EpilogueBCI) {
     // allocate registers that begin at bci
     while (bi < blen && _pregsBegSorted->at(bi)->begBCI() == bci) {
       _pregsBegSorted->at(bi)->allocateTo(Mapping::localTemporary(f->allocate()));
       bi++;
-      assert(bi == blen || 
-      	     _pregsBegSorted->at(bi)->begBCI() >= _pregsBegSorted->at(bi-1)->begBCI(),
-	     "_pregsBegSorted not sorted");
+      assert(bi == blen || _pregsBegSorted->at(bi)->begBCI() >= _pregsBegSorted->at(bi - 1)->begBCI(),
+             "_pregsBegSorted not sorted");
     }
     // allocate registers for subscopes that begin at bci
     while (si < slen && _subScopes->at(si)->senderBCI() == bci) {
       _subScopes->at(si)->allocatePRegs(f);
       si++;
-      assert(si == slen || 
-      	     _subScopes->at(si)->senderBCI() >= _subScopes->at(si-1)->senderBCI(),
-	     "_subScopes not sorted");
+      assert(si == slen || _subScopes->at(si)->senderBCI() >= _subScopes->at(si - 1)->senderBCI(),
+             "_subScopes not sorted");
     }
     // release registers that end at bci
     while (ei < elen && _pregsEndSorted->at(ei)->endBCI() == bci) {
       f->release(Mapping::localTemporaryIndex(_pregsEndSorted->at(ei)->loc));
       ei++;
-      assert(ei == elen || 
-      	     _pregsEndSorted->at(ei)->endBCI() >= _pregsEndSorted->at(ei-1)->endBCI(),
-	     "_pregsEndSorted not sorted");
+      assert(ei == elen || _pregsEndSorted->at(ei)->endBCI() >= _pregsEndSorted->at(ei - 1)->endBCI(),
+             "_pregsEndSorted not sorted");
     }
     // advance bci
     bci = min(bi < blen ? _pregsBegSorted->at(bi)->begBCI() : EpilogueBCI + 1,
-              si < slen ? _subScopes->at(si)->senderBCI()   : EpilogueBCI + 1,
+              si < slen ? _subScopes->at(si)->senderBCI() : EpilogueBCI + 1,
               ei < elen ? _pregsEndSorted->at(ei)->endBCI() : EpilogueBCI + 1);
   }
   assert(f->allocated() == n, "inconsistent allocation/release");
 }
 
-
 int InlinedScope::allocateFloatTemporaries(int firstFloatIndex) {
   assert(firstFloatIndex >= 0, "illegal firstFloatIndex");
-  _firstFloatIndex = firstFloatIndex;				// start index for first float of this scope
+  _firstFloatIndex = firstFloatIndex; // start index for first float of this scope
   int nofFloatTemps = hasFloatTemporaries() ? nofFloatTemporaries() : 0;
   // convert floatLocs into stackLocs
   for (int k = 0; k < nofFloatTemps; k++) {
@@ -719,7 +707,7 @@ int InlinedScope::allocateFloatTemporaries(int firstFloatIndex) {
     preg->loc = Mapping::floatTemporary(scopeID(), k);
     assert(preg->loc.isStackLocation(), "must be a stack location");
   }
-  int startFloatIndex = firstFloatIndex + nofFloatTemps;	// start index for first float in subscopes
+  int startFloatIndex = firstFloatIndex + nofFloatTemps; // start index for first float in subscopes
   int totalNofFloatsInSubscopes = 0;
   // allocate float temporaries of subscopes
   int len = _subScopes->length();
@@ -730,12 +718,11 @@ int InlinedScope::allocateFloatTemporaries(int firstFloatIndex) {
   return nofFloatTemps + totalNofFloatsInSubscopes;
 }
 
-
 bool MethodScope::isRecursiveCall(methodOop method, klassOop rcvrKlass, int depth) {
   // test is method/rcvrKlass would be a recursive invocation of this scope
   if (method == _method && rcvrKlass == selfKlass()) {
     if (depth <= 1) {
-      return true;	// terminate recursion here
+      return true; // terminate recursion here
     } else {
       // it's recursive, but the unrolling depth hasn't been reached yet
       depth--;
@@ -749,11 +736,10 @@ bool MethodScope::isRecursiveCall(methodOop method, klassOop rcvrKlass, int dept
   }
 }
 
-
 bool BlockScope::isRecursiveCall(methodOop method, klassOop rcvrKlass, int depth) {
   if (method == _method) {
     if (depth <= 1) {
-      return true;	// terminate recursion here
+      return true; // terminate recursion here
     } else {
       // it's recursive, but the unrolling depth hasn't been reached yet
       // NB: don't just fall through to parent check below because of
@@ -787,9 +773,9 @@ void InlinedScope::genCode() {
   _hasBeenGenerated = true;
   prologue();
   // always generate (shared) entry points for ordinary & non-local return
-  _returnPoint        = NodeFactory::new_MergeNode(EpilogueBCI);
-  _NLReturnPoint      = NodeFactory::new_MergeNode(EpilogueBCI);
-  _nlrTestPoint       = NULL;
+  _returnPoint = NodeFactory::new_MergeNode(EpilogueBCI);
+  _NLReturnPoint = NodeFactory::new_MergeNode(EpilogueBCI);
+  _nlrTestPoint = NULL;
   _contextInitializer = NULL;
   int nofTemps = method()->number_of_stack_temporaries();
   if (isTop()) {
@@ -820,11 +806,11 @@ void InlinedScope::genCode() {
   MethodIterator iter(method(), gen());
   if (gen()->aborting()) {
     // ends with dead code -- clean up expression stack
-    while (!exprStack()->isEmpty()) exprStack()->pop();
+    while (!exprStack()->isEmpty())
+      exprStack()->pop();
   }
   epilogue();
 }
-
 
 // debugging info
 void print_selector_cr(symbolOop selector) {
@@ -866,7 +852,8 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _temporaries->at(i)->preg();
         rec->addTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) mystd->print_cr("temp[%2d]: %s", i, preg->name());
+        if (PrintDebugInfoGeneration)
+          mystd->print_cr("temp[%2d]: %s", i, preg->name());
       }
     }
     // float temporaries
@@ -875,7 +862,8 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _floatTemporaries->at(i)->preg();
         rec->addTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) mystd->print_cr("float[%2d]: %s", i, preg->name());
+        if (PrintDebugInfoGeneration)
+          mystd->print_cr("float[%2d]: %s", i, preg->name());
       }
     }
     // context temporaries
@@ -884,7 +872,8 @@ void InlinedScope::generateDebugInfo() {
       for (i = 0; i < len; i++) {
         PReg* preg = _contextTemporaries->at(i)->preg();
         rec->addContextTemporary(_scopeInfo, i, preg->createLogicalAddress());
-	if (PrintDebugInfoGeneration) mystd->print_cr("c_temp[%2d]: %s", i, preg->name());
+        if (PrintDebugInfoGeneration)
+          mystd->print_cr("c_temp[%2d]: %s", i, preg->name());
       }
     }
     // expr stack
@@ -894,17 +883,18 @@ void InlinedScope::generateDebugInfo() {
       if (elem != NULL) {
         PReg* r = elem->preg()->cpReg();
         if (r->scope()->isSenderOrSame(this)) {
-	  // Note: Is it still needed to create this info here, since the
-	  //       PReg locations may change over time and thus produce more
-	  //       debug info than actually needed for the new backend. Discuss
-	  //       this with Lars.
+          // Note: Is it still needed to create this info here, since the
+          //       PReg locations may change over time and thus produce more
+          //       debug info than actually needed for the new backend. Discuss
+          //       this with Lars.
           rec->addExprStack(_scopeInfo, i, r->createLogicalAddress());
-          if (PrintDebugInfoGeneration) mystd->print_cr("expr[%2d]: %s", i, r->name());
+          if (PrintDebugInfoGeneration)
+            mystd->print_cr("expr[%2d]: %s", i, r->name());
         } else {
-  	  // r's scope is too low (i.e. it's not actually live anymore)
-	  // this can only happen if the expression is discarded; thus it's safe not to describe this entry
-	  // Urs 5/96
-	  // fix this: should check that bci (i) is statement end (or r is NoPReg)
+          // r's scope is too low (i.e. it's not actually live anymore)
+          // this can only happen if the expression is discarded; thus it's safe not to describe this entry
+          // Urs 5/96
+          // fix this: should check that bci (i) is statement end (or r is NoPReg)
         }
       }
     }
@@ -914,59 +904,33 @@ void InlinedScope::generateDebugInfo() {
   len = _subScopes->length();
   for (i = 0; i < len; i++) {
     InlinedScope* s = _subScopes->at(i);
-    if (PrintDebugInfoGeneration) mystd->print_cr("Subscope %d (id = %d):", i, s->scopeID());
+    if (PrintDebugInfoGeneration)
+      mystd->print_cr("Subscope %d (id = %d):", i, s->scopeID());
     s->generateDebugInfo();
   }
 }
 
-
 void MethodScope::generateDebugInfo() {
   ScopeDescRecorder* rec = theCompiler->scopeDescRecorder();
   const bool visible = true;
-  _scopeInfo =
-    rec->addMethodScope(
-      _key,
-      _method,
-      _self->preg()->createLogicalAddress(),
-      allocatesCompiledContext(),
-      isLite(), 
-      _scopeID,
-      _sender ? _sender->scopeInfo() : NULL,
-      _senderBCI,
-      visible
-    );
+  _scopeInfo = rec->addMethodScope(_key, _method, _self->preg()->createLogicalAddress(), allocatesCompiledContext(),
+                                   isLite(), _scopeID, _sender ? _sender->scopeInfo() : NULL, _senderBCI, visible);
   InlinedScope::generateDebugInfo();
 }
-
 
 void BlockScope::generateDebugInfo() {
   ScopeDescRecorder* rec = theCompiler->scopeDescRecorder();
   if (_parent->isOutlinedScope()) {
-    _scopeInfo =
-      rec->addTopLevelBlockScope(
-    	_method,
-	_self->preg()->createLogicalAddress(),
-    	_self->klass(),
-    	allocatesCompiledContext()
-      );
+    _scopeInfo = rec->addTopLevelBlockScope(_method, _self->preg()->createLogicalAddress(), _self->klass(),
+                                            allocatesCompiledContext());
   } else {
     assert(_parent->isInlinedScope(), "oops");
     const bool visible = true;
-    _scopeInfo =
-      rec->addBlockScope(
-    	_method,
-	((InlinedScope*)_parent)->scopeInfo(),
-    	allocatesCompiledContext(),
-	isLite(),
-	_scopeID,
-	_sender->scopeInfo(),
-	_senderBCI,
-    	visible
-      );
+    _scopeInfo = rec->addBlockScope(_method, ((InlinedScope*)_parent)->scopeInfo(), allocatesCompiledContext(),
+                                    isLite(), _scopeID, _sender->scopeInfo(), _senderBCI, visible);
   }
   InlinedScope::generateDebugInfo();
 }
-
 
 // Outlined scopes
 
@@ -978,12 +942,10 @@ OutlinedScope* new_OutlinedScope(nmethod* nm, ScopeDesc* sc) {
   }
 }
 
-
 OutlinedScope::OutlinedScope(nmethod* nm, ScopeDesc* scope) {
   _nm = nm;
   _scope = scope;
 }
-
 
 OutlinedBlockScope::OutlinedBlockScope(nmethod* nm, ScopeDesc* sc) : OutlinedScope(nm, sc) {
   ScopeDesc* parent = sc->parent(true);
@@ -994,13 +956,15 @@ OutlinedBlockScope::OutlinedBlockScope(nmethod* nm, ScopeDesc* sc) : OutlinedSco
   }
 }
 
-
-Expr* OutlinedScope::receiverExpr(PReg* p) const { return _scope->selfExpr(p); }
-methodOop OutlinedScope::method() const { return _scope->method(); }
-klassOop OutlinedMethodScope::methodHolder() const { 
-  return selfKlass()->klass_part()->lookup_method_holder_for(method()); 
+Expr* OutlinedScope::receiverExpr(PReg* p) const {
+  return _scope->selfExpr(p);
 }
-
+methodOop OutlinedScope::method() const {
+  return _scope->method();
+}
+klassOop OutlinedMethodScope::methodHolder() const {
+  return selfKlass()->klass_part()->lookup_method_holder_for(method());
+}
 
 // printing code
 
@@ -1009,7 +973,6 @@ void SendInfo::print() {
   sel->print_symbol_on();
   lprintf("\" (rcvr = %#lx, nsends = %ld)\n", rcvr, nsends);
 }
-
 
 void InlinedScope::printTree() {
   print();
@@ -1029,59 +992,73 @@ void InlinedScope::print() {
   lprintf("\n");
 }
 
-
 void MethodScope::print_short() {
-  lprintf("(MethodScope*)%#lx (", this); selector()->print_symbol_on(); lprintf(")");
+  lprintf("(MethodScope*)%#lx (", this);
+  selector()->print_symbol_on();
+  lprintf(")");
 }
-
 
 void MethodScope::print() {
   print_short();
   InlinedScope::print();
-  if (sender()) { lprintf("  sender: "); sender()->print_short(); }
+  if (sender()) {
+    lprintf("  sender: ");
+    sender()->print_short();
+  }
   lprintf(" @ %ld\n", senderBCI());
   method()->pretty_print();
 }
-
 
 void BlockScope::print() {
   print_short();
   InlinedScope::print();
-  if (parent()) { lprintf("\tparent: ");  parent()->print_short(); }
-  if (sender()) { lprintf("  sender: "); sender()->print_short(); }
+  if (parent()) {
+    lprintf("\tparent: ");
+    parent()->print_short();
+  }
+  if (sender()) {
+    lprintf("  sender: ");
+    sender()->print_short();
+  }
   lprintf(" @ %ld\n", senderBCI());
   method()->pretty_print();
 }
 
-
 void BlockScope::print_short() {
-  lprintf("(BlockScope*)%#lx (", this); selector()->print_symbol_on(); 
+  lprintf("(BlockScope*)%#lx (", this);
+  selector()->print_symbol_on();
   lprintf(" %#lx)", method());
 }
 
-
 void OutlinedScope::print_short(char* name) {
-  lprintf("(%s*)%#lx (", name, this); 
+  lprintf("(%s*)%#lx (", name, this);
   _scope->selector()->print_symbol_on();
   lprintf(")");
 }
-
 
 void OutlinedScope::print(char* name) {
   print_short(name);
   lprintf("  _nm = %#lx, _scope = %#lx", _nm, _scope);
 }
 
-
-void OutlinedMethodScope::print_short() { OutlinedScope::print_short("OutlinedMethodScope"); }
-void OutlinedMethodScope::print() { OutlinedScope::print("OutlinedMethodScope"); }
+void OutlinedMethodScope::print_short() {
+  OutlinedScope::print_short("OutlinedMethodScope");
+}
+void OutlinedMethodScope::print() {
+  OutlinedScope::print("OutlinedMethodScope");
+}
 
 void OutlinedBlockScope::print() {
   OutlinedScope::print("OutlinedMethodScope");
-  if (parent()) { lprintf("\n    parent: "); parent()->print_short(); }
+  if (parent()) {
+    lprintf("\n    parent: ");
+    parent()->print_short();
+  }
   lprintf("\n");
 }
 
-void OutlinedBlockScope::print_short() { OutlinedScope::print_short("OutlinedMethodScope"); }
+void OutlinedBlockScope::print_short() {
+  OutlinedScope::print_short("OutlinedMethodScope");
+}
 
 #endif // DELTA_COMPILER

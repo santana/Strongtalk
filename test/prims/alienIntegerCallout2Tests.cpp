@@ -20,7 +20,7 @@ extern "C" int PRIM_API returnFirst(int a, int b) {
   return a;
 }
 
-extern "C" int PRIM_API returnFirstPointer(int *a, int b) {
+extern "C" int PRIM_API returnFirstPointer(int* a, int b) {
   return *a;
 }
 
@@ -28,7 +28,7 @@ extern "C" int PRIM_API returnSecond(int a, int b) {
   return b;
 }
 
-extern "C" int PRIM_API returnSecondPointer(int a, int *b) {
+extern "C" int PRIM_API returnSecondPointer(int a, int* b) {
   return *b;
 }
 
@@ -47,9 +47,9 @@ extern "C" int PRIM_API forceScavenge2(int ignore1, int ignore2) {
 //}
 
 DECLARE(AlienIntegerCallout2Tests)
-HeapResourceMark *rm;
-GrowableArray<PersistentHandle**> *handles;
-PersistentHandle *resultAlien, *addressAlien, *pointerAlien, *functionAlien; 
+HeapResourceMark* rm;
+GrowableArray<PersistentHandle**>* handles;
+PersistentHandle *resultAlien, *addressAlien, *pointerAlien, *functionAlien;
 PersistentHandle *directAlien, *invalidFunctionAlien;
 smiOop smi0, smi1, smim1;
 static const int argCount = 2;
@@ -57,7 +57,7 @@ void* intCalloutFunctions[argCount];
 void* intPointerCalloutFunctions[argCount];
 char address[8];
 
-void allocateAlien(PersistentHandle* &alienHandle, int arraySize, int alienSize, void* ptr = NULL) {
+void allocateAlien(PersistentHandle*& alienHandle, int arraySize, int alienSize, void* ptr = NULL) {
   byteArrayOop alien = byteArrayOop(Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(arraySize));
   byteArrayPrimitives::alienSetSize(as_smiOop(alienSize), reinterpret_cast<oop>(alien));
   if (ptr)
@@ -79,7 +79,7 @@ void checkIntResult(char* message, int expected, PersistentHandle* alien) {
   snprintf(text, sizeof(text), "Should be: %d, was: %d", expected, actual);
   ASSERT_TRUE_M(actual == expected, text);
 }
-int asInt(bool &ok, oop intOop) {
+int asInt(bool& ok, oop intOop) {
   ok = true;
   if (intOop->is_smi())
     return smiOop(intOop)->value();
@@ -104,7 +104,7 @@ void release(PersistentHandle** handle) {
 void setAddress(PersistentHandle* handle, void* argument) {
   byteArrayPrimitives::alienSetAddress(asOop((intptr_t)argument), handle->as_oop());
 }
-void checkArgnPassed(int argIndex, int argValue, void**functionArray) {
+void checkArgnPassed(int argIndex, int argValue, void** functionArray) {
   setAddress(functionAlien, functionArray[argIndex]);
   oop arg0 = argIndex == 0 ? asOop(argValue) : smi0;
   oop arg1 = argIndex == 1 ? asOop(argValue) : smi0;
@@ -113,7 +113,7 @@ void checkArgnPassed(int argIndex, int argValue, void**functionArray) {
   ASSERT_TRUE_M(result == resultAlien->as_oop(), "Should return result alien");
   checkIntResult("wrong result", argValue, resultAlien);
 }
-void checkArgnPtrPassed(int argIndex, int argValue, void**functionArray) {
+void checkArgnPtrPassed(int argIndex, int argValue, void** functionArray) {
   setAddress(functionAlien, functionArray[argIndex]);
   byteArrayPrimitives::alienSignedLongAtPut(asOop(argValue), smi1, pointerAlien->as_oop());
   oop arg0 = argIndex == 0 ? pointerAlien->as_oop() : smi0;
@@ -130,25 +130,25 @@ SETUP(AlienIntegerCallout2Tests) {
   smi0 = as_smiOop(0);
   smi1 = as_smiOop(1);
   smim1 = as_smiOop(-1);
-  handles = new(true) GrowableArray<PersistentHandle**>(5);
+  handles = new (true) GrowableArray<PersistentHandle**>(5);
 
-  allocateAlien(functionAlien,        8,  0, (void *)&returnFirst);
-  allocateAlien(resultAlien,         12,  8);
-  allocateAlien(directAlien,         12,  4);
-  allocateAlien(addressAlien,         8, -4, &address);
-  allocateAlien(pointerAlien,         8,  0, &address);
-  allocateAlien(invalidFunctionAlien, 8,  0);
+  allocateAlien(functionAlien, 8, 0, (void*)&returnFirst);
+  allocateAlien(resultAlien, 12, 8);
+  allocateAlien(directAlien, 12, 4);
+  allocateAlien(addressAlien, 8, -4, &address);
+  allocateAlien(pointerAlien, 8, 0, &address);
+  allocateAlien(invalidFunctionAlien, 8, 0);
 
   memset(address, 0, 8);
 
-  intCalloutFunctions[0] = (void *)returnFirst;
-  intCalloutFunctions[1] = (void *)returnSecond;
-  intPointerCalloutFunctions[0] = (void *)returnFirstPointer;
-  intPointerCalloutFunctions[1] = (void *)returnSecondPointer;
+  intCalloutFunctions[0] = (void*)returnFirst;
+  intCalloutFunctions[1] = (void*)returnSecond;
+  intPointerCalloutFunctions[0] = (void*)returnFirstPointer;
+  intPointerCalloutFunctions[1] = (void*)returnSecondPointer;
 }
 
-TEARDOWN(AlienIntegerCallout2Tests){
-  while(!handles->isEmpty())
+TEARDOWN(AlienIntegerCallout2Tests) {
+  while (!handles->isEmpty())
     release(handles->pop());
   free(handles);
   handles = NULL;
@@ -171,35 +171,26 @@ TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldCallFunctionAndIgnoreResu
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2WithScavengeShouldReturnCorrectResult) {
-  setAddress(functionAlien, (void *)&forceScavenge2);
+  setAddress(functionAlien, (void*)&forceScavenge2);
   checkIntResult("incorrect initialization", 0, resultAlien);
   byteArrayPrimitives::alienCallResult2(smi0, smi0, resultAlien->as_oop(), functionAlien->as_oop());
   checkIntResult("result alien not updated", -1, resultAlien);
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultForNonAlien) {
-  oop result = byteArrayPrimitives::alienCallResult2(smi0,
-                                                     smi0,
-                                                     resultAlien->as_oop(),
-                                                     smi0);
+  oop result = byteArrayPrimitives::alienCallResult2(smi0, smi0, resultAlien->as_oop(), smi0);
 
   checkMarkedSymbol("wrong type", result, vmSymbols::receiver_has_wrong_type());
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultForDirectAlien) {
-  oop result = byteArrayPrimitives::alienCallResult2(smi0,
-                                                     smi0,
-                                                     resultAlien->as_oop(),
-                                                     resultAlien->as_oop());
+  oop result = byteArrayPrimitives::alienCallResult2(smi0, smi0, resultAlien->as_oop(), resultAlien->as_oop());
 
   checkMarkedSymbol("illegal state", result, vmSymbols::illegal_state());
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultForNullFunctionPointer) {
-  oop result = byteArrayPrimitives::alienCallResult2(smi0,
-                                                     smi0,
-                                                     resultAlien->as_oop(),
-                                                     invalidFunctionAlien->as_oop());
+  oop result = byteArrayPrimitives::alienCallResult2(smi0, smi0, resultAlien->as_oop(), invalidFunctionAlien->as_oop());
 
   checkMarkedSymbol("illegal state", result, vmSymbols::illegal_state());
 }
@@ -211,19 +202,13 @@ TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultWhenRes
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultWhenFunctionParameter1NotAlienOrSMI) {
-  oop result = byteArrayPrimitives::alienCallResult2(smi0,
-                                                     trueObj,
-                                                     resultAlien->as_oop(),
-                                                     functionAlien->as_oop());
+  oop result = byteArrayPrimitives::alienCallResult2(smi0, trueObj, resultAlien->as_oop(), functionAlien->as_oop());
 
   checkMarkedSymbol("wrong type", result, vmSymbols::second_argument_has_wrong_type());
 }
 
 TESTF(AlienIntegerCallout2Tests, alienCallResult2ShouldReturnMarkedResultWhenFunctionParameter2NotAlienOrSMI) {
-  oop result = byteArrayPrimitives::alienCallResult2(trueObj,
-                                                     smi0,
-                                                     resultAlien->as_oop(),
-                                                     functionAlien->as_oop());
+  oop result = byteArrayPrimitives::alienCallResult2(trueObj, smi0, resultAlien->as_oop(), functionAlien->as_oop());
 
   checkMarkedSymbol("wrong type", result, vmSymbols::third_argument_has_wrong_type());
 }

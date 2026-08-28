@@ -72,7 +72,7 @@ int doubleKlass::oop_scavenge_tenured_contents(oop obj) {
 }
 
 void doubleKlass::oop_follow_contents(oop obj) {
-  memOop(obj)->follow_header(); 
+  memOop(obj)->follow_header();
 }
 
 void doubleKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {

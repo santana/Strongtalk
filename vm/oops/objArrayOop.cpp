@@ -50,12 +50,12 @@ void objArrayOopDesc::bootstrap_object(bootstrap* st) {
 objArrayOop objArrayOopDesc::copy_remove(int index, int number) {
   objArrayOop new_array = oopFactory::new_objArray(length() - number);
   // copy [1..index-1]
-  for (int i = 1; i < index ; i++)
+  for (int i = 1; i < index; i++)
     new_array->obj_at_put(i, obj_at(i));
 
   // copy  [index+number..length]
   for (int i = index; i <= length() - number; i++)
-    new_array->obj_at_put(i, obj_at(i+number));
+    new_array->obj_at_put(i, obj_at(i + number));
 
   return new_array;
 }
@@ -82,7 +82,7 @@ objArrayOop objArrayOopDesc::copy_add_two(oop a, oop b) {
   for (i = 1; i < length(); i++)
     new_array->obj_at_put(i, obj_at(i));
   new_array->obj_at_put(i++, a);
-  new_array->obj_at_put(i,   b);
+  new_array->obj_at_put(i, b);
   return new_array;
 }
 
@@ -139,15 +139,15 @@ void objArrayOopDesc::replace_and_fill(int from, int start, objArrayOop source) 
 }
 
 void weakArrayOopDesc::scavenge_contents_after_registration() {
-  oop* p   = objs(1);
-  int  len = length();
+  oop* p = objs(1);
+  int len = length();
   for (int index = 1; index <= len; index++)
     scavenge_tenured_oop(p++);
 }
 
 void weakArrayOopDesc::follow_contents_after_registration() {
-  oop* p   = objs(1);
-  int  len = length();
+  oop* p = objs(1);
+  int len = length();
   for (int index = 1; index <= len; index++)
     scavenge_tenured_oop(p++);
 }

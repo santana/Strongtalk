@@ -15,14 +15,14 @@ using namespace easyunit;
 
 extern "C" int expansion_count;
 DECLARE(DByteArrayPrimsTests)
-  klassOop dByteArrayClass;
+klassOop dByteArrayClass;
 END_DECLARE
 
 SETUP(DByteArrayPrimsTests) {
   dByteArrayClass = klassOop(Universe::find_global("String"));
 }
 
-TEARDOWN(DByteArrayPrimsTests){
+TEARDOWN(DByteArrayPrimsTests) {
   MarkSweep::collect();
 }
 
@@ -42,9 +42,7 @@ TESTF(DByteArrayPrimsTests, allocateSize2ShouldAllocateDByteArrayOfCorrectSize) 
 TESTF(DByteArrayPrimsTests, allocateSize2ShouldAllocateTenuredWhenRequested) {
   HandleMark handles;
   Handle classHandle(dByteArrayClass);
-  oop result = doubleByteArrayPrimitives::allocateSize2(trueObj,
-                                                  as_smiOop(10),
-                                                  dByteArrayClass);
+  oop result = doubleByteArrayPrimitives::allocateSize2(trueObj, as_smiOop(10), dByteArrayClass);
   ASSERT_TRUE(result->is_doubleByteArray());
   ASSERT_TRUE(Universe::old_gen.contains(result));
   ASSERT_EQUALS(10, doubleByteArrayOop(result)->length());

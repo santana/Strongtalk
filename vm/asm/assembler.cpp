@@ -30,16 +30,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Implementation of AbstractAssembler
 
 AbstractAssembler::AbstractAssembler(CodeBuffer* code) {
-  _code        = code;
-  _code_begin  = code->code_begin();
-  _code_limit  = code->code_limit();
-  _code_pos    = code->code_end();
+  _code = code;
+  _code_begin = code->code_begin();
+  _code_limit = code->code_limit();
+  _code_pos = code->code_end();
 }
 
-
-AbstractAssembler::~AbstractAssembler() {
-}
-
+AbstractAssembler::~AbstractAssembler() {}
 
 void AbstractAssembler::emit_byte(int x) {
   assert(isByte(x), "not a byte");
@@ -48,19 +45,17 @@ void AbstractAssembler::emit_byte(int x) {
   code()->set_code_end(_code_pos);
 }
 
-
 void AbstractAssembler::emit_long(int x) {
   *(int*)_code_pos = x;
   _code_pos += sizeof(int);
   code()->set_code_end(_code_pos);
 }
 
-
 void AbstractAssembler::emit_data(int data, relocInfo::relocType rtype) {
-  if (rtype != relocInfo::none) code()->relocate(_code_pos, rtype);
+  if (rtype != relocInfo::none)
+    code()->relocate(_code_pos, rtype);
   emit_long(data);
 }
-
 
 // Default label handling.
 //
@@ -76,7 +71,6 @@ void AbstractAssembler::bind_to(Label& L, int pos) {
   L.bind_to(pos);
 }
 
-
 void AbstractAssembler::link_to(Label& L, Label& appendix) {
   // Simple default: use appendix as the merged label if L is unused.
   if (L.is_unused() && appendix.is_unbound()) {
@@ -85,19 +79,16 @@ void AbstractAssembler::link_to(Label& L, Label& appendix) {
   appendix.unuse(); // appendix should not be used anymore
 }
 
-
 void AbstractAssembler::bind(Label& L) {
   assert(!L.is_bound(), "label can only be bound once");
   bind_to(L, offset());
 }
-
 
 void AbstractAssembler::finalize() {
   if (_unbound_label.is_unbound()) {
     bind_to(_unbound_label, _binding_pos);
   }
 }
-
 
 void AbstractAssembler::print(Label& L) {
   if (L.is_unused()) {
@@ -110,7 +101,6 @@ void AbstractAssembler::print(Label& L) {
     mystd->print_cr("label in inconsistent state (pos = %d)", L._pos);
   }
 }
-
 
 void AbstractAssembler::merge(Label& L, Label& with) {
   Unimplemented();

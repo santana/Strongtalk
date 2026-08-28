@@ -31,47 +31,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The INIT_DO macro defines the initialization sequence; you need not
 // add a corresponding entry to EXIT_DO if you don't need finalization.
 
-# define INIT_DO(template)				\
-  template(ostream_init)				\
-  template(os_init)					\
-  template(except_init)					\
-  template(prim_init)					\
-  template(eventlog_init)				\
-  template(integerOps_init)				\
-  template(bytecodes_init)				\
- /* template(stubRoutines_init)	*/			\
-  template(universe_init)				\
-  template(generatedPrimitives_init_before_interpreter)	\
-  template(interpreter_init)				\
-  template(dispatchTable_init)				\
-  template(disclaimer_init)				\
-  template(costModel_init)				\
-  template(sweeper_init)				\
-  template(fprofiler_init)				\
-  template(systemAverage_init)				\
-  template(preemption_init)				\
-  template(generatedPrimitives_init_after_interpreter)	\
+#define INIT_DO(template)                                                                                                                           \
+  template(ostream_init) template(os_init) template(except_init) template(prim_init) template(eventlog_init) template(                              \
+    integerOps_init) template(bytecodes_init) /* template(stubRoutines_init)	*/                                                                     \
+    template(universe_init) template(generatedPrimitives_init_before_interpreter) template(interpreter_init) template(dispatchTable_init) template( \
+      disclaimer_init) template(costModel_init) template(sweeper_init) template(fprofiler_init) template(systemAverage_init) template(preemption_init) template(generatedPrimitives_init_after_interpreter)
 
-  
-
-# define COMPILER_INIT_DO(template)	\
-  template(compiler_init)		\
-  template(mapping_init)		\
+#define COMPILER_INIT_DO(template) template(compiler_init) template(mapping_init)
 
 /* compiler related */
 /*  template(opcode_init) */
 
-# define EXIT_DO(template)		\
-  template(lprintf_exit)		\
-  template(os_exit)
+#define EXIT_DO(template) template(lprintf_exit) template(os_exit)
 
-# define DEFINE_TEMPLATE(name)    void name();
+#define DEFINE_TEMPLATE(name) void name();
 
-# define CALL_TEMPLATE(name)	  name();
+#define CALL_TEMPLATE(name) name();
 
 INIT_DO(DEFINE_TEMPLATE)
 #ifdef DELTA_COMPILER
-  COMPILER_INIT_DO(DEFINE_TEMPLATE)
+COMPILER_INIT_DO(DEFINE_TEMPLATE)
 #endif
 
 EXIT_DO(DEFINE_TEMPLATE)
@@ -95,4 +74,3 @@ void exit_globals() {
     EXIT_DO(CALL_TEMPLATE);
   }
 }
-

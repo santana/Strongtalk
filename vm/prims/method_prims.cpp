@@ -153,16 +153,17 @@ PRIM_DECL_2(methodOopPrimitives::prettyPrintSource, oop receiver, oop klass) {
 PRIM_DECL_1(methodOopPrimitives::printCodes, oop receiver) {
   PROLOGUE_1("printCodes", receiver);
   ASSERT_RECEIVER;
-  #ifndef PRODUCT
-  { ResourceMark rm;
+#ifndef PRODUCT
+  {
+    ResourceMark rm;
     methodOop(receiver)->print_codes();
   }
-  #endif
+#endif
   return receiver;
 }
 
-
-PRIM_DECL_6(methodOopPrimitives::constructMethod, oop selector_or_method, oop flags, oop nofArgs, oop debugInfo, oop bytes, oop oops) {
+PRIM_DECL_6(methodOopPrimitives::constructMethod, oop selector_or_method, oop flags, oop nofArgs, oop debugInfo,
+            oop bytes, oop oops) {
   PROLOGUE_6("constructMethod", selector_or_method, flags, nofArgs, debugInfo, bytes, oops);
   if (!selector_or_method->is_symbol() && (selector_or_method != nilObj))
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
@@ -178,17 +179,14 @@ PRIM_DECL_6(methodOopPrimitives::constructMethod, oop selector_or_method, oop fl
     return markSymbol(vmSymbols::sixth_argument_has_wrong_type());
 
   if (objArrayOop(oops)->length() * oopSize != byteArrayOop(bytes)->length()) {
-	return markSymbol(vmSymbols::method_construction_failed());
+    return markSymbol(vmSymbols::method_construction_failed());
   }
 
-  methodKlass* k = (methodKlass*) Universe::methodKlassObj()->klass_part();
-  methodOop result = k->constructMethod(selector_or_method,
-                                        smiOop(flags)->value(),
-                                        smiOop(nofArgs)->value(),
-                                        objArrayOop(debugInfo),
-					                    byteArrayOop(bytes),
-					                    objArrayOop(oops));
-  if (result) return result;
+  methodKlass* k = (methodKlass*)Universe::methodKlassObj()->klass_part();
+  methodOop result = k->constructMethod(selector_or_method, smiOop(flags)->value(), smiOop(nofArgs)->value(),
+                                        objArrayOop(debugInfo), byteArrayOop(bytes), objArrayOop(oops));
+  if (result)
+    return result;
   return markSymbol(vmSymbols::method_construction_failed());
 }
 
@@ -202,7 +200,7 @@ static oop allocate_block_for(methodOop method, oop self) {
   }
 
   // allocate the context for the block (make room for the self)
-  contextKlass* ok = (contextKlass*) contextKlassObj->klass_part();
+  contextKlass* ok = (contextKlass*)contextKlassObj->klass_part();
   contextOop con = contextOop(ok->allocateObjectSize(1));
   con->kill();
   con->obj_at_put(0, self);
@@ -235,10 +233,13 @@ PRIM_DECL_2(methodOopPrimitives::allocate_block_self, oop receiver, oop self) {
   return allocate_block_for(methodOop(receiver), self);
 }
 
-static symbolOop symbol_from_method_inlining_info(methodOopDesc::Method_Inlining_Info info) { 
-  if (info == methodOopDesc::normal_inline)  return oopFactory::new_symbol("Normal");
-  if (info == methodOopDesc::never_inline)   return oopFactory::new_symbol("Never");
-  if (info == methodOopDesc::always_inline)  return oopFactory::new_symbol("Always");
+static symbolOop symbol_from_method_inlining_info(methodOopDesc::Method_Inlining_Info info) {
+  if (info == methodOopDesc::normal_inline)
+    return oopFactory::new_symbol("Normal");
+  if (info == methodOopDesc::never_inline)
+    return oopFactory::new_symbol("Never");
+  if (info == methodOopDesc::always_inline)
+    return oopFactory::new_symbol("Always");
   ShouldNotReachHere();
   return NULL;
 }
@@ -253,9 +254,9 @@ PRIM_DECL_2(methodOopPrimitives::set_inlining_info, oop receiver, oop info) {
   methodOopDesc::Method_Inlining_Info in;
   if (symbolOop(info)->equals("Never")) {
     in = methodOopDesc::never_inline;
-  } else if(symbolOop(info)->equals("Always")) {
+  } else if (symbolOop(info)->equals("Always")) {
     in = methodOopDesc::always_inline;
-  } else if(symbolOop(info)->equals("Normal")) {
+  } else if (symbolOop(info)->equals("Normal")) {
     in = methodOopDesc::normal_inline;
   } else {
     return markSymbol(vmSymbols::argument_is_invalid());

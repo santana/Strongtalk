@@ -41,10 +41,9 @@ int BlockPReg::_numBlocks = 0;
 static GrowableArray<ConstPReg*>* constants = 0;
 static PReg* dummyPR;
 const int PReg::AvgBBIndexLen = 10;
-const int PReg::VeryNegative = -9999;		// fix this -- should be int16, really
+const int PReg::VeryNegative = -9999; // fix this -- should be int16, really
 
-#define BAD_SCOPE  ((InlinedScope*)1)
-
+#define BAD_SCOPE ((InlinedScope*)1)
 
 /*
 LogicalAddress* PReg::createLogicalAddress() {
@@ -55,7 +54,6 @@ LogicalAddress* PReg::createLogicalAddress() {
 }
 */
 
-
 LogicalAddress* PReg::createLogicalAddress() {
   PReg* r = cpReg();
   if (r->_logicalAddress == NULL) {
@@ -64,85 +62,96 @@ LogicalAddress* PReg::createLogicalAddress() {
   return r->_logicalAddress;
 }
 
-
 // weights indexed by loop depth
-static int udWeight[] = { 1, 8, 8*8, 8*8*8, 8*8*8*8 };
-const  int udWeightLen = sizeof(udWeight) / sizeof(int) - 1;
-
+static int udWeight[] = {1, 8, 8 * 8, 8 * 8 * 8, 8 * 8 * 8 * 8};
+const int udWeightLen = sizeof(udWeight) / sizeof(int) - 1;
 
 void PReg::initPRegs() {
-  PReg::currentNo = 0; BlockPReg::_numBlocks = 0;
+  PReg::currentNo = 0;
+  BlockPReg::_numBlocks = 0;
   constants = new GrowableArray<ConstPReg*>(50);
   dummyPR = new PReg(BAD_SCOPE);
 }
 
-
 SAPReg::SAPReg(InlinedScope* s, int st, int en, bool inContext) : PReg(s), _isInContext(inContext) {
-  creationStartBCI = _begBCI 	= st == IllegalBCI ? s->bci() : st;
-  _endBCI  			= en == IllegalBCI ? s->bci() : en;
+  creationStartBCI = _begBCI = st == IllegalBCI ? s->bci() : st;
+  _endBCI = en == IllegalBCI ? s->bci() : en;
   _creationScope = s;
 }
 
-
 BlockPReg::BlockPReg(InlinedScope* scope, CompileTimeClosure* closure, int beg, int end) : SAPReg(scope, beg, end) {
-  _closure = closure; assert(closure, "need a closure");
+  _closure = closure;
+  assert(closure, "need a closure");
   _memoized = _escapes = false;
-  _escapeNodes = NULL; _uplevelRead = _uplevelWritten = NULL; _contextCopies = NULL;
+  _escapeNodes = NULL;
+  _uplevelRead = _uplevelWritten = NULL;
+  _contextCopies = NULL;
   _numBlocks++;
   theCompiler->blockClosures->append(this);
-  if (MemoizeBlocks) memoize();	    
+  if (MemoizeBlocks)
+    memoize();
 }
 
 void BlockPReg::addContextCopy(Location* l) {
-  if (!_contextCopies) _contextCopies = new GrowableArray<Location*>(3);
+  if (!_contextCopies)
+    _contextCopies = new GrowableArray<Location*>(3);
   _contextCopies->append(l);
 }
 
 void PReg::makeIncorrectDU(bool incU, bool incD) {
-  if (incU) _nuses = VeryNegative;
-  if (incD) _ndefs = VeryNegative;
+  if (incU)
+    _nuses = VeryNegative;
+  if (incD)
+    _ndefs = VeryNegative;
 }
-
 
 bool PReg::isLocalTo(BB* bb) const {
   // is this a preg local to bb? (i.e. can it be allocated to temp regs?)
   // treat ConstPRegs as non-local so they don't get allocated prematurely
   // (possible performance bug)
-  return
-    loc.equals(unAllocated) && !uplevelR() && !debug && !incorrectDU() &&
-    !isConstPReg() && dus.length() == 1 && dus.first()->bb == bb;
+  return loc.equals(unAllocated) && !uplevelR() && !debug && !incorrectDU() && !isConstPReg() && dus.length() == 1 &&
+         dus.first()->bb == bb;
 }
-
 
 // check basic conditions for global CP
 bool PReg::canCopyPropagate() const {
-  if (nuses() == 0 || ndefs() != 1) return false;
+  if (nuses() == 0 || ndefs() != 1)
+    return false;
   // don't propagate if register has incorrect def info or does not
   // survive calls (i.e. is local to BB)
-  if (incorrectD() || loc.isTrashedRegister()) return false;
-  return true;    	// looks good
+  if (incorrectD() || loc.isTrashedRegister())
+    return false;
+  return true; // looks good
 }
 
 // NB: _uplevelR/W are initialized lazily to reduce memory consumption
 void PReg::addUplevelAccessor(BlockPReg* blk, bool read, bool write) {
   if (read) {
-    if (!_uplevelR) _uplevelR = new GrowableArray<BlockPReg*>(5);
-    if (!_uplevelR->contains(blk)) _uplevelR->append(blk);
-  } 
+    if (!_uplevelR)
+      _uplevelR = new GrowableArray<BlockPReg*>(5);
+    if (!_uplevelR->contains(blk))
+      _uplevelR->append(blk);
+  }
   if (write) {
-    if (!_uplevelW) _uplevelW = new GrowableArray<BlockPReg*>(5);
-    if (!_uplevelW->contains(blk)) _uplevelW->append(blk);
-  } 
+    if (!_uplevelW)
+      _uplevelW = new GrowableArray<BlockPReg*>(5);
+    if (!_uplevelW->contains(blk))
+      _uplevelW->append(blk);
+  }
 }
 
 void PReg::removeUplevelAccessor(BlockPReg* blk) {
   if (_uplevelR) {
-    if (_uplevelR->contains(blk)) _uplevelR->remove(blk);
-    if (_uplevelR->isEmpty()) _uplevelR = NULL;
+    if (_uplevelR->contains(blk))
+      _uplevelR->remove(blk);
+    if (_uplevelR->isEmpty())
+      _uplevelR = NULL;
   }
   if (_uplevelW) {
-    if (_uplevelW->contains(blk)) _uplevelW->remove(blk);
-    if (_uplevelW->isEmpty()) _uplevelW = NULL;
+    if (_uplevelW->contains(blk))
+      _uplevelW->remove(blk);
+    if (_uplevelW->isEmpty())
+      _uplevelW = NULL;
   }
 }
 
@@ -163,10 +172,9 @@ ConstPReg* new_ConstPReg(InlinedScope* s, oop c) {
   // constant not found, create new ConstPReg*
   ConstPReg* r = new ConstPReg(s, c);
   constants->append(r);
-  r->_ndefs = 1;   	// fake def
+  r->_ndefs = 1; // fake def
   return r;
 }
-
 
 ConstPReg* findConstPReg(Node* n, oop c) {
   // return const preg for oop or NULL if none exists
@@ -176,18 +184,16 @@ ConstPReg* findConstPReg(Node* n, oop c) {
       return r->covers(n) ? r : NULL;
     }
   }
-  return NULL;    	    	    // constant not found
+  return NULL; // constant not found
 }
-
 
 bool ConstPReg::needsRegister() const {
   // register only pays off if we're used more than once and aren't a
   // small immediate constant
-//c    return CompilerCSEConstants && weight > 1 && 
-//c      (int(constant) > maxImmediate || int(constant) < -maxImmediate);
+  //c    return CompilerCSEConstants && weight > 1 &&
+  //c      (int(constant) > maxImmediate || int(constant) < -maxImmediate);
   return false;
 }
-
 
 void ConstPReg::allocateTo(Location reg) {
   assert(reg.isRegisterLocation(), "should be a register");
@@ -197,9 +203,8 @@ void ConstPReg::allocateTo(Location reg) {
   Unimplemented();
 }
 
-
 inline int computeWeight(InlinedScope* s) {
-  const int scale = 16;	// normal use counts scale, uncommon use is 1
+  const int scale = 16; // normal use counts scale, uncommon use is 1
   if (s && s->isInlinedScope() && ((InlinedScope*)s)->primFailure()) {
     return 1 * udWeight[min(udWeightLen, s->loopDepth)];
   } else {
@@ -207,24 +212,23 @@ inline int computeWeight(InlinedScope* s) {
   }
 }
 
-
 void PReg::incUses(Use* use) {
   _nuses++;
-  if (use->isSoft()) _nsoftUses++;
+  if (use->isSoft())
+    _nsoftUses++;
   InlinedScope* s = use->node->scope();
   weight += computeWeight(s);
   assert(weight >= _nuses + _ndefs || isConstPReg(), "weight too small");
-}     
-
+}
 
 void PReg::decUses(Use* use) {
   _nuses--;
-  if (use->isSoft()) _nsoftUses--;
+  if (use->isSoft())
+    _nsoftUses--;
   InlinedScope* s = use->node->scope();
   weight -= computeWeight(s);
   assert(weight >= _nuses + _ndefs || isConstPReg(), "weight too small");
 }
-
 
 void PReg::incDefs(Def* def) {
   _ndefs++;
@@ -233,7 +237,6 @@ void PReg::incDefs(Def* def) {
   assert(weight >= _nuses + _ndefs || isConstPReg(), "weight too small");
 }
 
-
 void PReg::decDefs(Def* def) {
   _ndefs--;
   InlinedScope* s = def->node->scope();
@@ -241,16 +244,15 @@ void PReg::decDefs(Def* def) {
   assert(weight >= _nuses + _ndefs || isConstPReg(), "weight too small");
 }
 
-
 void PReg::removeUse(DUInfo* info, Use* use) {
   assert(info->reg == this, "wrong reg");
   info->uses.remove(use);
   decUses(use);
 }
 
-
 void PReg::removeUse(BB* bb, Use* use) {
-  if (use == NULL) return;
+  if (use == NULL)
+    return;
   for (int i = 0; i < dus.length(); i++) {
     PRegBBIndex* index = dus.at(i);
     if (index->bb == bb) {
@@ -262,7 +264,6 @@ void PReg::removeUse(BB* bb, Use* use) {
   ShouldNotReachHere(); // info not found
 }
 
-
 void PReg::removeDef(DUInfo* info, Def* def) {
   assert(info->reg == this, "wrong reg");
   info->defs.remove(def);
@@ -272,9 +273,9 @@ void PReg::removeDef(DUInfo* info, Def* def) {
   assert(weight >= _nuses + _ndefs, "weight too small");
 }
 
-
 void PReg::removeDef(BB* bb, Def* def) {
-  if (def == NULL) return;
+  if (def == NULL)
+    return;
   for (int i = 0; i < dus.length(); i++) {
     PRegBBIndex* index = dus.at(i);
     if (index->bb == bb) {
@@ -286,16 +287,13 @@ void PReg::removeDef(BB* bb, Def* def) {
   ShouldNotReachHere(); // info not found
 }
 
-
 void PReg::addDUHelper(Node* n, SList<DefUse*>* l, DefUse* el) {
   int myNum = n->num();
   SListElem<DefUse*>* prev = NULL;
-  for (SListElem<DefUse*>* e = l->head();
-       e && e->data()->node->num() < myNum;
-       prev = e, e = e->next()) ;
+  for (SListElem<DefUse*>* e = l->head(); e && e->data()->node->num() < myNum; prev = e, e = e->next())
+    ;
   l->insertAfter(prev, el);
 }
-
 
 Use* PReg::addUse(DUInfo* info, NonTrivialNode* n) {
   assert(info->reg == this, "wrong reg");
@@ -304,7 +302,6 @@ Use* PReg::addUse(DUInfo* info, NonTrivialNode* n) {
   incUses(u);
   return u;
 }
-
 
 Use* PReg::addUse(BB* bb, NonTrivialNode* n) {
   for (int i = 0; i < dus.length(); i++) {
@@ -317,7 +314,6 @@ Use* PReg::addUse(BB* bb, NonTrivialNode* n) {
   return bb->addUse(n, this);
 }
 
-
 Def* PReg::addDef(DUInfo* info, NonTrivialNode* n) {
   assert(info->reg == this, "wrong reg");
   Def* d = new Def(n);
@@ -326,13 +322,12 @@ Def* PReg::addDef(DUInfo* info, NonTrivialNode* n) {
   return d;
 }
 
-
 Def* PReg::addDef(BB* bb, NonTrivialNode* n) {
   for (int i = 0; i < dus.length(); i++) {
     PRegBBIndex* index = dus.at(i);
     if (index->bb == bb) {
-    DUInfo* info = bb->duInfo.info->at(index->index);
-    return addDef(info, n);
+      DUInfo* info = bb->duInfo.info->at(index->index);
+      return addDef(info, n);
     }
   }
   return bb->addDef(n, this);
@@ -347,11 +342,11 @@ void PReg::forAllUsesDo(Closure<Use*>* c) {
 }
 
 void PReg::allocateTo(Location r) {
-  if (CompilerDebug) cout(PrintRegAlloc)->print("*allocating %s to %s\n", name(), r.name());
+  if (CompilerDebug)
+    cout(PrintRegAlloc)->print("*allocating %s to %s\n", name(), r.name());
   assert(loc.equals(unAllocated), "already allocated");
   loc = r;
 }
-
 
 bool PReg::extendLiveRange(Node* n) {
   // the receiver is being copy-propagated to n
@@ -365,14 +360,13 @@ bool PReg::extendLiveRange(InlinedScope* s, int bci) {
   // PRegs currently can't be propagated outside their scope
   // should fix CP: treat all PRegs like SAPReg so can propagate anywhere?
   if (s == _scope) {
-    return true;	// ok, same scope
+    return true; // ok, same scope
   } else if (_scope->isSenderOf(s)) {
-    return true;	// scope is caller; already covers n
+    return true; // scope is caller; already covers n
   } else {
     return false;
   }
 }
-
 
 bool SAPReg::extendLiveRange(Node* n) {
   // the receiver is being copy-propagated to n; try to extend its live range
@@ -381,8 +375,7 @@ bool SAPReg::extendLiveRange(Node* n) {
 
 bool SAPReg::extendLiveRange(InlinedScope* s, int bci) {
   // the receiver is being copy-propagated to scope s at bci; try to extend its live range
-  assert(_begBCI != IllegalBCI && creationStartBCI != IllegalBCI &&
-	 _endBCI != IllegalBCI, "live range not set");
+  assert(_begBCI != IllegalBCI && creationStartBCI != IllegalBCI && _endBCI != IllegalBCI, "live range not set");
   if (isInContext()) {
     // context locations cannot be propagated beyond their scope
     // (otherwise the context pointer's live range would have to be extended)
@@ -399,18 +392,21 @@ bool SAPReg::extendLiveRange(InlinedScope* s, int bci) {
       // can't handle this yet -- Urs 7/95
       return false;
     }
-    if (bciGT(bci, _endBCI)) _endBCI = bci;
+    if (bciGT(bci, _endBCI))
+      _endBCI = bci;
   } else if (s->isSenderOf(_scope)) {
     // propagating upwards - promote receiver to higher scope
     InlinedScope* ss;
-    for (ss = _scope; ss->sender() != s; ss = ss->sender());
+    for (ss = _scope; ss->sender() != s; ss = ss->sender())
+      ;
     _scope = s;
     _begBCI = ss->senderBCI();
     _endBCI = bci;
   } else if (_scope->isSenderOf(s)) {
     // scope is callee; check if already covered
     InlinedScope* ss;
-    for (ss = s; ss->sender() != _scope; ss = ss->sender()) ;
+    for (ss = s; ss->sender() != _scope; ss = ss->sender())
+      ;
     int bci = ss->senderBCI();
     if (bciLT(bci, _begBCI)) {
       // seems like we're propagating backwards!  happens because of the non-source
@@ -420,16 +416,17 @@ bool SAPReg::extendLiveRange(InlinedScope* s, int bci) {
       // can't handle this yet -- Urs 7/95
       return false;
     }
-    if (bciGT(bci, _endBCI)) _endBCI = bci;
+    if (bciGT(bci, _endBCI))
+      _endBCI = bci;
   } else {
     // can't propagate between siblings yet
     ok = false;
   }
   assert(bciLE(_begBCI, _endBCI) && _begBCI != IllegalBCI &&
-	 (bciLE(_endBCI, scope()->nofBytes()) || _endBCI == EpilogueBCI), "invalid start/endBCI");
+           (bciLE(_endBCI, scope()->nofBytes()) || _endBCI == EpilogueBCI),
+         "invalid start/endBCI");
   return ok;
 }
-
 
 void ConstPReg::extendLiveRange(InlinedScope* s) {
   // make sure the constant reg is in a high enough scope
@@ -440,11 +437,12 @@ void ConstPReg::extendLiveRange(InlinedScope* s) {
     _scope = s;
   } else {
     // scope and s are siblings of some sort - go up to common sender
-    do { s = s->sender(); } while (!s->isSenderOf(_scope));
+    do {
+      s = s->sender();
+    } while (!s->isSenderOf(_scope));
     _scope = s;
   }
 }
-
 
 bool ConstPReg::covers(Node* n) const {
   // does receiver cover node n (is it live at n)?
@@ -452,20 +450,19 @@ bool ConstPReg::covers(Node* n) const {
   if (_scope->isSenderOrSame(s)) {
     // ok, scope is caller of s
     return true;
-  } 
+  }
   return false;
 }
-
 
 bool ConstPReg::extendLiveRange(Node* n) {
   extendLiveRange(n->scope());
   return true;
 }
 
-
 bool PReg::checkEquivalentDefs() const {
   // check if all defs are equivalent, i.e. assign the same preg
-  if (ndefs() == 1) return true;
+  if (ndefs() == 1)
+    return true;
   PReg* rhs = NULL;
   for (int i = 0; i < dus.length(); i++) {
     PRegBBIndex* index = dus.at(i);
@@ -473,11 +470,13 @@ bool PReg::checkEquivalentDefs() const {
     DUInfo* info = bb->duInfo.info->at(index->index);
     for (SListElem<Def*>* e = info->defs.head(); e; e = e->next()) {
       NonTrivialNode* n = e->data()->node;
-      if (!n->isAssignmentLike()) return false;
+      if (!n->isAssignmentLike())
+        return false;
       if (rhs) {
-	if (rhs != n->src()) return false;
+        if (rhs != n->src())
+          return false;
       } else {
-	rhs = n->src();
+        rhs = n->src();
       }
     }
   }
@@ -485,43 +484,44 @@ bool PReg::checkEquivalentDefs() const {
   return true;
 }
 
-
 bool PReg::canBeEliminated(bool withUses) const {
   // can this PReg be eliminated without compromising the debugging info?
   assert(_nuses == 0 || withUses, "still has uses");
-  if (_ndefs + _nuses == 0) return false; 	// nothing to eliminate
-  
+  if (_ndefs + _nuses == 0)
+    return false; // nothing to eliminate
+
   // check if reg can be eliminated
   if (incorrectDU()) { // don't elim if uses are incorrect (hardwired pregs)
     return false;
   }
-  
+
   assert(!_nsoftUses || debug, "nsoftUses should imply debug");
 
   if (isBlockPReg() && !withUses && !uplevelR()) {
     // blocks can always be eliminated - can describe with BlockValueDesc
     return true;
   }
-  
+
   if (debug) {
     // debug-visible or uplevel-read: eliminate only if run-time value
     // can be reconstructed
     if (cpInfo) {
-      // already computed cpInfo, thus can be eliminated 
+      // already computed cpInfo, thus can be eliminated
       assert(!cpReg()->loc.isLocalRegister(), "shouldn't be eliminated");
       //assert(!cpReg()->loc.isLocalRegister(), "shouldn't be eliminated (was bug 4/27  -Urs)");
       return true;
     }
     if (_ndefs > 1) {
       if (isBlockPReg()) {
-	// ok; we know all defs of a block are equivalent
+        // ok; we know all defs of a block are equivalent
       } else if (isSAPReg() && checkEquivalentDefs()) {
-	// ok, all defs are the same
+        // ok, all defs are the same
       } else {
-	if (!checkEquivalentDefs()) {
-	  if (CompilerDebug) cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: >1 def && debug-visible\n", name());
-	  return false;
-	}
+        if (!checkEquivalentDefs()) {
+          if (CompilerDebug)
+            cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: >1 def && debug-visible\n", name());
+          return false;
+        }
       }
     }
     PRegBBIndex* index = dus.first();
@@ -529,7 +529,8 @@ bool PReg::canBeEliminated(bool withUses) const {
     SListElem<Def*>* e = info->defs.head();
     if (!e) {
       // info not in first elem - would have to search
-      if (CompilerDebug) cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: def not in first info\n", name());
+      if (CompilerDebug)
+        cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: def not in first info\n", name());
       return false;
     }
     NonTrivialNode* defNode = e->data()->node;
@@ -538,8 +539,7 @@ bool PReg::canBeEliminated(bool withUses) const {
     if (defNode->hasConstantSrc()) {
       // constant assignment - easy to handle
       ok = true;
-    } else if (defNode->hasSrc() && (defSrc = defNode->src())->isSAPReg() &&
-	       !defSrc->loc.isRegisterLocation()) {
+    } else if (defNode->hasSrc() && (defSrc = defNode->src())->isSAPReg() && !defSrc->loc.isRegisterLocation()) {
       // can substitute defSrc if its lifetime encompasses ours and if
       // it is singly-assigned and not a temp reg (last cond. is necessary to
       // prevent e.g. result of a send (in eax) to be used as the receiver of
@@ -547,30 +547,33 @@ bool PReg::canBeEliminated(bool withUses) const {
       // performance problem)
       ok = defSrc->scope()->isSenderOf(_scope);
       if (!ok && defSrc->scope() == _scope && isSAPReg()) {
-	// same scope, ok if defSrc lives long enough
-	ok = bciGE(((SAPReg*)defSrc)->endBCI(), endBCI());
+        // same scope, ok if defSrc lives long enough
+        ok = bciGE(((SAPReg*)defSrc)->endBCI(), endBCI());
       }
       if (!ok) {
-	// try to extend defSrc's live range to cover ours
-	ok = defSrc->extendLiveRange(_scope, endBCI());
+        // try to extend defSrc's live range to cover ours
+        ok = defSrc->extendLiveRange(_scope, endBCI());
       }
     } else {
       ok = false;
     }
     if (!ok) {
-      if (CompilerDebug) cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: can't recover debug info\n", name());
-      return false;	    	    // can't eliminate this PReg
+      if (CompilerDebug)
+        cout(PrintEliminateUnnededNodes)->print("*not eliminating %s: can't recover debug info\n", name());
+      return false; // can't eliminate this PReg
     }
   }
   return true;
 }
 
-
 bool BlockPReg::canBeEliminated(bool withUses) const {
-  if (!PReg::canBeEliminated(withUses)) return false;
-  if (!_escapes) return true;
-  if (uplevelR()) return false;
-  
+  if (!PReg::canBeEliminated(withUses))
+    return false;
+  if (!_escapes)
+    return true;
+  if (uplevelR())
+    return false;
+
   // escaping, unused block; can be eliminated
   // also, the block doesn't escape anymore
   // _escapes = false;
@@ -578,16 +581,17 @@ bool BlockPReg::canBeEliminated(bool withUses) const {
   return true;
 }
 
-
 // eliminate all nodes defining me (if possible)
 void PReg::eliminate(bool withUses) {
-  if (!canBeEliminated(withUses)) return;
+  if (!canBeEliminated(withUses))
+    return;
   for (int i = 0; i < dus.length(); i++) {
     PRegBBIndex* index = dus.at(i);
     BB* bb = index->bb;
     DUInfo* info = bb->duInfo.info->at(index->index);
     eliminateDefs(info, bb, withUses);
-    if (withUses) eliminateUses(info, bb);
+    if (withUses)
+      eliminateUses(info, bb);
   }
 }
 
@@ -596,13 +600,13 @@ void PReg::eliminateUses(DUInfo* info, BB* bb) {
   SListElem<Use*>* ue = info->uses.head();
   while (ue) {
 #ifdef ASSERT
-    int oldlen = info->uses.length();	  // for debugging
+    int oldlen = info->uses.length(); // for debugging
 #endif
     Node* n = ue->data()->node;
     if (CompilerDebug) {
       char buf[1024];
-      cout(PrintEliminateUnnededNodes)->print("*%seliminating node N%ld: %s\n", 
-	n->canBeEliminated() ? "" : "not ", n->id(), n->print_string(buf)); 
+      cout(PrintEliminateUnnededNodes)
+        ->print("*%seliminating node N%ld: %s\n", n->canBeEliminated() ? "" : "not ", n->id(), n->print_string(buf));
     }
     assert(n->canBeEliminated(), "must be able to eliminate this");
     n->eliminate(bb, this);
@@ -616,18 +620,18 @@ void PReg::eliminateDefs(DUInfo* info, BB* bb, bool removing) {
   SListElem<Def*>* e = info->defs.head();
   while (e) {
 #ifdef ASSERT
-    int oldlen = info->defs.length();	  // for debugging
+    int oldlen = info->defs.length(); // for debugging
 #endif
     NonTrivialNode* n = e->data()->node;
     if (n->canBeEliminated()) {
       updateCPInfo(n);
       n->eliminate(bb, this);
       assert(info->defs.length() < oldlen, "didn't remove def");
-	e = info->defs.head();	    // simple, but may rescan some uneliminatable nodes
+      e = info->defs.head(); // simple, but may rescan some uneliminatable nodes
     } else {
       if (CompilerDebug) {
-	char buf[1024];
-	cout(PrintEliminateUnnededNodes)->print("*not eliminating node N%ld: %s\n", n->id(), n->print_string(buf)); 
+        char buf[1024];
+        cout(PrintEliminateUnnededNodes)->print("*not eliminating node N%ld: %s\n", n->id(), n->print_string(buf));
       }
       assert(!removing, "cannot eliminate this?");
       e = e->next();
@@ -641,10 +645,12 @@ void BlockPReg::eliminate(bool withUses) {
     // the block has been eliminated; remove the uplevel accesses
     // (needed to enable eliminating the accessed contexts)
     if (_uplevelRead) {
-      for (int i = _uplevelRead->length() - 1; i >= 0; i--) _uplevelRead->at(i)->removeUplevelAccessor(this);
+      for (int i = _uplevelRead->length() - 1; i >= 0; i--)
+        _uplevelRead->at(i)->removeUplevelAccessor(this);
     }
     if (_uplevelWritten) {
-      for (int i = _uplevelWritten->length() - 1; i >= 0; i--) _uplevelWritten->at(i)->removeUplevelAccessor(this);
+      for (int i = _uplevelWritten->length() - 1; i >= 0; i--)
+        _uplevelWritten->at(i)->removeUplevelAccessor(this);
     }
   }
 }
@@ -672,12 +678,12 @@ void PReg::updateCPInfo(NonTrivialNode* n) {
       // must be debug-visible, too (so that it isn't allocated to
       // a temp reg)
       r->debug |= debug;
-      if (r->cpRegs == NULL) r->cpRegs = new GrowableArray<PReg*>(5);
+      if (r->cpRegs == NULL)
+        r->cpRegs = new GrowableArray<PReg*>(5);
       r->cpRegs->append(this);
     }
   }
 }
- 
 
 // for efficiency, node n in isLiveAt() must be "plausible", i.e. in a
 // scope somewhere below the receiver's scope
@@ -691,36 +697,38 @@ bool PReg::slow_isLiveAt(Node* n) const {
   }
 }
 
-
 bool PReg::isLiveAt(Node* n) const {
   // pregs are live in the entire scope (according to Urs, 2/24/96)
-  if (!_scope->isSenderOrSame(n->scope())) return false; // cannot be live anymore if s is outside subscopes of _scope
+  if (!_scope->isSenderOrSame(n->scope()))
+    return false; // cannot be live anymore if s is outside subscopes of _scope
   assert(PrologueBCI == begBCI() && endBCI() == EpilogueBCI, "must be live in the entire scope");
   return true;
 }
-
 
 InlinedScope* findAncestor(InlinedScope* s1, int& bci1, InlinedScope* s2, int& bci2) {
   // find closest common ancestor of s1 and s2, and the
   // respective sender bcis in that scope
   if (s1->depth > s2->depth) {
     while (s1->depth > s2->depth) {
-      bci1 = s1->senderBCI(); s1 = s1->sender();
+      bci1 = s1->senderBCI();
+      s1 = s1->sender();
     }
   } else {
     while (s2->depth > s1->depth) {
-      bci2 = s2->senderBCI(); s2 = s2->sender();
+      bci2 = s2->senderBCI();
+      s2 = s2->sender();
     }
   }
   assert(s1->depth == s2->depth, "just checkin'...");
   while (s1 != s2) {
-    bci1 = s1->senderBCI(); s1 = s1->sender();
-    bci2 = s2->senderBCI(); s2 = s2->sender();
+    bci1 = s1->senderBCI();
+    s1 = s1->sender();
+    bci2 = s2->senderBCI();
+    s2 = s2->sender();
   }
   assert(s1->isInlinedScope(), "oops");
   return (InlinedScope*)s1;
 }
-
 
 bool SAPReg::isLiveAt(Node* n) const {
   // is receiver live at Node n?  (may give conservative answer; i.e., it's ok to
@@ -729,15 +737,16 @@ bool SAPReg::isLiveAt(Node* n) const {
   // dead it really means dead
   InlinedScope* s = n->scope();
   bool live = basic_isLiveAt(s, n->bci());
-  if (!live || !loc.isTemporaryRegister()) return live;
+  if (!live || !loc.isTemporaryRegister())
+    return live;
   fatal("cannot handle temp registers");
   return false;
 }
 
-
 bool SAPReg::basic_isLiveAt(InlinedScope* s, int bci) const {
   int id = this->id();
-  if (!_scope->isSenderOrSame(s)) return false; // cannot be live anymore if s is outside subscopes of _scope
+  if (!_scope->isSenderOrSame(s))
+    return false; // cannot be live anymore if s is outside subscopes of _scope
   assert(bciLE(bci, s->nofBytes()) || bci == EpilogueBCI, "bci too high");
   assert(_scope->isSenderOrSame(s), "s is not below my scope");
 
@@ -746,7 +755,8 @@ bool SAPReg::basic_isLiveAt(InlinedScope* s, int bci) const {
   int bs = bci;
   int bc = creationStartBCI;
   InlinedScope* ss = findAncestor(s, bs, creationScope(), bc);
-  if (!_scope->isSenderOrSame(ss)) fatal("bad scope arg in basic_isLiveAt");
+  if (!_scope->isSenderOrSame(ss))
+    fatal("bad scope arg in basic_isLiveAt");
 
   // Attention: Originally, the live range of a PReg excluded its defining node.
   // The new backend however requires them to be live at the beginning as well.
@@ -762,31 +772,31 @@ bool SAPReg::basic_isLiveAt(InlinedScope* s, int bci) const {
   // Note: the isLiveAt methods are only used by the new backend (gri 3/27/96).
   if (ss == _scope) {
     // live range = [startBCI, endBCI]			// originally: ]startBCI, endBCI]
-    assert(_begBCI == bc ||
-	   ss == creationScope() && creationStartBCI == bc, "oops");
-    return bciLE(_begBCI, bs) && bciLE(bs, _endBCI);	// originally: bciLT(_begBCI, bs) && bciLE(bs, _endBCI);
+    assert(_begBCI == bc || ss == creationScope() && creationStartBCI == bc, "oops");
+    return bciLE(_begBCI, bs) && bciLE(bs, _endBCI); // originally: bciLT(_begBCI, bs) && bciLE(bs, _endBCI);
   } else {
     // live range = [bc, end of scope]			// originally: ]bc, end of scope]
-    return bciLE(bc, bs);				// originally: bciLT(bc, bs);
+    return bciLE(bc, bs); // originally: bciLT(bc, bs);
   }
 }
-
 
 bool PReg::isCPEquivalent(PReg* r) const {
   // is receiver in same register as argument?
-  if (this == r) return true;
+  if (this == r)
+    return true;
   // try receiver's CP info
   CPInfo* i;
   for (i = cpInfo; i && i->r; i = i->r->cpInfo) {
-    if (i->r == r) return true;
+    if (i->r == r)
+      return true;
   }
   // now try the other way
   for (i = r->cpInfo; i && i->r; i = i->r->cpInfo) {
-    if (i->r == this) return true;
+    if (i->r == this)
+      return true;
   }
   return false;
 }
-  
 
 // all the nameNode() functions translate the PReg info into debugging info for
 // the scopeDescRecorder
@@ -796,26 +806,23 @@ NameNode* PReg::locNameNode(bool mustBeLegal) const {
   if (loc.isTemporaryRegister() && !debug) {
     return new IllegalName;
   } else {
-    // debug-visible PRegs may have temp regs if they're only visible 
+    // debug-visible PRegs may have temp regs if they're only visible
     // from uncommon branches
     return new LocationName(loc);
   }
 }
 
-
 InlinedScope* BlockPReg::parent() const {
   return _closure->parent_scope();
 }
 
-  
 NameNode* BlockPReg::locNameNode(bool mustBeLegal) const {
   Unused(mustBeLegal);
-  assert(!loc.isTemporaryRegister(), "shouldn't be in temp reg");    
+  assert(!loc.isTemporaryRegister(), "shouldn't be in temp reg");
   // for now, always use MemoizedName to describe block (even if always created)
   // makes debugging info easier to read (can see which locs must be blocks)
   return new MemoizedName(loc, closure()->method(), closure()->parent_scope()->scopeInfo());
 }
-  
 
 NameNode* PReg::nameNode(bool mustBeLegal) const {
   PReg* r = cpReg();
@@ -824,7 +831,7 @@ NameNode* PReg::nameNode(bool mustBeLegal) const {
   } else if (r->isConstPReg()) {
     return r->nameNode(mustBeLegal);
   } else if (r->isBlockPReg()) {
-    CompileTimeClosure* c = ((BlockPReg*) r)->closure();
+    CompileTimeClosure* c = ((BlockPReg*)r)->closure();
     return new BlockValueName(c->method(), c->parent_scope()->scopeInfo());
   } else {
     // hack: initial nilling of locals isn't represented yet
@@ -848,7 +855,6 @@ NameNode* NoPReg::nameNode(bool mustBeLegal) const {
   return new IllegalName;
 }
 
-
 PReg* PReg::cpReg() const {
   // assert(!cpInfo || loc.equals(unAllocated), "allocated regs shouldn't have cpInfo");
   // NB: the above assertion looks tempting but can be wrong: some unused PRegs may still
@@ -859,32 +865,33 @@ PReg* PReg::cpReg() const {
     return (PReg*)this;
   } else {
     PReg* r;
-    for (CPInfo* i = cpInfo; i; r = i->r, i = r->cpInfo) ;
+    for (CPInfo* i = cpInfo; i; r = i->r, i = r->cpInfo)
+      ;
     return r == dummyPR ? (PReg*)this : r;
   }
 }
-
 
 void BlockPReg::memoize() {
   _memoized = true;
 }
 
-
 void BlockPReg::markEscaped() {
   if (!_escapes) {
     _escapes = true;
-    if (CompilerDebug) cout(PrintExposed)->print("*exposing %s\n", name());
-    if (MemoizeBlocks) memoize();
+    if (CompilerDebug)
+      cout(PrintExposed)->print("*exposing %s\n", name());
+    if (MemoizeBlocks)
+      memoize();
   }
 }
 
-  
 void BlockPReg::markEscaped(Node* n) {
   markEscaped();
-  if (_escapeNodes == NULL) _escapeNodes = new GrowableArray<Node*>(5);
-  if (! _escapeNodes->contains(n)) _escapeNodes->append(n);
+  if (_escapeNodes == NULL)
+    _escapeNodes = new GrowableArray<Node*>(5);
+  if (!_escapeNodes->contains(n))
+    _escapeNodes->append(n);
 }
-
 
 // A helper class for BlockPRegs to compute their uplevel accesses
 // Note: Uplevel accesses in all branches are taken into account,
@@ -892,54 +899,57 @@ void BlockPReg::markEscaped(Node* n) {
 // is never generated due to a constant condition (the same holds of course
 // for whileTrue/whileFalse and failure blocks of primitive calls).
 // -> conservative computation of uplevel accesses
-class UplevelComputer: public SpecializedMethodClosure {
- public:
-  BlockPReg* r;				// the block whose accesses we're computing
-  InlinedScope* scope;			// r's scope (i.e., scope creating the block)
-  GrowableArray<PReg*>* read;		// list of rscope's temps read by r
-  GrowableArray<PReg*>* written;	// same for written temps 
-  int nestingLevel;			// nesting level (0 = block itself, 1 = block within block, etc)
-  int enclosingDepth;			// depth to which we're nested within outer method
+class UplevelComputer : public SpecializedMethodClosure {
+public:
+  BlockPReg* r; // the block whose accesses we're computing
+  InlinedScope* scope; // r's scope (i.e., scope creating the block)
+  GrowableArray<PReg*>* read; // list of rscope's temps read by r
+  GrowableArray<PReg*>* written; // same for written temps
+  int nestingLevel; // nesting level (0 = block itself, 1 = block within block, etc)
+  int enclosingDepth; // depth to which we're nested within outer method
   GrowableArray<Scope*>* enclosingScopes; // 0 = scope immediately enclosing block (= this->scope), etc.
-  methodOop method;			// the method currently being scanned for uplevel-accesses; either
-   					// r's block method or a nested block method
+  methodOop method; // the method currently being scanned for uplevel-accesses; either
+  // r's block method or a nested block method
 
   UplevelComputer(BlockPReg* reg) {
-    r = reg; scope = r->scope();
-    read    = new GrowableArray<PReg*>(10);
+    r = reg;
+    scope = r->scope();
+    read = new GrowableArray<PReg*>(10);
     written = new GrowableArray<PReg*>(10);
     nestingLevel = 0;
     method = r->closure()->method();
     enclosingDepth = 0;
     enclosingScopes = new GrowableArray<Scope*>(5);
-    for (Scope* s = scope; s != NULL; s = s->parent(), enclosingDepth++) enclosingScopes->push(s);
+    for (Scope* s = scope; s != NULL; s = s->parent(), enclosingDepth++)
+      enclosingScopes->push(s);
   }
 
-
-  void record_temporary (bool reading, int no, int ctx) {
+  void record_temporary(bool reading, int no, int ctx) {
     // distance is the lexical nesting distance in source-level terms (i.e., regardless of what the interpreter
-    // does or whether the intermediate scopes have contexts or not) between r's scope and the scope 
+    // does or whether the intermediate scopes have contexts or not) between r's scope and the scope
     // resolving the access; e.g., 1 --> the scope creating r
     int distance = method->lexicalDistance(ctx) - nestingLevel;
-    if (distance < 1) return;				// access is resolved in some nested block
-    Scope* s = enclosingScopes->at(distance - 1);	// -1 because 0th element is enclosing scope, i.e., at distance 1
+    if (distance < 1)
+      return; // access is resolved in some nested block
+    Scope* s = enclosingScopes->at(distance - 1); // -1 because 0th element is enclosing scope, i.e., at distance 1
     if (s->isInlinedScope()) {
       // temporary is defined in this nmethod
       InlinedScope* target = (InlinedScope*)s;
       assert(target->allocatesInterpretedContext(), "find_scope returned bad scope");
       PReg* reg = target->contextTemporary(no)->preg();
       if (CompilerDebug) {
-	cout(PrintExposed)->print("*adding %s to uplevel-%s of block %s\n", reg->name(), reading ? "read" : "written", r->name());
+        cout(PrintExposed)
+          ->print("*adding %s to uplevel-%s of block %s\n", reg->name(), reading ? "read" : "written", r->name());
       }
       GrowableArray<PReg*>* list = reading ? read : written;
       list->append(reg);
     } else {
-      // uplevel access goes to another nmethod 
+      // uplevel access goes to another nmethod
     }
   }
 
-  void push_temporary (int no, int context)		{ record_temporary(true, no, context); }
-  void store_temporary(int no, int context)		{ record_temporary(false, no, context); }
+  void push_temporary(int no, int context) { record_temporary(true, no, context); }
+  void store_temporary(int no, int context) { record_temporary(false, no, context); }
   void allocate_closure(AllocationType type, int nofArgs, methodOop meth) {
     // recursively search nested blocks
     nestingLevel++;
@@ -949,22 +959,23 @@ class UplevelComputer: public SpecializedMethodClosure {
     method = savedMethod;
     nestingLevel--;
   }
- };
-
+};
 
 void BlockPReg::computeUplevelAccesses() {
   // compute _uplevelRead/_uplevelWritten
   assert(escapes(), "should escape");
-  if (_uplevelRead) return;	// already computed
+  if (_uplevelRead)
+    return; // already computed
   UplevelComputer c(this);
   MethodIterator iter(_closure->method(), &c);
-  assert(! _uplevelWritten, "shouldn't be there");
-  _uplevelRead    = c.read;
+  assert(!_uplevelWritten, "shouldn't be there");
+  _uplevelRead = c.read;
   _uplevelWritten = c.written;
-  for (int i = _uplevelRead->length() - 1; i >= 0; i--) _uplevelRead   ->at(i)->addUplevelAccessor(this, true, false);
-  for (int i = _uplevelWritten->length() - 1;  i >= 0; i--) _uplevelWritten->at(i)->addUplevelAccessor(this, false, true);
+  for (int i = _uplevelRead->length() - 1; i >= 0; i--)
+    _uplevelRead->at(i)->addUplevelAccessor(this, true, false);
+  for (int i = _uplevelWritten->length() - 1; i >= 0; i--)
+    _uplevelWritten->at(i)->addUplevelAccessor(this, false, true);
 }
-
 
 char* PReg::safeName() const {
   return name();
@@ -973,42 +984,47 @@ char* PReg::safeName() const {
 char* PReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
   if (loc.equals(unAllocated)) {
-    snprintf(n, 25, "%s%d%s%s%s", prefix(), id(),
-	    uplevelR() || uplevelW() ? "^" : "",
-	    uplevelR() ? "R" : "", uplevelW() ? "W" : "");
+    snprintf(n, 25, "%s%d%s%s%s", prefix(), id(), uplevelR() || uplevelW() ? "^" : "", uplevelR() ? "R" : "",
+             uplevelW() ? "W" : "");
   } else {
-    snprintf(n, 25, "%s%d(%s)%s%s%s", prefix(), id(), loc.name(),
-	    uplevelR() || uplevelW() ? "^" : "",
-	    uplevelR() ? "R" : "", uplevelW() ? "W" : "");
+    snprintf(n, 25, "%s%d(%s)%s%s%s", prefix(), id(), loc.name(), uplevelR() || uplevelW() ? "^" : "",
+             uplevelR() ? "R" : "", uplevelW() ? "W" : "");
   }
   return n;
 }
 
-
 void PReg::print() {
-  lprintf("%s: ", name()); printDefsAndUses(&dus); lprintf("\n");
+  lprintf("%s: ", name());
+  printDefsAndUses(&dus);
+  lprintf("\n");
 }
 
-
 void BlockPReg::print() {
-  print_short(); lprintf(": "); 
+  print_short();
+  lprintf(": ");
   printDefsAndUses(&dus);
-  if (_uplevelRead) { lprintf("; uplevel-read: "); _uplevelRead->print(); }
-  if (_uplevelWritten) { lprintf("; uplevel-written: "); _uplevelWritten->print(); }
-  if (_escapeNodes) { 
-    lprintf("; escapes at: "); 
-    for (int i = 0; i < _escapeNodes->length(); i++) lprintf("N%d ", _escapeNodes->at(i)->id()); 
+  if (_uplevelRead) {
+    lprintf("; uplevel-read: ");
+    _uplevelRead->print();
+  }
+  if (_uplevelWritten) {
+    lprintf("; uplevel-written: ");
+    _uplevelWritten->print();
+  }
+  if (_escapeNodes) {
+    lprintf("; escapes at: ");
+    for (int i = 0; i < _escapeNodes->length(); i++)
+      lprintf("N%d ", _escapeNodes->at(i)->id());
   }
   lprintf("\n");
 }
 
-
 char* BlockPReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
-  snprintf(n, 25, "%s <%#lx>%s", PReg::name(), (uintptr_t)(PrintHexAddresses ? (const void*)this : NULL), _memoized ? "#" : "");
+  snprintf(n, 25, "%s <%#lx>%s", PReg::name(), (uintptr_t)(PrintHexAddresses ? (const void*)this : NULL),
+           _memoized ? "#" : "");
   return n;
 }
-
 
 char* ConstPReg::name() const {
   char* n = NEW_RESOURCE_ARRAY(char, 25);
@@ -1016,17 +1032,15 @@ char* ConstPReg::name() const {
   return n;
 }
 
-
 #ifdef not_yet_used
-  char* SplitPReg::name() const {
-    char* n = NEW_RESOURCE_ARRAY(char, 25);
-//c    char buf[MaxSplitDepth+1];
-//c    sprintf(n, "%s <%s>", PReg::name(), sig->prefix(buf));
-    sprintf(n, "%s", PReg::name());
-    return n;
-  }
+char* SplitPReg::name() const {
+  char* n = NEW_RESOURCE_ARRAY(char, 25);
+  //c    char buf[MaxSplitDepth+1];
+  //c    sprintf(n, "%s <%s>", PReg::name(), sig->prefix(buf));
+  sprintf(n, "%s", PReg::name());
+  return n;
+}
 #endif
-
 
 bool PReg::verify() const {
   bool ok = true;
@@ -1044,56 +1058,51 @@ bool PReg::verify() const {
   if (defs != _ndefs && !incorrectD() && !isConstPReg()) {
     // ConstPRegs have fake def
     ok = false;
-    error("PReg %#lx %s: wrong def count (%ld instead of %ld)",
-	  this, name(), _ndefs, defs);
+    error("PReg %#lx %s: wrong def count (%ld instead of %ld)", this, name(), _ndefs, defs);
   }
   if (uses != _nuses && !incorrectU()) {
     ok = false;
-    error("PReg %#lx %s: wrong use count (%ld instead of %ld)",
-	  this, name(), _nuses, uses);
+    error("PReg %#lx %s: wrong use count (%ld instead of %ld)", this, name(), _nuses, uses);
   }
   if (!incorrectD() && _ndefs == 0 && _nuses > 0) {
     ok = false;
     error("PReg %#lx %s: used but not defined", this, name());
   }
-# ifdef fixthis  // fix this - may still be needed
+#ifdef fixthis // fix this - may still be needed
   if (debug && !incorrectDU() && isTrashedReg(loc)) {
     ok = false;
     error("PReg %#lx %s: debug-visible but allocated to temp reg", this, name());
   }
-# endif
+#endif
   return ok;
 }
-
 
 bool SAPReg::verify() const {
   bool ok = PReg::verify();
   if (ok) {
     if (_begBCI == IllegalBCI) {
       if (creationStartBCI != IllegalBCI || _endBCI != IllegalBCI) {
-	ok = false;
-	error("SAPReg %#lx %s: live range only partially set", this, name());
+        ok = false;
+        error("SAPReg %#lx %s: live range only partially set", this, name());
       }
     } else if (_scope->isInlinedScope()) {
       int ncodes = scope()->nofBytes();
-      if (creationStartBCI < PrologueBCI ||
-	  creationStartBCI > creationScope()->nofBytes()) {
-	ok = false;
-	error("SAPReg %#lx %s: invalid creationStartBCI %ld", this, name(), creationStartBCI);
+      if (creationStartBCI < PrologueBCI || creationStartBCI > creationScope()->nofBytes()) {
+        ok = false;
+        error("SAPReg %#lx %s: invalid creationStartBCI %ld", this, name(), creationStartBCI);
       }
       if (_begBCI < PrologueBCI || _begBCI > ncodes) {
-	ok = false;
-	error("SAPReg %#lx %s: invalid startBCI %ld", this, name(), _begBCI);
+        ok = false;
+        error("SAPReg %#lx %s: invalid startBCI %ld", this, name(), _begBCI);
       }
       if (_endBCI < PrologueBCI || _endBCI > ncodes && _endBCI != EpilogueBCI) {
-	ok = false;
-	error("SAPReg %#lx %s: invalid endBCI %ld", this, name(), _endBCI);
+        ok = false;
+        error("SAPReg %#lx %s: invalid endBCI %ld", this, name(), _endBCI);
       }
     }
   }
   return ok;
 }
-
 
 bool BlockPReg::verify() const {
   bool ok = SAPReg::verify() && _closure->verify();
@@ -1101,36 +1110,34 @@ bool BlockPReg::verify() const {
   if (_uplevelRead) {
     for (int i = 0; i < _uplevelRead->length(); i++) {
       if (_uplevelRead->at(i)->isBlockPReg()) {
-	BlockPReg* blk = (BlockPReg*)_uplevelRead->at(i);
-	if (!blk->escapes()) {
-	  error("BlockPReg %#lx is uplevel-accessed by escaping BlockPReg %#lx but isn't marked escaping itself",
-	         blk, this);
-	  ok = false;
-	}
+        BlockPReg* blk = (BlockPReg*)_uplevelRead->at(i);
+        if (!blk->escapes()) {
+          error("BlockPReg %#lx is uplevel-accessed by escaping BlockPReg %#lx but isn't marked escaping itself", blk,
+                this);
+          ok = false;
+        }
       }
     }
     for (int i = 0; i < _uplevelWritten->length(); i++) {
       if (_uplevelWritten->at(i)->isBlockPReg()) {
-	BlockPReg* blk = (BlockPReg*)_uplevelRead->at(i);
-	error("BlockPReg %#lx is uplevel-written by escaping BlockPReg %#lx, but BlockPRegs should never be assigned",
-	       blk, this);
-	ok = false;
+        BlockPReg* blk = (BlockPReg*)_uplevelRead->at(i);
+        error("BlockPReg %#lx is uplevel-written by escaping BlockPReg %#lx, but BlockPRegs should never be assigned",
+              blk, this);
+        ok = false;
       }
     }
   }
   return ok;
 }
 
-
-bool NoPReg::verify() const { 
+bool NoPReg::verify() const {
   if (_nuses != 0) {
     error("NoPReg %#lx: has uses", this);
     return false;
   } else {
     return true;
-  } 
+  }
 }
-
 
 bool ConstPReg::verify() const {
   bool ok = PReg::verify() && constant->is_klass() || constant->verify();
@@ -1153,5 +1160,4 @@ bool ConstPReg::verify() const {
   return ok;
 }
 
-
-# endif
+#endif

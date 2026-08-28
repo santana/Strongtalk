@@ -34,20 +34,18 @@ namespace easyunit {
  *
  * @see easyunit::DefaultTestPrinter
  */
-class TestPrinter: public CHeap
-{
-	public:
-	virtual ~TestPrinter() {}
-	/**
+class TestPrinter : public CHeap {
+public:
+  virtual ~TestPrinter() {}
+  /**
 	 * Print the details of a given TestResult instance. This
 	 * method must be overridden by subclasses since it is
 	 * abstract.
 	 *
 	 * @param testResult TestResult instance that the user wish to print
 	 */
-		virtual void print(const TestResult *testResult) = 0;		
+  virtual void print(const TestResult* testResult) = 0;
 };
 
 } // EasyUnit ns
 #endif // TESTPRINTER_H
-

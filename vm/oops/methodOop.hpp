@@ -36,68 +36,69 @@ template <class E> class GrowableArray;
 
 // A methodOop is a method with byte codes.
 
-const int method_size_mask_bitno  =  2;
-const int method_size_mask_size   = 18;
+const int method_size_mask_bitno = 2;
+const int method_size_mask_size = 18;
 
-const int method_args_mask_bitno  =  method_size_mask_bitno + method_size_mask_size;
-const int method_args_mask_size   =  4;
+const int method_args_mask_bitno = method_size_mask_bitno + method_size_mask_size;
+const int method_args_mask_size = 4;
 
-const int method_flags_mask_bitno =  method_args_mask_bitno + method_args_mask_size;
-const int method_flags_mask_size  =  8;
-
+const int method_flags_mask_bitno = method_args_mask_bitno + method_args_mask_size;
+const int method_flags_mask_size = 8;
 
 class methodOopDesc : public memOopDesc {
- private:
+private:
   objArrayOop _debugInfo;
-  oop         _selector_or_method;	// selector for normal methods, enclosing method for blocks
-  int         _counters;		// invocation counter and sharing counter
-  smiOop      _size_and_flags;
+  oop _selector_or_method; // selector for normal methods, enclosing method for blocks
+  int _counters; // invocation counter and sharing counter
+  smiOop _size_and_flags;
   // [flags (8 bits),  nofArgs (4 bits), size in oops (18 bits), tag (2 bits)]
-  methodOopDesc* addr() const		{ return (methodOopDesc*)memOopDesc::addr(); }
+  methodOopDesc* addr() const { return (methodOopDesc*)memOopDesc::addr(); }
 
   // returns the header size of a methodOop
-  static int header_size()		{ return sizeof(methodOopDesc)/oopSize; }
+  static int header_size() { return sizeof(methodOopDesc) / oopSize; }
 
- public:
+public:
   // offsets for code generation
-  static int selector_or_method_byte_offset()	{ return intptr_t(&(((methodOopDesc*)NULL)->_selector_or_method)) - Mem_Tag; }
-  static int counters_byte_offset()		{ return intptr_t(&(((methodOopDesc*)NULL)->_counters)) - Mem_Tag; }
-  static int codes_byte_offset()		{ return sizeof(methodOopDesc) - Mem_Tag; }
+  static int selector_or_method_byte_offset() {
+    return intptr_t(&(((methodOopDesc*)NULL)->_selector_or_method)) - Mem_Tag;
+  }
+  static int counters_byte_offset() { return intptr_t(&(((methodOopDesc*)NULL)->_counters)) - Mem_Tag; }
+  static int codes_byte_offset() { return sizeof(methodOopDesc) - Mem_Tag; }
 
   smiOop size_and_flags() const { return addr()->_size_and_flags; }
   void set_size_and_flags(int size, int nofArgs, int flags) {
-    addr()->_size_and_flags = (smiOop)
-      (((smi)flags << method_flags_mask_bitno) + ((smi)nofArgs << method_args_mask_bitno) + ((smi)size << method_size_mask_bitno));
+    addr()->_size_and_flags =
+      (smiOop)(((smi)flags << method_flags_mask_bitno) + ((smi)nofArgs << method_args_mask_bitno) +
+               ((smi)size << method_size_mask_bitno));
   }
 
   int flags() const {
     return get_unsigned_bitfield((intptr_t)size_and_flags(), method_flags_mask_bitno, method_flags_mask_size);
   }
 
-  void set_flags(int flags) {
-    set_size_and_flags(size_of_codes(), nofArgs(), flags);
+  void set_flags(int flags) { set_size_and_flags(size_of_codes(), nofArgs(), flags); }
+
+  int nofArgs() const { // number of arguments (excluding receiver)
+    return get_unsigned_bitfield((intptr_t)size_and_flags(), method_args_mask_bitno, method_args_mask_size);
   }
 
-  int nofArgs() const {			 // number of arguments (excluding receiver)
-    return get_unsigned_bitfield((intptr_t)size_and_flags(), method_args_mask_bitno, method_args_mask_size); }
-
- public:
-	friend methodOop as_methodOop(void* p);
+public:
+  friend methodOop as_methodOop(void* p);
 
   void bootstrap_object(bootstrap* st);
 
   // Tester
-  bool is_blockMethod() const		{ return !selector_or_method()->is_symbol(); }
+  bool is_blockMethod() const { return !selector_or_method()->is_symbol(); }
 
-  objArrayOop debugInfo() const		{ return addr()->_debugInfo; }
-  void set_debugInfo(objArrayOop d)	{ addr()->_debugInfo = d; }
+  objArrayOop debugInfo() const { return addr()->_debugInfo; }
+  void set_debugInfo(objArrayOop d) { addr()->_debugInfo = d; }
 
   symbolOop selector() const;
-  methodOop parent() const;		// returns the enclosing block or method (for blocks), or NULL
-  methodOop home() const;		// returns the enclosing method (for blocks), or itself
+  methodOop parent() const; // returns the enclosing block or method (for blocks), or NULL
+  methodOop home() const; // returns the enclosing method (for blocks), or itself
 
-  oop  selector_or_method() const	{ return addr()->_selector_or_method; }
-  void set_selector_or_method(oop value){ addr()->_selector_or_method = value; }
+  oop selector_or_method() const { return addr()->_selector_or_method; }
+  void set_selector_or_method(oop value) { addr()->_selector_or_method = value; }
 
   // returns the enclosing method's selector (block methods only)
   symbolOop enclosing_method_selector() const;
@@ -119,93 +120,88 @@ class methodOopDesc : public memOopDesc {
   //   sharing counter    - tells how many callers this methodOop has.
 
   enum {
-    _short_size              = 16,
+    _short_size = 16,
     _invocation_count_offset = _short_size,
-    _invocation_count_width  = _short_size,
-    _invocation_count_max    = (1 << _short_size) - 1,
+    _invocation_count_width = _short_size,
+    _invocation_count_max = (1 << _short_size) - 1,
 
-    _sharing_count_offset    = 0,
-    _sharing_count_width     = _short_size,
-    _sharing_count_max       = (1 << _short_size) - 1
+    _sharing_count_offset = 0,
+    _sharing_count_width = _short_size,
+    _sharing_count_max = (1 << _short_size) - 1
   };
 
-  int  counters() const			{ return addr()->_counters; }
-  void set_counters(int inv, int share)	{ addr()->_counters = (inv << _invocation_count_offset) | share; }
+  int counters() const { return addr()->_counters; }
+  void set_counters(int inv, int share) { addr()->_counters = (inv << _invocation_count_offset) | share; }
 
   // Invocation counter
-  int invocation_count() const		{ return get_unsigned_bitfield(counters(), _invocation_count_offset, _invocation_count_width); }
-  void set_invocation_count(int value)	{ set_counters(value, sharing_count()); }
+  int invocation_count() const {
+    return get_unsigned_bitfield(counters(), _invocation_count_offset, _invocation_count_width);
+  }
+  void set_invocation_count(int value) { set_counters(value, sharing_count()); }
 
   void decay_invocation_count(double decay_factor);
 
   // Sharing counter (number of callers)
-  int sharing_count() const		{ return get_unsigned_bitfield(counters(), _sharing_count_offset, _sharing_count_width); }
-  void set_sharing_count(int value)	{ set_counters(invocation_count(), value); }
+  int sharing_count() const { return get_unsigned_bitfield(counters(), _sharing_count_offset, _sharing_count_width); }
+  void set_sharing_count(int value) { set_counters(invocation_count(), value); }
   void inc_sharing_count();
   void dec_sharing_count();
 
-  bool was_never_executed();		// was method never executed? (count = 0, empty inline caches)
+  bool was_never_executed(); // was method never executed? (count = 0, empty inline caches)
 
-  int size_of_codes() const {		// size of byte codes in words
-    return get_unsigned_bitfield((intptr_t) size_and_flags(), method_size_mask_bitno, method_size_mask_size);
+  int size_of_codes() const { // size of byte codes in words
+    return get_unsigned_bitfield((intptr_t)size_and_flags(), method_size_mask_bitno, method_size_mask_size);
   }
 
-  void set_size_of_code(int size) {
-    set_size_and_flags(size, nofArgs(), flags());
-  }
+  void set_size_of_code(int size) { set_size_and_flags(size, nofArgs(), flags()); }
 
   // Returns a pointer to the hybrid code at 'offset'
-  u_char* codes(int offset = 1) const {
-     return (u_char*) addr() + sizeof(methodOopDesc) + offset - 1;
-  }
+  u_char* codes(int offset = 1) const { return (u_char*)addr() + sizeof(methodOopDesc) + offset - 1; }
 
-  u_char* codes_end() const {
-     return codes() + size_of_codes() * oopSize;
-  }
+  u_char* codes_end() const { return codes() + size_of_codes() * oopSize; }
 
   // find methodOop given an hcode pointer
   static methodOop methodOop_from_hcode(u_char* hp);
 
-  u_char byte_at(int offset) const		{ return *codes(offset); }
-  void byte_at_put(int offset,u_char c)		{ *codes(offset) = c; }
+  u_char byte_at(int offset) const { return *codes(offset); }
+  void byte_at_put(int offset, u_char c) { *codes(offset) = c; }
 
-  long word_at(int offset) const		{ return * (long*) codes(offset); }
-  void word_at_put(int offset,unsigned long w)	{ * (long*) codes(offset) = w; }
+  long word_at(int offset) const { return *(long*)codes(offset); }
+  void word_at_put(int offset, unsigned long w) { *(long*)codes(offset) = w; }
 
-  oop  oop_at(int offset) const			{ return * (oop*) codes(offset); }
-  void oop_at_put(int offset,oop obj)		{ * (oop*) codes(offset) = obj; }
+  oop oop_at(int offset) const { return *(oop*)codes(offset); }
+  void oop_at_put(int offset, oop obj) { *(oop*)codes(offset) = obj; }
 
   // Returns the next byte code index based on hp.
-  int  next_bci_from(u_char* hp) const;
+  int next_bci_from(u_char* hp) const;
 
   // Returns the current byte code index based on hp (points to the next byte code)
-  int  bci_from(u_char* hp) const;
+  int bci_from(u_char* hp) const;
 
-  int  number_of_arguments() const;
+  int number_of_arguments() const;
 
   // Returns the number of temporaries allocated by the interpreter
   // (excluding receiver & float temporaries, which may come afterwards).
   int number_of_stack_temporaries() const;
 
   // Method with hardwired floating-point operations
-  bool has_float_temporaries() const		{ return *codes(1) == Bytecodes::float_allocate; }
-  int  number_of_float_temporaries() const	{ return has_float_temporaries() ? *codes(3) : 0; }
-  int  float_expression_stack_size() const	{ return has_float_temporaries() ? *codes(4) : 0; }
-  int  total_number_of_floats() const		{ return number_of_float_temporaries() + float_expression_stack_size(); }
+  bool has_float_temporaries() const { return *codes(1) == Bytecodes::float_allocate; }
+  int number_of_float_temporaries() const { return has_float_temporaries() ? *codes(3) : 0; }
+  int float_expression_stack_size() const { return has_float_temporaries() ? *codes(4) : 0; }
+  int total_number_of_floats() const { return number_of_float_temporaries() + float_expression_stack_size(); }
 
   // Stack frame layout if there's a float section (offset & size in oops relative to ebp)
-  int  float_offset(int float_no) const;
-  int  float_section_start_offset() const	{ return frame_temp_offset - number_of_stack_temporaries(); }
-  int  float_section_size() const		{ return total_number_of_floats()*floatSize/oopSize; }
+  int float_offset(int float_no) const;
+  int float_section_start_offset() const { return frame_temp_offset - number_of_stack_temporaries(); }
+  int float_section_size() const { return total_number_of_floats() * floatSize / oopSize; }
 
   // Testers
-  bool is_accessMethod() const			{ return *codes() == Bytecodes::return_instVar; }
+  bool is_accessMethod() const { return *codes() == Bytecodes::return_instVar; }
   bool is_primitiveMethod() const;
 
   // For predicted sends (smi +, -, *, etc.)
-  bool is_special_primitiveMethod() const	{ return *codes(1) == Bytecodes::special_primitive_send_1_hint; }
+  bool is_special_primitiveMethod() const { return *codes(1) == Bytecodes::special_primitive_send_1_hint; }
   Bytecodes::Code special_primitive_code() const;
-
 
   // Information needed by the optimizing compiler
   //
@@ -221,23 +217,23 @@ class methodOopDesc : public memOopDesc {
 
   enum Flags {
     // general flags
-    containsNLRFlag	= 0,
-    allocatesContextFlag= 1,
-    mustBeCustomizedFlag= 2,
-    isCustomizedFlag	= 3,
+    containsNLRFlag = 0,
+    allocatesContextFlag = 1,
+    mustBeCustomizedFlag = 2,
+    isCustomizedFlag = 3,
 
     // method specific flags (overlapping with block specific flags)
-    methodInfoFlags	= isCustomizedFlag + 1,
-    methodInfoSize	= 2,
+    methodInfoFlags = isCustomizedFlag + 1,
+    methodInfoSize = 2,
 
     // block specific flags (overlapping with method specific flags)
-    blockInfoFlags	= methodInfoFlags,
-    blockInfoSize	= methodInfoSize
+    blockInfoFlags = methodInfoFlags,
+    blockInfoSize = methodInfoSize
   };
 
   // Flags for inlining
   enum Method_Inlining_Info {
-    never_inline  = 0,
+    never_inline = 0,
     normal_inline = 1,
     always_inline = 2,
   };
@@ -246,37 +242,36 @@ class methodOopDesc : public memOopDesc {
   void set_method_inlining_info(Method_Inlining_Info info);
 
   enum Block_Info {
-    expects_nil		= 0,			// 'clean' block
-    expects_self	= 1, 			// 'copying' block
-    expects_parameter	= 2,			// 'copying' block
-    expects_context	= 3			// 'full' block
+    expects_nil = 0, // 'clean' block
+    expects_self = 1, // 'copying' block
+    expects_parameter = 2, // 'copying' block
+    expects_context = 3 // 'full' block
   };
   Block_Info block_info() const;
 
   // Tells if an activation of this method has a context stored as temp 0.
   bool activation_has_context() const {
-    return allocatesInterpretedContext()
-        || (is_blockMethod() && expectsContext());
+    return allocatesInterpretedContext() || (is_blockMethod() && expectsContext());
   }
 
   // Tells if bci is a context allocation
   bool in_context_allocation(int bci) const;
 
-  bool containsNLR() const			{ return isSet(flags(), containsNLRFlag); }
-  bool allocatesInterpretedContext() const	{ return isSet(flags(), allocatesContextFlag); }
-  bool mustBeCustomizedToClass() const		{ return isSet(flags(), mustBeCustomizedFlag); }
-  bool expectsContext()	const			{ return block_info() == expects_context; }
+  bool containsNLR() const { return isSet(flags(), containsNLRFlag); }
+  bool allocatesInterpretedContext() const { return isSet(flags(), allocatesContextFlag); }
+  bool mustBeCustomizedToClass() const { return isSet(flags(), mustBeCustomizedFlag); }
+  bool expectsContext() const { return block_info() == expects_context; }
   bool hasNestedBlocks() const;
-  bool is_clean_block() const			{ return block_info() == expects_nil; }
-  bool is_copying_block() const			{ return block_info() == expects_self || block_info() == expects_parameter; }
-  bool is_full_block() const			{ return block_info() == expects_context; }
+  bool is_clean_block() const { return block_info() == expects_nil; }
+  bool is_copying_block() const { return block_info() == expects_self || block_info() == expects_parameter; }
+  bool is_full_block() const { return block_info() == expects_context; }
 
   // Method customization
-  bool has_instVar_access() const		{ return true; } // for now - conservative - FIX THIS
-  bool has_classVar_access() const		{ return true; } // for now - conservative - FIX THIS
-  bool has_inlineCache() const			{ return true; } // for now - conservative - FIX THIS
-  bool is_customized() const		        { return isSet(flags(), isCustomizedFlag); }
-  bool should_be_customized() const             { return has_instVar_access() || has_classVar_access() || has_inlineCache(); }
+  bool has_instVar_access() const { return true; } // for now - conservative - FIX THIS
+  bool has_classVar_access() const { return true; } // for now - conservative - FIX THIS
+  bool has_inlineCache() const { return true; } // for now - conservative - FIX THIS
+  bool is_customized() const { return isSet(flags(), isCustomizedFlag); }
+  bool should_be_customized() const { return has_instVar_access() || has_classVar_access() || has_inlineCache(); }
 
   // Returns a deep copy of the methodOop
   methodOop copy_for_customization() const;
@@ -286,8 +281,8 @@ class methodOopDesc : public memOopDesc {
   void uncustomize_for(mixinOop mixin);
 
   // Uplevel accesses via contexts
-  int lexicalDistance(int contextNo);	// for uplevel accesses; see comment in .c file
-  int contextNo(int lexicalDistance);	// inverse of lexicalDistance()
+  int lexicalDistance(int contextNo); // for uplevel accesses; see comment in .c file
+  int contextNo(int lexicalDistance); // inverse of lexicalDistance()
 
   // Computes the number of interpreter contexts from here up to the home method
   int context_chain_length() const;
@@ -327,7 +322,7 @@ class methodOopDesc : public memOopDesc {
 
   // Inlining database support
   void print_inlining_database_on(outputStream* st);
-  int  bci_for_block_method(methodOop inner);
+  int bci_for_block_method(methodOop inner);
   methodOop block_method_at(int bci);
 
   // Returns the numbers of temporaries allocated in a context.
@@ -347,20 +342,19 @@ class methodOopDesc : public memOopDesc {
 
   friend class methodKlass;
 };
-inline methodOop as_methodOop(void* p) { return methodOop(as_memOop(p)); }
+inline methodOop as_methodOop(void* p) {
+  return methodOop(as_memOop(p));
+}
 
 class StopInSelector : public ValueObj {
 private:
   static bool ignored;
-  bool        enable;
-  bool        stop;
+  bool enable;
+  bool stop;
   FlagSetting oldFlag;
+
 public:
-  StopInSelector(const char* class_name,
-                 const char* name,
-                 klassOop klass,
-                 oop method_or_selector, 
-                 bool &fl = StopInSelector::ignored,
-                 bool stop = true);
+  StopInSelector(const char* class_name, const char* name, klassOop klass, oop method_or_selector,
+                 bool& fl = StopInSelector::ignored, bool stop = true);
 };
 #endif // _METHOD_OOP_HPP

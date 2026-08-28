@@ -61,44 +61,62 @@ bool Klass::is_marked_for_schema_change() {
 }
 
 Klass::Format Klass::format_from_symbol(symbolOop format) {
-  if (format->equals("Oops"))                               return mem_klass;
-  if (format->equals("ExternalProxy"))                      return proxy_klass;
+  if (format->equals("Oops"))
+    return mem_klass;
+  if (format->equals("ExternalProxy"))
+    return proxy_klass;
   // if (format->equals("Process"))                            return process_klass;
-  if (format->equals("IndexedInstanceVariables"))           return objArray_klass;
-  if (format->equals("IndexedByteInstanceVariables"))       return byteArray_klass;
-  if (format->equals("IndexedDoubleByteInstanceVariables")) return doubleByteArray_klass;
-  if (format->equals("IndexedNextOfKinInstanceVariables"))  return weakArray_klass;
-  if (format->equals("Special"))                            return special_klass;
+  if (format->equals("IndexedInstanceVariables"))
+    return objArray_klass;
+  if (format->equals("IndexedByteInstanceVariables"))
+    return byteArray_klass;
+  if (format->equals("IndexedDoubleByteInstanceVariables"))
+    return doubleByteArray_klass;
+  if (format->equals("IndexedNextOfKinInstanceVariables"))
+    return weakArray_klass;
+  if (format->equals("Special"))
+    return special_klass;
   return Klass::no_klass;
 }
 
 char* Klass::name_from_format(Format format) {
   switch (format) {
-  case mem_klass:             return "Oops";
-  case proxy_klass:           return "ExternalProxy";
-  // case process_klass:         return "Process";
-  case objArray_klass:        return "IndexedInstanceVariables";
-  case byteArray_klass:       return "IndexedByteInstanceVariables";
-  case doubleByteArray_klass: return "IndexedDoubleByteInstanceVariables";
-  case weakArray_klass:       return "IndexedNextOfKinInstanceVariables";
-  default:                    return "Special";
+    case mem_klass:
+      return "Oops";
+    case proxy_klass:
+      return "ExternalProxy";
+    // case process_klass:         return "Process";
+    case objArray_klass:
+      return "IndexedInstanceVariables";
+    case byteArray_klass:
+      return "IndexedByteInstanceVariables";
+    case doubleByteArray_klass:
+      return "IndexedDoubleByteInstanceVariables";
+    case weakArray_klass:
+      return "IndexedNextOfKinInstanceVariables";
+    default:
+      return "Special";
   }
 }
 
 bool Klass::has_same_layout_as(klassOop klass) {
   assert(klass->is_klass(), "argument must be klass");
   // Check equality
-  if (as_klassOop() == klass) return true;
+  if (as_klassOop() == klass)
+    return true;
 
   // Check format
-  if (format() != klass->klass_part()->format()) return false; 
+  if (format() != klass->klass_part()->format())
+    return false;
 
   // Check instance size
-  if (non_indexable_size() != klass->klass_part()->non_indexable_size()) return false;
+  if (non_indexable_size() != klass->klass_part()->non_indexable_size())
+    return false;
 
   // Check instance variables
   for (int index = oop_header_size(); index < non_indexable_size(); index++) {
-    if (inst_var_name_at(index) !=  klass->klass_part()->inst_var_name_at(index)) return false;
+    if (inst_var_name_at(index) != klass->klass_part()->inst_var_name_at(index))
+      return false;
   }
   return true;
 }
@@ -106,19 +124,21 @@ bool Klass::has_same_layout_as(klassOop klass) {
 bool Klass::has_same_inst_vars_as(klassOop klass) {
   assert(klass->is_klass(), "argument must be klass");
   // Check equality
-  if (as_klassOop() == klass) return true;
+  if (as_klassOop() == klass)
+    return true;
 
   Klass* classPart = klass->klass_part();
   // Check instance size
-  int ivars      = number_of_instance_variables();
+  int ivars = number_of_instance_variables();
   int classIvars = classPart->number_of_instance_variables();
   if (ivars != classIvars)
     return false;
 
   // Check instance variables
   for (int offset = 1; offset <= number_of_instance_variables(); offset++) {
-    if (inst_var_name_at(non_indexable_size() - offset) != 
-      classPart->inst_var_name_at(classPart->non_indexable_size() - offset)) return false;
+    if (inst_var_name_at(non_indexable_size() - offset) !=
+        classPart->inst_var_name_at(classPart->non_indexable_size() - offset))
+      return false;
   }
   return true;
 }
@@ -133,10 +153,11 @@ klassOop Klass::create_subclass(mixinOop mixin, klassOop instSuper, klassOop met
   return NULL;
 }
 
-klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass, mixinOop mixin, void *vtbl) {
+klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClass, klassOop metaMetaClass,
+                                     mixinOop mixin, void* vtbl) {
   BlockScavenge bs;
 
-  assert(mixin->classVars()->is_objArray(),                "checking instance side class var names");
+  assert(mixin->classVars()->is_objArray(), "checking instance side class var names");
   assert(mixin->class_mixin()->classVars()->is_objArray(), "checking class side class var names");
   assert(mixin->class_mixin()->classVars()->length() == 0, "checking class side class var names");
 
@@ -160,7 +181,7 @@ klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClas
   set_klassKlass_vtbl(mk);
 
   klassOop klass = klassOop(mk->allocateObject());
-  Klass*   k     = klass->klass_part();
+  Klass* k = klass->klass_part();
 
   k->set_untagged_contents(false);
   k->set_classVars(class_vars);
@@ -172,32 +193,35 @@ klassOop Klass::create_generic_class(klassOop superMetaClass, klassOop superClas
 
   return klass;
 }
-klassOop Klass::create_generic_class(klassOop super_class, mixinOop mixin, void *vtbl) {
+klassOop Klass::create_generic_class(klassOop super_class, mixinOop mixin, void* vtbl) {
   return create_generic_class(super_class->klass(), super_class, super_class->klass()->klass(), mixin, vtbl);
 }
 
 symbolOop Klass::inst_var_name_at(int offset) const {
-  Klass* current_klass  = (Klass*) this;
-  int   current_offset = non_indexable_size();
+  Klass* current_klass = (Klass*)this;
+  int current_offset = non_indexable_size();
   do {
     mixinOop m = current_klass->mixin();
     for (int index = m->number_of_instVars(); index > 0; index--) {
       current_offset--;
-      if (offset == current_offset) return m->instVar_at(index);
-    } 
-  } while((current_klass = (current_klass->superKlass() == nilObj ? NULL : current_klass->superKlass()->klass_part())) != NULL);
+      if (offset == current_offset)
+        return m->instVar_at(index);
+    }
+  } while ((current_klass =
+              (current_klass->superKlass() == nilObj ? NULL : current_klass->superKlass()->klass_part())) != NULL);
   return NULL;
 }
 
 int Klass::lookup_inst_var(symbolOop name) const {
   int offset = mixin()->inst_var_offset(name, non_indexable_size());
-  if (offset >= 0) return offset;
+  if (offset >= 0)
+    return offset;
   return has_superKlass() ? superKlass()->klass_part()->lookup_inst_var(name) : -1;
 }
 
 int Klass::number_of_instance_variables() const {
-  return mixin()->number_of_instVars() 
-       + (has_superKlass() ? superKlass()->klass_part()->number_of_instance_variables() : 0);
+  return mixin()->number_of_instVars() +
+         (has_superKlass() ? superKlass()->klass_part()->number_of_instance_variables() : 0);
 }
 
 // OPERATION FOR METHODS
@@ -206,7 +230,7 @@ int Klass::number_of_methods() const {
   return methods()->length();
 }
 
-methodOop Klass::method_at(int index)  const {
+methodOop Klass::method_at(int index) const {
   return methodOop(methods()->obj_at(index));
 }
 
@@ -236,7 +260,7 @@ int Klass::number_of_classVars() const {
   return classVars()->length();
 }
 
-associationOop Klass::classVar_at(int index)  const {
+associationOop Klass::classVar_at(int index) const {
   return associationOop(classVars()->obj_at(index));
 }
 
@@ -246,7 +270,8 @@ void Klass::add_classVar(associationOop assoc) {
   for (int index = 1; index <= array->length(); index++) {
     assert(array->obj_at(index)->is_association(), "must be symbol");
     associationOop elem = associationOop(array->obj_at(index));
-    if (elem->key() == assoc->key()) return;
+    if (elem->key() == assoc->key())
+      return;
   }
   // Extend the array
   set_classVars(array->copy_add(assoc));
@@ -262,7 +287,8 @@ bool Klass::includes_classVar(symbolOop name) {
   objArrayOop array = classVars();
   for (int index = 1; index <= array->length(); index++) {
     associationOop elem = associationOop(array->obj_at(index));
-    if (elem->key() == name) return true;
+    if (elem->key() == name)
+      return true;
   }
   return false;
 }
@@ -272,61 +298,61 @@ associationOop Klass::local_lookup_class_var(symbolOop name) {
   for (int index = 1; index <= array->length(); index++) {
     assert(array->obj_at(index)->is_association(), "must be symbol");
     associationOop elem = associationOop(array->obj_at(index));
-    if (elem->key() == name) return elem;
+    if (elem->key() == name)
+      return elem;
   }
   return NULL;
 }
 
 associationOop Klass::lookup_class_var(symbolOop name) {
   associationOop result = local_lookup_class_var(name);
-  if (result) return result;
-  result = (superKlass() == nilObj)
-           ? NULL
-           : superKlass()->klass_part()->lookup_class_var(name);
+  if (result)
+    return result;
+  result = (superKlass() == nilObj) ? NULL : superKlass()->klass_part()->lookup_class_var(name);
   return result;
 }
 
-
 inline methodOop Klass::local_lookup(symbolOop selector) {
   objArrayOop array;
-  int         length;
-  oop*        current;
+  int length;
+  oop* current;
 
   // Find out if there is a customized method matching the selector.
-  array  = methods();
+  array = methods();
   length = array->length();
   if (length > 0) {
     current = array->objs(1);
     do {
       methodOop method = methodOop(*current++);
-      assert(method->is_method(), "must be method");   
+      assert(method->is_method(), "must be method");
       if (method->selector() == selector)
-	return method;
+        return method;
     } while (--length > 0);
   }
 
   assert(mixin()->is_mixin(), "mixin must exist");
 
-  array   = mixin()->methods();
-  length  = array->length();
+  array = mixin()->methods();
+  length = array->length();
   current = array->objs(1);
 
   while (length-- > 0) {
     methodOop method = methodOop(*current++);
-    assert(method->is_method(), "must be method");   
+    assert(method->is_method(), "must be method");
     if (method->selector() == selector) {
       if (method->should_be_customized()) {
-        if (as_klassOop() == mixin()->primary_invocation()){
-          if (!method->is_customized()) method->customize_for(as_klassOop(), mixin());
+        if (as_klassOop() == mixin()->primary_invocation()) {
+          if (!method->is_customized())
+            method->customize_for(as_klassOop(), mixin());
           return method;
-	} else {
-	  BlockScavenge bs;
+        } else {
+          BlockScavenge bs;
           // Make customized version for klass
           methodOop new_method = method->copy_for_customization();
-	  new_method->customize_for(as_klassOop(), mixin());
+          new_method->customize_for(as_klassOop(), mixin());
           add_method(new_method);
-	  return new_method;
-	}
+          return new_method;
+        }
       }
       return method;
     }
@@ -338,7 +364,8 @@ methodOop Klass::lookup(symbolOop selector) {
   Klass* current = this;
   while (true) {
     methodOop result = current->local_lookup(selector);
-    if (result)                          return result;
+    if (result)
+      return result;
     if (current->superKlass() == nilObj) {
       ResourceMark rm;
       MissingMethodBuilder builder(selector);
@@ -353,14 +380,15 @@ methodOop Klass::lookup(symbolOop selector) {
 }
 
 bool Klass::is_method_holder_for(methodOop method) {
-  // Always use the home  of the method in case of a blockMethod  
+  // Always use the home  of the method in case of a blockMethod
   methodOop m = method->home();
 
   objArrayOop array = methods();
   // Find out if a method with the same selector exists.
   for (int index = 1; index <= array->length(); index++) {
     assert(array->obj_at(index)->is_method(), "must be method");
-    if (methodOop(array->obj_at(index)) == m) return true;
+    if (methodOop(array->obj_at(index)) == m)
+      return true;
   }
   // Try the mixin
   if (oop(mixin()) != nilObj) {
@@ -368,17 +396,17 @@ bool Klass::is_method_holder_for(methodOop method) {
     array = mixin()->methods();
     for (int index = 1; index <= array->length(); index++) {
       assert(array->obj_at(index)->is_method(), "must be method");
-      if (methodOop(array->obj_at(index)) == m) return true;
+      if (methodOop(array->obj_at(index)) == m)
+        return true;
     }
   }
   return false;
 }
 
 klassOop Klass::lookup_method_holder_for(methodOop method) {
-  if (is_method_holder_for(method)) return as_klassOop();
-  return (superKlass() == nilObj)
-         ? NULL
-         : superKlass()->klass_part()->lookup_method_holder_for(method);
+  if (is_method_holder_for(method))
+    return as_klassOop();
+  return (superKlass() == nilObj) ? NULL : superKlass()->klass_part()->lookup_method_holder_for(method);
 }
 
 void Klass::flush_methods() {
@@ -404,11 +432,13 @@ char* Klass::delta_name() {
   symbolOop name = NULL;
   if (offset >= 0) {
     name = symbolOop(as_klassOop()->raw_at(offset));
-    if (!name->is_symbol()) name = NULL;
+    if (!name->is_symbol())
+      name = NULL;
   }
   if (name == NULL) {
     name = Universe::find_global_key_for(as_klassOop(), &meta);
-    if (!name) return NULL;
+    if (!name)
+      return NULL;
   }
 
   int length = name->length() + (meta ? 7 : 1);
@@ -417,7 +447,7 @@ char* Klass::delta_name() {
 
   if (meta)
     strcpy(toReturn + name->length(), " class");
-  toReturn[length-1] = '\0';
+  toReturn[length - 1] = '\0';
 
   return toReturn;
 }
@@ -427,15 +457,18 @@ void Klass::print_name_on(outputStream* st) {
   symbolOop name = NULL;
   if (offset >= 0) {
     name = symbolOop(as_klassOop()->raw_at(offset));
-    if (!name->is_symbol()) name = NULL;
+    if (!name->is_symbol())
+      name = NULL;
   }
-  if (name != NULL) name->print_symbol_on(st);
+  if (name != NULL)
+    name->print_symbol_on(st);
   else {
     bool meta;
     name = Universe::find_global_key_for(as_klassOop(), &meta);
     if (name) {
       name->print_symbol_on(st);
-      if (meta) st->print(" class");
+      if (meta)
+        st->print(" class");
     } else {
       st->print("??");
     }
@@ -460,21 +493,25 @@ void Klass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   fatal("should not call layout_iterate on Klass");
 }
 
-void Klass::oop_oop_iterate(oop obj, OopClosure *blk) {
+void Klass::oop_oop_iterate(oop obj, OopClosure* blk) {
   fatal("should not call oop_iterate on Klass");
 }
 
-void Klass::oop_print_on      (oop obj, outputStream* st) { fatal("should not call Klass::oop_print_on"); }
-void Klass::oop_print_value_on(oop obj, outputStream* st) { oop_print_on(obj, st); }
-void Klass::oop_short_print_on(oop obj, outputStream* st) { 
+void Klass::oop_print_on(oop obj, outputStream* st) {
+  fatal("should not call Klass::oop_print_on");
+}
+void Klass::oop_print_value_on(oop obj, outputStream* st) {
+  oop_print_on(obj, st);
+}
+void Klass::oop_short_print_on(oop obj, outputStream* st) {
   if (obj == trueObj) {
     st->print("true");
   } else if (obj == falseObj) {
     st->print("false");
   } else if (obj == nilObj) {
-     st->print("nil");
+    st->print("nil");
   } else {
-    oop_print_value_on(obj, st); 
+    oop_print_value_on(obj, st);
   }
 }
 
@@ -493,13 +530,16 @@ void Klass::bootstrap_klass_part_two(bootstrap* st) {
   st->read_oop((oop*)&_methods);
   st->read_oop((oop*)&_superKlass);
   st->read_oop((oop*)&_mixin);
-}  
+}
 
 oop Klass::oop_primitive_allocate(oop obj, bool allow_scavenge, bool tenured) {
-  return markSymbol(vmSymbols::not_klass()); }
+  return markSymbol(vmSymbols::not_klass());
+}
 
 oop Klass::oop_primitive_allocate_size(oop obj, int size) {
-  return markSymbol(vmSymbols::not_klass()); }
+  return markSymbol(vmSymbols::not_klass());
+}
 
 oop Klass::oop_shallow_copy(oop obj, bool tenured) {
-  return markSymbol(vmSymbols::not_oops()); }
+  return markSymbol(vmSymbols::not_oops());
+}

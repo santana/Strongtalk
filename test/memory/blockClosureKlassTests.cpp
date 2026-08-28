@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(BlockClosureKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(BlockClosureKlassTests) {
@@ -20,7 +20,7 @@ SETUP(BlockClosureKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(BlockClosureKlassTests){
+TEARDOWN(BlockClosureKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

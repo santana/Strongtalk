@@ -33,106 +33,120 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 #include "topIncludes/config.hpp"
 
-  typedef void (*intDoFn)(int i);
-  
-  // a pseudo-class -- int(this) actually holds the bits, so there's no
-  // allocation
-  class SimpleBitVector : public ValueObj {
-    int bits;
-   public:
-    SimpleBitVector(int b = 0) { bits = b; } 
+typedef void (*intDoFn)(int i);
 
-    SimpleBitVector allocate(int l) {
-      assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
-      return SimpleBitVector(addNth(bits, l));
-    }
+// a pseudo-class -- int(this) actually holds the bits, so there's no
+// allocation
+class SimpleBitVector : public ValueObj {
+  int bits;
 
-    SimpleBitVector deallocate(int l) {
-      assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
-      return SimpleBitVector(subNth(bits, l));
-    }
+public:
+  SimpleBitVector(int b = 0) { bits = b; }
 
-    bool isAllocated(int l) {
-      assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
-      return isSet(bits, l);
-    }
-    bool isEmpty() { return bits == 0; }
-  };
+  SimpleBitVector allocate(int l) {
+    assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
+    return SimpleBitVector(addNth(bits, l));
+  }
 
-  class BitVector:  public PrintableResourceObj {
-   protected:
-    int maxLength;		// max # bits
-    int length;			// number of bits, not words
-    int* bits;			// array containing the bits
-    
-    int  indexFromNumber(int i) { return i >> LogBitsPerWord; }
-    int offsetFromNumber(int i) { return lowerBits(i, LogBitsPerWord); }
-    
-    bool getBitInWord(int i, int o) { return isSet(bits[i], o); }
-    void setBitInWord(int i, int o) {       setNth(bits[i], o); }
-    void clearBitInWord(int i, int o) {   clearNth(bits[i], o); }
-    
-    int bitsLength(int l) { return indexFromNumber(l - 1) + 1; }
-    
-    int* createBitString(int l) {
-      int blen = bitsLength(l);
-      int* bs = NEW_RESOURCE_ARRAY( int, blen);
-      set_words(bs, blen, 0);
-      return bs; }
-    int* copyBitString(int len) {
-      assert(len >= maxLength, "can't shorten");
-      int blen = bitsLength(len);
-      int* bs = NEW_RESOURCE_ARRAY( int, blen);
-      int blength = bitsLength(maxLength);
-      copy_words(bits, bs, blength);
-      if (blength < blen) set_words(bs + blength, blen - blength, 0);
-      return bs; }
-    
-  public:
-    BitVector(int l) {
-      assert(l > 0, "should have some length");
-      length = maxLength = l; bits = createBitString(l); }
-    
-  protected:
-    BitVector(int l, int ml, int* bs) {
-      maxLength = ml; length = l; bits = bs; }
-    
-  public:
-    BitVector* copy(int len) {
-      return new BitVector(length, len, copyBitString(len)); }
-    
-    bool includes(int i) {
-      assert(this, "shouldn't be a null pointer");
-      assert(i >= 0 && i < length, "not in range");
-      bool b = getBitInWord(indexFromNumber(i), offsetFromNumber(i));
-      return b; }
-    void add(int i) {
-      assert(this, "shouldn't be a null pointer");
-      assert(i >= 0 && i < length, "not in range");
-      setBitInWord(indexFromNumber(i), offsetFromNumber(i)); }
-    void addFromTo(int first, int last);	// set bits [first..last]
-    void remove(int i) {
-      assert(this, "shouldn't be a null pointer");
-      assert(i >= 0 && i < length, "not in range");
-      clearBitInWord(indexFromNumber(i), offsetFromNumber(i)); }
-    void removeFromTo(int first, int last);	// clear bits [first..last]
+  SimpleBitVector deallocate(int l) {
+    assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
+    return SimpleBitVector(subNth(bits, l));
+  }
 
-    // union/intersect return true if receiver has changed
-    bool unionWith(BitVector* other);		// this |= other
-    bool intersectWith(BitVector* other);	// this &= other
-    bool isDisjointFrom(BitVector* other);	// (this & other) == {}
+  bool isAllocated(int l) {
+    assert(l >= 0 && l < BitsPerWord, "need longer bit vector");
+    return isSet(bits, l);
+  }
+  bool isEmpty() { return bits == 0; }
+};
 
-    void doForAllOnes(intDoFn f);  // call f for all 1 bits
+class BitVector : public PrintableResourceObj {
+protected:
+  int maxLength; // max # bits
+  int length; // number of bits, not words
+  int* bits; // array containing the bits
 
-    void setLength(int l) 	{ assert(l < maxLength, "too big"); length = l; }
-    void clear() 		{ set_words(bits, bitsLength(length), 0); }
-    
-    void print_short();
-    void print();
+  int indexFromNumber(int i) { return i >> LogBitsPerWord; }
+  int offsetFromNumber(int i) { return lowerBits(i, LogBitsPerWord); }
 
-    friend class LongRegisterMask;
-    friend int findFirstUnused(LongRegisterMask** strings, int len, int start);
-  };
-  
+  bool getBitInWord(int i, int o) { return isSet(bits[i], o); }
+  void setBitInWord(int i, int o) { setNth(bits[i], o); }
+  void clearBitInWord(int i, int o) { clearNth(bits[i], o); }
+
+  int bitsLength(int l) { return indexFromNumber(l - 1) + 1; }
+
+  int* createBitString(int l) {
+    int blen = bitsLength(l);
+    int* bs = NEW_RESOURCE_ARRAY(int, blen);
+    set_words(bs, blen, 0);
+    return bs;
+  }
+  int* copyBitString(int len) {
+    assert(len >= maxLength, "can't shorten");
+    int blen = bitsLength(len);
+    int* bs = NEW_RESOURCE_ARRAY(int, blen);
+    int blength = bitsLength(maxLength);
+    copy_words(bits, bs, blength);
+    if (blength < blen)
+      set_words(bs + blength, blen - blength, 0);
+    return bs;
+  }
+
+public:
+  BitVector(int l) {
+    assert(l > 0, "should have some length");
+    length = maxLength = l;
+    bits = createBitString(l);
+  }
+
+protected:
+  BitVector(int l, int ml, int* bs) {
+    maxLength = ml;
+    length = l;
+    bits = bs;
+  }
+
+public:
+  BitVector* copy(int len) { return new BitVector(length, len, copyBitString(len)); }
+
+  bool includes(int i) {
+    assert(this, "shouldn't be a null pointer");
+    assert(i >= 0 && i < length, "not in range");
+    bool b = getBitInWord(indexFromNumber(i), offsetFromNumber(i));
+    return b;
+  }
+  void add(int i) {
+    assert(this, "shouldn't be a null pointer");
+    assert(i >= 0 && i < length, "not in range");
+    setBitInWord(indexFromNumber(i), offsetFromNumber(i));
+  }
+  void addFromTo(int first, int last); // set bits [first..last]
+  void remove(int i) {
+    assert(this, "shouldn't be a null pointer");
+    assert(i >= 0 && i < length, "not in range");
+    clearBitInWord(indexFromNumber(i), offsetFromNumber(i));
+  }
+  void removeFromTo(int first, int last); // clear bits [first..last]
+
+  // union/intersect return true if receiver has changed
+  bool unionWith(BitVector* other); // this |= other
+  bool intersectWith(BitVector* other); // this &= other
+  bool isDisjointFrom(BitVector* other); // (this & other) == {}
+
+  void doForAllOnes(intDoFn f); // call f for all 1 bits
+
+  void setLength(int l) {
+    assert(l < maxLength, "too big");
+    length = l;
+  }
+  void clear() { set_words(bits, bitsLength(length), 0); }
+
+  void print_short();
+  void print();
+
+  friend class LongRegisterMask;
+  friend int findFirstUnused(LongRegisterMask** strings, int len, int start);
+};
+
 #endif // DELTA_COMPILER
 #endif // _BIT_VECTOR_HPP

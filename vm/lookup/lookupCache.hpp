@@ -31,40 +31,39 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Called when the inline cache fails or when a compile takes place.
 
 // %gc-note
-// When a garbage collect occurs the lookup cache has to be 
+// When a garbage collect occurs the lookup cache has to be
 // recomputed since the has value is dependent on the location
 // of symbols and klasses.
 
-class LookupResult: ValueObj {
- protected:
+class LookupResult : ValueObj {
+protected:
   oop _result; // methodOop or jumpTableEntry
 
- public:
+public:
   // Constructors
-  LookupResult()                 { clear();     }
+  LookupResult() { clear(); }
   LookupResult(methodOop method) { set(method); }
-  LookupResult(nmethod*  nm)     { set(nm);     }
+  LookupResult(nmethod* nm) { set(nm); }
 
   // Clears the result
   void clear() { _result = NULL; }
 
   // Test operations
-  bool is_empty()  const { return _result == NULL;   }
+  bool is_empty() const { return _result == NULL; }
   bool is_method() const { return _result->is_mem(); }
-  bool is_entry()  const { return !is_method();      }
-
+  bool is_entry() const { return !is_method(); }
 
   // Maching operations
   bool matches(methodOop m) const; // Checks whether the result is methodOop m.
   bool matches(nmethod* nm) const; // Checks whether the result is nmethod nm.
 
   // Fetch operations
-  oop             value()       const { return _result; }
-  methodOop       method()      const;
-  methodOop       method_or_null() const;
-  jumpTableEntry* entry()       const;
-  nmethod*        get_nmethod() const;
-  
+  oop value() const { return _result; }
+  methodOop method() const;
+  methodOop method_or_null() const;
+  jumpTableEntry* entry() const;
+  nmethod* get_nmethod() const;
+
   // Set operations
   void set(methodOop method) {
     assert(method->is_method(), "must be method");
@@ -80,15 +79,14 @@ class LookupResult: ValueObj {
   void print_short_on(outputStream* st) const;
 };
 
-
-const unsigned int primary_cache_size   = 16 * K;
-const unsigned int secondary_cache_size =  2 * K;
+const unsigned int primary_cache_size = 16 * K;
+const unsigned int secondary_cache_size = 2 * K;
 
 extern LookupResult interpreter_normal_lookup(klassOop receiver_klass, symbolOop selector);
 extern LookupResult interpreter_super_lookup(symbolOop selector);
 
 class lookupCache : AllStatic {
- private:
+private:
   static int primary_cache_address();
   static int secondary_cache_address();
 
@@ -103,7 +101,7 @@ class lookupCache : AllStatic {
   static LookupResult cache_miss_lookup(LookupKey* key, bool compile);
   static nmethod* compile_method(LookupKey* key, methodOop method);
 
- public:
+public:
   // Lookup probe into the lookup cache
   static LookupResult lookup_probe(LookupKey* key);
 
@@ -117,14 +115,14 @@ class lookupCache : AllStatic {
 
   // Lookup support for compiler
   static methodOop method_lookup(klassOop receiver_klass, symbolOop selector);
-  static methodOop compile_time_normal_lookup(klassOop receiver_klass, symbolOop selector);	// returns NULL if not found
-  static methodOop compile_time_super_lookup (klassOop receiver_klass, symbolOop selector);	// returns NULL if not found
+  static methodOop compile_time_normal_lookup(klassOop receiver_klass, symbolOop selector); // returns NULL if not found
+  static methodOop compile_time_super_lookup(klassOop receiver_klass, symbolOop selector); // returns NULL if not found
 
   // Lookup support for LookupKey
   static LookupResult lookup(LookupKey* key);
 
   // Lookup support for megamorphic sends (no super sends)
-  static oop normal_lookup(klassOop receiver_klass, symbolOop selector);			// returns {methodOop or jump table entry}
+  static oop normal_lookup(klassOop receiver_klass, symbolOop selector); // returns {methodOop or jump table entry}
 
   // Flushing
   static void flush(LookupKey* key);

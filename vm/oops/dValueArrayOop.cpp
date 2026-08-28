@@ -43,11 +43,9 @@ void doubleValueArrayOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_object(st);
 
   // Clear eventual padding area
-  raw_at_put(size()-1, smiOop_zero);
+  raw_at_put(size() - 1, smiOop_zero);
 
   st->read_oop(length_addr());
   for (int index = 1; index <= length(); index++)
     double_at_put(index, st->read_double());
 }
-
-

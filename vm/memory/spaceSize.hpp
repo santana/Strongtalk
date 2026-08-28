@@ -30,17 +30,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 class spaceSizes : ValueObj {
 public:
   // Objects
-  int reserved_object_size;  // reserved space for all objects
-  int eden_size;	     // size of eden
-  int surv_size;	     // size of form & to spaces
-  int old_size;		     // size of old space
+  int reserved_object_size; // reserved space for all objects
+  int eden_size; // size of eden
+  int surv_size; // size of form & to spaces
+  int old_size; // size of old space
 
   // compiled code
-  int reserved_codes_size;   // reserved space for nmethod zone
-  int code_size;	     // size of nmethod zone
-  int reserved_pic_heap_size;// reserved space for PIC zone
-  int pic_heap_size;         // size of pic_heap
-  int jump_table_size;	     // size of jump table
+  int reserved_codes_size; // reserved space for nmethod zone
+  int code_size; // size of nmethod zone
+  int reserved_pic_heap_size; // reserved space for PIC zone
+  int pic_heap_size; // size of pic_heap
+  int jump_table_size; // size of jump table
 
   // Reads debug variables for initial settings.
   void initialize();

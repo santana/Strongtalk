@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(DoubleKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(DoubleKlassTests) {
@@ -20,7 +20,7 @@ SETUP(DoubleKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(DoubleKlassTests){
+TEARDOWN(DoubleKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

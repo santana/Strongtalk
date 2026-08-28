@@ -33,43 +33,45 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Card size is 512 bytes
 // NB: Card size must be >= 512 because of the offset_array in oldspace
 
-const int card_shift = 9; 			// wired in to scavenge_contents
-const int card_size  = 1 << card_shift;
+const int card_shift = 9; // wired in to scavenge_contents
+const int card_size = 1 << card_shift;
 const int card_size_in_oops = card_size / oopSize;
 
-class rSet: public CHeapObj {
+class rSet : public CHeapObj {
   friend class oldSpace;
   friend class oldGeneration;
   friend class SetOopClosure;
 
- private:
-  char*    low_boundary; 	// duplicate of old_gen var so byte_for can be inlined
-  char*    high_boundary;
-  char     byte_map[1];  	// size is a lie
-  
-  // friend void oldSpace::switch_pointers_by_card(oop, oop);
-  char* byte_for(void *p) const { return (char*)&byte_map[(((unsigned long)p) >> card_shift) - (((unsigned long)low_boundary) >> card_shift)]; }
-//  char* byte_for(void *p) const { return (char*)&byte_map[int((char*)p - low_boundary) >> card_shift]; }
-  oop*  oop_for(char* p) const 	{ return (oop*)(low_boundary  +  ((p - byte_map) <<  card_shift)); }
+private:
+  char* low_boundary; // duplicate of old_gen var so byte_for can be inlined
+  char* high_boundary;
+  char byte_map[1]; // size is a lie
 
-  friend oop*  card_for(oop* p) { return (oop*)(intptr_t(p) & ~(card_size - 1)); }
-  
+  // friend void oldSpace::switch_pointers_by_card(oop, oop);
+  char* byte_for(void* p) const {
+    return (char*)&byte_map[(((unsigned long)p) >> card_shift) - (((unsigned long)low_boundary) >> card_shift)];
+  }
+  //  char* byte_for(void *p) const { return (char*)&byte_map[int((char*)p - low_boundary) >> card_shift]; }
+  oop* oop_for(char* p) const { return (oop*)(low_boundary + ((p - byte_map) << card_shift)); }
+
+  friend oop* card_for(oop* p) { return (oop*)(intptr_t(p) & ~(card_size - 1)); }
+
   inline char* byte_map_end() const;
- 
- public:
-  int byte_map_size() const 	{ return (high_boundary - low_boundary) / card_size; }
+
+public:
+  int byte_map_size() const { return (high_boundary - low_boundary) / card_size; }
   rSet();
   void* operator new(size_t size);
-  
+
   inline void clear();
-  char* byte_map_base() const	{ return byte_for(NULL); }
-  void record_store(void* p)    { *byte_for(p) = 0; }
-  bool is_dirty(void* p) const	{ return *byte_for(p) == 0; }
+  char* byte_map_base() const { return byte_for(NULL); }
+  void record_store(void* p) { *byte_for(p) = 0; }
+  bool is_dirty(void* p) const { return *byte_for(p) == 0; }
 
   // Tells is any card for obj is dirty
   bool is_object_dirty(memOop obj);
 
-  void  scavenge_contents(oldSpace* s);
+  void scavenge_contents(oldSpace* s);
   char* scavenge_contents(oldSpace* s, char* begin, char* limit);
   bool verify(bool postScavenge);
 
@@ -84,12 +86,12 @@ class rSet: public CHeapObj {
 
   // Operations used during garbage collection
   void set_size(memOop obj, int size);
-  int  get_size(memOop obj);
+  int get_size(memOop obj);
 
- private:
-  void fixup(char *start, char *end);
-  void clear(char *start, char *end);
-  rSet(rSet *old, char *start, char *end);
+private:
+  void fixup(char* start, char* end);
+  void clear(char* start, char* end);
+  rSet(rSet* old, char* start, char* end);
   bool has_page_dirty_objects(oldSpace* sp, char* page);
 };
 #endif // _RSET_HPP

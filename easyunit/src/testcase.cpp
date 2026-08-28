@@ -30,142 +30,116 @@ barthelemy@prologique.com
 
 using namespace easyunit;
 
-TestCase::TestCase(const SimpleString& name, TestResult *testResult)
-: name_(name), testResult_(testResult), testsCount_(0), failuresCount_(0), 
-successesCount_(0), tests_(0), nextTestCase_(0),
-errorsCount_(0),ran_(false)
-{
-}  
+TestCase::TestCase(const SimpleString& name, TestResult* testResult) :
+  name_(name), testResult_(testResult), testsCount_(0), failuresCount_(0), successesCount_(0), tests_(0),
+  nextTestCase_(0), errorsCount_(0), ran_(false) {}
 
-TestCase::~TestCase()
-{
+TestCase::~TestCase() {}
+
+void TestCase::addTest(Test* test) {
+  Test* tmp;
+
+  if (tests_ == 0) {
+    tests_ = test;
+    tests_->setNext(tests_);
+  } else {
+    tmp = tests_;
+    tests_ = test;
+    tests_->setNext(tmp->getNext());
+    tmp->setNext(tests_);
+  }
+
+  testsCount_++;
 }
 
-void TestCase::addTest(Test *test)
-{
-	Test *tmp;
-	
- 	if (tests_ == 0) {
-		tests_ = test;
-		tests_->setNext(tests_);
-	}
-	else {
-		tmp = tests_;
-		tests_ = test;
-		tests_->setNext(tmp->getNext());
-		tmp->setNext(tests_);
-	}
+Test* TestCase::getTests() const {
+  Test* test = tests_;
 
-	testsCount_++;
+  if (test != 0) {
+    test = test->getNext();
+  }
+
+  return test;
 }
 
-Test* TestCase::getTests() const
-{
-	Test *test = tests_;
-	
-	if (test != 0) {
-		test = test->getNext();
-	}
-	
-	return test;
+void TestCase::run() {
+  Test* test = tests_->getNext();
+
+  runTests(test);
+
+  ran_ = true;
+
+  testResult_->addResult(this);
 }
 
-void TestCase::run()
-{	
-	Test *test = tests_->getNext();
-	
-	runTests(test);
-	
-	ran_ = true;
-	
-	testResult_->addResult(this);
+int TestCase::getTestsCount() const {
+  return testsCount_;
 }
 
-int TestCase::getTestsCount() const
-{
-	return testsCount_;
-}
-
-int TestCase::getFailuresCount() const
-{
+int TestCase::getFailuresCount() const {
   return failuresCount_;
-}  
-		
-int TestCase::getSuccessesCount() const
-{
+}
+
+int TestCase::getSuccessesCount() const {
   return successesCount_;
-}  
-
-int TestCase::getErrorsCount() const
-{
-	return errorsCount_;
 }
 
-bool TestCase::ran() const
-{
-	return ran_;
+int TestCase::getErrorsCount() const {
+  return errorsCount_;
 }
 
-const SimpleString& TestCase::getName() const
-{
-	return name_;
+bool TestCase::ran() const {
+  return ran_;
 }
 
-void TestCase::updateCount(Test *test)
-{
+const SimpleString& TestCase::getName() const {
+  return name_;
+}
+
+void TestCase::updateCount(Test* test) {
   if (test->getErrorsCount() > 0) {
-  	errorsCount_++; 
+    errorsCount_++;
+  } else if (test->getFailuresCount() > 0) {
+    failuresCount_++;
+  } else {
+    successesCount_++;
   }
-  else if (test->getFailuresCount() > 0) {
-  	failuresCount_++;
-  }
-  else {
-  	successesCount_++;
-  }  
 }
 
-TestCase* TestCase::getNext() const
-{
-	return nextTestCase_;
-}  
-		
-void TestCase::setNext(TestCase *testCase)
-{
-	nextTestCase_ = testCase;
+TestCase* TestCase::getNext() const {
+  return nextTestCase_;
 }
 
-void TestCase::runTests(Test *test)
-{	
-	
-	for (int i = 0; i<testsCount_; i++) {		
-		test->setUp();
-		runTest(test);
-		test->tearDown();
-		updateCount(test);
-		test = test->getNext();
-	}
-	
+void TestCase::setNext(TestCase* testCase) {
+  nextTestCase_ = testCase;
+}
+
+void TestCase::runTests(Test* test) {
+
+  for (int i = 0; i < testsCount_; i++) {
+    test->setUp();
+    runTest(test);
+    test->tearDown();
+    updateCount(test);
+    test = test->getNext();
+  }
 }
 
 #ifdef ECPP
 
-void TestCase::runTest(Test *test)
-{
-	test->run();
+void TestCase::runTest(Test* test) {
+  test->run();
 }
 
 #else
 
-void TestCase::runTest(Test *test)
-{
-	try {
-		test->run();
-	}
-	catch (std::exception &e) {
-		test->addTestPartResult(new TestPartResult(test,"",-1,e.what(),error));
-	}
-	catch (...) {
-		test->addTestPartResult(new TestPartResult(test,"",-1,"Unexpected error occured",error));
-	}
+void TestCase::runTest(Test* test) {
+  try {
+    test->run();
+  } catch (std::exception& e) {
+    test->addTestPartResult(new TestPartResult(test, "", -1, e.what(), error));
+  } catch (...) {
+    test->addTestPartResult(new TestPartResult(test, "", -1, "Unexpected error occured", error));
+  }
 }
 #endif

@@ -33,42 +33,36 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #define _MAPPING_AARCH64_HPP
 
 // Register usage
-const int nofArgRegisters	= 8;			// max. number of arguments (excl. receiver) passed in registers
-const int nofLocalRegisters	= 3;			// max. number of temporaries allocated in registers
-
+const int nofArgRegisters = 8; // max. number of arguments (excl. receiver) passed in registers
+const int nofLocalRegisters = 3; // max. number of temporaries allocated in registers
 
 // Temporaries on the stack
-const int first_temp_offset	= -1;			// offset of first temporary relative to x29 if there are no floats
-const int first_float_offset	= -4;			// offset of first float relative to 8byte aligned x29 value (= base)
-
+const int first_temp_offset = -1; // offset of first temporary relative to x29 if there are no floats
+const int first_float_offset = -4; // offset of first float relative to 8byte aligned x29 value (= base)
 
 // calls
-const Register self_reg		= x0;			// incoming receiver location (in prologue of callee)
-const Register receiver_reg	= x0;			// outgoing receiver location (before call)
-const Register result_reg	= x0;			// outgoing result location (before exit)
-const Register frame_reg	= x29;			// activation frame pointer
-
+const Register self_reg = x0; // incoming receiver location (in prologue of callee)
+const Register receiver_reg = x0; // outgoing receiver location (before call)
+const Register result_reg = x0; // outgoing result location (before exit)
+const Register frame_reg = x29; // activation frame pointer
 
 // non-local returns
 // These must match the registers used by the interpreter's non-local return
 // code (see InterpreterGenerator::generate_nonlocal_return_code), which are
 // the x86-compatible names eax/edi/esi. Like on x86, they are caller-saved:
 // compiled code reloads them after calls into C as needed.
-const Register NLR_result_reg	= eax;			// result being returned
-const Register NLR_home_reg	= edi;			// frame ptr of home frame (stack)
-const Register NLR_homeId_reg	= esi;			// scope id of home scope (inlining)
-
+const Register NLR_result_reg = eax; // result being returned
+const Register NLR_home_reg = edi; // frame ptr of home frame (stack)
+const Register NLR_homeId_reg = esi; // scope id of home scope (inlining)
 
 // temporaries for local code generation (within one Node only)
 // note: these locations must not intersect with any location used
 // for non-local returns!
-const Register temp1		= x9;
-const Register temp2		= x10;
-const Register temp3		= x11;
-
+const Register temp1 = x9;
+const Register temp2 = x10;
+const Register temp3 = x11;
 
 // scratch vector register used by fload/fstore (no FPU stack on AArch64)
 const FloatRegister float_scratch_reg = d31;
-
 
 #endif // _MAPPING_AARCH64_HPP

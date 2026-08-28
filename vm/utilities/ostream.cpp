@@ -30,17 +30,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 outputStream::outputStream(int width) {
-  _width       = width;
-  _position    = 0;
+  _width = width;
+  _position = 0;
   _indentation = 0;
 }
 
 void outputStream::basic_print(const char* str) {
   int len = strlen(str);
-  for (int i = 0; i < len; i++) put(str[i]);
+  for (int i = 0; i < len; i++)
+    put(str[i]);
 }
 
-#define BUFLEN 2000   /* max size of output of individual print() methods */
+#define BUFLEN 2000 /* max size of output of individual print() methods */
 
 void outputStream::print(const char* format, ...) {
   char buffer[BUFLEN];
@@ -61,7 +62,7 @@ void outputStream::print_cr(const char* format, ...) {
   cr();
 }
 
-void outputStream::vprint(const char *format, va_list argptr) {
+void outputStream::vprint(const char* format, va_list argptr) {
   char buffer[BUFLEN];
   _vsnprintf(buffer, BUFLEN, format, argptr);
   basic_print(buffer);
@@ -73,7 +74,8 @@ void outputStream::vprint_cr(const char* format, va_list argptr) {
 }
 
 void outputStream::fill_to(int col) {
-  while (position() < col) sp();
+  while (position() < col)
+    sp();
 }
 
 void outputStream::put(char c) {
@@ -95,13 +97,14 @@ void outputStream::cr() {
 }
 
 void outputStream::indent() {
- while (_position < _indentation) sp();
+  while (_position < _indentation)
+    sp();
 }
 
 stringStream::stringStream(int initial_size) : outputStream() {
   buffer_length = initial_size;
-  buffer        = NEW_RESOURCE_ARRAY(char, buffer_length);
-  buffer_pos    = 0;  
+  buffer = NEW_RESOURCE_ARRAY(char, buffer_length);
+  buffer_pos = 0;
 }
 
 void stringStream::put(char c) {
@@ -126,7 +129,7 @@ char* stringStream::as_string() {
 byteArrayOop stringStream::as_byteArray() {
   byteArrayOop a = oopFactory::new_byteArray(buffer_pos);
   for (int i = 0; i < buffer_pos; i++) {
-    a->byte_at_put(i+1, buffer[i]);
+    a->byte_at_put(i + 1, buffer[i]);
   }
   return a;
 }
@@ -149,17 +152,18 @@ outputStream* _mystd;
 outputStream* _err;
 
 void ostream_init() {
-  if (_mystd) return;
-  _mystd = new(true) outputStream();   // NB: this stream is allocated on the C heap
+  if (_mystd)
+    return;
+  _mystd = new (true) outputStream(); // NB: this stream is allocated on the C heap
   _err = _mystd;
 }
 
 outputStream* getErr() {
-	ostream_init();
-	return _err;
+  ostream_init();
+  return _err;
 }
 
 outputStream* getStd() {
-	ostream_init();
-	return _mystd;
+  ostream_init();
+  return _mystd;
 }

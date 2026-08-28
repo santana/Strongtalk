@@ -28,8 +28,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // On the x86, the I cache is consistent after the next branch or call,
 // so don't need to do any flushing.
 
-  void flushICacheWord(void* addr) { }
+void flushICacheWord(void* addr) {}
 
-  void flushICacheRange(void* start, void* end) { }
+void flushICacheRange(void* start, void* end) {}
 
 #endif // DELTA_COMPILER

@@ -20,13 +20,12 @@ SETUP(InterpretedICTest) {
   fixture = objectClass->klass_part()->allocateObject();
 }
 
-TEARDOWN(InterpretedICTest){
+TEARDOWN(InterpretedICTest) {
   fixture = NULL;
   MarkSweep::collect();
 }
 
-TESTF(InterpretedICTest, noArgSendWithUnknownSelectorShouldInvokeDoesNotUnderstand)
-{
+TESTF(InterpretedICTest, noArgSendWithUnknownSelectorShouldInvokeDoesNotUnderstand) {
   BlockScavenge bs;
   symbolOop selector = oopFactory::new_symbol("dnuTrigger1", 11);
   symbolOop returnedSelector = oopFactory::new_symbol("quack", 5);
@@ -37,5 +36,6 @@ TESTF(InterpretedICTest, noArgSendWithUnknownSelectorShouldInvokeDoesNotUndersta
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
   ASSERT_EQUALS_M(fixture, memOop(result)->raw_at(2), "message should contain receiver");
-  ASSERT_EQUALS_M(reinterpret_cast<oop>(returnedSelector), memOop(result)->raw_at(3), "message should contain correct selector");
+  ASSERT_EQUALS_M(reinterpret_cast<oop>(returnedSelector), memOop(result)->raw_at(3),
+                  "message should contain correct selector");
 }

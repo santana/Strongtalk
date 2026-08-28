@@ -32,25 +32,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // with a MethodInterval.  (It's not in MethodInterval itself to avoid cluttering
 // it up.)
 // The main purpose of IntervalInfo is to exploit the method structure for optimization
-// (esp. to get a cheap "dominates" relationship).   
+// (esp. to get a cheap "dominates" relationship).
 // This code is only halfway finished -- not used yet.  -Urs 9/96
 
 class MethodInterval;
 
-class IntervalInfo: public PrintableResourceObj {
-  MethodInterval* _interval;	  // my interval
-  InlinedScope*   _scope;	  // my scope
+class IntervalInfo : public PrintableResourceObj {
+  MethodInterval* _interval; // my interval
+  InlinedScope* _scope; // my scope
 
- public:
+public:
   IntervalInfo(MethodInterval* interval, InlinedScope* scope);
 
-  MethodInterval* interval() const		{ return _interval; }
-  InlinedScope*   scope() const			{ return _scope; }
+  MethodInterval* interval() const { return _interval; }
+  InlinedScope* scope() const { return _scope; }
 
-  bool dominates(int bci, IntervalInfo* other, int otherBCI) const;	
-      // does bytecode (receiver, bci) dominate (other, otherBCI)?
-  bool isParentOf(IntervalInfo* other) const;	
-      // is receiver a parent of other?
+  bool dominates(int bci, IntervalInfo* other, int otherBCI) const;
+  // does bytecode (receiver, bci) dominate (other, otherBCI)?
+  bool isParentOf(IntervalInfo* other) const;
+  // is receiver a parent of other?
 
   void print();
 };

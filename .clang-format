@@ -1,0 +1,128 @@
+# clang-format configuration for the Strongtalk VM (C++17).
+#
+# Profiled against the existing sources so a `clang-format -i` pass stays
+# close to the current style instead of churning the whole tree:
+#   - 2-space indentation (dominant; some 4-space legacy left untouched)
+#   - K&R braces (brace follows the code on the same line)
+#   - left-aligned pointers (Type* name)
+#   - case labels indented one level inside the switch
+#   - ~80-100 column target
+#
+# NOTE: this codebase uses lots of hand-aligned tables, continuation
+# indents and aligned trailing comments.  clang-format cannot reproduce
+# every one of those exactly, so expect some manual cleanup after a pass.
+# The switches below are tuned to keep that churn as small as possible.
+
+BasedOnStyle: LLVM
+
+Language: Cpp
+
+# --- Indentation (2-space, spaces not tabs) ---
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
+ContinuationIndentWidth: 2
+IndentCaseLabels: true
+IndentPPDirectives: None
+IndentRequiresClause: true
+
+# Access specifiers sit at the same column as the class name (col 0 while
+# the body is indented 2), so shift them out by the indentation width.
+AccessModifierOffset: -2
+IndentAccessModifiers: false
+
+# --- Braces: K&R (Attach) ---
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortEnumsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Empty
+AllowShortCompoundRequirementOnASingleLine: true
+
+# --- Pointers / references: left-aligned ---
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+DerivePointerAlignment: false
+
+# --- Function signatures / arguments ---
+BinPackArguments: true
+BinPackParameters: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: false
+AlignConsecutiveBitFields: false
+AlignTrailingComments: false
+AlignEscapedNewlines: Right
+AlignOperands: Align
+AlignArrayOfStructures: None
+
+# --- Line width ---
+# 120 is a compromise: the tree's "clean" lines cluster at ~80, but many
+# legacy factory signatures are left unwrapped well past 100.  At 120 those
+# stay intact while over-long lines still get wrapped.
+ColumnLimit: 120
+PenaltyBreakAssignment: 4
+
+# --- Includes: do NOT sort ---
+# The include order here is hand-maintained and sits on top of several
+# deliberate circular-include guards (universe.hpp, generation.inline.hpp,
+# etc.).  Reordering includes can break compilation.
+SortIncludes: Never
+SortUsingDeclarations: false
+
+# --- Constructors / member init ---
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerIndentWidth: 2
+PackConstructorInitializers: BinPack
+
+# --- Namespaces ---
+# The code is not use-namespace; retain any existing ones without touching
+# their content.
+NamespaceIndentation: None
+FixNamespaceComments: false
+
+# --- Comments ---
+# Do NOT reflow comments: this tree carries a lot of aligned trailing comments,
+# ASCII-art, and legal/license headers that must be preserved verbatim.
+ReflowComments: false
+SpacesBeforeTrailingComments: 1
+CommentPragmas: "^ IWYU pragma:|^LINT|^FIXME|^TODO|format: off|clang-format off"
+
+# --- Spaces ---
+# Every value below matches the LLVM canonical defaults; kept explicit so the
+# style is self-documenting. No churn results (value-neutral vs. LLVM).
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterOperatorKeyword: false
+SpaceAfterTemplateKeyword: true
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeEnumUnderlyingTypeColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBraces: Never
+SpacesInAngles: Never
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+
+Standard: c++17
+
+# --- Line endings ---
+# Normalize to LF. The original Strongtalk tree shipped some files with
+# CRLF; pinning this prevents clang-format from silently reproducing them.
+# (Without it, the default DeriveLineEnding preserves whichever dominant
+# ending the input file already has.)
+LineEnding: LF
+DeriveLineEnding: false
+
+# Legacy 4-space sections and hand-aligned cascades cannot be matched
+# perfectly; run --lines sparingly or review the diff when applying.

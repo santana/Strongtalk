@@ -24,20 +24,21 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 #include "utilities/growableArray.hpp"
 
-class HCodeBuffer: public ResourceObj {
-  GrowableArray<uintptr_t> *_bytes;
-  GrowableArray<oop> *_oops;
+class HCodeBuffer : public ResourceObj {
+  GrowableArray<uintptr_t>* _bytes;
+  GrowableArray<oop>* _oops;
   void align();
   bool isAligned();
+
 public:
   HCodeBuffer() {
     _bytes = new GrowableArray<uintptr_t>();
-    _oops  = new GrowableArray<oop>();
+    _oops = new GrowableArray<oop>();
   }
   void pushByte(unsigned char op);
   void pushOop(oop arg);
-  int  byteLength() { return _bytes->length(); }
-  int  oopLength()  { return _oops->length(); }
+  int byteLength() { return _bytes->length(); }
+  int oopLength() { return _oops->length(); }
   byteArrayOop bytes();
   objArrayOop oops();
 };

@@ -25,34 +25,38 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "code/zoneHeap.hpp"
 
-class HeapChunk : public ValueObj {	// a heap chunk is a consecutive sequence of blocks
- protected:
-  HeapChunk* _next, *_prev;  // doubly-linked ring
-  void initialize() { _next = _prev = this; size = 0; }
- public:
-  int size;	// size in blocks (only for heterogenuous list)
-  
+class HeapChunk : public ValueObj { // a heap chunk is a consecutive sequence of blocks
+protected:
+  HeapChunk *_next, *_prev; // doubly-linked ring
+  void initialize() {
+    _next = _prev = this;
+    size = 0;
+  }
+
+public:
+  int size; // size in blocks (only for heterogenuous list)
+
   HeapChunk() { initialize(); }
 
   HeapChunk* next() const { return _next; }
   HeapChunk* prev() const { return _prev; }
 
-  void insert(HeapChunk* other) { 
+  void insert(HeapChunk* other) {
     other->_next = _next;
     _next->_prev = other;
     _next = other;
-    other->_prev = this; 
+    other->_prev = this;
   }
 
   void remove() {
     _next->_prev = _prev;
     _prev->_next = _next;
-    initialize(); 
+    initialize();
   }
 };
 
-class FreeList: private HeapChunk {
- public:
+class FreeList : private HeapChunk {
+public:
   void clear() { initialize(); }
 
   HeapChunk* anchor() const { return (HeapChunk*)this; }
@@ -63,15 +67,18 @@ class FreeList: private HeapChunk {
   int length() const;
 };
 
-
 enum chunkState {
-  ZeroDistance = 0, MaxDistance = 128,
-  unused = 128, unusedOvfl = 190,
-  used = 192, usedOvfl = 254,
-  invalid = 255};
+  ZeroDistance = 0,
+  MaxDistance = 128,
+  unused = 128,
+  unusedOvfl = 190,
+  used = 192,
+  usedOvfl = 254,
+  invalid = 255
+};
 
-# define MaxDistLog    7  /* log2(MaxDistance) */
-# define maxOneByteLen (usedOvfl - used)
+#define MaxDistLog 7 /* log2(MaxDistance) */
+#define maxOneByteLen (usedOvfl - used)
 
 // format of chunks in free map: first & last byte hold chunk size
 // unused..unusedOvfl-1:unused, length n+1
@@ -86,33 +93,36 @@ const int minHeaderSize = 1;
 const int maxHeaderSize = 4;
 
 class ChunkKlass;
-inline ChunkKlass* asChunkKlass(u_char* c) 	{ return (ChunkKlass*)c; }
+inline ChunkKlass* asChunkKlass(u_char* c) {
+  return (ChunkKlass*)c;
+}
 
 class ChunkKlass {
-  u_char c(int which) 		{ return ((u_char*)this)[which]; }
-  u_char n(int which) 		{ return c(which) - unused; }
- public:
-  ChunkKlass() 				{ fatal("shouldn't create"); }
-  u_char* asByte()			{ return (u_char*)this; }
+  u_char c(int which) { return ((u_char*)this)[which]; }
+  u_char n(int which) { return c(which) - unused; }
+
+public:
+  ChunkKlass() { fatal("shouldn't create"); }
+  u_char* asByte() { return (u_char*)this; }
   void markSize(int nChunks, chunkState s);
-  void markUsed(int nChunks)		{ markSize(nChunks, used); }
-  void markUnused(int nChunks)	{ markSize(nChunks, unused); }
+  void markUsed(int nChunks) { markSize(nChunks, used); }
+  void markUnused(int nChunks) { markSize(nChunks, unused); }
   ChunkKlass* findStart(ChunkKlass* mapStart, ChunkKlass* mapEnd);
-  
+
   bool verify();
   void print();
   bool isValid();
-  void invalidate() 			{ asByte()[0] = invalid; }
-  
-  chunkState state() 			{ return chunkState(c(0)); }
-  bool isUsed()				{ return state() >= used; }
-  bool isUnused()			{ return ! isUsed(); }
-  int headerSize() {		// size of header in bytes
-    int ovfl = isUsed() ? usedOvfl: unusedOvfl;
+  void invalidate() { asByte()[0] = invalid; }
+
+  chunkState state() { return chunkState(c(0)); }
+  bool isUsed() { return state() >= used; }
+  bool isUnused() { return !isUsed(); }
+  int headerSize() { // size of header in bytes
+    int ovfl = isUsed() ? usedOvfl : unusedOvfl;
     return c(0) == ovfl ? maxHeaderSize : minHeaderSize;
   }
-  int size() {		// size of this block
-    int ovfl = isUsed() ? usedOvfl: unusedOvfl;
+  int size() { // size of this block
+    int ovfl = isUsed() ? usedOvfl : unusedOvfl;
     int len;
     assert(c(0) != invalid && c(0) >= MaxDistance, "invalid chunk");
     if (c(0) != ovfl) {
@@ -124,10 +134,10 @@ class ChunkKlass {
     return len;
   }
   bool contains(u_char* p) { return asByte() <= p && p < asByte() + size(); }
-  ChunkKlass*  next() { return asChunkKlass(asByte()+size()); }
-  ChunkKlass*  prev() {
+  ChunkKlass* next() { return asChunkKlass(asByte() + size()); }
+  ChunkKlass* prev() {
     ChunkKlass* p = asChunkKlass(asByte() - 1);
-    int ovfl = p->isUsed() ? usedOvfl: unusedOvfl;
+    int ovfl = p->isUsed() ? usedOvfl : unusedOvfl;
     int len;
     if (c(-1) != ovfl) {
       len = p->size();
@@ -146,32 +156,36 @@ void ChunkKlass::markSize(int nChunks, chunkState s) {
   if (nChunks < maxOneByteLen) {
     p[0] = e[0] = s + nChunks - 1;
   } else {
-    assert(nChunks < (1<<(3*MaxDistLog)), "chunk too large");
+    assert(nChunks < (1 << (3 * MaxDistLog)), "chunk too large");
     unsigned mask = nthMask(MaxDistLog);
     p[0] = e[0] = (s == used) ? usedOvfl : unusedOvfl;
-    p[1] = e[-3] = unused +  (nChunks >> (2*MaxDistLog));
-    p[2] = e[-2] = unused + ((nChunks >>    MaxDistLog) & mask);
-    p[3] = e[-1] = unused + ( nChunks 		        & mask);
+    p[1] = e[-3] = unused + (nChunks >> (2 * MaxDistLog));
+    p[2] = e[-2] = unused + ((nChunks >> MaxDistLog) & mask);
+    p[3] = e[-1] = unused + (nChunks & mask);
   }
   assert(size() == nChunks, "incorrect size encoding");
   // mark distance for used blocks
   if (s == unused) {
-    // don't mark unused blocks - not necessary, and would be a performance 
+    // don't mark unused blocks - not necessary, and would be a performance
     // bug (start: *huge* free block, shrinks with every alloc -> quadratic)
     // however, the first distance byte must be correct (for findStart)
-    if (nChunks > 2 * minHeaderSize) p[headerSize()] = headerSize();
+    if (nChunks > 2 * minHeaderSize)
+      p[headerSize()] = headerSize();
   } else {
     if (nChunks < maxOneByteLen) {
       assert(maxOneByteLen <= MaxDistance, "oops!");
-      for (int i = minHeaderSize; i < nChunks - minHeaderSize; i++) p[i] = i;
+      for (int i = minHeaderSize; i < nChunks - minHeaderSize; i++)
+        p[i] = i;
     } else {
       int max = min(nChunks - 4, MaxDistance);
       int i;
-      for (i = maxHeaderSize; i < max; i++) p[i] = i;
+      for (i = maxHeaderSize; i < max; i++)
+        p[i] = i;
       // fill rest with large distance values (don't use MaxDistance - 1 because
       // the elems MaxDistance..MaxDistance+maxHeaderSize-1 would point *into*
       // the header)
-      for ( ; i < nChunks - maxHeaderSize; i++) p[i] = MaxDistance - maxHeaderSize;
+      for (; i < nChunks - maxHeaderSize; i++)
+        p[i] = MaxDistance - maxHeaderSize;
     }
   }
 }
@@ -180,11 +194,12 @@ ChunkKlass* ChunkKlass::findStart(ChunkKlass* mapStart, ChunkKlass* mapEnd) {
   // this points into the middle of a chunk; return start of chunk
   u_char* p = asByte();
   u_char* start = mapStart->asByte();
-  u_char* end   = mapEnd  ->asByte();
+  u_char* end = mapEnd->asByte();
   ChunkKlass* m;
   if (*p < MaxDistance) {
     // we're outside the header, so just walk down the trail
-    while (*p < MaxDistance) p -= *p;
+    while (*p < MaxDistance)
+      p -= *p;
     assert(p >= start, "not found");
     m = asChunkKlass(p);
   } else {
@@ -192,14 +207,17 @@ ChunkKlass* ChunkKlass::findStart(ChunkKlass* mapStart, ChunkKlass* mapEnd) {
     // first walk up to first non-header byte
     // (note that first distance byte of unused blocks is correct, but
     // the others aren't)
-    while (*p >= MaxDistance && p < end) p++;
+    while (*p >= MaxDistance && p < end)
+      p++;
     if (p < end) {
       // find start of this block
-      while (*p < MaxDistance) p -= *p;
+      while (*p < MaxDistance)
+        p -= *p;
       assert(p >= start, "not found");
     }
     m = asChunkKlass(p);
-    while (! m->contains(this->asByte())) m = m->prev();
+    while (!m->contains(this->asByte()))
+      m = m->prev();
   }
   assert(m->verify(), "invalid chunk map");
   assert(m->contains(this->asByte()), "wrong chunk");
@@ -213,9 +231,8 @@ bool ChunkKlass::isValid() {
     ok = false;
   } else {
     u_char* e = next()->asByte() - 1;
-    int ovfl = isUsed() ? usedOvfl: unusedOvfl;
-    ok = p[0] == e[0] &&
-        (p[0] != ovfl || p[1] == e[-3] && p[2] == e[-2] && p[3] == e[-1]);
+    int ovfl = isUsed() ? usedOvfl : unusedOvfl;
+    ok = p[0] == e[0] && (p[0] != ovfl || p[1] == e[-3] && p[2] == e[-2] && p[3] == e[-1]);
   }
   return ok;
 }
@@ -225,7 +242,7 @@ void ChunkKlass::print() {
 }
 
 bool ChunkKlass::verify() {
-  if (! isValid()) {
+  if (!isValid()) {
     error("inconsistent chunk map %#lx", this);
     return false;
   }
@@ -239,7 +256,7 @@ void FreeList::append(HeapChunk* h) {
 void FreeList::remove(HeapChunk* h) {
   h->remove();
 }
-  
+
 HeapChunk* FreeList::get() {
   if (isEmpty()) {
     return NULL;
@@ -247,32 +264,37 @@ HeapChunk* FreeList::get() {
     HeapChunk* res = anchor()->next();
     remove(res);
     return res;
-  } 
+  }
 }
 
 int FreeList::length() const {
   int i = 0;
   HeapChunk* f = anchor();
-  for (HeapChunk* p = f->next(); p != f; p = p->next()) i++;
+  for (HeapChunk* p = f->next(); p != f; p = p->next())
+    i++;
   return i;
 }
 
 Heap::Heap(int s, int bs) {
   assert(s % bs == 0, "size not a multiple of blockSize");
   size = s;
-  if (bs & (bs - 1)) fatal1("heap block size (%ld) isn't power of 2", bs);
+  if (bs & (bs - 1))
+    fatal1("heap block size (%ld) isn't power of 2", bs);
   blockSize = bs;
   log2BS = 0;
-  while (bs > 1) { bs >>= 1; log2BS++; }
+  while (bs > 1) {
+    bs >>= 1;
+    log2BS++;
+  }
   nfree = 30;
-//  _base = AllocateHeap(size + blockSize, "zone");
+  //  _base = AllocateHeap(size + blockSize, "zone");
   _base = os::exec_memory(size + blockSize); //, "zone");
   base = (char*)((intptr_t(_base) + blockSize - 1) / blockSize * blockSize);
   assert(intptr_t(base) % blockSize == 0, "base not aligned to blockSize");
   heapKlass = (ChunkKlass*)(AllocateHeap(mapSize() + 2, "zone free map") + 1);
   // + 2 for sentinels
-  freeList = NEW_C_HEAP_ARRAY( FreeList, nfree);
-  bigList  = NEW_C_HEAP_OBJ(FreeList);
+  freeList = NEW_C_HEAP_ARRAY(FreeList, nfree);
+  bigList = NEW_C_HEAP_OBJ(FreeList);
   newHeap = NULL;
   clear();
 }
@@ -280,18 +302,18 @@ Heap::Heap(int s, int bs) {
 void Heap::clear() {
   // initialize the statistics
   bytesUsed = 0;
-  total     = 0;
-  ifrag     = 0;
+  total = 0;
+  ifrag = 0;
 
   // initialize the free lists
-  for(int i = 0; i < nfree; i++) {
+  for (int i = 0; i < nfree; i++) {
     freeList[i].clear();
   }
   bigList->clear();
 
   // initialize the map
-  heapKlass->markUnused(mapSize());		      // mark everything as unused
-  heapEnd()->markUsed(1);			      // start sentinel
+  heapKlass->markUnused(mapSize()); // mark everything as unused
+  heapEnd()->markUsed(1); // start sentinel
   asChunkKlass(heapKlass->asByte() - 1)->markUsed(1); // stop sentinel
 
   // add whole chunk to free list
@@ -302,37 +324,36 @@ void Heap::clear() {
   lastCombine = heapKlass;
 }
 
-bool  Heap::contains(void* p) const {
-  return between(p, base,     base + capacity()) || 
-         between(p, freeList, freeList + nfree); 
+bool Heap::contains(void* p) const {
+  return between(p, base, base + capacity()) || between(p, freeList, freeList + nfree);
 }
 
 Heap::~Heap() {
-# ifdef ASSERT
-    set_oops((oop*)base, capacity() / oopSize, NULL);
-# endif
+#ifdef ASSERT
+  set_oops((oop*)base, capacity() / oopSize, NULL);
+#endif
   free(_base);
-  free(heapKlass - 1);	    // -1 to get rid of sentinel
+  free(heapKlass - 1); // -1 to get rid of sentinel
   free(freeList);
   free(bigList);
 }
 
 void Heap::removeFromFreeList(ChunkKlass* m) {
-# ifdef ASSERT
-    m->verify();
-# endif
+#ifdef ASSERT
+  m->verify();
+#endif
   HeapChunk* p = (HeapChunk*)blockAddr(m);
   p->remove();
 }
 
 bool Heap::addToFreeList(ChunkKlass* m) {
-# ifdef ASSERT
-    m->verify();
-# endif
+#ifdef ASSERT
+  m->verify();
+#endif
   HeapChunk* p = (HeapChunk*)blockAddr(m);
   int sz = m->size();
   if (sz <= nfree) {
-    freeList[sz-1].append(p);
+    freeList[sz - 1].append(p);
     return false;
   } else {
     bigList->append(p);
@@ -348,28 +369,30 @@ void* Heap::allocFromLists(int wantedBytes) {
   int blocks = wantedBlocks - 1;
   void* p = NULL;
   while (!p && ++blocks <= nfree) {
-    p = freeList[blocks-1].get();
+    p = freeList[blocks - 1].get();
   }
-  if (! p) {
+  if (!p) {
     HeapChunk* f = bigList->anchor();
     HeapChunk* c;
-    for (c = f->next(); c != f && c->size < wantedBlocks; c = c->next());
+    for (c = f->next(); c != f && c->size < wantedBlocks; c = c->next())
+      ;
     if (c == f) {
-      if (! combineMode && combineAll() >= wantedBlocks)
-	return allocFromLists(wantedBytes);
+      if (!combineMode && combineAll() >= wantedBlocks)
+        return allocFromLists(wantedBytes);
     } else {
       p = (void*)c;
       blocks = c->size;
       bigList->remove(c);
     }
-  } 
+  }
   if (p) {
     ChunkKlass* m = mapAddr(p);
     assert(m->size() == blocks, "inconsistent sizes");
     m->markUsed(wantedBlocks);
     if (blocks > wantedBlocks) {
 #ifdef LOG_LOTSA_STUFF
-      if (!bootstrapping) LOG_EVENT("zoneHeap: splitting allocated block");
+      if (!bootstrapping)
+        LOG_EVENT("zoneHeap: splitting allocated block");
 #endif
       int freeChunkSize = blocks - wantedBlocks;
       ChunkKlass* freeChunk = m->next();
@@ -383,7 +406,7 @@ void* Heap::allocFromLists(int wantedBytes) {
 void* Heap::allocate(int wantedBytes) {
   assert(wantedBytes > 0, "Heap::allocate: size <= 0");
   int rounded = ((wantedBytes + blockSize - 1) >> log2BS) << log2BS;
-  
+
   void* p = allocFromLists(rounded);
   if (p) {
     bytesUsed += rounded;
@@ -396,7 +419,6 @@ void* Heap::allocate(int wantedBytes) {
   return p;
 }
 
-
 void Heap::deallocate(void* p, int bytes) {
   ChunkKlass* m = mapAddr(p);
   int myChunkSize = m->size();
@@ -406,47 +428,51 @@ void Heap::deallocate(void* p, int bytes) {
   m->markUnused(myChunkSize);
   bool big = addToFreeList(m);
   HeapChunk* c = (HeapChunk*)p;
-  if (combineMode || big) combine(c);	// always keep bigList combined
+  if (combineMode || big)
+    combine(c); // always keep bigList combined
 
   if (VerifyZoneOften) {
     verify();
   }
 }
 
-# define INC(p, n)   p = asChunkKlass(p->asByte() + n)
+#define INC(p, n) p = asChunkKlass(p->asByte() + n)
 
 char* Heap::compact(void move(char* from, char* to, int nbytes)) {
-  if (usedBytes() == capacity()) return NULL;
-  
+  if (usedBytes() == capacity())
+    return NULL;
+
   ChunkKlass* m = heapKlass;
   ChunkKlass* end = heapEnd();
-  
+
   ChunkKlass* freeChunk = m;
-  while (freeChunk->isUsed()) {				// find 1st unused blk
+  while (freeChunk->isUsed()) { // find 1st unused blk
     freeChunk = freeChunk->next();
   }
   ChunkKlass* usedChunk = freeChunk;
-  
-  for(;;) {
-    while (usedChunk->isUnused()) usedChunk = usedChunk->next();
-    if (usedChunk == end) break;
+
+  for (;;) {
+    while (usedChunk->isUnused())
+      usedChunk = usedChunk->next();
+    if (usedChunk == end)
+      break;
     int uSize = usedChunk->size();
     assert(freeChunk < usedChunk, "compaction bug");
     move(blockAddr(usedChunk), blockAddr(freeChunk), uSize << log2BS);
-    freeChunk->markUsed(uSize);	  // must come *after* move
+    freeChunk->markUsed(uSize); // must come *after* move
     INC(freeChunk, uSize);
     INC(usedChunk, uSize);
   }
-  for(int i = 0; i < nfree; i++) freeList[i].clear();
+  for (int i = 0; i < nfree; i++)
+    freeList[i].clear();
   bigList->clear();
   int freeBlocks = end->asByte() - freeChunk->asByte();
   freeChunk->markUnused(freeBlocks);
   addToFreeList(freeChunk);
-  assert(freeBlocks * blockSize == capacity() - usedBytes(),
-	 "usage info inconsistent");
+  assert(freeBlocks * blockSize == capacity() - usedBytes(), "usage info inconsistent");
   lastCombine = heapKlass;
   return blockAddr(freeChunk);
-}  
+}
 
 int Heap::combine(HeapChunk*& c) {
   // Try to combine c with its neighbors; on return, c will point to
@@ -459,21 +485,21 @@ int Heap::combine(HeapChunk*& c) {
   if (cm == heapKlass) {
     cm1 = cm;
   } else {
-    cm1 = cm->prev();			// try to combine with prev
-    while (cm1->isUnused()) {		// will terminate because of sentinel
+    cm1 = cm->prev(); // try to combine with prev
+    while (cm1->isUnused()) { // will terminate because of sentinel
       ChunkKlass* free = cm1;
       cm1 = free->prev();
       removeFromFreeList(free);
-      free->invalidate();		// make sure it doesn't look valid
+      free->invalidate(); // make sure it doesn't look valid
     }
     cm1 = cm1->next();
   }
-  ChunkKlass* cm2 = cmnext;		// try to combine with next
-  while (cm2->isUnused()) {		// will terminate because of sentinel
+  ChunkKlass* cm2 = cmnext; // try to combine with next
+  while (cm2->isUnused()) { // will terminate because of sentinel
     ChunkKlass* free = cm2;
     cm2 = cm2->next();
     removeFromFreeList(free);
-    free->invalidate();			// make sure it doesn't look valid
+    free->invalidate(); // make sure it doesn't look valid
   }
 
   // The combined block will move to a new free list; make sure that c
@@ -482,7 +508,7 @@ int Heap::combine(HeapChunk*& c) {
 
   if (cm1 != cm || cm2 != cmnext) {
     removeFromFreeList(cm);
-    cm->invalidate();	
+    cm->invalidate();
     cm1->markUnused(cm2->asByte() - cm1->asByte());
     addToFreeList(cm1);
     lastCombine = cm1;
@@ -496,11 +522,13 @@ int Heap::combineAll() {
   int biggest = 0;
   for (int i = 0; i < nfree; i++) {
     HeapChunk* f = freeList[i].anchor();
-    for (HeapChunk* c = f->next(); c != f; ) {
+    for (HeapChunk* c = f->next(); c != f;) {
       HeapChunk* c1 = c;
       int sz = combine(c);
-      if (c1 == c) fatal("infinite loop detected while combining blocks");
-      if (sz > biggest) biggest = sz;
+      if (c1 == c)
+        fatal("infinite loop detected while combining blocks");
+      if (sz > biggest)
+        biggest = sz;
     }
   }
   combineMode = true;
@@ -511,7 +539,8 @@ int Heap::combineAll() {
 }
 
 void* Heap::firstUsed() const {
-  if (usedBytes() == 0) return NULL;
+  if (usedBytes() == 0)
+    return NULL;
   if (heapKlass->isUsed()) {
     return base;
   } else {
@@ -525,7 +554,8 @@ void* Heap::nextUsed(void* p) const {
   if (m->isValid() && !lastCombine->contains(m->asByte())) {
     if (VerifyZoneOften) {
       ChunkKlass* m1;
-      for (m1 = heapKlass; m1 < m; m1 = m1->next()) ;
+      for (m1 = heapKlass; m1 < m; m1 = m1->next())
+        ;
       assert(m1 == m, "m isn't a valid chunk");
     }
     assert(m->verify(), "valid chunk doesn't verify");
@@ -533,26 +563,28 @@ void* Heap::nextUsed(void* p) const {
   } else {
     // m is pointing into the middle of a block (because of block
     // combination)
-#   ifdef ASSERT
-      ChunkKlass* m1;
-      for (m1 = heapKlass; m1 < lastCombine; m1 = m1->next()) ;
-      assert(m1 == lastCombine, "lastCombine not found");
-      assert(lastCombine->verify(), "invalid lastCombine");
-#   endif
+#ifdef ASSERT
+    ChunkKlass* m1;
+    for (m1 = heapKlass; m1 < lastCombine; m1 = m1->next())
+      ;
+    assert(m1 == lastCombine, "lastCombine not found");
+    assert(lastCombine->verify(), "invalid lastCombine");
+#endif
     ChunkKlass* n;
-    for (n = lastCombine; n <= m; n = n->next()) ;
+    for (n = lastCombine; n <= m; n = n->next())
+      ;
     m = n;
     assert(m->isValid(), "something's wrong");
   }
-  
+
   while (m->isUnused()) {
     m = m->next();
-  } 
-  
+  }
+
   assert(m->isValid(), "something's wrong");
   assert(m <= heapEnd(), "past end of heap");
   if (m == heapEnd()) {
-    return NULL;					// was last one
+    return NULL; // was last one
   } else {
     void* next = blockAddr(m);
     assert(next > p, "must be monotonic");
@@ -565,9 +597,9 @@ void* Heap::findStartOfBlock(void* start) const {
   // used a lot -- help the optimizer a bit
   if (newHeap && newHeap->contains(start))
     return newHeap->findStartOfBlock(start);
-  
-  const int  blockSz = blockSize;	
-  start = (void*)(intptr_t(start) & ~(blockSz-1));
+
+  const int blockSz = blockSize;
+  start = (void*)(intptr_t(start) & ~(blockSz - 1));
   assert(contains(start), "start not in this zone");
   ChunkKlass* m = mapAddr(start)->findStart(heapKlass, heapEnd());
   return blockAddr(m);
@@ -585,10 +617,11 @@ void Heap::verify() const {
   ChunkKlass* begin = asChunkKlass(heapKlass->asByte() - 1);
   if (begin->isUnused() || begin->size() != 1)
     error("wrong begin-sentinel %d in heap %#lx", *(u_char*)begin, this);
-  
+
   // verify map structure
   while (m < end) {
-    if (!m->verify()) lprintf(" in heap %#lx", this);
+    if (!m->verify())
+      lprintf(" in heap %#lx", this);
     m = m->next();
   }
   // verify free lists
@@ -597,52 +630,48 @@ void Heap::verify() const {
     int j = 0;
     int lastSize = 0;
     HeapChunk* f = freeList[i].anchor();
-    for(HeapChunk* h = f->next(); h != f; h = h->next(), j++) {
+    for (HeapChunk* h = f->next(); h != f; h = h->next(), j++) {
       ChunkKlass* p = mapAddr(h);
       if (!p->verify())
-	lprintf(" in free list %ld (elem %ld) of heap %#lx", i, j, this);
+        lprintf(" in free list %ld (elem %ld) of heap %#lx", i, j, this);
       if (p->isUsed()) {
-	error("inconsistent freeList %ld elem %#lx in heap %#lx (map %#lx)",
-	       i, h, this, p);
+        error("inconsistent freeList %ld elem %#lx in heap %#lx (map %#lx)", i, h, this, p);
       }
       if (p->size() != lastSize && j != 0) {
-	error("freeList %ld elem %#lx in heap %#lx (map %#lx) has wrong size",
-	       i, h, this, p);
+        error("freeList %ld elem %#lx in heap %#lx (map %#lx) has wrong size", i, h, this, p);
       }
       lastSize = p->size();
       if (h->next() == h) {
-	error("loop in freeList %ld elem %#lx in heap %#lx", i, h, this);
-	break;
+        error("loop in freeList %ld elem %#lx in heap %#lx", i, h, this);
+        break;
       }
     }
   }
   int j = 0;
   HeapChunk* f = bigList->anchor();
-  for(HeapChunk* h = f->next(); h != f; h = h->next(), j++) {
+  for (HeapChunk* h = f->next(); h != f; h = h->next(), j++) {
     ChunkKlass* p = mapAddr(h);
     if (!p->verify())
       lprintf(" in bigList (elem %ld) of heap %#lx", j, this);
     if (p->isUsed()) {
-      error("inconsistent freeList %ld elem %#lx in heap %#lx (map 0xlx)",
-	     i, h, this, p);
+      error("inconsistent freeList %ld elem %#lx in heap %#lx (map 0xlx)", i, h, this, p);
     }
   }
-  if (! lastCombine->verify())
+  if (!lastCombine->verify())
     error("invalid lastCombine in heap %#lx", this);
-  
 }
 
 void Heap::print() const {
   lprintf("%#lx: [%#lx..%#lx)\n", this, base, base + capacity());
   printIndent();
-  lprintf("  size %ld (blk %ld), used %ld (%1.1f%%), ifrag %1.1f%%;\n",
-	 capacity(), blockSize, usedBytes(),
-	 100.0 * usedBytes() / capacity(), 100.0 * intFrag());
+  lprintf("  size %ld (blk %ld), used %ld (%1.1f%%), ifrag %1.1f%%;\n", capacity(), blockSize, usedBytes(),
+          100.0 * usedBytes() / capacity(), 100.0 * intFrag());
   printIndent();
   lprintf("  grand total allocs = %ld bytes\n", total);
   printIndent();
   lprintf("  free lists: ");
-  for (int i = 0; i < nfree; i++) lprintf("%ld ", freeList[i].length());
+  for (int i = 0; i < nfree; i++)
+    lprintf("%ld ", freeList[i].length());
   lprintf("; %ld\n", bigList->length());
 }
 

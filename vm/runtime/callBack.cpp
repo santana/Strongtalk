@@ -50,13 +50,13 @@ static char* store_byte(char* chunk, char b) {
 }
 
 static char* store_long(char* chunk, long l) {
-  *((long*) chunk) = l;
+  *((long*)chunk) = l;
   return chunk + sizeof(long);
 }
 
 void* callBack::registerPascalCall(int index, int nofArgs) {
   void* result = malloc(15);
-  char* chunk = (char*) result;
+  char* chunk = (char*)result;
 
   // MOV ECX, index
   chunk = store_byte(chunk, '\xB9');
@@ -68,14 +68,14 @@ void* callBack::registerPascalCall(int index, int nofArgs) {
 
   // JMP _handleCCallStub
   chunk = store_byte(chunk, '\xE9');
-  chunk = store_long(chunk, ((long)StubRoutines::handle_pascal_callback_stub()) - (4 + (long) chunk));
+  chunk = store_long(chunk, ((long)StubRoutines::handle_pascal_callback_stub()) - (4 + (long)chunk));
 
   return result;
 }
 
 void* callBack::registerCCall(int index) {
   void* result = malloc(10);
-  char* chunk = (char*) result;
+  char* chunk = (char*)result;
 
   // MOV ECX, index
   chunk = store_byte(chunk, '\xB9');
@@ -83,21 +83,21 @@ void* callBack::registerCCall(int index) {
 
   // JMP _handleCCallStub
   chunk = store_byte(chunk, '\xE9');
-  chunk = store_long(chunk, ((long)StubRoutines::handle_C_callback_stub()) - (4 + (long) chunk));
+  chunk = store_long(chunk, ((long)StubRoutines::handle_C_callback_stub()) - (4 + (long)chunk));
 
   return result;
 }
 
 void callBack::unregister(void* block) {
   assert(block, "block is not valid");
-  free((char*) block);
+  free((char*)block);
 }
 
 // handleCallBack is called from the two assembly stubs:
 // - handlePascalCallBackStub
 // - handleCCallBackStub
 
-typedef void* (__stdcall *call_out_func_4)(int a, int b, int c, int d);
+typedef void*(__stdcall* call_out_func_4)(int a, int b, int c, int d);
 
 extern "C" bool have_nlr_through_C;
 
@@ -108,7 +108,7 @@ extern "C" volatile void* handleCallBack(int index, int params) {
     warning("callBack receiver is not set");
   }
 
-  int low  = get_unsigned_bitfield(params,  0, 16);
+  int low = get_unsigned_bitfield(params, 0, 16);
   int high = get_unsigned_bitfield(params, 16, 16);
 
   if (DeltaProcess::active()->thread_id() != os::current_thread_id()) {
@@ -119,13 +119,10 @@ extern "C" volatile void* handleCallBack(int index, int params) {
     assert(proc, "process must be present");
     DLLs::exit_async_call(&proc);
   }
- 
+
   DeltaProcess::active()->setIsCallback(true);
 
-  oop res = Delta::call(Universe::callBack_receiver(),
-                        Universe::callBack_selector(),
-			as_smiOop(index),
-                        as_smiOop(high),
+  oop res = Delta::call(Universe::callBack_receiver(), Universe::callBack_selector(), as_smiOop(index), as_smiOop(high),
                         as_smiOop(low));
 
   assert(DeltaProcess::active()->thread_id() == os::current_thread_id(), "check for process torch");
@@ -137,22 +134,22 @@ extern "C" volatile void* handleCallBack(int index, int params) {
   if (have_nlr_through_C) {
     // Continues the NLR after at the next Delta frame
     BaseHandle* handle = DeltaProcess::active()->firstHandle();
-    if (handle && ((char*) handle < (char*)DeltaProcess::active()->last_Delta_fp()))
+    if (handle && ((char*)handle < (char*)DeltaProcess::active()->last_Delta_fp()))
       handle->pop();
 
     ErrorHandler::continue_nlr_in_delta();
   }
 
   if (res->is_smi()) {
-    result = (void*) smiOop(res)->value();
+    result = (void*)smiOop(res)->value();
   } else if (res->is_proxy()) {
-    result = (void*) proxyOop(res)->get_pointer();
+    result = (void*)proxyOop(res)->get_pointer();
   } else {
     warning("Wrong return type for call back, returning NULL");
     result = NULL;
   }
 
-  // Return value has to be converted before we transfer control to another 
+  // Return value has to be converted before we transfer control to another
   // thread.
 
   if (proc) {

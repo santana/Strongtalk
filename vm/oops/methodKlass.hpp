@@ -28,7 +28,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/methodOop.hpp"
 
 class methodKlass : public memOopKlass {
- public:
+public:
   bool oop_is_method() const { return true; }
 
   // allocation properties
@@ -39,7 +39,7 @@ class methodKlass : public memOopKlass {
 
   // Reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -48,8 +48,8 @@ class methodKlass : public memOopKlass {
   Format format() { return method_klass; }
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   friend void set_methodKlass_vtbl(Klass* k);
@@ -69,8 +69,8 @@ class methodKlass : public memOopKlass {
   char* name() const { return "method"; }
 
   // Construction (called from primitive)
-  methodOop constructMethod(oop name, int flags, int nofArgs, objArrayOop debugInfo,
-			                byteArrayOop bytes, objArrayOop oops);
+  methodOop constructMethod(oop name, int flags, int nofArgs, objArrayOop debugInfo, byteArrayOop bytes,
+                            objArrayOop oops);
 };
 void set_methodKlass_vtbl(Klass* k);
 #endif // _METHOD_KLASS_HPP

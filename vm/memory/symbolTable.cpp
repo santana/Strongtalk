@@ -21,64 +21,67 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "memory/symbolTable.hpp"
 #include "memory/universe.store.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-# define FOR_ALL_ENTRIES(entry) \
-  for (entry = firstBucket(); entry <= lastBucket(); entry ++)
+#define FOR_ALL_ENTRIES(entry) for (entry = firstBucket(); entry <= lastBucket(); entry++)
 
-# define FOR_ALL_SYMBOL_ADDR(bucket, var, code)                         \
-    { if (bucket->is_symbol()) {                                        \
-         var = (symbolOop*) bucket; code;                               \
-      } else {                                                          \
-        for (symbolTableLink* l = bucket->get_link(); l; l = l->next) { \
-          var = &l->symbol; code;                                       \
-        }                                                               \
-      }                                                                 \
-    }
+#define FOR_ALL_SYMBOL_ADDR(bucket, var, code)                                                                         \
+  {                                                                                                                    \
+    if (bucket->is_symbol()) {                                                                                         \
+      var = (symbolOop*)bucket;                                                                                        \
+      code;                                                                                                            \
+    } else {                                                                                                           \
+      for (symbolTableLink* l = bucket->get_link(); l; l = l->next) {                                                  \
+        var = &l->symbol;                                                                                              \
+        code;                                                                                                          \
+      }                                                                                                                \
+    }                                                                                                                  \
+  }
 
 int hash(char* name, int len) {
   // hash on at most 32 characters, evenly spaced
   int increment;
- 
+
   if (len < 32) {
     increment = 1;
   } else {
     increment = len >> 5;
   }
- 
+
   // hashpjw from Dragon book (ASU p. 436), except increment differently
- 
+
   assert(BitsPerByte * BytesPerWord >= 32, "assumes at least 32-bit words");
   long unsigned h = 0;
   long unsigned g;
   char* s = name;
   char* end = s + len;
   for (; s < end; s = s + increment) {
-    h = (h << 4) + (long unsigned) *s;
-    if ((g = h & 0xf0000000) != 0) h ^= g | (g >> 24);
+    h = (h << 4) + (long unsigned)*s;
+    if ((g = h & 0xf0000000) != 0)
+      h ^= g | (g >> 24);
   }
   return h;
 }
 
 symbolTable::symbolTable() {
-  for (int i = 0; i < symbol_table_size; i ++) buckets[i].clear();
+  for (int i = 0; i < symbol_table_size; i++)
+    buckets[i].clear();
   free_list = first_free_link = end_block = NULL;
 }
 
-symbolOop symbolTable::basic_add(char *name, int len, int hashValue) {
-  symbolKlass* sk = (symbolKlass*) Universe::symbolKlassObj()->klass_part();
-  symbolOop str =   sk->allocateSymbol(name, len);
+symbolOop symbolTable::basic_add(char* name, int len, int hashValue) {
+  symbolKlass* sk = (symbolKlass*)Universe::symbolKlassObj()->klass_part();
+  symbolOop str = sk->allocateSymbol(name, len);
   basic_add(str, hashValue);
   return str;
 }
 
 bool symbolTable::is_present(symbolOop sym) {
-  char* name = (char*) sym->bytes();
-  int   len  = sym->length();
+  char* name = (char*)sym->bytes();
+  int len = sym->length();
   int hashValue = hash(name, len);
   symbolTableEntry* bucket = bucketFor(hashValue);
   if (!bucket->is_empty()) {
@@ -87,7 +90,8 @@ bool symbolTable::is_present(symbolOop sym) {
       return bs->equals(name, len);
     } else {
       for (symbolTableLink* l = bucket->get_link(); l; l = l->next) {
-        if (l->symbol->equals(name, len)) return true;
+        if (l->symbol->equals(name, len))
+          return true;
       }
     }
   }
@@ -99,30 +103,30 @@ symbolOop symbolTable::lookup(char* name, int len) {
   symbolTableEntry* bucket = bucketFor(hashValue);
   if (!bucket->is_empty()) {
     if (bucket->is_symbol()) {
-      if (bucket->get_symbol()->equals(name, len)) return bucket->get_symbol();
+      if (bucket->get_symbol()->equals(name, len))
+        return bucket->get_symbol();
     } else {
       for (symbolTableLink* l = bucket->get_link(); l; l = l->next)
-	if (l->symbol->equals(name, len)) return l->symbol;
+        if (l->symbol->equals(name, len))
+          return l->symbol;
     }
   }
   return basic_add(name, len, hashValue);
 }
 
 void symbolTable::add(symbolOop s) {
-  assert(s->is_symbol(),
-         "adding something that's not a symbol to the symbol table");
+  assert(s->is_symbol(), "adding something that's not a symbol to the symbol table");
   assert(s->is_old(), "all symbols should be tenured");
-  int hashValue = hash((char*) s->bytes(), s->length());
+  int hashValue = hash((char*)s->bytes(), s->length());
   basic_add(s, hashValue);
 }
 
 void symbolTable::add_symbol(symbolOop s) {
-  basic_add(s, hash((char*) s->bytes(), s->length()));
+  basic_add(s, hash((char*)s->bytes(), s->length()));
 }
 
 symbolOop symbolTable::basic_add(symbolOop s, int hashValue) {
-  assert(s->is_symbol(),
-         "adding something that's not a symbol to the symbol table");
+  assert(s->is_symbol(), "adding something that's not a symbol to the symbol table");
   assert(s->is_old(), "all symbols should be tenured");
 
   // Add the indentity hash for the new symbol
@@ -136,7 +140,7 @@ symbolOop symbolTable::basic_add(symbolOop s, int hashValue) {
   if (bucket->is_empty()) {
     bucket->set_symbol(s);
   } else {
-    symbolTableLink*  old_link;
+    symbolTableLink* old_link;
     if (bucket->is_symbol()) {
       old_link = Universe::symbol_table->new_link(bucket->get_symbol());
     } else {
@@ -148,9 +152,9 @@ symbolOop symbolTable::basic_add(symbolOop s, int hashValue) {
 }
 
 void symbolTable::switch_pointers(oop from, oop to) {
-  if (! from->is_symbol()) return;
-  assert(to->is_symbol(),
-         "cannot replace a symbol with a non-symbol");
+  if (!from->is_symbol())
+    return;
+  assert(to->is_symbol(), "cannot replace a symbol with a non-symbol");
 
   symbolTableEntry* e;
   FOR_ALL_ENTRIES(e) {
@@ -173,23 +177,23 @@ void symbolTable::follow_used_symbols() {
     }
 
     if (e->is_symbol()) {
-      if (e->get_symbol()->is_gc_marked()) 
-        MarkSweep::follow_root((oop*) e);
+      if (e->get_symbol()->is_gc_marked())
+        MarkSweep::follow_root((oop*)e);
       else
         e->clear(); // unreachable; clear entry
     } else {
-      symbolTableLink** p    = (symbolTableLink**) e;
-      symbolTableLink*  link = e->get_link();
+      symbolTableLink** p = (symbolTableLink**)e;
+      symbolTableLink* link = e->get_link();
       while (link) {
         if (link->symbol->is_gc_marked()) {
-          MarkSweep::follow_root((oop*) &link->symbol);
-	  p    = &link->next;
+          MarkSweep::follow_root((oop*)&link->symbol);
+          p = &link->next;
           link = link->next;
         } else {
           // unreachable; remove from table
           symbolTableLink* old = link;
-          *p   = link->next;
-	  link = link->next;
+          *p = link->next;
+          link = link->next;
           old->next = NULL;
           delete_link(old);
         }
@@ -199,7 +203,7 @@ void symbolTable::follow_used_symbols() {
 }
 
 void symbolTableEntry::deallocate() {
-  if(!is_symbol() && get_link()) 
+  if (!is_symbol() && get_link())
     Universe::symbol_table->delete_link(get_link());
 }
 
@@ -211,17 +215,17 @@ bool symbolTableEntry::verify(int i) {
       flag = false;
     }
   } else {
-    if (get_link()) flag = get_link()->verify(i);
+    if (get_link())
+      flag = get_link()->verify(i);
   }
   return flag;
 }
 
 void symbolTable::verify() {
-  for (int i = 0; i < symbol_table_size; i ++)
+  for (int i = 0; i < symbol_table_size; i++)
     if (!buckets[i].verify(i))
       lprintf("\tof bucket %ld of symbol table\n", long(i));
 }
-
 
 void symbolTable::relocate() {
   symbolTableEntry* e;
@@ -234,11 +238,10 @@ void symbolTable::relocate() {
 bool symbolTableLink::verify(int i) {
   bool flag = true;
   for (symbolTableLink* l = this; l; l = l->next) {
-    if (! l->symbol->is_symbol()) {
+    if (!l->symbol->is_symbol()) {
       error("entry %#lx in symbol table isn't a symbol", l->symbol);
       flag = false;
-    } else if (hash((char*) l->symbol->bytes(), l->symbol->length()) 
-               % symbol_table_size != i) {
+    } else if (hash((char*)l->symbol->bytes(), l->symbol->length()) % symbol_table_size != i) {
       error("entry %#lx in symbol table has wrong hash value", l->symbol);
       flag = false;
     } else if (!l->symbol->is_old()) {
@@ -250,10 +253,13 @@ bool symbolTableLink::verify(int i) {
 }
 
 int symbolTableEntry::length() {
-  if (is_symbol()) return 1;
-  if (!get_link()) return 0;
+  if (is_symbol())
+    return 1;
+  if (!get_link())
+    return 0;
   int count = 0;
-  for (symbolTableLink* l = get_link(); l; l = l->next) count ++;
+  for (symbolTableLink* l = get_link(); l; l = l->next)
+    count++;
   return count;
 }
 
@@ -269,16 +275,17 @@ symbolTableLink* symbolTable::new_link(symbolOop s, symbolTableLink* n) {
       end_block = first_free_link + block_size;
     }
     res = first_free_link++;
-  } 
+  }
   res->symbol = s;
-  res->next   = n;
+  res->next = n;
   return res;
 }
 
 void symbolTable::delete_link(symbolTableLink* l) {
   // Add the link to the freelist
   symbolTableLink* end = l;
-  while(end->next) end = end->next;
+  while (end->next)
+    end = end->next;
   end->next = free_list;
   free_list = l;
 }
@@ -288,7 +295,7 @@ void symbolTable::delete_link(symbolTableLink* l) {
 void symbolTable::print_histogram() {
   const int results_length = 100;
   int results[results_length];
-  
+
   // initialize results to zero
   for (int j = 0; j < results_length; j++) {
     results[j] = 0;
@@ -314,8 +321,7 @@ void symbolTable::print_histogram() {
   lprintf("%8s %5d\n", "Total  ", total);
   lprintf("%8s %5d\n", "Minimum", min_symbols);
   lprintf("%8s %5d\n", "Maximum", max_symbols);
-  lprintf("%8s %3.2f\n", "Average",
-	  ((float) total / (float) symbol_table_size));
+  lprintf("%8s %3.2f\n", "Average", ((float)total / (float)symbol_table_size));
   lprintf("%s\n", "Histogram:");
   lprintf(" %s %29s\n", "Length", "Number chains that length");
   for (int i = 0; i < results_length; i++) {
@@ -323,13 +329,13 @@ void symbolTable::print_histogram() {
       lprintf("%6d %10d\n", i, results[i]);
     }
   }
-  int line_length = 70;    
+  int line_length = 70;
   lprintf("%s %30s\n", " Length", "Number chains that length");
   for (int i = 0; i < results_length; i++) {
     if (results[i] > 0) {
       lprintf("%4d", i);
       int j;
-      for (j = 0; (j < results[i]) && (j < line_length);  j++) {
+      for (j = 0; (j < results[i]) && (j < line_length); j++) {
         lprintf("%1s", "*");
       }
       if (j == line_length) {
@@ -337,7 +343,6 @@ void symbolTable::print_histogram() {
       }
       lprintf("\n");
     }
-  }  
-  lprintf(" %s %d: %d\n", "Number chains longer than",
-	  results_length, out_of_range);
+  }
+  lprintf(" %s %d: %d\n", "Number chains longer than", results_length, out_of_range);
 }

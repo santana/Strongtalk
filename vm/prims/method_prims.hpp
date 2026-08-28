@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for methods
 
 class methodOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -53,7 +54,7 @@ class methodOopPrimitives : AllStatic {
   //   Internal { name = 'methodOopPrimitives::numberOfArguments' }
   //%
   static PRIM_DECL_1(numberOfArguments, oop receiver);
- 
+
   //%prim
   // <Method> primitiveMethodOuterIfFail: failBlock <PrimFailBlock> ^<Method> =
   //   Internal { error = #(ReceiverNotBlockMethod)
@@ -86,7 +87,7 @@ class methodOopPrimitives : AllStatic {
   //   Internal { name = 'methodOopPrimitives::referenced_global_names' }
   //%
   static PRIM_DECL_1(referenced_global_names, oop receiver);
- 
+
   //%prim
   // <Method> primitiveMethodSenders ^<IndexedInstanceVariables> =
   //   Internal { name = 'methodOopPrimitives::senders' }
@@ -141,7 +142,8 @@ class methodOopPrimitives : AllStatic {
   //                                ifFail: failBlock          <PrimFailBlock> ^<Method> =
   //   Internal { name = 'methodOopPrimitives::constructMethod' }
   //%
-  static PRIM_DECL_6(constructMethod, oop selector_or_method, oop flags, oop nofArgs, oop debugInfo, oop bytes, oop oops);
+  static PRIM_DECL_6(constructMethod, oop selector_or_method, oop flags, oop nofArgs, oop debugInfo, oop bytes,
+                     oop oops);
 
   //%prim
   // <Method> primitiveMethodAllocateBlockIfFail: failBlock <PrimFailBlock> ^<Block> =
@@ -165,7 +167,6 @@ class methodOopPrimitives : AllStatic {
   //              name = 'methodOopPrimitives::set_inlining_info' }
   //%
   static PRIM_DECL_2(set_inlining_info, oop receiver, oop info);
-
 
   //%prim
   // <Method> primitiveMethodInliningInfo ^<Symbol> =

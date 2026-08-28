@@ -16,18 +16,18 @@ using namespace easyunit;
 
 extern "C" int expansion_count;
 DECLARE(ProxyPrimsTests)
-  HeapResourceMark *rm;
-  proxyOop proxy, subProxy, validProxy;
-  doubleOop doubleValue;
-  smiOop smi0, smi1;
-  int address;
+HeapResourceMark* rm;
+proxyOop proxy, subProxy, validProxy;
+doubleOop doubleValue;
+smiOop smi0, smi1;
+int address;
 
 void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
-    char text[200];
-    ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
-    ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
-  }
+  char text[200];
+  ASSERT_TRUE_M(result->is_mark(), "Should be marked");
+  snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+  ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
+}
 END_DECLARE
 
 SETUP(ProxyPrimsTests) {
@@ -36,7 +36,7 @@ SETUP(ProxyPrimsTests) {
   PersistentHandle proxyHandle(proxyClass.as_klassOop()->klass_part()->allocateObject());
   PersistentHandle subProxyHandle(proxyClass.as_klassOop()->klass_part()->allocateObject());
   PersistentHandle validProxyHandle(proxyClass.as_klassOop()->klass_part()->allocateObject());
-  
+
   doubleValue = oopFactory::new_double(1.2345);
 
   smi0 = as_smiOop(0);
@@ -49,7 +49,7 @@ SETUP(ProxyPrimsTests) {
   validProxy->set_pointer(&address);
 }
 
-TEARDOWN(ProxyPrimsTests){
+TEARDOWN(ProxyPrimsTests) {
   delete rm;
   rm = NULL;
 }

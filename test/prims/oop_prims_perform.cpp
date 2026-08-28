@@ -13,7 +13,7 @@
 using namespace easyunit;
 
 DECLARE(OopPrimitivesPerformTest)
-  oop fixture;
+oop fixture;
 END_DECLARE
 
 SETUP(OopPrimitivesPerformTest) {
@@ -22,15 +22,14 @@ SETUP(OopPrimitivesPerformTest) {
   fixture = objectClass->klass_part()->allocateObject();
 }
 
-TEARDOWN(OopPrimitivesPerformTest){
+TEARDOWN(OopPrimitivesPerformTest) {
   fixture = NULL;
   MarkSweep::collect();
 }
 
-TESTF(OopPrimitivesPerformTest, noArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
-{
-	symbolOop selector = oopFactory::new_symbol("unknown", 7);
-	oop result = oopPrimitives::perform(reinterpret_cast<oop>(selector), fixture);
+TESTF(OopPrimitivesPerformTest, noArgPerformWithUnknownShouldInvokeDoesNotUnderstand) {
+  symbolOop selector = oopFactory::new_symbol("unknown", 7);
+  oop result = oopPrimitives::perform(reinterpret_cast<oop>(selector), fixture);
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
   ASSERT_TRUE_M(result->is_mem(), "result should be object");
   ASSERT_EQUALS_M(expectedKlass, result->klass(), "wrong class returned");
@@ -38,8 +37,7 @@ TESTF(OopPrimitivesPerformTest, noArgPerformWithUnknownShouldInvokeDoesNotUnders
   ASSERT_EQUALS_M(reinterpret_cast<oop>(selector), memOop(result)->raw_at(3), "message should contain selector");
 }
 
-TESTF(OopPrimitivesPerformTest, oneArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
-{
+TESTF(OopPrimitivesPerformTest, oneArgPerformWithUnknownShouldInvokeDoesNotUnderstand) {
   symbolOop selector = oopFactory::new_symbol("unknown:", 8);
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
   oop result = oopPrimitives::performWith(reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
@@ -53,13 +51,13 @@ TESTF(OopPrimitivesPerformTest, oneArgPerformWithUnknownShouldInvokeDoesNotUnder
   ASSERT_EQUALS_M(reinterpret_cast<oop>(arg1), objArrayOop(args)->obj_at(1), "message should contain argument 1");
 }
 
-TESTF(OopPrimitivesPerformTest, twoArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
-{
+TESTF(OopPrimitivesPerformTest, twoArgPerformWithUnknownShouldInvokeDoesNotUnderstand) {
   symbolOop selector = oopFactory::new_symbol("unknown:with:", 13);
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
   symbolOop arg2 = oopFactory::new_symbol("arg2", 4);
 
-  oop result = oopPrimitives::performWithWith(reinterpret_cast<oop>(arg2), reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
+  oop result = oopPrimitives::performWithWith(reinterpret_cast<oop>(arg2), reinterpret_cast<oop>(arg1),
+                                              reinterpret_cast<oop>(selector), fixture);
 
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
 
@@ -74,14 +72,15 @@ TESTF(OopPrimitivesPerformTest, twoArgPerformWithUnknownShouldInvokeDoesNotUnder
   ASSERT_EQUALS_M(reinterpret_cast<oop>(arg2), objArrayOop(args)->obj_at(2), "message should contain argument 2");
 }
 
-TESTF(OopPrimitivesPerformTest, threeArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
-{
+TESTF(OopPrimitivesPerformTest, threeArgPerformWithUnknownShouldInvokeDoesNotUnderstand) {
   symbolOop selector = oopFactory::new_symbol("unknown:with:with:", 18);
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
   symbolOop arg2 = oopFactory::new_symbol("arg2", 4);
   symbolOop arg3 = oopFactory::new_symbol("arg3", 4);
 
-  oop result = oopPrimitives::performWithWithWith(reinterpret_cast<oop>(arg3), reinterpret_cast<oop>(arg2), reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
+  oop result =
+    oopPrimitives::performWithWithWith(reinterpret_cast<oop>(arg3), reinterpret_cast<oop>(arg2),
+                                       reinterpret_cast<oop>(arg1), reinterpret_cast<oop>(selector), fixture);
 
   klassOop expectedKlass = klassOop(Universe::find_global("Message"));
 
@@ -97,8 +96,7 @@ TESTF(OopPrimitivesPerformTest, threeArgPerformWithUnknownShouldInvokeDoesNotUnd
   ASSERT_EQUALS_M(reinterpret_cast<oop>(arg3), objArrayOop(args)->obj_at(3), "message should contain argument 3");
 }
 
-TESTF(OopPrimitivesPerformTest, varArgPerformWithUnknownShouldInvokeDoesNotUnderstand)
-{
+TESTF(OopPrimitivesPerformTest, varArgPerformWithUnknownShouldInvokeDoesNotUnderstand) {
   symbolOop selector = oopFactory::new_symbol("unknown:with:with:with:", 23);
   symbolOop arg1 = oopFactory::new_symbol("arg1", 4);
   symbolOop arg2 = oopFactory::new_symbol("arg2", 4);

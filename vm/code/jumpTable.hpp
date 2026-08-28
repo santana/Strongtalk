@@ -22,9 +22,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 // The jumpTable constitutes the interface between interpreter code and optimized code.
-// This indirection makes it possible to invalidate optimized code without 
-//  - keeping track of dependencies between sends in methodsOops and optimized code, or 
-//  - traverse all methodOops. 
+// This indirection makes it possible to invalidate optimized code without
+//  - keeping track of dependencies between sends in methodsOops and optimized code, or
+//  - traverse all methodOops.
 // If optimized code has become invalid the jump table entry is simply snapped.
 // In addition the jumpTable serves as a dispatch table for block closures for optimized code.
 
@@ -49,37 +49,39 @@ class jumpTableID : ValueObj {
   u_short _minor;
   friend class jumpTable;
 
-  enum { max_value = nthMask(16) };
+  enum {
+    max_value = nthMask(16)
+  };
 
- public:
-  jumpTableID()                             : _major(max_value), _minor(max_value) {}
-  jumpTableID(u_short major)                : _major(major),     _minor(max_value) {}
-  jumpTableID(u_short major, u_short minor) : _major(major),     _minor(minor)     {}
-  bool has_minor() const 		{ return _minor != max_value; }
-  bool is_block() const 		{ return _minor > 0;          }
-  bool is_valid() const 		{ return _major != max_value; }
-  u_short major_version() const 	{ return _major; }
-  u_short minor_version() const 	{ return _minor; }
-  jumpTableID sub(u_short minor) const 	{ return jumpTableID(_major, minor); }
+public:
+  jumpTableID() : _major(max_value), _minor(max_value) {}
+  jumpTableID(u_short major) : _major(major), _minor(max_value) {}
+  jumpTableID(u_short major, u_short minor) : _major(major), _minor(minor) {}
+  bool has_minor() const { return _minor != max_value; }
+  bool is_block() const { return _minor > 0; }
+  bool is_valid() const { return _major != max_value; }
+  u_short major_version() const { return _major; }
+  u_short minor_version() const { return _minor; }
+  jumpTableID sub(u_short minor) const { return jumpTableID(_major, minor); }
 };
 
-
 class jumpTable : public ValueObj {
- protected:
-  int firstFree;	// index of first free elem
-  static char*           allocate_jump_entries(int size);
+protected:
+  int firstFree; // index of first free elem
+  static char* allocate_jump_entries(int size);
   static jumpTableEntry* jump_entry_for_at(char* entries, int index);
-  jumpTableEntry*        major_at(u_short index);
- public:
-  char* entries;
-  int length;		// max. number of IDs
-  int usedIDs;		// # of used ID
+  jumpTableEntry* major_at(u_short index);
 
- public:
+public:
+  char* entries;
+  int length; // max. number of IDs
+  int usedIDs; // # of used ID
+
+public:
   jumpTable();
   ~jumpTable();
 
-  void  init();
+  void init();
 
   // Allocates a block of adjacent jump table entries.
   jumpTableID allocate(int number_of_entries);
@@ -87,31 +89,33 @@ class jumpTable : public ValueObj {
   // returns the jumptable entry for id
   jumpTableEntry* at(jumpTableID id);
 
-  int newID();	    	   // return a new ID
-  int peekID();    	   // return value which would be returned by newID,
-    	    	    	   // but don't actually allocate the ID
+  int newID(); // return a new ID
+  int peekID(); // return value which would be returned by newID,
+  // but don't actually allocate the ID
   void freeID(int index); // index is unused again
 
   void verify();
   void print();
 
   // compilation of blocks
-  static char*	  compile_new_block(blockClosureOop blk);     // create nmethod, return entry point
-  static nmethod* compile_block(blockClosureOop blk);	      // (re)compile block nmethod
+  static char* compile_new_block(blockClosureOop blk); // create nmethod, return entry point
+  static nmethod* compile_block(blockClosureOop blk); // (re)compile block nmethod
 
   friend class jumpTableEntry;
 };
-
 
 // implementation note: jumpTableEntry should be an abstract class with two
 // subclasses for nmethod and block entries, but these classes are combined
 // in order to save space (no vtbl pointer needed)
 class jumpTableEntry : public ValueObj {
- private:
-  char* jump_inst_addr() const 		{ assert(oop(this)->is_smi(), "misaligned"); return (char*) this; }
-  char* state_addr() const		{ return ((char*) this) + jump_inst_size(); }
-  static int jump_inst_size()           { return 1 + sizeof(char*); } // x86 specific
-  char  state() const			{ return *state_addr(); }
+private:
+  char* jump_inst_addr() const {
+    assert(oop(this)->is_smi(), "misaligned");
+    return (char*)this;
+  }
+  char* state_addr() const { return ((char*)this) + jump_inst_size(); }
+  static int jump_inst_size() { return 1 + sizeof(char*); } // x86 specific
+  char state() const { return *state_addr(); }
   void fill_entry(char instr, char* dest, char state);
   void initialize_as_unused(int index);
   void initialize_as_link(char* link);
@@ -121,20 +125,21 @@ class jumpTableEntry : public ValueObj {
   inline jumpTableEntry* next_stub() const;
   jumpTableEntry* parent_entry(int& index) const;
   void report_verify_error(char* message);
- public:
-   // testing operations	    LARS: please add comments explaining what the 4 cases are  -Urs 4/96
+
+public:
+  // testing operations	    LARS: please add comments explaining what the 4 cases are  -Urs 4/96
   bool is_nmethod_stub() const;
   bool is_block_closure_stub() const;
   bool is_link() const;
   bool is_unused() const;
 
   // entry point
-  char* entry_point() const 		{ return jump_inst_addr(); }
+  char* entry_point() const { return jump_inst_addr(); }
 
   // destination
-  char** destination_addr() const; 	// the address of the destination
-  char*  destination() const;		// current destination
-  void   set_destination(char* dest); 	// sets the destination
+  char** destination_addr() const; // the address of the destination
+  char* destination() const; // current destination
+  void set_destination(char* dest); // sets the destination
 
   // operations for link stubs
   char* link() const;
@@ -143,22 +148,22 @@ class jumpTableEntry : public ValueObj {
   intptr_t next_free() const;
 
   // operations for nmethod stubs (is_nmethod_stub() == true)
-  nmethod* method() const;        // NULL if not pointing to a method
+  nmethod* method() const; // NULL if not pointing to a method
 
   // operations for block stubs (is_block_closure_stub() == true)
-  bool      block_has_nmethod() const;
-  nmethod*  block_nmethod() const;  	// block nmethod (or NULL if not compiled yet)
-  methodOop block_method() const;  	// block method
+  bool block_has_nmethod() const;
+  nmethod* block_nmethod() const; // block nmethod (or NULL if not compiled yet)
+  methodOop block_method() const; // block method
   // nmethod creating the blockClosureOops pointing to this entry
   // index is set to the distance |parent_entry - this|
-  nmethod*  parent_nmethod(int& index) const; 
+  nmethod* parent_nmethod(int& index) const;
 
   // printing
   void print();
   void verify();
 
   // size of jump table entry
-  static intptr_t size()                     { return (intptr_t)align((void*)(sizeof(char) + jump_inst_size()), sizeof(oop)); }
+  static intptr_t size() { return (intptr_t)align((void*)(sizeof(char) + jump_inst_size()), sizeof(oop)); }
 
   friend class jumpTable;
 };

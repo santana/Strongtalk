@@ -28,11 +28,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifdef junk
 
 void printLookupType(LookupType l) {
-  lprintf(lookupTypeName(l)); 
+  lprintf(lookupTypeName(l));
 }
 
 static void addFlag(bool& flag, char* name, const char* add) {
-  if (!flag) strcat(name, " { ");
+  if (!flag)
+    strcat(name, " { ");
   flag = true;
   strcat(name, add);
 }
@@ -40,35 +41,45 @@ static void addFlag(bool& flag, char* name, const char* add) {
 char* lookupTypeName(LookupType l) {
   char* name = NEW_RESOURCE_ARRAY(char, 80);
   switch (withoutExtraBits(l)) {
-   case NormalLookupType:
-    strcpy(name, "NormalLookup");
-    break;
-   case SelfLookupType:
-    strcpy(name, "SelfLookup");
-    break;
-   case SuperLookupType:
-    strcpy(name, "SuperLookup");
-    break;
-   default:
-    fatal("Unknown lookupType");
-   }
+    case NormalLookupType:
+      strcpy(name, "NormalLookup");
+      break;
+    case SelfLookupType:
+      strcpy(name, "SelfLookup");
+      break;
+    case SuperLookupType:
+      strcpy(name, "SuperLookup");
+      break;
+    default:
+      fatal("Unknown lookupType");
+  }
   bool hasFlag = false;
   switch (countType(l)) {
-   case NonCounting: break;
-   case Counting:    addFlag(hasFlag, name, "counting "); break;
-   case Comparing:   addFlag(hasFlag, name, "comparing "); break;
-   default: 	     fatal1("invalid count type %ld", countType(l));
+    case NonCounting:
+      break;
+    case Counting:
+      addFlag(hasFlag, name, "counting ");
+      break;
+    case Comparing:
+      addFlag(hasFlag, name, "comparing ");
+      break;
+    default:
+      fatal1("invalid count type %ld", countType(l));
   }
-  if (isSet(l, DirtySendBit)) addFlag(hasFlag, name, "dirty ");
-  if (isSet(l, OptimizedSendBit)) addFlag(hasFlag, name, "optimized ");
-  if (isSet(l, UninlinableSendBit)) addFlag(hasFlag, name, "uninlinable ");
-  if (hasFlag) strcat(name, "}");
-    
+  if (isSet(l, DirtySendBit))
+    addFlag(hasFlag, name, "dirty ");
+  if (isSet(l, OptimizedSendBit))
+    addFlag(hasFlag, name, "optimized ");
+  if (isSet(l, UninlinableSendBit))
+    addFlag(hasFlag, name, "uninlinable ");
+  if (hasFlag)
+    strcat(name, "}");
+
   return name;
 }
 
 void kinds_init() {
   assert((LookupTypeMask >> LookupTypeSize) == 0, "wrong LookupTypeSize");
   assert((CountTypeMask >> CountTypeSize) == 0, "wrong CountTypeSize");
-}  
+}
 #endif // junk

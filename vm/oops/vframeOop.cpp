@@ -32,9 +32,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 vframe* vframeOopDesc::get_vframe() {
   DeltaProcess* proc = process()->process();
- 
+
   // Check process
-  if (proc == NULL) 
+  if (proc == NULL)
     return NULL;
 
   // Check time stamp
@@ -43,7 +43,7 @@ vframe* vframeOopDesc::get_vframe() {
 
   vframe* vf = proc->last_delta_vframe();
 
-  for (int i = 1; i < index() && vf; i++) { 
+  for (int i = 1; i < index() && vf; i++) {
     vf = vf->sender();
   }
 

@@ -26,12 +26,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 class MissingMethodBuilder : public ResourceObj {
   HCodeBuffer buffer;
-  symbolOop   selector;
-  methodOop   _method;
+  symbolOop selector;
+  methodOop _method;
+
 public:
-  MissingMethodBuilder(symbolOop selector) : selector(selector) {
-    _method = NULL;
-  };
+  MissingMethodBuilder(symbolOop selector) : selector(selector) { _method = NULL; };
   void build();
   byteArrayOop bytes();
   objArrayOop oops();

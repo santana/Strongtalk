@@ -47,9 +47,9 @@ void report_vm_state() {
       theCompiler->print_key(mystd);
       mystd->cr();
       if (CompilerDebug) {
-	print_cout();
+        print_cout();
       } else {
-	mystd->print("(No compiler debug output available -- run with +CompilerDebug to get it)");
+        mystd->print("(No compiler debug output available -- run with +CompilerDebug to get it)");
       }
       mystd->cr();
     }
@@ -73,17 +73,18 @@ void report_error(char* title, char* format, ...) {
   mystd->print_cr("[A Runtime Error Occurred]");
   mystd->print_raw(buffer);
 
-  if (!bootstrapping) report_vm_state();
+  if (!bootstrapping)
+    report_vm_state();
 
   if (ShowMessageBoxOnError) {
     std::strcat(buffer, "\n\nDo you want to debug the problem?");
-    if (!os::message_box(title, buffer)) os::fatalExit(-1);
+    if (!os::message_box(title, buffer))
+      os::fatalExit(-1);
   }
 }
 
 void report_assertion_failure(char* code_str, char* file_name, int line_no, char* message) {
-  report_error("Assertion Failure", "assert(%s, \"%s\")\n%s, %d",
-	        code_str, message, file_name, line_no);
+  report_error("Assertion Failure", "assert(%s, \"%s\")\n%s, %d", code_str, message, file_name, line_no);
 }
 
 void report_fatal(char* file_name, int line_no, char* format, ...) {
@@ -96,18 +97,15 @@ void report_fatal(char* file_name, int line_no, char* format, ...) {
 }
 
 void report_should_not_call(char* file_name, int line_no) {
-  report_error("Should Not Call This Error", "ShouldNotCall()\n%s, %d",
-	       file_name, line_no);
+  report_error("Should Not Call This Error", "ShouldNotCall()\n%s, %d", file_name, line_no);
 }
 
 void report_should_not_reach_here(char* file_name, int line_no) {
-  report_error("Should Not Reach Here Error", "ShouldNotReachHere()\n%s, %d",
-	       file_name, line_no);
+  report_error("Should Not Reach Here Error", "ShouldNotReachHere()\n%s, %d", file_name, line_no);
 }
 
 void report_subclass_responsibility(char* file_name, int line_no) {
-  report_error("Subclass Responsibility Error", "SubclassResponsibility()\n%s, %d",
-	       file_name, line_no);
+  report_error("Subclass Responsibility Error", "SubclassResponsibility()\n%s, %d", file_name, line_no);
 }
 
 void report_unimplemented(char* file_name, int line_no) {

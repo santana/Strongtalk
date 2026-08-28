@@ -28,15 +28,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.hpp"
 
 inline klassOop oopDesc::klass() const {
-  if (is_mem()) return memOop(this)->klass_field();
+  if (is_mem())
+    return memOop(this)->klass_field();
   assert(is_smi(), "tag must be smi");
   return smiKlassObj;
 }
 
-inline Klass* oopDesc::blueprint() const { return klass()->klass_part(); }
+inline Klass* oopDesc::blueprint() const {
+  return klass()->klass_part();
+}
 
 inline smi oopDesc::identity_hash() {
-  if (is_smi()) return smiOop(this)->identity_hash();
+  if (is_smi())
+    return smiOop(this)->identity_hash();
   assert(is_mem(), "tag must be mem");
   return memOop(this)->identity_hash();
 }
@@ -51,31 +55,69 @@ inline oop oopDesc::relocate() {
 }
 
 // generation testers
-inline bool oopDesc::is_old() const { return is_mem() && memOop(this)->is_old(); }
-inline bool oopDesc::is_new() const { return is_mem() && memOop(this)->is_new(); }
+inline bool oopDesc::is_old() const {
+  return is_mem() && memOop(this)->is_old();
+}
+inline bool oopDesc::is_new() const {
+  return is_mem() && memOop(this)->is_new();
+}
 
 inline generation* oopDesc::my_generation() {
   return Universe::generation_containing(this);
 }
 
 // type test operations
-inline bool oopDesc::is_double()           const { return is_mem() && memOop(this)->klass_field() == doubleKlassObj;       }
-inline bool oopDesc::is_block()            const { return is_mem() && memOop(this)->blueprint()->oop_is_block();           }
-inline bool oopDesc::is_byteArray()        const { return is_mem() && memOop(this)->blueprint()->oop_is_byteArray();       }
-inline bool oopDesc::is_doubleByteArray()  const { return is_mem() && memOop(this)->blueprint()->oop_is_doubleByteArray(); }
-inline bool oopDesc::is_doubleValueArray() const { return is_mem() && memOop(this)->blueprint()->oop_is_doubleValueArray();}
-inline bool oopDesc::is_symbol()           const { return is_mem() && memOop(this)->blueprint()->oop_is_symbol();          }
-inline bool oopDesc::is_objArray()         const { return is_mem() && memOop(this)->blueprint()->oop_is_objArray();        }
-inline bool oopDesc::is_weakArray()        const { return is_mem() && memOop(this)->blueprint()->oop_is_weakArray();       }
-inline bool oopDesc::is_association()      const { return is_mem() && memOop(this)->blueprint()->oop_is_association();     }
-inline bool oopDesc::is_context()          const { return is_mem() && memOop(this)->blueprint()->oop_is_context();         }
-inline bool oopDesc::is_klass()            const { return is_mem() && memOop(this)->blueprint()->oop_is_klass();           }
-inline bool oopDesc::is_proxy()            const { return is_mem() && memOop(this)->blueprint()->oop_is_proxy();           }
-inline bool oopDesc::is_mixin()            const { return is_mem() && memOop(this)->blueprint()->oop_is_mixin();           }
-inline bool oopDesc::is_process()          const { return is_mem() && memOop(this)->blueprint()->oop_is_process();         }
-inline bool oopDesc::is_vframe()           const { return is_mem() && memOop(this)->blueprint()->oop_is_vframe();          }
-inline bool oopDesc::is_method()           const { return is_mem() && memOop(this)->blueprint()->oop_is_method();          }
-inline bool oopDesc::is_indexable()        const { return is_mem() && memOop(this)->blueprint()->oop_is_indexable();       }
+inline bool oopDesc::is_double() const {
+  return is_mem() && memOop(this)->klass_field() == doubleKlassObj;
+}
+inline bool oopDesc::is_block() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_block();
+}
+inline bool oopDesc::is_byteArray() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_byteArray();
+}
+inline bool oopDesc::is_doubleByteArray() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_doubleByteArray();
+}
+inline bool oopDesc::is_doubleValueArray() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_doubleValueArray();
+}
+inline bool oopDesc::is_symbol() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_symbol();
+}
+inline bool oopDesc::is_objArray() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_objArray();
+}
+inline bool oopDesc::is_weakArray() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_weakArray();
+}
+inline bool oopDesc::is_association() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_association();
+}
+inline bool oopDesc::is_context() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_context();
+}
+inline bool oopDesc::is_klass() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_klass();
+}
+inline bool oopDesc::is_proxy() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_proxy();
+}
+inline bool oopDesc::is_mixin() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_mixin();
+}
+inline bool oopDesc::is_process() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_process();
+}
+inline bool oopDesc::is_vframe() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_vframe();
+}
+inline bool oopDesc::is_method() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_method();
+}
+inline bool oopDesc::is_indexable() const {
+  return is_mem() && memOop(this)->blueprint()->oop_is_indexable();
+}
 
 // Primitives
 inline bool oopDesc::verify() {

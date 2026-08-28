@@ -14,25 +14,27 @@
 using namespace easyunit;
 
 DECLARE(HCodeBufferTests)
-  HCodeBuffer *code;
-  HeapResourceMark *rm;
-  char msg[200];
-  void checkByteLength(int expected, char* message) {
-    snprintf(msg, sizeof(msg), "Wrong byte length for %s, expected: %d, but was: %d", message, expected, code->byteLength());
-    ASSERT_EQUALS_M(expected, code->byteLength(), msg);
-  }
-  void checkOopLength(int expected, char* message) {
-    snprintf(msg, sizeof(msg), "Wrong oop length for %s, expected: %d, but was: %d", message, expected, code->oopLength());
-    ASSERT_EQUALS_M(expected, code->oopLength(), msg);
-  }
+HCodeBuffer* code;
+HeapResourceMark* rm;
+char msg[200];
+void checkByteLength(int expected, char* message) {
+  snprintf(msg, sizeof(msg), "Wrong byte length for %s, expected: %d, but was: %d", message, expected,
+           code->byteLength());
+  ASSERT_EQUALS_M(expected, code->byteLength(), msg);
+}
+void checkOopLength(int expected, char* message) {
+  snprintf(msg, sizeof(msg), "Wrong oop length for %s, expected: %d, but was: %d", message, expected,
+           code->oopLength());
+  ASSERT_EQUALS_M(expected, code->oopLength(), msg);
+}
 
-#define checkByte(expected, actual)\
-    snprintf(msg, sizeof(msg), "Expected: %d, but was: %d", expected, actual);\
-    ASSERT_EQUALS_M(expected, actual, msg)
+#define checkByte(expected, actual)                                                                                    \
+  snprintf(msg, sizeof(msg), "Expected: %d, but was: %d", expected, actual);                                           \
+  ASSERT_EQUALS_M(expected, actual, msg)
 
-#define checkOop(expected, actual)\
-    snprintf(msg, sizeof(msg), "Expected: %ld, but was: %ld", (intptr_t)expected, (intptr_t)actual);\
-    ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
+#define checkOop(expected, actual)                                                                                     \
+  snprintf(msg, sizeof(msg), "Expected: %ld, but was: %ld", (intptr_t)expected, (intptr_t)actual);                     \
+  ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
 END_DECLARE
 
@@ -41,7 +43,7 @@ SETUP(HCodeBufferTests) {
   code = new HCodeBuffer();
 }
 
-TEARDOWN(HCodeBufferTests){
+TEARDOWN(HCodeBufferTests) {
   delete rm;
   rm = NULL;
   code = NULL;
@@ -98,7 +100,7 @@ TESTF(HCodeBufferTests, pushingOopShouldPadByteArray) {
   code->pushByte(1);
   code->pushOop(as_smiOop(2));
 
-  checkByte(1,    code->bytes()->byte_at(1));
+  checkByte(1, code->bytes()->byte_at(1));
   checkByte(0xFF, code->bytes()->byte_at(2));
   checkByte(0xFF, code->bytes()->byte_at(3));
   checkByte(0xFF, code->bytes()->byte_at(4));

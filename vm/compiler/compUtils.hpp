@@ -35,58 +35,63 @@ template <class E> class GrowableArray;
 
 // kinds of inlining limits
 enum InlineLimitType {
-  NormalFnLimit,		    // "size" of normal method (see msgCost)
-  BlockArgFnLimit,		    // size of method with block args
-  BlockFnLimit, 	    	    // size of block method (value, value: etc)
-  SplitCostLimit, 	    	    // max total cost of copied nodes
-  NormalFnInstrLimit,		    // size (instructions) of normal method
-  BlockArgFnInstrLimit,	    	    // ditto for method with block args
-  BlockFnInstrLimit, 	    	    // ditto for block method
-  NmInstrLimit,     	    	    // desired max. nmethod size
-  LastLimit	    	    	    // sentinel
+  NormalFnLimit, // "size" of normal method (see msgCost)
+  BlockArgFnLimit, // size of method with block args
+  BlockFnLimit, // size of block method (value, value: etc)
+  SplitCostLimit, // max total cost of copied nodes
+  NormalFnInstrLimit, // size (instructions) of normal method
+  BlockArgFnInstrLimit, // ditto for method with block args
+  BlockFnInstrLimit, // ditto for block method
+  NmInstrLimit, // desired max. nmethod size
+  LastLimit // sentinel
 };
 
 typedef bool (*checkLocalSendFn)(symbolOop sel);
 enum InlineFnType {
-  NormalFn,		    // normal method
-  BlockArgFn,		    // method with one or more block args
-  BlockFn 	    	    // block method (value, value: etc)
+  NormalFn, // normal method
+  BlockArgFn, // method with one or more block args
+  BlockFn // block method (value, value: etc)
 };
 
-// parameters of cost function that computes space cost of inlining 
+// parameters of cost function that computes space cost of inlining
 // a particular method
-struct CostParam {	    
-  int localCost;	    // local variable access / assign
-  int cheapSendCost;	    // "cheap" send (see isCheapMessage)
-  int sendCost;   	    // arbitrary send
-  int blockArgPenalty;     // penalty if non-cheap send has block arg(s)
-  int primCallCost;	    // primitive call
-  
+struct CostParam {
+  int localCost; // local variable access / assign
+  int cheapSendCost; // "cheap" send (see isCheapMessage)
+  int sendCost; // arbitrary send
+  int blockArgPenalty; // penalty if non-cheap send has block arg(s)
+  int primCallCost; // primitive call
+
   CostParam(int l, int c, int s, int b, int p) {
-    localCost = l; cheapSendCost = c; sendCost = s;
-    blockArgPenalty = b; primCallCost = p;
+    localCost = l;
+    cheapSendCost = c;
+    sendCost = s;
+    blockArgPenalty = b;
+    primCallCost = p;
   }
 };
 
-// The PerformanceDebugger reports info useful for finding performance bugs (e.g., 
+// The PerformanceDebugger reports info useful for finding performance bugs (e.g.,
 // contexts and blocks that can't be eliminated and the resons why).
 
 class PerformanceDebugger : public ResourceObj {
   Compiler* c;
-  bool compileReported;	      // have we already reported something for this compile?
+  bool compileReported; // have we already reported something for this compile?
   GrowableArray<BlockPReg*>* blocks;
-  GrowableArray<char*>* reports;  // list of reports already printed (to avoid duplicates)
+  GrowableArray<char*>* reports; // list of reports already printed (to avoid duplicates)
   stringStream* str;
   GrowableArray<InlinedScope*>* notInlinedBecauseNmethodTooBig;
+
 public:
   PerformanceDebugger(Compiler* c);
 
-  void report_context(InlinedScope* s);			  // couldn't eliminate scope's context
+  void report_context(InlinedScope* s); // couldn't eliminate scope's context
   void report_block(Node* s, BlockPReg* blk, const char* what); // couldn't eliminate block
-  void report_toobig(InlinedScope* s);			  // nmethod getting too big
-  void report_uncommon(bool reoptimizing);		  // uncommon recompile  
-  void report_prim_failure(primitive_desc* pd);		  // failure not uncommon
+  void report_toobig(InlinedScope* s); // nmethod getting too big
+  void report_uncommon(bool reoptimizing); // uncommon recompile
+  void report_prim_failure(primitive_desc* pd); // failure not uncommon
   void finish_reporting();
+
 private:
   void report_compile();
   void start_report();

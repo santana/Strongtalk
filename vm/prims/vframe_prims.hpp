@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for vframe
 
 class vframeOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -121,7 +122,7 @@ class vframeOopPrimitives : AllStatic {
   static PRIM_DECL_1(pretty_print, oop receiver);
 
   //%prim
-  // <NoReceiver> primitiveActivationSingleStep: activation <Activation> 
+  // <NoReceiver> primitiveActivationSingleStep: activation <Activation>
   //                                 ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc   = 'Sets up single stepping for the activation''s process.'
   //              doc   = 'Returns the activation.'
@@ -131,7 +132,7 @@ class vframeOopPrimitives : AllStatic {
   static PRIM_DECL_1(single_step, oop activation);
 
   //%prim
-  // <NoReceiver> primitiveActivationStepNext: activation <Activation> 
+  // <NoReceiver> primitiveActivationStepNext: activation <Activation>
   //                                 ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc   = 'Sets up stepping up to the next bytecode of the activation''s method.'
   //              doc   = 'Returns the activation.'
@@ -141,7 +142,7 @@ class vframeOopPrimitives : AllStatic {
   static PRIM_DECL_1(step_next, oop activation);
 
   //%prim
-  // <NoReceiver> primitiveActivationStepReturn: activation <Activation> 
+  // <NoReceiver> primitiveActivationStepReturn: activation <Activation>
   //                                 ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc   = 'Sets up stepping up to the return from the activation''s method.'
   //              doc   = 'Returns the activation.'
@@ -149,6 +150,5 @@ class vframeOopPrimitives : AllStatic {
   //              name  = 'vframeOopPrimitives::step_return' }
   //%
   static PRIM_DECL_1(step_return, oop activation);
-
 };
 #endif // _VFRAME_PRIMS_HPP

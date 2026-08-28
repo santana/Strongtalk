@@ -29,10 +29,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // ReservedSpace is a data strucure for reserving a contiguous chunk of memory.
 
 class ReservedSpace : public ValueObj {
- private:
+private:
   char* _base;
-  int   _size;
- public:
+  int _size;
+
+public:
   ReservedSpace(int size);
   ReservedSpace(char* base, int size) {
     _base = base;
@@ -41,25 +42,25 @@ class ReservedSpace : public ValueObj {
 
   // Accessors
   char* base() { return _base; }
-  int   size() { return _size; }
+  int size() { return _size; }
 
   bool is_reserved() { return _base != NULL; }
 
   // Splitting
   ReservedSpace first_part(int partition_size);
-  ReservedSpace last_part(int  partition_size);
+  ReservedSpace last_part(int partition_size);
 
   // Alignment
   static int page_align_size(int size);
   static int align_size(int size, int page_size);
 };
 
-// VirtualSpace is data structure for reserving a contiguous chunk of memory and 
+// VirtualSpace is data structure for reserving a contiguous chunk of memory and
 // then commit to the reserved chunk bit by bit.
 // Perfect for implementing growable stack without relocation.
 
 class VirtualSpace : public ValueObj {
- private:
+private:
   // Reserved area
   char* _low_boundary;
   char* _high_boundary;
@@ -69,33 +70,33 @@ class VirtualSpace : public ValueObj {
   char* _high;
 
   // Grow direction
-  bool  _low_to_high;
+  bool _low_to_high;
 
   VirtualSpace* next;
   friend class VirtualSpaces;
 
- public:
-  char* low()  const { return _low; }
+public:
+  char* low() const { return _low; }
   char* high() const { return _high; }
 
-  char* low_boundary()  const { return _low_boundary; }
+  char* low_boundary() const { return _low_boundary; }
   char* high_boundary() const { return _high_boundary; }
 
- public:
-  VirtualSpace(int reserved_size,      int committed_size, bool low_to_high = true);
+public:
+  VirtualSpace(int reserved_size, int committed_size, bool low_to_high = true);
   VirtualSpace(ReservedSpace reserved, int committed_size, bool low_to_high = true);
   VirtualSpace();
 
   void initialize(ReservedSpace reserved, int committed_size, bool low_to_high = true);
-  
+
   ~VirtualSpace();
 
   // testers
-  int committed_size()   const;
-  int reserved_size()    const;
+  int committed_size() const;
+  int reserved_size() const;
   int uncommitted_size() const;
   bool contains(void* p) const;
-  bool low_to_high()     const;
+  bool low_to_high() const;
 
   // operations
   void expand(int size);
@@ -110,12 +111,13 @@ class VirtualSpace : public ValueObj {
 };
 
 class VirtualSpaces : AllStatic {
- private:
+private:
   static VirtualSpace* head;
   static void add(VirtualSpace* sp);
   static void remove(VirtualSpace* sp);
   friend class VirtualSpace;
- public:
+
+public:
   static int committed_size();
   static int reserved_size();
   static int uncommitted_size();

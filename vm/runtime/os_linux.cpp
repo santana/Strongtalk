@@ -29,64 +29,60 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/growableArray.hpp"
 
 #if defined(__linux__) || defined(__OpenBSD__)
-# include <pthread.h>
-# include <unistd.h>
-# include <semaphore.h>
-# include <sys/times.h>
-# include <sys/mman.h>
-# include <time.h>
-# include <stdio.h>
-# include <dlfcn.h>
-# include <signal.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <sys/times.h>
+#include <sys/mman.h>
+#include <time.h>
+#include <stdio.h>
+#include <dlfcn.h>
+#include <signal.h>
 #ifndef __OpenBSD__
-# include <ucontext.h>
+#include <ucontext.h>
 #endif
-# include <errno.h>
+#include <errno.h>
 
-void os_dump_context2(ucontext_t *context) {
+void os_dump_context2(ucontext_t* context) {
 #ifdef __OpenBSD__
-    printf("\nRAX: %lx", context->sc_rax);
-    printf("\nRBX: %lx", context->sc_rbx);
-    printf("\nRCX: %lx", context->sc_rcx);
-    printf("\nRDX: %lx", context->sc_rdx);
-    printf("\nRIP: %lx", context->sc_rip);
-    printf("\nRSP: %lx", context->sc_rsp);
-    printf("\nRBP: %lx", context->sc_rbp);
-    printf("\nRDI: %lx", context->sc_rdi);
-    printf("\nRSI: %lx", context->sc_rsi);
+  printf("\nRAX: %lx", context->sc_rax);
+  printf("\nRBX: %lx", context->sc_rbx);
+  printf("\nRCX: %lx", context->sc_rcx);
+  printf("\nRDX: %lx", context->sc_rdx);
+  printf("\nRIP: %lx", context->sc_rip);
+  printf("\nRSP: %lx", context->sc_rsp);
+  printf("\nRBP: %lx", context->sc_rbp);
+  printf("\nRDI: %lx", context->sc_rdi);
+  printf("\nRSI: %lx", context->sc_rsi);
 #else
-    mcontext_t mcontext = context->uc_mcontext;
-    printf("\nRAX: %llx", mcontext.gregs[REG_RAX]);
-    printf("\nRBX: %llx", mcontext.gregs[REG_RBX]);
-    printf("\nRCX: %llx", mcontext.gregs[REG_RCX]);
-    printf("\nRDX: %llx", mcontext.gregs[REG_RDX]);
-    printf("\nRIP: %llx", mcontext.gregs[REG_RIP]);
-    printf("\nRSP: %llx", mcontext.gregs[REG_RSP]);
-    printf("\nRBP: %llx", mcontext.gregs[REG_RBP]);
-    printf("\nRDI: %llx", mcontext.gregs[REG_RDI]);
-    printf("\nRSI: %llx", mcontext.gregs[REG_RSI]);
+  mcontext_t mcontext = context->uc_mcontext;
+  printf("\nRAX: %llx", mcontext.gregs[REG_RAX]);
+  printf("\nRBX: %llx", mcontext.gregs[REG_RBX]);
+  printf("\nRCX: %llx", mcontext.gregs[REG_RCX]);
+  printf("\nRDX: %llx", mcontext.gregs[REG_RDX]);
+  printf("\nRIP: %llx", mcontext.gregs[REG_RIP]);
+  printf("\nRSP: %llx", mcontext.gregs[REG_RSP]);
+  printf("\nRBP: %llx", mcontext.gregs[REG_RBP]);
+  printf("\nRDI: %llx", mcontext.gregs[REG_RDI]);
+  printf("\nRSI: %llx", mcontext.gregs[REG_RSI]);
 #endif
 }
 void os_dump_context() {
 #ifndef __OpenBSD__
-	ucontext_t context;
-	getcontext(&context);
-	os_dump_context2(&context);
+  ucontext_t context;
+  getcontext(&context);
+  os_dump_context2(&context);
 #endif
 }
 
-static int    main_thread_id;
+static int main_thread_id;
 class Lock {
-    private:
-        pthread_mutex_t* mutex;
+private:
+  pthread_mutex_t* mutex;
 
-    public:
-        Lock(pthread_mutex_t* mutex) : mutex(mutex) {
-            pthread_mutex_lock(mutex);
-        }
-        ~Lock() {
-            pthread_mutex_unlock(mutex);
-        }
+public:
+  Lock(pthread_mutex_t* mutex) : mutex(mutex) { pthread_mutex_lock(mutex); }
+  ~Lock() { pthread_mutex_unlock(mutex); }
 };
 
 static int _argc;
@@ -101,88 +97,86 @@ char** os::argv() {
 }
 
 void os::set_args(int argc, char* argv[]) {
-    _argc = argc;
-    _argv = argv;
+  _argc = argc;
+  _argv = argv;
 }
 
-class Event: public CHeapObj {
-    private:
-        bool _signalled;
-        pthread_mutex_t mutex;
-        pthread_cond_t notifier;
-    public:
-        void inline signal() {
-            Lock mark(&mutex);
-            _signalled = true;
-            pthread_cond_signal(&notifier);
-        }
-        void inline reset() {
-            Lock mark(&mutex);
-            _signalled = false;
-            pthread_cond_signal(&notifier);
-        }
-        void inline waitFor() {
-            Lock mark(&mutex);
-            while (!_signalled)
-              pthread_cond_wait(&notifier, &mutex);
-        }
-        Event(bool state) {
-            _signalled = state;
-            pthread_mutex_init(&mutex, NULL);
-            pthread_cond_init(&notifier, NULL);
-        }
-        ~Event() {
-            pthread_mutex_destroy(&mutex);
-            pthread_cond_destroy(&notifier);
-        }
+class Event : public CHeapObj {
+private:
+  bool _signalled;
+  pthread_mutex_t mutex;
+  pthread_cond_t notifier;
+
+public:
+  void inline signal() {
+    Lock mark(&mutex);
+    _signalled = true;
+    pthread_cond_signal(&notifier);
+  }
+  void inline reset() {
+    Lock mark(&mutex);
+    _signalled = false;
+    pthread_cond_signal(&notifier);
+  }
+  void inline waitFor() {
+    Lock mark(&mutex);
+    while (!_signalled)
+      pthread_cond_wait(&notifier, &mutex);
+  }
+  Event(bool state) {
+    _signalled = state;
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&notifier, NULL);
+  }
+  ~Event() {
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&notifier);
+  }
 };
 
 class Thread : CHeapObj {
-	public:
-        static Thread* find(pthread_t threadId) {
-          for (int index = 0; index < _threads->length(); index++) {
-            Thread* candidate = _threads->at(index);
-            if (candidate == NULL) continue;
-            if (pthread_equal(threadId, candidate->_threadId))
-              return candidate;
-          }
-          return NULL;
-        }
-        void suspend() {
-        	suspendEvent.waitFor();
-        }
-        void resume() {
-        	suspendEvent.signal();
-        }
-    private:
-        Event suspendEvent;
-        static GrowableArray<Thread*>* _threads;
-        pthread_t _threadId;
-        clockid_t _clockId;
-        int _thread_index;
-        void* stackLimit;
-        
-        static void init() {
-          ThreadCritical lock;
-          _threads = new(true) GrowableArray<Thread*>(10, true);
-          
-        }
-	    Thread(pthread_t threadId, void* stackLimit) : _threadId(threadId), suspendEvent(false), stackLimit(stackLimit) {
-          ThreadCritical lock;
-          pthread_getcpuclockid(_threadId, &_clockId);
-          _thread_index = _threads->length();
-          _threads->push(this);
-        };
-        ~Thread() {
-          ThreadCritical lock;
-          _threads->at_put(_thread_index, NULL);
-        }
-        double get_cpu_time() {
-          struct timespec cpu;
-          clock_gettime(_clockId, &cpu);
-          return ((double)cpu.tv_sec) + ((double)cpu.tv_nsec)/1000000000.0; 
-        }
-        friend class os;
+public:
+  static Thread* find(pthread_t threadId) {
+    for (int index = 0; index < _threads->length(); index++) {
+      Thread* candidate = _threads->at(index);
+      if (candidate == NULL)
+        continue;
+      if (pthread_equal(threadId, candidate->_threadId))
+        return candidate;
+    }
+    return NULL;
+  }
+  void suspend() { suspendEvent.waitFor(); }
+  void resume() { suspendEvent.signal(); }
+
+private:
+  Event suspendEvent;
+  static GrowableArray<Thread*>* _threads;
+  pthread_t _threadId;
+  clockid_t _clockId;
+  int _thread_index;
+  void* stackLimit;
+
+  static void init() {
+    ThreadCritical lock;
+    _threads = new (true) GrowableArray<Thread*>(10, true);
+  }
+  Thread(pthread_t threadId, void* stackLimit) : _threadId(threadId), suspendEvent(false), stackLimit(stackLimit) {
+    ThreadCritical lock;
+    pthread_getcpuclockid(_threadId, &_clockId);
+    _thread_index = _threads->length();
+    _threads->push(this);
+  };
+  ~Thread() {
+    ThreadCritical lock;
+    _threads->at_put(_thread_index, NULL);
+  }
+  double get_cpu_time() {
+    struct timespec cpu;
+    clock_gettime(_clockId, &cpu);
+    return ((double)cpu.tv_sec) + ((double)cpu.tv_nsec) / 1000000000.0;
+  }
+  friend class os;
 };
 
 GrowableArray<Thread*>* Thread::_threads = NULL;
@@ -200,13 +194,13 @@ bool os::jit_write_protect_enabled() {
 }
 
 // No references in VM
-int os::getenv(char* name,char* buffer,int len) {
- return 0;
+int os::getenv(char* name, char* buffer, int len) {
+  return 0;
 }
 
 // 1 reference (lprintf.cpp)
 bool os::move_file(char* from, char* to) {
-	return false;
+  return false;
 }
 
 // 1 reference (inliningdb.cpp)
@@ -226,57 +220,57 @@ Thread* os::starting_thread(int* id_addr) {
 }
 
 typedef struct {
-	int (*main)(void* parameter);
-	void* parameter;
+  int (*main)(void* parameter);
+  void* parameter;
   char* stackLimit;
 } thread_args_t;
 
 static Event* threadCreated = NULL;
 
-#define STACK_SIZE ThreadStackSize * K
+#define STACK_SIZE ThreadStackSize* K
 
 char* calcStackLimit() {
   char* stackptr;
   asm("movq %%rsp, %0;" : "=a"(stackptr));
-  stackptr = (char*) align(stackptr, os::vm_page_size());
-  
+  stackptr = (char*)align(stackptr, os::vm_page_size());
+
   int stackHeadroom = 2 * os::vm_page_size();
   return stackptr - STACK_SIZE + stackHeadroom;
 }
 void* mainWrapper(void* args) {
-  thread_args_t * targs = (thread_args_t*) args;
+  thread_args_t* targs = (thread_args_t*)args;
   targs->stackLimit = calcStackLimit();
-	
+
   int (*threadMain)(void*) = targs->main;
   void* parameter = targs->parameter;
-  int* result = (int*) malloc(sizeof(int));
+  int* result = (int*)malloc(sizeof(int));
   threadCreated->signal();
   *result = threadMain(parameter);
-  return (void *) result; 
+  return (void*)result;
 }
 
 Thread* os::create_thread(int threadStart(void* parameter), void* parameter, int* id_addr) {
-	pthread_t threadId;
+  pthread_t threadId;
   thread_args_t threadArgs;
   {
     ThreadCritical tc;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, STACK_SIZE);
-    
+
     threadCreated->reset();
     threadArgs.main = threadStart;
     threadArgs.parameter = parameter;
-    
+
     int status = pthread_create(&threadId, &attr, &mainWrapper, &threadArgs);
     if (status != 0) {
       fatal1("Unable to create thread. status = %d", status);
     }
   }
   threadCreated->waitFor();
-	Thread* thread = new Thread(threadId, threadArgs.stackLimit);
-	*id_addr = thread->_thread_index;
-	return thread;
+  Thread* thread = new Thread(threadId, threadArgs.stackLimit);
+  *id_addr = thread->_thread_index;
+  return thread;
 }
 
 void* os::stack_limit(Thread* thread) {
@@ -284,12 +278,11 @@ void* os::stack_limit(Thread* thread) {
 }
 
 // 1 reference process.cpp
-void os::terminate_thread(Thread* thread) {
-}
+void os::terminate_thread(Thread* thread) {}
 
 // 1 reference process.cpp
 void os::delete_event(Event* event) {
-    delete event;
+  delete event;
 }
 
 // 1 reference process.cpp
@@ -301,74 +294,73 @@ tms processTimes;
 
 // 2 references - prims/system_prims.cpp, timer.cpp
 int os::updateTimes() {
-  return times(&processTimes) != (clock_t) -1;
+  return times(&processTimes) != (clock_t)-1;
 }
 
 // 2 references - prims/system_prims.cpp, timer.cpp
 double os::userTime() {
-  return ((double) processTimes.tms_utime)/ CLOCKS_PER_SEC;
+  return ((double)processTimes.tms_utime) / CLOCKS_PER_SEC;
 }
 
 // 2 references - prims/system_prims.cpp, timer.cpp
 double os::systemTime() {
-  return ((double) processTimes.tms_stime)/ CLOCKS_PER_SEC;
+  return ((double)processTimes.tms_stime) / CLOCKS_PER_SEC;
 }
 
 // 1 reference - process.cpp
 double os::user_time_for(Thread* thread) {
   //Hack warning - assume half time is spent in kernel, half in user code
-  return thread->get_cpu_time()/2;
+  return thread->get_cpu_time() / 2;
 }
 
 // 1 reference - process.cpp
 double os::system_time_for(Thread* thread) {
   //Hack warning - assume half time is spent in kernel, half in user code
-  return thread->get_cpu_time()/2;
+  return thread->get_cpu_time() / 2;
 }
 
-static int      has_performance_count = 0;
-static long_int initial_performance_count(0,0);
-static long_int performance_frequency(0,0);
+static int has_performance_count = 0;
+static long_int initial_performance_count(0, 0);
+static long_int performance_frequency(0, 0);
 
 // 2 references - memory/error.cpp, evaluator.cpp
 void os::fatalExit(int num) {
-    exit(num);
+  exit(num);
 }
 
-class DLLLoadError {
-};
-  
-class DLL : CHeapObj {
-  private:
-    char* _name;
-    void* _handle;
+class DLLLoadError {};
 
-    DLL(char* name) {
-      _handle = dlopen(name, RTLD_LAZY);
-      checkHandle(_handle, "could not find library: %s");
-      _name = (char*)malloc(strlen(name) + 1);
-      strcpy(_name, name);
+class DLL : CHeapObj {
+private:
+  char* _name;
+  void* _handle;
+
+  DLL(char* name) {
+    _handle = dlopen(name, RTLD_LAZY);
+    checkHandle(_handle, "could not find library: %s");
+    _name = (char*)malloc(strlen(name) + 1);
+    strcpy(_name, name);
+  }
+  void checkHandle(void* handle, const char* format) {
+    if (handle == NULL) {
+      char* message = (char*)malloc(200);
+      sprintf(message, format, dlerror());
+      assert(handle != NULL, message);
+      free(message);
     }
-    void checkHandle(void* handle, const char* format) {
-      if (handle == NULL) {
-        char* message = (char*) malloc(200);
-        sprintf(message, format, dlerror());
-        assert(handle != NULL, message);
-        free(message);
-      }
-    }
-    ~DLL() {
-      if (_handle) dlclose(_handle);
-      if (_name) free(_name);
-    }
-    bool isValid() {
-      return (_handle != NULL) && (_name != NULL);
-    }
-    dll_func lookup(char* funcname) {
-      dll_func function = dll_func(dlsym(_handle, funcname));
-      checkHandle((void*) function, "could not find function: %s"); 
-      return function; 
-    }
+  }
+  ~DLL() {
+    if (_handle)
+      dlclose(_handle);
+    if (_name)
+      free(_name);
+  }
+  bool isValid() { return (_handle != NULL) && (_name != NULL); }
+  dll_func lookup(char* funcname) {
+    dll_func function = dll_func(dlsym(_handle, funcname));
+    checkHandle((void*)function, "could not find function: %s");
+    return function;
+  }
   friend class os;
 };
 
@@ -380,7 +372,8 @@ dll_func os::dll_lookup(char* name, DLL* library) {
 // 1 reference - prims/dll.cpp
 DLL* os::dll_load(char* name) {
   DLL* library = new DLL(name);
-  if (library->isValid()) return library;
+  if (library->isValid())
+    return library;
   delete library;
   return NULL;
 }
@@ -395,14 +388,20 @@ char* os::dll_extension() {
   return ".so";
 }
 
-int       nCmdShow      = 0;
+int nCmdShow = 0;
 
 // 1 reference - prims/system_prims.cpp
-void* os::get_hInstance()    { return (void*) NULL;     }
+void* os::get_hInstance() {
+  return (void*)NULL;
+}
 // 1 reference - prims/system_prims.cpp
-void* os::get_prevInstance() { return (void*) NULL; }
+void* os::get_prevInstance() {
+  return (void*)NULL;
+}
 // 1 reference - prims/system_prims.cpp
-int   os::get_nCmdShow()     { return 0;            }
+int os::get_nCmdShow() {
+  return 0;
+}
 
 extern int bootstrapping;
 
@@ -416,16 +415,16 @@ void os::timerStop() {}
 void os::timerPrintBuffer() {}
 
 char* os::reserve_memory(int size) {
-  void *p;
+  void* p;
 
   p = mmap(0, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (p == MAP_FAILED) {
     fatal2("Unable to reserve memory with size %d (errno = %d)", size, errno);
     exit(-1);
   }
-  return (char *)p;
+  return (char*)p;
 }
-  
+
 bool os::commit_memory(char* addr, int size) {
   if (mprotect(addr, size, PROT_READ | PROT_WRITE) != 0) {
     fatal3("Unable to set access protection on %p with size %d (errno = %d)", addr, size, errno);
@@ -464,7 +463,7 @@ char* os::exec_memory(int size) {
     fatal2("Unable to reserve memory with size %d (errno = %d)", size, errno);
     exit(-1);
   }
-  return (char *)p;
+  return (char*)p;
 }
 
 void* os::calloc(int size, char filler) {
@@ -479,7 +478,7 @@ void os::free(void* p) {
 void os::transfer(Thread* from_thread, Event* from_event, Thread* to_thread, Event* to_event) {
   from_event->reset();
   to_event->signal();
-  from_event->waitFor();  
+  from_event->waitFor();
 }
 
 // 1 reference - process.cpp
@@ -490,48 +489,47 @@ void os::transfer_and_continue(Thread* from_thread, Event* from_event, Thread* t
 
 // 1 reference - process.cpp
 void os::suspend_thread(Thread* thread) {
-	os_dump_context();
-	pthread_kill(thread->_threadId, SIGUSR1);
+  os_dump_context();
+  pthread_kill(thread->_threadId, SIGUSR1);
 }
 
 void suspendHandler(int signum) {
-	Thread* current = Thread::find(pthread_self());
-	assert(current, "Suspended thread not found!");
-	current->suspend();
+  Thread* current = Thread::find(pthread_self());
+  assert(current, "Suspended thread not found!");
+  current->suspend();
 }
 // 1 reference - process.cpp
 void os::resume_thread(Thread* thread) {
-	thread->resume();
+  thread->resume();
 }
 
 // No references
-void os::sleep(int ms) {
-}
+void os::sleep(int ms) {}
 
 // 1 reference - process.cpp
-void os::fetch_top_frame(Thread* thread, int** sp, int** fp, char** pc) {
-}
-  
+void os::fetch_top_frame(Thread* thread, int** sp, int** fp, char** pc) {}
+
 // 1 reference - callBack.cpp
 int os::current_thread_id() {
   Thread* currentThread = Thread::find(pthread_self());
-  if (currentThread == NULL) return -1;
+  if (currentThread == NULL)
+    return -1;
   return currentThread->_thread_index;
 }
 
 // 1 reference - process.cpp
 void os::wait_for_event(Event* event) {
-    event->waitFor();
+  event->waitFor();
 }
 
 // 1 reference - process.cpp
 void os::reset_event(Event* event) {
-    event->reset();
+  event->reset();
 }
 
 // 1 reference - process.cpp
 void os::signal_event(Event* event) {
-    event->signal();
+  event->signal();
 }
 
 // 1 reference - process.cpp
@@ -554,7 +552,7 @@ long_int os::elapsed_counter() {
   clock_gettime(CLOCK_REALTIME, &current_time);
   int64_t current64 = ((int64_t)current_time.tv_sec) * 1000000000 + current_time.tv_nsec;
   uint high = current64 >> 32;
-  uint low  = current64 & 0xffffffff;
+  uint low = current64 & 0xffffffff;
   long_int current(low, high);
   return current;
 }
@@ -575,7 +573,7 @@ double os::elapsedTime() {
   if (nsecs < 0) {
     secs--;
     nsecs += 1000000000;
-  } 
+  }
   return secs + (nsecs / 1000000000.0);
 }
 
@@ -590,9 +588,9 @@ static void initialize_performance_counter() {
 
 // No references
 void os::initialize_system_info() {
-    Thread::init();
-    main_thread = new Thread(pthread_self(), calcStackLimit());
-    initialize_performance_counter();
+  Thread::init();
+  main_thread = new Thread(pthread_self(), calcStackLimit());
+  initialize_performance_counter();
 }
 
 // 1 reference - memory/error.cpp
@@ -600,21 +598,25 @@ int os::message_box(char* title, char* message) {
   return 0;
 }
 
-char* os::platform_class_name() { return "UnixPlatform"; }
+char* os::platform_class_name() {
+  return "UnixPlatform";
+}
 
 int os::error_code() {
   return errno;
 }
 extern "C" bool EnableTasks;
 
-pthread_mutex_t ThreadSection; 
+pthread_mutex_t ThreadSection;
 
 bool ThreadCritical::_initialized = false;
 void ThreadCritical::intialize() {
   pthread_mutex_init(&ThreadSection, NULL);
   _initialized = true;
 }
-void ThreadCritical::release()   { pthread_mutex_destroy(&ThreadSection);     }
+void ThreadCritical::release() {
+  pthread_mutex_destroy(&ThreadSection);
+}
 
 ThreadCritical::ThreadCritical() {
   pthread_mutex_lock(&ThreadSection);
@@ -627,72 +629,73 @@ ThreadCritical::~ThreadCritical() {
 void real_time_tick(int delay_time);
 
 void* watcherMain(void* ignored) {
-  const struct timespec delay = { 0, 1 * 1000 * 1000 };
+  const struct timespec delay = {0, 1 * 1000 * 1000};
   const int delay_interval = 1; // Delay 1 ms
-  while(1) {
+  while (1) {
     int status = nanosleep(&delay, NULL);
-    if (!status) return 0;
+    if (!status)
+      return 0;
     real_time_tick(delay_interval);
   }
   return 0;
 }
 
 void segv_repeated(int signum, siginfo_t* info, void* context) {
-	printf("SEGV during signal handling. Aborting.");
-	exit(-2);
+  printf("SEGV during signal handling. Aborting.");
+  exit(-2);
 }
 
 void install_dummy_handler() {
-	  struct sigaction sa;
+  struct sigaction sa;
 
-	  sigemptyset(&sa.sa_mask);
-	  sa.sa_flags = SA_RESTART |SA_SIGINFO;
-	  sa.sa_sigaction = segv_repeated;
-	  if (sigaction(SIGSEGV, &sa, NULL) == -1)
-	      /* Handle error */;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART | SA_SIGINFO;
+  sa.sa_sigaction = segv_repeated;
+  if (sigaction(SIGSEGV, &sa, NULL) == -1)
+    /* Handle error */;
 }
 
 void trace_stack(int thread_id);
 void (*userHandler)(void* fp, void* sp, void* pc) = NULL;
 
 static void handler(int signum, siginfo_t* info, void* context) {
-//	install_dummy_handler();
-//	trace_stack(os::current_thread_id());
-    if (!userHandler) {
-        printf("\nsignal: %d\ninfo: %lx\ncontext: %lx", signum, reinterpret_cast<intptr_t>(info), reinterpret_cast<intptr_t>(context));
-	    os_dump_context2((ucontext_t*) context);
-    } else {
+  //	install_dummy_handler();
+  //	trace_stack(os::current_thread_id());
+  if (!userHandler) {
+    printf("\nsignal: %d\ninfo: %lx\ncontext: %lx", signum, reinterpret_cast<intptr_t>(info),
+           reinterpret_cast<intptr_t>(context));
+    os_dump_context2((ucontext_t*)context);
+  } else {
 #ifdef __OpenBSD__
-        userHandler(reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rbp),
-                    reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rsp),
-                    reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rip));
+    userHandler(reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rbp),
+                reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rsp),
+                reinterpret_cast<void*>(reinterpret_cast<ucontext_t*>(context)->sc_rip));
 #else
-        mcontext_t mcontext = reinterpret_cast<ucontext_t*>(context)->uc_mcontext;
-        userHandler(reinterpret_cast<void*>(mcontext.gregs[REG_RBP]),
-                    reinterpret_cast<void*>(mcontext.gregs[REG_RSP]),
-                    reinterpret_cast<void*>(mcontext.gregs[REG_RIP]));
+    mcontext_t mcontext = reinterpret_cast<ucontext_t*>(context)->uc_mcontext;
+    userHandler(reinterpret_cast<void*>(mcontext.gregs[REG_RBP]), reinterpret_cast<void*>(mcontext.gregs[REG_RSP]),
+                reinterpret_cast<void*>(mcontext.gregs[REG_RIP]));
 #endif
-    }
-    exit(-1);
+  }
+  exit(-1);
 }
 
 void os::add_exception_handler(void newHandler(void* fp, void* sp, void* pc)) {
-    userHandler = newHandler;
+  userHandler = newHandler;
 }
 
 void install_signal_handlers() {
-	  struct sigaction sa;
+  struct sigaction sa;
 
-	  sigemptyset(&sa.sa_mask);
-	  sa.sa_flags = SA_RESTART; /* Restart functions if
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART; /* Restart functions if
 	                               interrupted by handler */
-	  sa.sa_handler = suspendHandler;
-	  if (sigaction(SIGUSR1, &sa, NULL) == -1)
-	      /* Handle error */;
-	  sa.sa_flags |= SA_SIGINFO;
-	  sa.sa_sigaction = handler;
-	  if (sigaction(SIGSEGV, &sa, NULL) == -1)
-	      /* Handle error */;
+  sa.sa_handler = suspendHandler;
+  if (sigaction(SIGUSR1, &sa, NULL) == -1)
+    /* Handle error */;
+  sa.sa_flags |= SA_SIGINFO;
+  sa.sa_sigaction = handler;
+  if (sigaction(SIGSEGV, &sa, NULL) == -1)
+    /* Handle error */;
 }
 
 void os_init() {
@@ -700,11 +703,11 @@ void os_init() {
 
   install_signal_handlers();
   os::initialize_system_info();
-	
+
   pthread_setconcurrency(1);
 
   threadCreated = new Event(false);
-  
+
   if (EnableTasks) {
     pthread_t watcherThread;
     int status = pthread_create(&watcherThread, NULL, &watcherMain, NULL);

@@ -39,72 +39,68 @@ class ByteArray;
 class NonInlinedBlockScopeNode;
 
 // Interface to generate scope information for an nmethod
-class ScopeDescRecorder: public ResourceObj {
- private:
-  bool          _hasCodeBeenGenerated;
-  Array*        oops;
-  Array*        values;
-  ByteArray*    codes;
-  PcDescInfo    pcs;
+class ScopeDescRecorder : public ResourceObj {
+private:
+  bool _hasCodeBeenGenerated;
+  Array* oops;
+  Array* values;
+  ByteArray* codes;
+  PcDescInfo pcs;
 
   GrowableArray<klassOop>* dependants;
-  int                  dependants_end;
+  int dependants_end;
 
   NonInlinedBlockScopeNode* nonInlinedBlockScopesHead;
   NonInlinedBlockScopeNode* nonInlinedBlockScopesTail;
 
- public:
+public:
   ScopeInfo root;
-  
+
   // Returns the offset for a scopeDesc after generation of the scopeDesc info.
   int offset(ScopeInfo scope);
   int offset_for_noninlined_scope_node(NonInlinedBlockScopeNode* scope);
 
   ScopeDescRecorder(int scopeSize, // estimated size of scopes (in bytes)
-		    int npcDesc);  // estimated number of PcDescs
+                    int npcDesc); // estimated number of PcDescs
 
   // Adds a method scope
-  ScopeInfo addMethodScope(LookupKey*      key,                        // lookup key
-			   methodOop       method,                     // result of the lookup
-			   LogicalAddress* receiver_location,          // location of receiver
-			   bool            allocates_compiled_context, // tells whether the code allocates a context
-                           bool            lite         = false,
-			   int             scopeID      = 0,
-			   ScopeInfo       senderScope  = NULL, 
-			   intptr_t        senderBCI    = IllegalBCI,
-			   bool            visible      = false);
-
+  ScopeInfo addMethodScope(LookupKey* key, // lookup key
+                           methodOop method, // result of the lookup
+                           LogicalAddress* receiver_location, // location of receiver
+                           bool allocates_compiled_context, // tells whether the code allocates a context
+                           bool lite = false, int scopeID = 0, ScopeInfo senderScope = NULL,
+                           intptr_t senderBCI = IllegalBCI, bool visible = false);
 
   // Adds an inlined block scope
-  ScopeInfo addBlockScope(methodOop       method,                     // block method
-			  ScopeInfo       parent,                     // parent scope
-			  bool            allocates_compiled_context, // tells whether the code allocates a context
-                          bool            lite             = false,
-			  int             scopeID          = 0,
-			  ScopeInfo       senderScope      = NULL, 
-			  intptr_t        senderBCI        = IllegalBCI,
-			  bool            visible          = false);
+  ScopeInfo addBlockScope(methodOop method, // block method
+                          ScopeInfo parent, // parent scope
+                          bool allocates_compiled_context, // tells whether the code allocates a context
+                          bool lite = false, int scopeID = 0, ScopeInfo senderScope = NULL,
+                          intptr_t senderBCI = IllegalBCI, bool visible = false);
 
   // Adds a top level block scope
-  ScopeInfo addTopLevelBlockScope(methodOop       method,                     // block method
-				  LogicalAddress* receiver_location,          // location of receiver
-				  klassOop        receiver_klass,             // receiver klass
-				  bool            allocates_compiled_context);// tells whether the code allocates a context
+  ScopeInfo addTopLevelBlockScope(methodOop method, // block method
+                                  LogicalAddress* receiver_location, // location of receiver
+                                  klassOop receiver_klass, // receiver klass
+                                  bool allocates_compiled_context); // tells whether the code allocates a context
 
   // Adds an noninlined block scope
   // Used for retrieving information about block closure stubs
   NonInlinedBlockScopeNode* addNonInlinedBlockScope(methodOop block_method, ScopeInfo parent);
 
   // Interface for adding name nodes.
-  void addTemporary        (ScopeInfo scope, int index, LogicalAddress* location); // all entries [0..max(index)] must be filled.
-  void addContextTemporary (ScopeInfo scope, int index, LogicalAddress* location); // all entries [0..max(index)] must be filled.
-  void addExprStack        (ScopeInfo scope, int bci,   LogicalAddress* location); // sparse array = some entries may be left empty.
+  void addTemporary(ScopeInfo scope, int index,
+                    LogicalAddress* location); // all entries [0..max(index)] must be filled.
+  void addContextTemporary(ScopeInfo scope, int index,
+                           LogicalAddress* location); // all entries [0..max(index)] must be filled.
+  void addExprStack(ScopeInfo scope, int bci,
+                    LogicalAddress* location); // sparse array = some entries may be left empty.
 
   LogicalAddress* createLogicalAddress(NameNode* initial_value);
-  void            changeLogicalAddress(LogicalAddress* location, NameNode* new_value, int pc_offset);
+  void changeLogicalAddress(LogicalAddress* location, NameNode* new_value, int pc_offset);
 
   // Providing the locations of the arguments is superfluous but is convenient for
-  // verification. 
+  // verification.
   //  - for top level scopes the argument locations are fixed (on the stack provided by the caller).
   //  - for inlined scopes the expression stack of the caller describes the argument locations.
   // %implementation-note:
@@ -130,23 +126,17 @@ class ScopeDescRecorder: public ResourceObj {
   // Generates the the scopeDesc information.
   void generate();
 
- private:
+private:
   // Called before storring a location to resolve the context scope index into an offset
   Location convert_location(Location loc);
 
   ScopeInfo addScope(ScopeInfo scope, ScopeInfo senderScope);
   NonInlinedBlockScopeNode* addNonInlinedBlockScope(NonInlinedBlockScopeNode* scope);
 
-  void genScopeDescHeader(u_char code, 
-                          bool   lite,
-                          bool   args,
-                          bool   temps,
-                          bool   context_temps,
-                          bool   expr_stack,
-                          bool   has_context,
-                          bool   bigHeader);
+  void genScopeDescHeader(u_char code, bool lite, bool args, bool temps, bool context_temps, bool expr_stack,
+                          bool has_context, bool bigHeader);
 
-  // Generate the collected dependecies 
+  // Generate the collected dependecies
   void generateDependencies();
 
   void emit_termination_node();
@@ -154,13 +144,13 @@ class ScopeDescRecorder: public ResourceObj {
 
   // Returns true if was possible to save exprOffset and nextOffset in the
   // two pre-allocated bytes.
-  int  updateScopeDescHeader(int offset, int next);
+  int updateScopeDescHeader(int offset, int next);
 
-  void  updateExtScopeDescHeader(int offset, int next);
+  void updateExtScopeDescHeader(int offset, int next);
 
   inline int getValueIndex(int v);
   inline int getOopIndex(oop o);
-  
+
   inline void genIndex(int index);
   void genValue(intptr_t v);
   void genOop(oop o);
@@ -191,39 +181,42 @@ class ScopeDescRecorder: public ResourceObj {
 //  - IllegalName
 // this hierarchy is parallel to the NameDesc hierarchy in nameDesc.hpp
 
-class NameNode: public ResourceObj {		// abstract superclass of all NameNodes
- public:
+class NameNode : public ResourceObj { // abstract superclass of all NameNodes
+public:
   bool genHeaderByte(ScopeDescRecorder* rec, u_char code, bool is_last, int index);
 
-  virtual bool hasLocation() 	{ return false; }
-  virtual bool isIllegal()  	{ return false; }
-  virtual Location location()	{ ShouldNotCallThis(); return unAllocated; }
+  virtual bool hasLocation() { return false; }
+  virtual bool isIllegal() { return false; }
+  virtual Location location() {
+    ShouldNotCallThis();
+    return unAllocated;
+  }
   virtual void generate(ScopeDescRecorder* rec, bool is_last) = 0;
 };
 
 // a LocationName describes a location; i.e., the corresponding source name (e.g., method temporary)
 // lives in this location for its entire lifetime
-class LocationName: public NameNode {
- private:
+class LocationName : public NameNode {
+private:
   Location l;
 
   void generate(ScopeDescRecorder* rec, bool is_last);
 
- public:
+public:
   LocationName(Location ln) { l = ln; }
-  bool hasLocation() 	{ return true; }
-  Location location()	{ return l; }
+  bool hasLocation() { return true; }
+  Location location() { return l; }
 };
 
 // a ValueName is a constant; i.e., the corresponding source name is a compile-time constant
 // (maybe because it is a source constant, or because its computation has been constant-folded)
-class ValueName: public NameNode {
- private:
+class ValueName : public NameNode {
+private:
   oop value;
-  
+
   void generate(ScopeDescRecorder* rec, bool is_last);
 
- public:
+public:
   ValueName(oop val) {
     value = val;
     assert(!val->is_block(), "should use BlockValueName");
@@ -232,14 +225,14 @@ class ValueName: public NameNode {
 
 // a BlockValueName describes a block closure that has been completely optimized away; i.e., no
 // closure will ever be created at runtime during normal execution of the program
-class BlockValueName: public NameNode {
- private:
-  methodOop block_method;   // The block method
+class BlockValueName : public NameNode {
+private:
+  methodOop block_method; // The block method
   ScopeInfo parent_scope; // The scope where to find the context
 
   void generate(ScopeDescRecorder* rec, bool is_last);
 
- public:
+public:
   BlockValueName(methodOop block_method, ScopeInfo parent_scope) {
     this->block_method = block_method;
     this->parent_scope = parent_scope;
@@ -251,34 +244,34 @@ class BlockValueName: public NameNode {
 // value, and the actual closure is created on demand after testing if it has been created already.
 // If we ever look at this name during debugging and the block doesn't exist yet, we have to create
 // one and store it in the location.
-class MemoizedName: public NameNode {
- private:
-  Location  loc;
+class MemoizedName : public NameNode {
+private:
+  Location loc;
   methodOop block_method;
   ScopeInfo parent_scope;
 
   void generate(ScopeDescRecorder* rec, bool is_last);
 
- public:
+public:
   MemoizedName(Location loc, methodOop block_method, ScopeInfo parent_scope) {
-    this->loc          = loc;
+    this->loc = loc;
     this->block_method = block_method;
     this->parent_scope = parent_scope;
   }
-  bool hasLocation() 	{ return true; }
-  Location location()	{ return loc; }
+  bool hasLocation() { return true; }
+  Location location() { return loc; }
 };
 
 // newValueName creates a ValueName or BlockValueName (if value is a block)
-NameNode* newValueName(oop value);  	
+NameNode* newValueName(oop value);
 
 // an IllegalName marks a name that cannot be inspected at runtime because it is never visible
 // at any interrupt point (i.e., it is live only between two interrupt points)
 // mainly exists for compiler/runtime system debugging
-class IllegalName: public NameNode {
- private:
-  bool isIllegal()  { return true; }
-  void generate(ScopeDescRecorder* rec,  bool is_last);
+class IllegalName : public NameNode {
+private:
+  bool isIllegal() { return true; }
+  void generate(ScopeDescRecorder* rec, bool is_last);
 };
 
 enum {
@@ -290,8 +283,8 @@ enum {
 
 // helper data structures used during packing and unpacking
 class nameDescHeaderByte : public ValueObj {
- private:
-  u_char byte; 
+private:
+  u_char byte;
   static const u_char code_width;
   static const u_char index_width;
   static const u_char is_last_bit_num;
@@ -299,7 +292,7 @@ class nameDescHeaderByte : public ValueObj {
 
   u_char raw_index() { return lowerBits(byte >> code_width, index_width); }
 
- public:
+public:
   static const u_char max_index;
   static const u_char no_index;
   static const u_char termination_index;
@@ -307,42 +300,43 @@ class nameDescHeaderByte : public ValueObj {
 
   u_char value() { return byte; }
 
-  u_char code()  {
-    return lowerBits(byte, code_width); 
-  }
+  u_char code() { return lowerBits(byte, code_width); }
 
-  u_char index()          {
+  u_char index() {
     assert(has_index(), "must have valid index");
     return raw_index();
   }
 
-  bool is_illegal()     { return raw_index() == illegal_index;     }
+  bool is_illegal() { return raw_index() == illegal_index; }
   bool is_termination() { return raw_index() == termination_index; }
-  bool is_last()        { return isSet(byte, is_last_bit_num);     }
-  bool has_index()      { return raw_index() <= max_index;         }
-  
+  bool is_last() { return isSet(byte, is_last_bit_num); }
+  bool has_index() { return raw_index() <= max_index; }
+
   void pack(u_char code, bool is_last, u_char i) {
-    assert( code <= max_code,  "code to high");
-    assert( i    <= no_index,  "index to high");
+    assert(code <= max_code, "code to high");
+    assert(i <= no_index, "index to high");
     byte = addBits(i << code_width, code);
-    if (is_last) byte = setNth(byte, is_last_bit_num);
+    if (is_last)
+      byte = setNth(byte, is_last_bit_num);
   }
 
   void pack_illegal(bool is_last) {
     byte = addBits(illegal_index << code_width, 0);
-    if (is_last) byte = setNth(byte, is_last_bit_num);
+    if (is_last)
+      byte = setNth(byte, is_last_bit_num);
   }
 
   void pack_termination(bool is_last) {
     byte = addBits(termination_index << code_width, 0);
-    if (is_last) byte = setNth(byte, is_last_bit_num);
+    if (is_last)
+      byte = setNth(byte, is_last_bit_num);
   }
 
   void unpack(u_char value) { byte = value; }
 };
 
 class scopeDescHeaderByte : public ValueObj {
- private:
+private:
   u_char byte;
   static const u_char code_width;
   static const u_char max_code;
@@ -352,38 +346,43 @@ class scopeDescHeaderByte : public ValueObj {
   static const u_char context_temps_bit_num;
   static const u_char expr_stack_bit_num;
   static const u_char context_bit_num;
- public:
-  u_char value()                { return byte; }
-  u_char code()                 { return lowerBits(byte, code_width);        }
-  bool   is_lite()              { return isSet(byte, lite_bit_num);          }
-  bool   has_args()             { return isSet(byte, args_bit_num);          }
-  bool   has_temps()            { return isSet(byte, temps_bit_num);         }
-  bool   has_context_temps()    { return isSet(byte, context_temps_bit_num); }
-  bool   has_expr_stack()       { return isSet(byte, expr_stack_bit_num);    }
-  bool   has_compiled_context() { return isSet(byte, context_bit_num);       }
- 
-  bool   has_nameDescs()     { return has_args()
-                                   || has_temps()
-                                   || has_context_temps()
-                                   || has_expr_stack(); }
 
-  void pack(u_char code, bool lite, bool args, bool temps, bool context_temps, bool expr_stack, bool has_compiled_context) {
-    assert( code <= max_code, "code to high");
+public:
+  u_char value() { return byte; }
+  u_char code() { return lowerBits(byte, code_width); }
+  bool is_lite() { return isSet(byte, lite_bit_num); }
+  bool has_args() { return isSet(byte, args_bit_num); }
+  bool has_temps() { return isSet(byte, temps_bit_num); }
+  bool has_context_temps() { return isSet(byte, context_temps_bit_num); }
+  bool has_expr_stack() { return isSet(byte, expr_stack_bit_num); }
+  bool has_compiled_context() { return isSet(byte, context_bit_num); }
+
+  bool has_nameDescs() { return has_args() || has_temps() || has_context_temps() || has_expr_stack(); }
+
+  void pack(u_char code, bool lite, bool args, bool temps, bool context_temps, bool expr_stack,
+            bool has_compiled_context) {
+    assert(code <= max_code, "code to high");
     byte = code;
-    if (lite)                   byte = setNth(byte, lite_bit_num);
-    if (args)                   byte = setNth(byte, args_bit_num);
-    if (temps)                  byte = setNth(byte, temps_bit_num);
-    if (context_temps)          byte = setNth(byte, context_temps_bit_num);
-    if (expr_stack)             byte = setNth(byte, expr_stack_bit_num);
-    if (has_compiled_context)   byte = setNth(byte, context_bit_num);
+    if (lite)
+      byte = setNth(byte, lite_bit_num);
+    if (args)
+      byte = setNth(byte, args_bit_num);
+    if (temps)
+      byte = setNth(byte, temps_bit_num);
+    if (context_temps)
+      byte = setNth(byte, context_temps_bit_num);
+    if (expr_stack)
+      byte = setNth(byte, expr_stack_bit_num);
+    if (has_compiled_context)
+      byte = setNth(byte, context_bit_num);
   }
 
   void unpack(u_char value) { byte = value; }
 };
 
-# define BYTE_WIDTH       8 
-# define EXTENDED_INDEX   nthMask(BYTE_WIDTH)
-# define MAX_INLINE_VALUE nthMask(BYTE_WIDTH-1)
+#define BYTE_WIDTH 8
+#define EXTENDED_INDEX nthMask(BYTE_WIDTH)
+#define MAX_INLINE_VALUE nthMask(BYTE_WIDTH - 1)
 
 enum {
   METHOD_CODE,

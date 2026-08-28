@@ -30,14 +30,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for double value arrays
 
 class doubleValueArrayPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
   // <IndexedFloatValueInstanceVariables class>
-  //   primitiveIndexedFloatValueNew: size      <SmallInteger> 
+  //   primitiveIndexedFloatValueNew: size      <SmallInteger>
   //                          ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { error = #(NegativeSize)
   //              flags = #(Allocate)
@@ -51,7 +52,7 @@ class doubleValueArrayPrimitives : AllStatic {
   //   Internal { flags = #(Pure IndexedFloatValue)
   //              name  = 'doubleValueArrayPrimitives::size' }
   //%
-  static PRIM_DECL_1(size, oop receiver); 
+  static PRIM_DECL_1(size, oop receiver);
 
   //%prim
   // <IndexedFloatValueInstanceVariables>
@@ -73,7 +74,6 @@ class doubleValueArrayPrimitives : AllStatic {
   //              name  = 'doubleValueArrayPrimitives::atPut' }
   //%
   static PRIM_DECL_3(atPut, oop receiver, oop index, oop value);
-
 };
 
 #endif // _DVALUE_ARRAY_PRIMS_HPP

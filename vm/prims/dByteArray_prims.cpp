@@ -43,7 +43,6 @@ int doubleByteArrayPrimitives::number_of_calls;
 
 #define ASSERT_RECEIVER assert(receiver->is_doubleByteArray(), "receiver must be double byte array")
 
-
 PRIM_DECL_2(doubleByteArrayPrimitives::allocateSize, oop receiver, oop argument) {
   PROLOGUE_2("allocateSize", receiver, argument)
   assert(receiver->is_klass() && klassOop(receiver)->klass_part()->oop_is_doubleByteArray(),
@@ -54,9 +53,9 @@ PRIM_DECL_2(doubleByteArrayPrimitives::allocateSize, oop receiver, oop argument)
   if (smiOop(argument)->value() < 0)
     return markSymbol(vmSymbols::negative_size());
 
-  klassOop k        = klassOop(receiver);
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(smiOop(argument)->value() * 2, image_oop_size) / image_oop_size;
+  klassOop k = klassOop(receiver);
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(smiOop(argument)->value() * 2, image_oop_size) / image_oop_size;
   // allocate
   doubleByteArrayOop obj = as_doubleByteArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -64,14 +63,15 @@ PRIM_DECL_2(doubleByteArrayPrimitives::allocateSize, oop receiver, oop argument)
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // indexables
-  oop* base = (oop*) obj->addr();
-  oop* end  = base + obj_size;
+  oop* base = (oop*)obj->addr();
+  oop* end = base + obj_size;
   // %optimized 'obj->set_length(size)'
   base[ni_size] = argument;
   // %optimized 'for (int index = 1; index <= size; index++)
   //               obj->doubleByte_at_put(index, 0)'
-  base = &base[ni_size+1];
-  while (base < end) *base++ = (oop) 0;
+  base = &base[ni_size + 1];
+  while (base < end)
+    *base++ = (oop)0;
   return obj;
 }
 
@@ -85,7 +85,8 @@ PRIM_DECL_3(doubleByteArrayPrimitives::allocateSize2, oop receiver, oop argument
     return markSymbol(vmSymbols::negative_size());
   if (tenured != Universe::trueObj() && tenured != Universe::falseObj())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
-  oop result = klassOop(receiver)->klass_part()->allocateObjectSize(smiOop(argument)->value(), false, Universe::trueObj() == tenured);
+  oop result = klassOop(receiver)->klass_part()->allocateObjectSize(smiOop(argument)->value(), false,
+                                                                    Universe::trueObj() == tenured);
   if (result == NULL)
     return markSymbol(vmSymbols::failed_allocation());
   return result;
@@ -109,7 +110,7 @@ PRIM_DECL_2(doubleByteArrayPrimitives::at, oop receiver, oop index) {
 
   // check index value
   if (!doubleByteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   return as_smiOop(doubleByteArrayOop(receiver)->doubleByte_at(smiOop(index)->value()));
 }
@@ -128,31 +129,30 @@ PRIM_DECL_3(doubleByteArrayPrimitives::atPut, oop receiver, oop index, oop value
 
   // check index value
   if (!doubleByteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // check value as double byte
-  unsigned int v = (unsigned int) smiOop(value)->value();
-  if (v  >= (1<<16))
-      return markSymbol(vmSymbols::value_out_of_range());
+  unsigned int v = (unsigned int)smiOop(value)->value();
+  if (v >= (1 << 16))
+    return markSymbol(vmSymbols::value_out_of_range());
 
   // do the operation
   doubleByteArrayOop(receiver)->doubleByte_at_put(smiOop(index)->value(), v);
   return receiver;
 }
 
-
 PRIM_DECL_2(doubleByteArrayPrimitives::compare, oop receiver, oop argument) {
   PROLOGUE_2("compare", receiver, argument);
   ASSERT_RECEIVER;
 
-  if(receiver == argument)
+  if (receiver == argument)
     return as_smiOop(0);
 
   if (argument->is_doubleByteArray())
     return as_smiOop(doubleByteArrayOop(receiver)->compare(doubleByteArrayOop(argument)));
 
   if (argument->is_byteArray())
-    return as_smiOop(- byteArrayOop(argument)->compare_doubleBytes(doubleByteArrayOop(receiver)));
+    return as_smiOop(-byteArrayOop(argument)->compare_doubleBytes(doubleByteArrayOop(receiver)));
 
   return markSymbol(vmSymbols::first_argument_has_wrong_type());
 }
@@ -162,12 +162,12 @@ PRIM_DECL_1(doubleByteArrayPrimitives::intern, oop receiver) {
   ASSERT_RECEIVER;
 
   ResourceMark rm;
-  int   len    = doubleByteArrayOop(receiver)->length();
+  int len = doubleByteArrayOop(receiver)->length();
   char* buffer = NEW_RESOURCE_ARRAY(char, len);
 
   for (int i = 0; i < len; i++) {
     int c = doubleByteArrayOop(receiver)->doubleByte_at(i + 1);
-    if (c >= (1<<8)) {
+    if (c >= (1 << 8)) {
       return markSymbol(vmSymbols::value_out_of_range());
     }
     buffer[i] = c;
@@ -181,7 +181,7 @@ PRIM_DECL_2(doubleByteArrayPrimitives::characterAt, oop receiver, oop index) {
   ASSERT_RECEIVER;
 
   // check index type
-  if (!index->is_smi()) 
+  if (!index->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   // range check
@@ -190,13 +190,13 @@ PRIM_DECL_2(doubleByteArrayPrimitives::characterAt, oop receiver, oop index) {
 
   // fetch double byte
   doubleByte byte = doubleByteArrayOop(receiver)->doubleByte_at(smiOop(index)->value());
- 
+
   if (byte < 256) {
     // return the byte+1'th element in asciiCharacter
-    return Universe::asciiCharacters()->obj_at(byte+1);
-  } else return markSymbol(vmSymbols::out_of_bounds());
+    return Universe::asciiCharacters()->obj_at(byte + 1);
+  } else
+    return markSymbol(vmSymbols::out_of_bounds());
 }
-
 
 PRIM_DECL_1(doubleByteArrayPrimitives::hash, oop receiver) {
   PROLOGUE_1("intern", receiver);

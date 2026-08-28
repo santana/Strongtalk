@@ -50,33 +50,44 @@ char* copy_c_heap_string(char* s);
 // copying oops must be accompanied by record_multistores for remembered set
 void copy_oops_down(oop* from, oop* to, int count);
 inline void copy_oops(oop* from, oop* to, int count) {
-  copy_oops_up(from, to, count); }
+  copy_oops_up(from, to, count);
+}
 inline void copy_oops_overlapping(oop* from, oop* to, int count) {
-  if (from < to) copy_oops_down(from + count, to + count, count);
-  else if (from > to) copy_oops_up(from, to, count);
+  if (from < to)
+    copy_oops_down(from + count, to + count, count);
+  else if (from > to)
+    copy_oops_up(from, to, count);
 }
 
 inline void copy_words(int* from, int* to, int count) {
-  copy_oops((oop*) from, (oop*) to, count);
+  copy_oops((oop*)from, (oop*)to, count);
 }
 inline void set_words(int* from, int count, int value = 0) {
   // set_oops((oop*) from, count, (oop) value);
-  while(count--) {
+  while (count--) {
     *from++ = value;
   }
 }
 
-inline int min(int a, int b)		{ return a < b ? a : b; }
-inline int max(int a, int b)		{ return a > b ? a : b; }
-inline int min(int a, int b, int c)	{ return a < b ? min(a, c) : min(b, c); }
-inline int max(int a, int b, int c)	{ return a > b ? max(a, c) : max(b, c); }
+inline int min(int a, int b) {
+  return a < b ? a : b;
+}
+inline int max(int a, int b) {
+  return a > b ? a : b;
+}
+inline int min(int a, int b, int c) {
+  return a < b ? min(a, c) : min(b, c);
+}
+inline int max(int a, int b, int c) {
+  return a > b ? max(a, c) : max(b, c);
+}
 
 #define between(p, low, high) ((void*)(p) >= (void*)(low) && (void*)(p) < (void*)(high))
 
-inline void *align(void* p, int alignment) {
-  intptr_t number = (intptr_t) p;
-  int adjust = alignment - (number%alignment) % alignment;
-  return (void*) (number + adjust);
+inline void* align(void* p, int alignment) {
+  intptr_t number = (intptr_t)p;
+  int adjust = alignment - (number % alignment) % alignment;
+  return (void*)(number + adjust);
 }
 
 // some useful constants
@@ -84,7 +95,7 @@ inline void *align(void* p, int alignment) {
 const int K = 1024;
 const int M = K * K;
 
-const int oopSize   = sizeof(oop);
+const int oopSize = sizeof(oop);
 const int floatSize = sizeof(double);
 
 // Granularity for rounding byte content in byte-indexed objects (byteArray,
@@ -99,18 +110,18 @@ const int image_oop_size = oopSize;
 // (AAPCS64 requires SP alignment and macOS raises EXC_ARM_SP_ALIGN on any
 // access that uses a misaligned sp). On x86 the slots are one word.
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-const int slotSize  = 2 * oopSize;
+const int slotSize = 2 * oopSize;
 #else
-const int slotSize  = oopSize;
+const int slotSize = oopSize;
 #endif
 // Number of oop-sized words per delta stack slot (used to step stack scans).
 const int oopsPerSlot = slotSize / oopSize;
 
 inline int byte_size(void* from, void* to) {
-  return (char*) to - (char*) from;
+  return (char*)to - (char*)from;
 }
 
-// If your compiler or lint supports a pragma informing it that a 
+// If your compiler or lint supports a pragma informing it that a
 // variable is unused, redefine these appropriately
 /*
 #ifdef __GNUC__
@@ -120,7 +131,11 @@ inline int byte_size(void* from, void* to) {
   //#endif
   */
 
-  inline void Unused(int x) { (void) x; }
-  inline void Unused(void *x) { (void) x; }
+inline void Unused(int x) {
+  (void)x;
+}
+inline void Unused(void* x) {
+  (void)x;
+}
 
 #endif // _UTIL_HPP

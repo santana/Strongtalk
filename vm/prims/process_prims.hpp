@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for processes
 
 class processOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   //%prim
@@ -48,7 +49,7 @@ class processOopPrimitives : AllStatic {
   // <NoReceiver> primitiveProcessYield ^<Process> =
   //   Internal { doc   = 'Yields the control to the scheduler.'
   //              doc   = 'Does nothing if executed by the scheduler.'
-  //              doc   = 'Returns current process when regaining control.' 
+  //              doc   = 'Returns current process when regaining control.'
   //              name  = 'processOopPrimitives::yield' }
   //%
   static PRIM_DECL_0(yield);
@@ -57,7 +58,7 @@ class processOopPrimitives : AllStatic {
   // <NoReceiver> primitiveProcessStop ^<Process> =
   //   Internal { doc   = 'Yields the control to the scheduler.'
   //              doc   = 'Does nothing if executed by the scheduler.'
-  //              doc   = 'Returns current process when regaining control.' 
+  //              doc   = 'Returns current process when regaining control.'
   //              name  = 'processOopPrimitives::stop' }
   //%
   static PRIM_DECL_0(stop);
@@ -77,7 +78,7 @@ class processOopPrimitives : AllStatic {
   static PRIM_DECL_0(activeProcess);
 
   //%prim
-  // <NoReceiver> primitiveProcessTransferTo: process   <Process> 
+  // <NoReceiver> primitiveProcessTransferTo: process   <Process>
   //                                  ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc   = 'Transfers the control from the scheduler to a process.'
   //              doc   = 'Returns the status of process (see primitiveProcessStatus).'
@@ -99,7 +100,7 @@ class processOopPrimitives : AllStatic {
   static PRIM_DECL_3(set_mode, oop process, oop mode, oop value);
 
   //%prim
-  // <NoReceiver> primitiveProcessStartEvaluator: process   <Process> 
+  // <NoReceiver> primitiveProcessStartEvaluator: process   <Process>
   //                                      ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc   = 'Transfers the control from the scheduler to a process,'
   //              doc   = 'and enters the evaluator.'
@@ -139,7 +140,7 @@ class processOopPrimitives : AllStatic {
   //              name = 'processOopPrimitives::status' }
   //%
   static PRIM_DECL_1(status, oop process);
-  
+
   //%prim
   // <Process> primitiveProcessSchedulerWait: milliseconds <SmallInteger>
   //                                  ifFail: failBlock <PrimFailBlock> ^<Boolean> =
@@ -176,21 +177,21 @@ class processOopPrimitives : AllStatic {
   // <NoReceiver> primitiveProcessYieldInCritical ^<Process> =
   //   Internal { doc   = 'Yields the control to the scheduler.'
   //              doc   = 'Does nothing if executed by the scheduler.'
-  //              doc   = 'Returns current process when regaining control.' 
+  //              doc   = 'Returns current process when regaining control.'
   //              name  = 'processOopPrimitives::yield_in_critical' }
   //%
   static PRIM_DECL_0(yield_in_critical);
 
   //%prim
   // <Process> primitiveProcessUserTime ^<Float> =
-  //   Internal { doc   = 'Returns time, in seconds, the process has spent in user code' 
+  //   Internal { doc   = 'Returns time, in seconds, the process has spent in user code'
   //              name  = 'processOopPrimitives::user_time' }
   //%
   static PRIM_DECL_1(user_time, oop receiver);
 
   //%prim
   // <Process> primitiveProcessSystemTime ^<Float> =
-  //   Internal { doc   = 'Returns time, in seconds, the process has spent in system code' 
+  //   Internal { doc   = 'Returns time, in seconds, the process has spent in system code'
   //              name  = 'processOopPrimitives::user_time' }
   //%
   static PRIM_DECL_1(system_time, oop receiver);
@@ -205,6 +206,5 @@ class processOopPrimitives : AllStatic {
   //              name   = 'processOopPrimitives::stack' }
   //%
   static PRIM_DECL_2(stack, oop receiver, oop limit);
-
 };
 #endif // _PROCESS_PRIMS_HPP

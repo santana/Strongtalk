@@ -34,7 +34,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
 
-char         SlidingSystemAverage::buffer[buffer_size];
+char SlidingSystemAverage::buffer[buffer_size];
 unsigned int SlidingSystemAverage::stat[number_of_cases];
 unsigned int SlidingSystemAverage::pos;
 
@@ -66,16 +66,16 @@ void SlidingSystemAverage::add(char type) {
 
 // The sweeper task is activated every second (1000 milliseconds).
 class SystemAverageTask : public PeriodicTask {
- public:
-  SystemAverageTask() : PeriodicTask(10) { }
+public:
+  SystemAverageTask() : PeriodicTask(10) {}
 
   void task() {
     char type = '\0';
     if (last_Delta_fp) {
-      if (theCompiler) { 
+      if (theCompiler) {
         type = SlidingSystemAverage::in_compiler;
       } else if (GCInProgress) {
-        type = SlidingSystemAverage::in_garbage_collect; 
+        type = SlidingSystemAverage::in_garbage_collect;
       } else if (DeltaProcess::is_idle()) {
         type = SlidingSystemAverage::is_idle;
       } else {
@@ -85,13 +85,13 @@ class SystemAverageTask : public PeriodicTask {
       // interpreted code / compiled code / runtime routine
       frame fr = DeltaProcess::active()->profile_top_frame();
       if (fr.is_interpreted_frame()) {
-	type = SlidingSystemAverage::in_interpreted_code;
+        type = SlidingSystemAverage::in_interpreted_code;
       } else if (fr.is_compiled_frame()) {
         type = SlidingSystemAverage::in_compiled_code;
       } else if (PIC::in_heap(fr.pc())) {
-	type = SlidingSystemAverage::in_pic_code;
+        type = SlidingSystemAverage::in_pic_code;
       } else if (StubRoutines::contains(fr.pc())) {
-	type = SlidingSystemAverage::in_stub_code;
+        type = SlidingSystemAverage::in_stub_code;
       }
     }
     SlidingSystemAverage::add(type);

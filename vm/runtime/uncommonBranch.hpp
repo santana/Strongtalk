@@ -30,7 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // An uncommom trap can be in two states:
 //  - unused; when it has never been executed.
 //  - used;   when the trap has been executed before.
-// 
+//
 // Initially a uncommon trap is in the unused state
 // but the first time it is executed the state will be changed to used.
 // The state is reflected in the call destination. See StubRoutines.hpp.

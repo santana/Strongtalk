@@ -33,10 +33,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the corresponding source scope and byte code index.
 
 class PcDesc : public ValueObj {
- public:
-  int    pc;		// offset from start of method (could be uint16)
-  uint16 scope;		// scope index 
-  int16  byteCode;	// can be negative (PrologueBCI et al)
+public:
+  int pc; // offset from start of method (could be uint16)
+  uint16 scope; // scope index
+  int16 byteCode; // can be negative (PrologueBCI et al)
 
   // Constructor (only used for static in nmethod.cpp)
   PcDesc(int pc, uint16 scope, uint16 byteCode);
@@ -48,16 +48,10 @@ class PcDesc : public ValueObj {
   char* real_pc(const nmethod* nm) const;
 
   bool equals(const PcDesc* other) const {
-    return pc       == other->pc
-        && scope    == other->scope
-	&& byteCode == other->byteCode;
+    return pc == other->pc && scope == other->scope && byteCode == other->byteCode;
   }
 
-  bool source_equals(const PcDesc* other) const {
-    return scope    == other->scope
-        && byteCode == other->byteCode;
-  }
-
+  bool source_equals(const PcDesc* other) const { return scope == other->scope && byteCode == other->byteCode; }
 
   bool is_prologue() const { return byteCode == PrologueBCI; }
   bool is_epilogue() const { return byteCode == EpilogueBCI; }

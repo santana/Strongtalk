@@ -21,8 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
-
 #ifdef DELTA_COMPILER
 
 #include "code/codeTable.hpp"
@@ -41,43 +39,45 @@ codeTable::codeTable(int size) {
 
 codeTableLink* codeTable::new_link(nmethod* nm, codeTableLink* n) {
   codeTableLink* res = NEW_C_HEAP_OBJ(codeTableLink);
-  res->nm   = nm;
+  res->nm = nm;
   res->next = n;
   return res;
 }
 
 void codeTable::clear() {
-  for (int index = 0; index < tableSize; index++) at(index)->clear();
+  for (int index = 0; index < tableSize; index++)
+    at(index)->clear();
 }
 
 nmethod* codeTable::lookup(LookupKey* L) {
   codeTableEntry* bucket = bucketFor(L->hash());
 
   // Empty
-  if (bucket->is_empty()) return NULL;
+  if (bucket->is_empty())
+    return NULL;
 
   // Singleton
   if (bucket->is_nmethod()) {
-      if (bucket->get_nmethod()->key.equal(L))
-        return bucket->get_nmethod();
-      return NULL;
+    if (bucket->get_nmethod()->key.equal(L))
+      return bucket->get_nmethod();
+    return NULL;
   }
 
   // Bucket
   for (codeTableLink* l = bucket->get_link(); l; l = l->next) {
-    if (l->nm->key.equal(L)) return l->nm;
+    if (l->nm->key.equal(L))
+      return l->nm;
   }
 
   return NULL;
 }
 
 void codeTable::add(nmethod* nm) {
-# ifdef ASSERT
-    if (lookup(&nm->key)) {
-      fatal2("adding duplicate key to code table: %#lx and new %#lx",
-	     lookup(&nm->key), nm);
-    }
-# endif
+#ifdef ASSERT
+  if (lookup(&nm->key)) {
+    fatal2("adding duplicate key to code table: %#lx and new %#lx", lookup(&nm->key), nm);
+  }
+#endif
   codeTableEntry* bucket = bucketFor(nm->key.hash());
 
   if (bucket->is_empty()) {
@@ -94,7 +94,8 @@ void codeTable::add(nmethod* nm) {
 }
 
 void codeTable::addIfAbsent(nmethod* nm) {
-  if (!lookup(&nm->key)) add(nm);
+  if (!lookup(&nm->key))
+    add(nm);
 }
 
 bool codeTable::is_present(nmethod* nm) {
@@ -112,20 +113,20 @@ void codeTable::remove(nmethod* nm) {
       if (bucket->get_link()->nm == nm) {
         // is it the first link
         codeTableLink* disposable_link = bucket->get_link();
-	bucket->set_link(disposable_link->next);
-	delete disposable_link;
+        bucket->set_link(disposable_link->next);
+        delete disposable_link;
       } else {
         // the the method must be further down the chain
         codeTableLink* current = bucket->get_link();
         while (current->next) {
           if (current->next->nm == nm) {
-             codeTableLink* disposable_link = current->next;
-	     current->next = disposable_link->next;
-	     delete disposable_link;
-             return;
-	  }
+            codeTableLink* disposable_link = current->next;
+            current->next = disposable_link->next;
+            delete disposable_link;
+            return;
+          }
           current = current->next;
-	}
+        }
         fatal("trying to remove nmethod that is not present");
       }
     }
@@ -142,26 +143,32 @@ void codeTable::print() {
 }
 
 void codeTable::print_stats() {
-# ifdef NOT_IMPLEMENTED
+#ifdef NOT_IMPLEMENTED
   int nmin = 9999999, nmax = 0, total = 0, nonzero = 0;
   const int N = 10;
   int histo[N];
-  for (int i = 0; i < N; i++) histo[i] = 0;
-  for (nmln* p = buckets;  p < &buckets[tableSize];  ++p) {
+  for (int i = 0; i < N; i++)
+    histo[i] = 0;
+  for (nmln* p = buckets; p < &buckets[tableSize]; ++p) {
     int len = 0;
-    for (nmln* q = p->next;  q != p;  q = q->next) len++;
-    if (len < nmin) nmin = len;
-    if (len > nmax) nmax = len;
-    if (len) nonzero++;
+    for (nmln* q = p->next; q != p; q = q->next)
+      len++;
+    if (len < nmin)
+      nmin = len;
+    if (len > nmax)
+      nmax = len;
+    if (len)
+      nonzero++;
     total += len;
-    histo[min(len, N-1)]++;
+    histo[min(len, N - 1)]++;
   }
-  lprintf("\ncodeTable statistics: %d nmethods; min chain = %d, max = %d, avg = %4.1f\n",
-	  total, nmin, nmax, (float)total / nonzero);
+  lprintf("\ncodeTable statistics: %d nmethods; min chain = %d, max = %d, avg = %4.1f\n", total, nmin, nmax,
+          (float)total / nonzero);
   lprintf("histogram:\n");
-  for (i = 0; i < N - 1; i++) lprintf("%4d:\t%d", i, histo[i]);
-  lprintf(">=%d:\t%d\n", N-1, histo[N-1]);
-# endif
+  for (i = 0; i < N - 1; i++)
+    lprintf("%4d:\t%d", i, histo[i]);
+  lprintf(">=%d:\t%d\n", N - 1, histo[N - 1]);
+#endif
 }
 
 #endif // DELTA_COMPILER

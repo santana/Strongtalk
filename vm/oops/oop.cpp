@@ -33,7 +33,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Called during bootstrapping for computing vtbl values see (create_*Klass)
 oopDesc::oopDesc() {
- if (!bootstrapping) ShouldNotCallThis();
+  if (!bootstrapping)
+    ShouldNotCallThis();
 }
 
 void oopDesc::print_value_on(outputStream* st) {
@@ -51,7 +52,7 @@ void oopDesc::print_value_on(outputStream* st) {
       st->print("Wrong Oop(0x%lx)", this);
     } else
 #endif
-    blueprint()->oop_print_value_on(this, st);
+      blueprint()->oop_print_value_on(this, st);
   }
 }
 
@@ -62,11 +63,15 @@ void oopDesc::print_on(outputStream* st) {
     smiOop(this)->print_on(st);
   } else {
     memOop(this)->print_on(st);
-  } 
+  }
 }
 
-void oopDesc::print()       { print_on(mystd);       }
-void oopDesc::print_value() { print_value_on(mystd); }
+void oopDesc::print() {
+  print_on(mystd);
+}
+void oopDesc::print_value() {
+  print_value_on(mystd);
+}
 
 char* oopDesc::print_string() {
   stringStream* st = new stringStream(50);

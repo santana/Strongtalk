@@ -44,7 +44,7 @@ bool byteArrayOopDesc::verify() {
   return flag;
 }
 
-char* byteArrayOopDesc::copy_null_terminated(int &Clength) {
+char* byteArrayOopDesc::copy_null_terminated(int& Clength) {
   // Copy the bytes() part. Always add trailing '\0'. If byte array
   // contains '\0', these will be escaped in the copy, i.e. "....\0...".
   // Clength is set to length of the copy (may be longer due to escaping).
@@ -52,25 +52,26 @@ char* byteArrayOopDesc::copy_null_terminated(int &Clength) {
 
   assert_byteArray(this, "should be a byte array");
   Clength = length();
-  char *res = copy_string((char*) bytes(), Clength);
-  if (strlen(res) == (unsigned int) Clength) 
-    return res;                   // Simple case, no '\0' in byte array.
-  
+  char* res = copy_string((char*)bytes(), Clength);
+  if (strlen(res) == (unsigned int)Clength)
+    return res; // Simple case, no '\0' in byte array.
+
   // Simple case failed ...
-  smi t = length();               // Copy and 'escape' null chars.
+  smi t = length(); // Copy and 'escape' null chars.
   smi i;
-  for (i = length()-1; i >= 0; i--) 
-    if (byte_at(i) == '\0') t++; 
+  for (i = length() - 1; i >= 0; i--)
+    if (byte_at(i) == '\0')
+      t++;
   // t is total length of result string.
-  res = NEW_RESOURCE_ARRAY( char, t + 1);
+  res = NEW_RESOURCE_ARRAY(char, t + 1);
   res[t--] = '\0';
-  Clength  = t;
-  for (i = length()-1; i >= 0; i--) {
+  Clength = t;
+  for (i = length() - 1; i >= 0; i--) {
     if (byte_at(i) != '\0') {
       res[t--] = byte_at(i);
     } else {
       res[t--] = '0';
-      res[t--]   = '\\';
+      res[t--] = '\\';
     }
   }
   assert(t == -1, "sanity check");
@@ -81,21 +82,22 @@ char* byteArrayOopDesc::copy_c_heap_null_terminated() {
   // Copy the bytes() part. Always add trailing '\0'. If byte array
   // contains '\0', these will be escaped in the copy, i.e. "....\0...".
   // NOTE: The resulting string is allocated in Cheap
-  
+
   assert_byteArray(this, "should be a byte array");
-  smi t = length();               // Copy and 'escape' null chars.
+  smi t = length(); // Copy and 'escape' null chars.
   smi i;
-  for (i = length()-1; i >= 0; i--) 
-    if (byte_at(i) == '\0') t++; 
+  for (i = length() - 1; i >= 0; i--)
+    if (byte_at(i) == '\0')
+      t++;
   // t is total length of result string.
-  char* res = NEW_C_HEAP_ARRAY( char, t + 1);
+  char* res = NEW_C_HEAP_ARRAY(char, t + 1);
   res[t--] = '\0';
-  for (i = length()-1; i >= 0; i--) {
+  for (i = length() - 1; i >= 0; i--) {
     if (byte_at(i) != '\0') {
       res[t--] = byte_at(i);
     } else {
       res[t--] = '0';
-      res[t--]   = '\\';
+      res[t--] = '\\';
     }
   }
   assert(t == -1, "sanity check");
@@ -128,32 +130,37 @@ void byteArrayOopDesc::bootstrap_object(bootstrap* st) {
 }
 
 inline int sub_sign(int a, int b) {
-  if (a < b) return -1;
-  if (a > b) return  1;
+  if (a < b)
+    return -1;
+  if (a > b)
+    return 1;
   return 0;
 }
 
 inline int compare_as_bytes(const unsigned char* a, const unsigned char* b) {
   // machine dependent code; little endian code
-  if (a[0] - b[0]) return sub_sign(a[0], b[0]);
-  if (a[1] - b[1]) return sub_sign(a[1], b[1]);
-  if (a[2] - b[2]) return sub_sign(a[2], b[2]);
+  if (a[0] - b[0])
+    return sub_sign(a[0], b[0]);
+  if (a[1] - b[1])
+    return sub_sign(a[1], b[1]);
+  if (a[2] - b[2])
+    return sub_sign(a[2], b[2]);
   return sub_sign(a[3], b[3]);
 }
 
 int byteArrayOopDesc::compare(byteArrayOop arg) {
   // Get the addresses of the length fields
-  const unsigned int* a = (unsigned int*) length_addr();
-  const unsigned int* b = (unsigned int*) arg->length_addr();
+  const unsigned int* a = (unsigned int*)length_addr();
+  const unsigned int* b = (unsigned int*)arg->length_addr();
 
   // Get the word sizes of the arays
   int a_size = roundTo(smiOop((intptr_t)(*a++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
   int b_size = roundTo(smiOop((intptr_t)(*b++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
 
   const unsigned int* a_end = a + min(a_size, b_size);
-  while(a < a_end) {
-    if (*b++ != *a++) 
-      return compare_as_bytes((const unsigned char*) (a-1), (const unsigned char*) (b-1));
+  while (a < a_end) {
+    if (*b++ != *a++)
+      return compare_as_bytes((const unsigned char*)(a - 1), (const unsigned char*)(b - 1));
   }
   return sub_sign(a_size, b_size);
 }
@@ -162,11 +169,12 @@ int byteArrayOopDesc::compare_doubleBytes(doubleByteArrayOop arg) {
   // %not optimized
   int s1 = length();
   int s2 = arg->length();
-  int n  = s1 < s2 ? s1 : s2;
+  int n = s1 < s2 ? s1 : s2;
 
   for (int i = 1; i <= n; i++) {
     int result = sub_sign(byte_at(i), arg->doubleByte_at(i));
-    if (result != 0) return result;
+    if (result != 0)
+      return result;
   }
   return sub_sign(s1, s2);
 }
@@ -182,11 +190,11 @@ int byteArrayOopDesc::hash_value() {
   } else {
     unsigned int val;
     val = byte_at(1);
-    val = (val << 3) ^ (byte_at(2)         ^ val);
-    val = (val << 3) ^ (byte_at(len)       ^ val);
-    val = (val << 3) ^ (byte_at(len-1)     ^ val);
-    val = (val << 3) ^ (byte_at(len/2 + 1) ^ val);
-    val = (val << 3) ^ (len                ^ val);
+    val = (val << 3) ^ (byte_at(2) ^ val);
+    val = (val << 3) ^ (byte_at(len) ^ val);
+    val = (val << 3) ^ (byte_at(len - 1) ^ val);
+    val = (val << 3) ^ (byte_at(len / 2 + 1) ^ val);
+    val = (val << 3) ^ (len ^ val);
     result = markOopDesc::masked_hash(val);
   }
   return result == 0 ? 1 : result;
@@ -194,23 +202,24 @@ int byteArrayOopDesc::hash_value() {
 
 char* byteArrayOopDesc::as_string() {
   int len = length();
-  char* str = NEW_RESOURCE_ARRAY(char, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
   int index;
-  for (index = 0; index <len; index++) {
-    str[index] = byte_at(index+1);
+  for (index = 0; index < len; index++) {
+    str[index] = byte_at(index + 1);
   }
   str[index] = '\0';
   return str;
 }
 
-# include <ctype.h>
+#include <ctype.h>
 
 int byteArrayOopDesc::number_of_arguments() const {
   int result = 0;
   assert(length() > 0, "selector should have a positive length");
-  
+
   // Return 1 if binary selector
-  if (is_binary()) return 1;
+  if (is_binary())
+    return 1;
 
   // Return number of colons
   for (int index = 1; index <= length(); index++)
@@ -221,9 +230,11 @@ int byteArrayOopDesc::number_of_arguments() const {
 }
 
 bool byteArrayOopDesc::is_unary() const {
-  if (is_binary()) return false;
+  if (is_binary())
+    return false;
   for (int index = 1; index <= length(); index++)
-    if (byte_at(index) == ':') return false;
+    if (byte_at(index) == ':')
+      return false;
   return true;
 }
 
@@ -234,8 +245,10 @@ bool byteArrayOopDesc::is_binary() const {
 }
 
 bool byteArrayOopDesc::is_keyword() const {
-  if (is_binary()) return false;
+  if (is_binary())
+    return false;
   for (int index = 1; index <= length(); index++)
-    if (byte_at(index) == ':') return true;
+    if (byte_at(index) == ':')
+      return true;
   return false;
 }

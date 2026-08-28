@@ -67,38 +67,41 @@ intptr_t diag_pre_check_eax = 0;
 intptr_t diag_pre_check_id = 0;
 }
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-#define STAMP_EAX_WRITER(id) do { \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_pc, relocInfo::external_word_type), esi); \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_value, relocInfo::external_word_type), eax); \
-  masm->movl(edx, (intptr_t)(id)); \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_id, relocInfo::external_word_type), edx); \
-} while(0)
+#define STAMP_EAX_WRITER(id)                                                                                           \
+  do {                                                                                                                 \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_pc, relocInfo::external_word_type), esi);                       \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_value, relocInfo::external_word_type), eax);                    \
+    masm->movl(edx, (intptr_t)(id));                                                                                   \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_id, relocInfo::external_word_type), edx);                       \
+  } while (0)
 #else
-#define STAMP_EAX_WRITER(id) do { \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_pc, relocInfo::external_word_type), esi); \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_value, relocInfo::external_word_type), eax); \
-  masm->movq(edx, (intptr_t)(id)); \
-  masm->movq(Address((intptr_t)&diag_last_eax_writer_id, relocInfo::external_word_type), edx); \
-} while(0)
+#define STAMP_EAX_WRITER(id)                                                                                           \
+  do {                                                                                                                 \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_pc, relocInfo::external_word_type), esi);                       \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_value, relocInfo::external_word_type), eax);                    \
+    masm->movq(edx, (intptr_t)(id));                                                                                   \
+    masm->movq(Address((intptr_t)&diag_last_eax_writer_id, relocInfo::external_word_type), edx);                       \
+  } while (0)
 #endif
-#define CHECK_EAX_OOP(check_id_val) do { \
-  Label _oop_ok; \
-  masm->movq(Address((intptr_t)&diag_pre_check_eax, relocInfo::external_word_type), eax); \
-  masm->movq(ecx, (intptr_t)(check_id_val)); \
-  masm->movq(Address((intptr_t)&diag_pre_check_id, relocInfo::external_word_type), ecx); \
-  masm->test(eax, Mem_Tag); \
-  masm->jcc(Assembler::zero, _oop_ok); \
-  masm->movq(ecx, (intptr_t)0x100000000); \
-  masm->cmpq(eax, ecx); \
-  masm->jcc(Assembler::greaterEqual, _oop_ok); \
-  masm->movq(Address((intptr_t)&diag_truncated_oop_value, relocInfo::external_word_type), eax); \
-  masm->movq(ecx, esi); \
-  masm->movq(Address((intptr_t)&diag_truncated_oop_pc, relocInfo::external_word_type), ecx); \
-  masm->movq(ecx, (intptr_t)(check_id_val)); \
-  masm->movq(Address((intptr_t)&diag_truncated_oop_check_id, relocInfo::external_word_type), ecx); \
-  masm->int3(); \
-  masm->bind(_oop_ok); \
-} while(0)
+#define CHECK_EAX_OOP(check_id_val)                                                                                    \
+  do {                                                                                                                 \
+    Label _oop_ok;                                                                                                     \
+    masm->movq(Address((intptr_t)&diag_pre_check_eax, relocInfo::external_word_type), eax);                            \
+    masm->movq(ecx, (intptr_t)(check_id_val));                                                                         \
+    masm->movq(Address((intptr_t)&diag_pre_check_id, relocInfo::external_word_type), ecx);                             \
+    masm->test(eax, Mem_Tag);                                                                                          \
+    masm->jcc(Assembler::zero, _oop_ok);                                                                               \
+    masm->movq(ecx, (intptr_t)0x100000000);                                                                            \
+    masm->cmpq(eax, ecx);                                                                                              \
+    masm->jcc(Assembler::greaterEqual, _oop_ok);                                                                       \
+    masm->movq(Address((intptr_t)&diag_truncated_oop_value, relocInfo::external_word_type), eax);                      \
+    masm->movq(ecx, esi);                                                                                              \
+    masm->movq(Address((intptr_t)&diag_truncated_oop_pc, relocInfo::external_word_type), ecx);                         \
+    masm->movq(ecx, (intptr_t)(check_id_val));                                                                         \
+    masm->movq(Address((intptr_t)&diag_truncated_oop_check_id, relocInfo::external_word_type), ecx);                   \
+    masm->int3();                                                                                                      \
+    masm->bind(_oop_ok);                                                                                               \
+  } while (0)
 #else
 #define STAMP_EAX_WRITER(id) ((void)0)
 #define CHECK_EAX_OOP(check_id_val) ((void)0)
@@ -116,16 +119,16 @@ intptr_t diag_pre_check_id = 0;
 // (a non-oop), if there were no temp_0 always).
 
 static const int float_0_offset = oopSize * (frame_temp_offset - 3);
-static const int temp_1_offset	= oopSize * (frame_temp_offset - 1);
-static const int temp_0_offset	= oopSize * frame_temp_offset;
-static const int esi_offset	= oopSize * frame_hp_offset;
-static const int self_offset	= oopSize * frame_receiver_offset;
-static const int link_offset	= oopSize * frame_link_offset;
-static const int ret_addr_offset= oopSize * frame_return_addr_offset;
-static const int arg_n_offset	= oopSize * frame_arg_offset;
+static const int temp_1_offset = oopSize * (frame_temp_offset - 1);
+static const int temp_0_offset = oopSize * frame_temp_offset;
+static const int esi_offset = oopSize * frame_hp_offset;
+static const int self_offset = oopSize * frame_receiver_offset;
+static const int link_offset = oopSize * frame_link_offset;
+static const int ret_addr_offset = oopSize * frame_return_addr_offset;
+static const int arg_n_offset = oopSize * frame_arg_offset;
 
-static const int max_nof_temps	= 256;
-static const int max_nof_floats	= 256;
+static const int max_nof_temps = 256;
+static const int max_nof_floats = 256;
 
 // Register-scaled stack access: one delta stack slot per register count.
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
@@ -136,11 +139,10 @@ static const Address::ScaleFactor deltaStackScale = Address::times_8;
 static const Address::ScaleFactor deltaStackScale = Address::times_4;
 #endif
 
-
 // Interpreter boundaries
-bool  Interpreter::_is_initialized  = false;
+bool Interpreter::_is_initialized = false;
 char* Interpreter::_code_begin_addr = NULL;
-char* Interpreter::_code_end_addr   = NULL;
+char* Interpreter::_code_end_addr = NULL;
 
 #define TEST_GENERATION_
 
@@ -151,54 +153,68 @@ int interpreter_loop_counter_limit = 0;
 }
 
 bool Interpreter::contains(char* pc) {
-  return
-    (_code_begin_addr       <= pc && pc < _code_end_addr) || 
-    (pc == StubRoutines::single_step_continuation());
+  return (_code_begin_addr <= pc && pc < _code_end_addr) || (pc == StubRoutines::single_step_continuation());
 }
 
-extern "C" char* InterpreterCodeStatus() { return "\x01\x00\x00\x00\x00\x00"; };
+extern "C" char* InterpreterCodeStatus() {
+  return "\x01\x00\x00\x00\x00\x00";
+};
 //extern "C" char* InterpreterCodeStatus() { return "\x00\x01\x01\x01\x01\x01"; };
 
 #else
 
-extern "C" int interpreter_loop_counter;		// see interpreter_asm.asm
-extern "C" int interpreter_loop_counter_limit;	  	// see interpreter_asm.asm
+extern "C" int interpreter_loop_counter; // see interpreter_asm.asm
+extern "C" int interpreter_loop_counter_limit; // see interpreter_asm.asm
 
 // Boundaries of assembled interpreter code
 extern "C" char* interpreter_begin_addr;
 extern "C" char* interpreter_end_addr;
 
 bool Interpreter::contains(char* pc) {
-  return
-    (interpreter_begin_addr <= pc && pc < interpreter_end_addr) ||
-    (_code_begin_addr       <= pc && pc < _code_end_addr);
+  return (interpreter_begin_addr <= pc && pc < interpreter_end_addr) || (_code_begin_addr <= pc && pc < _code_end_addr);
 }
 
 extern "C" char* InterpreterCodeStatus();
 
 #endif // TEST_GENERATION
 
-bool Interpreter::is_optimized()        { return InterpreterCodeStatus()[0] == 1; }
-bool Interpreter::can_trace_bytecodes() { return InterpreterCodeStatus()[1] == 1; }
-bool Interpreter::can_trace_sends()     { return InterpreterCodeStatus()[2] == 1; }
-bool Interpreter::has_assertions()      { return InterpreterCodeStatus()[3] == 1; }
-bool Interpreter::has_stack_checks()    { return InterpreterCodeStatus()[4] == 1; }
-bool Interpreter::has_timers()          { return InterpreterCodeStatus()[5] == 1; }
+bool Interpreter::is_optimized() {
+  return InterpreterCodeStatus()[0] == 1;
+}
+bool Interpreter::can_trace_bytecodes() {
+  return InterpreterCodeStatus()[1] == 1;
+}
+bool Interpreter::can_trace_sends() {
+  return InterpreterCodeStatus()[2] == 1;
+}
+bool Interpreter::has_assertions() {
+  return InterpreterCodeStatus()[3] == 1;
+}
+bool Interpreter::has_stack_checks() {
+  return InterpreterCodeStatus()[4] == 1;
+}
+bool Interpreter::has_timers() {
+  return InterpreterCodeStatus()[5] == 1;
+}
 
 void Interpreter::print_code_status() {
   if (is_optimized()) {
     mystd->print_cr("- Interpreter code is optimized");
   } else {
     mystd->print("- Interpreter code is in debug mode: ");
-    if (can_trace_bytecodes()) mystd->print("trace_bytecodes ");
-    if (can_trace_sends())     mystd->print("trace_sends ");
-    if (has_assertions())      mystd->print("assertions ");
-    if (has_stack_checks())    mystd->print("stack_checks ");
-    if (has_timers())          mystd->print("timers ");
+    if (can_trace_bytecodes())
+      mystd->print("trace_bytecodes ");
+    if (can_trace_sends())
+      mystd->print("trace_sends ");
+    if (has_assertions())
+      mystd->print("assertions ");
+    if (has_stack_checks())
+      mystd->print("stack_checks ");
+    if (has_timers())
+      mystd->print("timers ");
     mystd->cr();
   }
 }
-
 
 // Loops
 
@@ -206,7 +222,6 @@ extern "C" void loop_counter_overflow() {
   // This routine can go away if the interpreter is generated
   Interpreter::loop_counter_overflow();
 }
-
 
 void Interpreter::loop_counter_overflow() {
   const bool debug = false;
@@ -223,27 +238,22 @@ void Interpreter::loop_counter_overflow() {
   }
 }
 
-
 int Interpreter::loop_counter() {
   return interpreter_loop_counter;
 }
-
 
 void Interpreter::reset_loop_counter() {
   interpreter_loop_counter = 0;
 }
 
-
 int Interpreter::loop_counter_limit() {
   return interpreter_loop_counter_limit;
 }
-
 
 void Interpreter::set_loop_counter_limit(int limit) {
   assert(0 <= limit, "loop counter limit must be positive");
   interpreter_loop_counter_limit = limit;
 }
-
 
 // Runtime routines called from interpreter_asm.asm
 //
@@ -255,14 +265,15 @@ extern "C" void inline_cache_miss() {
   InterpretedIC::inline_cache_miss();
 }
 
-
 extern "C" void verifyPIC(oop pic) {
-  if (!Universe::is_heap((oop*) pic)) fatal("pic should be in heap");
-  if (!pic->is_objArray()) fatal("pic should be an objArray");
+  if (!Universe::is_heap((oop*)pic))
+    fatal("pic should be in heap");
+  if (!pic->is_objArray())
+    fatal("pic should be an objArray");
   int length = objArrayOop(pic)->length();
-  if (!(2*size_of_smallest_interpreterPIC <= length && length <= 2*size_of_largest_interpreterPIC)) fatal("pic has wrong length field");
+  if (!(2 * size_of_smallest_interpreterPIC <= length && length <= 2 * size_of_largest_interpreterPIC))
+    fatal("pic has wrong length field");
 }
-
 
 extern "C" void trace_send(oop receiver, methodOop method) {
   if (TraceMessageSend) {
@@ -274,34 +285,31 @@ extern "C" void trace_send(oop receiver, methodOop method) {
   }
 }
 
-
 // Runtime routines called from the generated interpreter
 
 void Interpreter::trace_bytecode(intptr_t tos) {
   if (TraceInterpreterFramesAt) {
-    if (TraceInterpreterFramesAt < NumberOfBytecodesExecuted)
-    {
+    if (TraceInterpreterFramesAt < NumberOfBytecodesExecuted) {
       frame f = DeltaProcess::active()->last_frame();
       lprintf("Frame: fp = %#lx, sp = %#lx]\n", f.fp(), f.sp());
       for (oop* p = f.sp(); p <= f.temp_addr(0); p++) {
-	lprintf("\t[%#lx]: ", p);
-	(*p)->print_value();
-	lprintf("\n");
+        lprintf("\t[%#lx]: ", p);
+        (*p)->print_value();
+        lprintf("\n");
       }
       u_char* ip = DeltaProcess::active()->last_frame().hp();
       char* name = Bytecodes::name((Bytecodes::Code)*ip);
       mystd->print("%9d 0x%x: %02x %s\n", NumberOfBytecodesExecuted, ip, *ip, name);
     }
-  }
-  else if (TraceBytecodes) {
+  } else if (TraceBytecodes) {
     u_char* ip = DeltaProcess::active()->last_frame().hp();
     char* name = Bytecodes::name((Bytecodes::Code)*ip);
     intptr_t* p = (intptr_t*)DeltaProcess::active()->last_frame().sp();
-    mystd->print("%9d 0x%x: %02x %-22s sp=%p tos=0x%llx [0]=0x%llx [1]=0x%llx [2]=0x%llx [3]=0x%llx [4]=0x%llx [5]=0x%llx\n",
-        NumberOfBytecodesExecuted, ip, *ip, name, p, tos, p[0], p[1], p[2], p[3], p[4], p[5]);
+    mystd->print(
+      "%9d 0x%x: %02x %-22s sp=%p tos=0x%llx [0]=0x%llx [1]=0x%llx [2]=0x%llx [3]=0x%llx [4]=0x%llx [5]=0x%llx\n",
+      NumberOfBytecodesExecuted, ip, *ip, name, p, tos, p[0], p[1], p[2], p[3], p[4], p[5]);
   }
 }
-
 
 void Interpreter::warning_illegal(int ebx, int esi) {
   warning("illegal instruction (ebx = 0x%x, esi = 0x%x)", ebx, esi);
@@ -329,18 +337,18 @@ void Interpreter::wrong_primitive_result() {
 }
 */
 
-
 doubleOop Interpreter::oopify_FloatValue() {
   // Called from float_oopify. Get the float argument by inspecting
   // the stack and the argument of the Floats::oopify operation.
   frame f = DeltaProcess::active()->last_frame();
-  assert(*(f.hp() - 3) == Bytecodes::float_unary_op_to_oop && *(f.hp() - 1) == Floats::oopify, "not called by Floats::oopify");
+  assert(*(f.hp() - 3) == Bytecodes::float_unary_op_to_oop && *(f.hp() - 1) == Floats::oopify,
+         "not called by Floats::oopify");
   int float_index = *(f.hp() - 2);
   assert(0 <= float_index && float_index < max_nof_floats, "illegal float index");
-  double* float_address = (double*)((char*)f.fp() + (float_0_offset - (max_nof_floats - 1)*floatSize) + float_index*floatSize);
+  double* float_address =
+    (double*)((char*)f.fp() + (float_0_offset - (max_nof_floats - 1) * floatSize) + float_index * floatSize);
   return oopFactory::new_double(*float_address);
 }
-
 
 int* Interpreter::_invocation_counter_addr = NULL;
 
@@ -357,16 +365,18 @@ void Interpreter::set_invocation_counter_limit(int new_limit) {
 #ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
   assert(*((u_char*)_invocation_counter_addr - 2) == 0x81, "not a cmp edx, imm32 instruction anymore?")
 #endif
-  *_invocation_counter_addr = new_limit << methodOopDesc::_invocation_count_offset;
+    * _invocation_counter_addr = new_limit << methodOopDesc::_invocation_count_offset;
 }
-
 
 int Interpreter::get_invocation_counter_limit() {
   assert(_invocation_counter_addr != NULL, "invocation counter address unknown");
-  return get_unsigned_bitfield(*_invocation_counter_addr, methodOopDesc::_invocation_count_offset, methodOopDesc::_invocation_count_width);
+  return get_unsigned_bitfield(*_invocation_counter_addr, methodOopDesc::_invocation_count_offset,
+                               methodOopDesc::_invocation_count_width);
 }
 
-static int* loop_counter_addr() { return NULL; }
+static int* loop_counter_addr() {
+  return NULL;
+}
 static int* loop_counter_limit_addr();
 
 // entry points accessors
@@ -380,36 +390,72 @@ extern "C" void nlr_single_step_continuation();
 extern "C" void redo_bytecode_after_deoptimization();
 extern "C" void illegal();
 
-char* Interpreter::redo_send_entry() 				{ return access(_redo_send_entry); }
+char* Interpreter::redo_send_entry() {
+  return access(_redo_send_entry);
+}
 //char* Interpreter::restart_primitiveValue() 			{ return access((char*)::restart_primitiveValue); }
-char* Interpreter::nlr_single_step_continuation_entry()		{ return access(Interpreter::_nlr_single_step_continuation_entry); }
+char* Interpreter::nlr_single_step_continuation_entry() {
+  return access(Interpreter::_nlr_single_step_continuation_entry);
+}
 //char* Interpreter::redo_bytecode_after_deoptimization()		{ return access((char*)::redo_bytecode_after_deoptimization); }
 //char* Interpreter::illegal()					{ return access((char*)::illegal); }
 
-char* Interpreter::restart_primitiveValue() 			{ return access(_restart_primitiveValue); }
-Label& Interpreter::nlr_single_step_continuation()		{ 
-	assert(_nlr_single_step_continuation.is_bound(), "code not generated yet");
-	return _nlr_single_step_continuation; 
+char* Interpreter::restart_primitiveValue() {
+  return access(_restart_primitiveValue);
 }
-char* Interpreter::redo_bytecode_after_deoptimization()		{ return access(_redo_bytecode_after_deoptimization); }
-char* Interpreter::illegal()					{ return access(_illegal); }
+Label& Interpreter::nlr_single_step_continuation() {
+  assert(_nlr_single_step_continuation.is_bound(), "code not generated yet");
+  return _nlr_single_step_continuation;
+}
+char* Interpreter::redo_bytecode_after_deoptimization() {
+  return access(_redo_bytecode_after_deoptimization);
+}
+char* Interpreter::illegal() {
+  return access(_illegal);
+}
 
-
-char* Interpreter::deoptimized_return_from_send_without_receiver() 				{ return access(_dr_from_send_without_receiver); }
-char* Interpreter::deoptimized_return_from_send_without_receiver_restore() 			{ return access(_dr_from_send_without_receiver_restore); }
-char* Interpreter::deoptimized_return_from_send_without_receiver_pop() 				{ return access(_dr_from_send_without_receiver_pop); }
-char* Interpreter::deoptimized_return_from_send_without_receiver_pop_restore() 			{ return access(_dr_from_send_without_receiver_pop_restore); }
-char* Interpreter::deoptimized_return_from_send_with_receiver() 				{ return access(_dr_from_send_with_receiver); }
-char* Interpreter::deoptimized_return_from_send_with_receiver_restore() 			{ return access(_dr_from_send_with_receiver_restore); }
-char* Interpreter::deoptimized_return_from_send_with_receiver_pop() 				{ return access(_dr_from_send_with_receiver_pop); }
-char* Interpreter::deoptimized_return_from_send_with_receiver_pop_restore() 			{ return access(_dr_from_send_with_receiver_pop_restore); }
-char* Interpreter::deoptimized_return_from_primitive_call_without_failure_block() 		{ return access(_dr_from_primitive_call_without_failure_block); }
-char* Interpreter::deoptimized_return_from_primitive_call_without_failure_block_restore() 	{ return access(_dr_from_primitive_call_without_failure_block_restore); }
-char* Interpreter::deoptimized_return_from_primitive_call_with_failure_block() 			{ return access(_dr_from_primitive_call_with_failure_block); }
-char* Interpreter::deoptimized_return_from_primitive_call_with_failure_block_restore() 		{ return access( _dr_from_primitive_call_with_failure_block_restore); }
-char* Interpreter::deoptimized_return_from_dll_call() 						{ return access(_dr_from_dll_call); }
-char* Interpreter::deoptimized_return_from_dll_call_restore() 					{ return access(_dr_from_dll_call_restore); }
-
+char* Interpreter::deoptimized_return_from_send_without_receiver() {
+  return access(_dr_from_send_without_receiver);
+}
+char* Interpreter::deoptimized_return_from_send_without_receiver_restore() {
+  return access(_dr_from_send_without_receiver_restore);
+}
+char* Interpreter::deoptimized_return_from_send_without_receiver_pop() {
+  return access(_dr_from_send_without_receiver_pop);
+}
+char* Interpreter::deoptimized_return_from_send_without_receiver_pop_restore() {
+  return access(_dr_from_send_without_receiver_pop_restore);
+}
+char* Interpreter::deoptimized_return_from_send_with_receiver() {
+  return access(_dr_from_send_with_receiver);
+}
+char* Interpreter::deoptimized_return_from_send_with_receiver_restore() {
+  return access(_dr_from_send_with_receiver_restore);
+}
+char* Interpreter::deoptimized_return_from_send_with_receiver_pop() {
+  return access(_dr_from_send_with_receiver_pop);
+}
+char* Interpreter::deoptimized_return_from_send_with_receiver_pop_restore() {
+  return access(_dr_from_send_with_receiver_pop_restore);
+}
+char* Interpreter::deoptimized_return_from_primitive_call_without_failure_block() {
+  return access(_dr_from_primitive_call_without_failure_block);
+}
+char* Interpreter::deoptimized_return_from_primitive_call_without_failure_block_restore() {
+  return access(_dr_from_primitive_call_without_failure_block_restore);
+}
+char* Interpreter::deoptimized_return_from_primitive_call_with_failure_block() {
+  return access(_dr_from_primitive_call_with_failure_block);
+}
+char* Interpreter::deoptimized_return_from_primitive_call_with_failure_block_restore() {
+  return access(_dr_from_primitive_call_with_failure_block_restore);
+}
+char* Interpreter::deoptimized_return_from_dll_call() {
+  return access(_dr_from_dll_call);
+}
+char* Interpreter::deoptimized_return_from_dll_call_restore() {
+  return access(_dr_from_dll_call_restore);
+}
 
 /*
 extern "C" void deoptimized_return_from_send_without_receiver();
@@ -445,44 +491,43 @@ char* Interpreter::deoptimized_return_from_dll_call_restore() 					{ return acce
 // Interpreter initialization
 
 void Interpreter::init() {
-  if (_is_initialized) return;
+  if (_is_initialized)
+    return;
   reset_loop_counter();
   set_loop_counter_limit(LoopCounterLimit);
   set_invocation_counter_limit(InvocationCounterLimit);
   _is_initialized = true;
 }
 
-
 // The InterpreterGenerator contains the functionality to generate
 // the interpreter in the system initialization phase.
 
-class InterpreterGenerator: StackObj {
- private:
-  MacroAssembler*	masm;		// used to generate code
-  bool			_debug;		// indicates debug mode
+class InterpreterGenerator : StackObj {
+private:
+  MacroAssembler* masm; // used to generate code
+  bool _debug; // indicates debug mode
 
-  bool			_stack_check;
+  bool _stack_check;
 
-  Label		_method_entry;		// entry point to activate method execution
-  Label		_block_entry;		// entry point to activate block execution (primitiveValue)
-  Label		_inline_cache_miss;	// inline cache misses handling
-  Label		_smi_send_failure;	// handles predicted smi send failures
-  Label		_issue_NLR;		// the starting point for NLRs in interpreted code
-  Label		_nlr_testpoint;		// the return point for NLRs in interpreted sends
-  Label		_C_nlr_testpoint;	// the return point for NLRs in C
+  Label _method_entry; // entry point to activate method execution
+  Label _block_entry; // entry point to activate block execution (primitiveValue)
+  Label _inline_cache_miss; // inline cache misses handling
+  Label _smi_send_failure; // handles predicted smi send failures
+  Label _issue_NLR; // the starting point for NLRs in interpreted code
+  Label _nlr_testpoint; // the return point for NLRs in interpreted sends
+  Label _C_nlr_testpoint; // the return point for NLRs in C
 
-  Label		_boolean_expected;	// boolean expected error
-  Label		_float_expected;	// float expected error
-  Label		_NLR_to_dead_frame;	// NLR error
-  Label		_halted;		// halt executed
+  Label _boolean_expected; // boolean expected error
+  Label _float_expected; // float expected error
+  Label _NLR_to_dead_frame; // NLR error
+  Label _halted; // halt executed
 
-  Label		_stack_missaligned;	  // assertion errors
-  Label		_ebx_wrong;		  //
-  Label		_obj_wrong;		  //
-  Label		_last_Delta_fp_wrong;	  //
-  Label		_primitive_result_wrong;  //
-  char*		_illegal;
-
+  Label _stack_missaligned; // assertion errors
+  Label _ebx_wrong; //
+  Label _obj_wrong; //
+  Label _last_Delta_fp_wrong; //
+  Label _primitive_result_wrong; //
+  char* _illegal;
 
   // Debugging
   void check_ebx();
@@ -515,21 +560,21 @@ class InterpreterGenerator: StackObj {
   char* entry_point();
 
   // Frame addresses
-  Address self_addr()		{ return Address(ebp, self_offset); }
-  Address esi_addr()		{ return Address(ebp, esi_offset); }
-  Address context_addr()	{ return Address(ebp, temp_0_offset); }
+  Address self_addr() { return Address(ebp, self_offset); }
+  Address esi_addr() { return Address(ebp, esi_offset); }
+  Address context_addr() { return Address(ebp, temp_0_offset); }
 
-  void save_esi()		{ masm->movq(esi_addr(), esi); }
-  void restore_esi()		{ masm->movq(esi, esi_addr()); }
-  void restore_ebx()		{ masm->xorl(ebx, ebx); }
+  void save_esi() { masm->movq(esi_addr(), esi); }
+  void restore_esi() { masm->movq(esi, esi_addr()); }
+  void restore_ebx() { masm->xorl(ebx, ebx); }
 
   // Constant addresses
-  Address nil_addr()		{ return Address(intptr_t(&nilObj), relocInfo::external_word_type); }
-  Address true_addr()		{ return Address(intptr_t(&trueObj), relocInfo::external_word_type); }
-  Address false_addr()		{ return Address(intptr_t(&falseObj), relocInfo::external_word_type); }
-  Address smiKlass_addr()	{ return Address(intptr_t(&smiKlassObj), relocInfo::external_word_type); }
-  Address doubleKlass_addr()	{ return Address(intptr_t(&doubleKlassObj), relocInfo::external_word_type); }
-  Address contextKlass_addr()	{ return Address(intptr_t(&contextKlassObj), relocInfo::external_word_type); }
+  Address nil_addr() { return Address(intptr_t(&nilObj), relocInfo::external_word_type); }
+  Address true_addr() { return Address(intptr_t(&trueObj), relocInfo::external_word_type); }
+  Address false_addr() { return Address(intptr_t(&falseObj), relocInfo::external_word_type); }
+  Address smiKlass_addr() { return Address(intptr_t(&smiKlassObj), relocInfo::external_word_type); }
+  Address doubleKlass_addr() { return Address(intptr_t(&doubleKlassObj), relocInfo::external_word_type); }
+  Address contextKlass_addr() { return Address(intptr_t(&contextKlassObj), relocInfo::external_word_type); }
 
   // C calls
   void call_C(Label& L);
@@ -588,18 +633,18 @@ class InterpreterGenerator: StackObj {
   char* call_primitive_can_fail();
   char* call_DLL(bool async);
 
-  void  call_method();
-  void  call_native(Register entry);
-  void  generate_error_handler_code();
-  void  generate_nonlocal_return_code();
-  void  generate_method_entry_code();
-  void  generate_inline_cache_miss_handler();
-  void  generate_predicted_smi_send_failure_handler();
-  void  generate_redo_send_code();
-  void  generate_deoptimized_return_restore();
-  void  generate_deoptimized_return_code();
-  void	generate_primitiveValue(int i);
-  void	generate_forStubRountines();
+  void call_method();
+  void call_native(Register entry);
+  void generate_error_handler_code();
+  void generate_nonlocal_return_code();
+  void generate_method_entry_code();
+  void generate_inline_cache_miss_handler();
+  void generate_predicted_smi_send_failure_handler();
+  void generate_redo_send_code();
+  void generate_deoptimized_return_restore();
+  void generate_deoptimized_return_code();
+  void generate_primitiveValue(int i);
+  void generate_forStubRountines();
   char* normal_send(Bytecodes::Code code, bool allow_methodOop, bool allow_nmethod, bool primitive_send = false);
 
   char* control_cond(Bytecodes::Code code);
@@ -608,13 +653,13 @@ class InterpreterGenerator: StackObj {
 
   char* access_send(bool self);
 
-  char* primitive_send  (Bytecodes::Code code);
+  char* primitive_send(Bytecodes::Code code);
   char* interpreted_send(Bytecodes::Code code);
-  char* compiled_send   (Bytecodes::Code code);
+  char* compiled_send(Bytecodes::Code code);
   char* polymorphic_send(Bytecodes::Code code);
   char* megamorphic_send(Bytecodes::Code code);
 
-  void  check_smi_tags();
+  void check_smi_tags();
   char* smi_add();
   char* smi_sub();
   char* smi_mul();
@@ -641,15 +686,14 @@ class InterpreterGenerator: StackObj {
   char* generate_instruction(Bytecodes::Code code);
 
   // Generation helper
-  void  info(char* name);
+  void info(char* name);
 
   // Generation
-  void  generate_all();
+  void generate_all();
 
- public:
+public:
   InterpreterGenerator(CodeBuffer* code, bool debug);
 };
-
 
 // Debugging
 
@@ -660,7 +704,6 @@ void InterpreterGenerator::check_ebx() {
     masm->jcc(Assembler::notZero, _ebx_wrong);
   }
 }
-
 
 void InterpreterGenerator::check_oop(Register reg) {
   // check if reg contains an oop
@@ -679,7 +722,7 @@ void InterpreterGenerator::check_oop(Register reg) {
 // structured construct (e.g., such as loops). Check code is only
 // generated if stack_checks are enabled.
 
-static const int magic		= 0x0FCFCFCFC;			// must be a smi
+static const int magic = 0x0FCFCFCFC; // must be a smi
 
 void InterpreterGenerator::stack_check_push() {
   if (_stack_check) {
@@ -705,14 +748,12 @@ void InterpreterGenerator::should_not_reach_here() {
   masm->hlt();
 }
 
-
 // Arguments, temporaries & instance variables
 
 Address InterpreterGenerator::arg_addr(int i) {
   assert(1 <= i, "argument number must be positive");
-  return Address(ebp, arg_n_offset + (i - 1)*slotSize);
+  return Address(ebp, arg_n_offset + (i - 1) * slotSize);
 }
-
 
 Address InterpreterGenerator::arg_addr(Register arg_no) {
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
@@ -722,57 +763,48 @@ Address InterpreterGenerator::arg_addr(Register arg_no) {
 #endif
 }
 
-
 Address InterpreterGenerator::temp_addr(int i) {
   assert(0 <= i, "temporary number must be positive");
-  return Address(ebp, temp_0_offset - i*slotSize);
+  return Address(ebp, temp_0_offset - i * slotSize);
 }
-
 
 Address InterpreterGenerator::temp_addr(Register temp_no) {
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  return Address(ebp, temp_no, Address::times_16, temp_0_offset - (max_nof_temps - 1)*slotSize, relocInfo::none);
+  return Address(ebp, temp_no, Address::times_16, temp_0_offset - (max_nof_temps - 1) * slotSize, relocInfo::none);
 #else
-  return Address(ebp, temp_no, Address::times_8, temp_0_offset - (max_nof_temps - 1)*oopSize, relocInfo::none);
+  return Address(ebp, temp_no, Address::times_8, temp_0_offset - (max_nof_temps - 1) * oopSize, relocInfo::none);
 #endif
 }
 
-
 Address InterpreterGenerator::float_addr(Register float_no) {
-  return Address(ebp, float_no, Address::times_8, float_0_offset - (max_nof_floats - 1)*floatSize, relocInfo::none);
+  return Address(ebp, float_no, Address::times_8, float_0_offset - (max_nof_floats - 1) * floatSize, relocInfo::none);
 }
-
 
 Address InterpreterGenerator::field_addr(Register obj, int i) {
   assert(2 <= i, "illegal field offset");
   return Address(obj, byteOffset(i));
 }
 
-
 Address InterpreterGenerator::field_addr(Register obj, Register smi_offset) {
   return Address(obj, smi_offset, Address::times_2, -Mem_Tag, relocInfo::none);
 }
 
-
 // Instruction sequencing
 
 void InterpreterGenerator::skip_words(int n) {
-  masm->addq(esi, (n+1)*oopSize);	// advance
-  masm->andq(esi, -oopSize);		// align
+  masm->addq(esi, (n + 1) * oopSize); // advance
+  masm->andq(esi, -oopSize); // align
 }
-
 
 void InterpreterGenerator::advance_aligned(int n) {
-  masm->addq(esi, n + oopSize - 1);	// advance
-  masm->andq(esi, -oopSize);		// align
+  masm->addq(esi, n + oopSize - 1); // advance
+  masm->andq(esi, -oopSize); // align
 }
-
 
 void InterpreterGenerator::load_ebx() {
   check_ebx();
   masm->movb(ebx, Address(esi));
 }
-
 
 void InterpreterGenerator::next_ebx() {
   check_ebx();
@@ -781,48 +813,48 @@ void InterpreterGenerator::next_ebx() {
 }
 
 void InterpreterGenerator::generateStopInterpreterAt() {
-    if (StopInterpreterAt > 0) {
-      Label cont;
-	  masm->pushl(edx);
-	  masm->movl(edx, Address(intptr_t(&StopInterpreterAt), relocInfo::external_word_type));
-      masm->cmpl(edx, Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
-	  masm->popl(edx);
-	  masm->jcc(Assembler::above, cont);
-      masm->int3();
-      masm->bind(cont);
-    }
+  if (StopInterpreterAt > 0) {
+    Label cont;
+    masm->pushl(edx);
+    masm->movl(edx, Address(intptr_t(&StopInterpreterAt), relocInfo::external_word_type));
+    masm->cmpl(edx, Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
+    masm->popl(edx);
+    masm->jcc(Assembler::above, cont);
+    masm->int3();
+    masm->bind(cont);
+  }
 }
 void InterpreterGenerator::jump_ebx() {
   if (TraceBytecodes || CountBytecodes || StopInterpreterAt > 0) {
     masm->incl(Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
-	generateStopInterpreterAt();
+    generateStopInterpreterAt();
   }
   if (TraceBytecodes) {
-    masm->pushl(eax);	// save tos
+    masm->pushl(eax); // save tos
     call_C((char*)Interpreter::trace_bytecode, eax);
-    masm->popl(eax);	// restore tos
+    masm->popl(eax); // restore tos
     load_ebx();
   }
   check_oop(eax);
   // On x86-64 the [index*scale+disp32] form (SIB base=101) is decoded as
   // absolute by Rosetta rather than RIP-relative, so load the table base via
   // the [rip+disp] form into a register and index through it instead.
-  masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
+  masm->leaq(edx,
+             Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
   masm->jmp(Address(edx, ebx, Address::times_8));
 }
 
-
 void InterpreterGenerator::load_edi() {
-  masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
+  masm->leaq(edx,
+             Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
   masm->movq(edi, Address(edx, ebx, Address::times_8));
 }
-
 
 void InterpreterGenerator::jump_edi() {
   if (TraceBytecodes || CountBytecodes || StopInterpreterAt > 0) {
     masm->incl(Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
-	generateStopInterpreterAt();
-	/*    if (StopInterpreterAt > 0) {
+    generateStopInterpreterAt();
+    /*    if (StopInterpreterAt > 0) {
       Label cont;
       masm->cmpl(Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type), StopInterpreterAt);
       masm->jcc(Assembler::less, cont);
@@ -831,15 +863,14 @@ void InterpreterGenerator::jump_edi() {
     }*/
   }
   if (TraceBytecodes) {
-    masm->pushl(eax);	// save tos
+    masm->pushl(eax); // save tos
     call_C((char*)Interpreter::trace_bytecode, eax);
-    masm->popl(eax);	// restore tos
+    masm->popl(eax); // restore tos
     load_ebx();
   }
   check_oop(eax);
   masm->jmp(edi);
 }
-
 
 char* InterpreterGenerator::entry_point() {
   char* ep = masm->pc();
@@ -849,7 +880,6 @@ char* InterpreterGenerator::entry_point() {
   }
   return ep;
 }
-
 
 // C calls
 //
@@ -863,14 +893,12 @@ void InterpreterGenerator::call_C(Label& L) {
   restore_ebx();
 }
 
-
 void InterpreterGenerator::call_C(char* entry) {
   save_esi();
   masm->call_C(entry, relocInfo::runtime_call_type, _C_nlr_testpoint);
   restore_esi();
   restore_ebx();
 }
-
 
 void InterpreterGenerator::call_C(char* entry, Register arg1) {
   save_esi();
@@ -879,14 +907,12 @@ void InterpreterGenerator::call_C(char* entry, Register arg1) {
   restore_ebx();
 }
 
-
 void InterpreterGenerator::call_C(Register entry) {
   save_esi();
   masm->call_C(entry, _C_nlr_testpoint);
   restore_esi();
   restore_ebx();
 }
-
 
 // Calling conventions for sends
 //
@@ -901,24 +927,30 @@ void InterpreterGenerator::call_C(Register entry) {
 // load_recv is loading the receiver into eax and makes sure that the receiver
 // (except for self and super sends) as well as the arguments are on the stack.
 
-
 void InterpreterGenerator::load_recv(Bytecodes::ArgumentSpec arg_spec) {
   masm->pushl(eax); // make sure receiver & all arguments are on the stack
   switch (arg_spec) {
-    case Bytecodes::recv_0_args: break; // recv already in eax
-    case Bytecodes::recv_1_args: masm->movl(eax, Address(esp, 1*slotSize)); break;
-    case Bytecodes::recv_2_args: masm->movl(eax, Address(esp, 2*slotSize)); break;
+    case Bytecodes::recv_0_args:
+      break; // recv already in eax
+    case Bytecodes::recv_1_args:
+      masm->movl(eax, Address(esp, 1 * slotSize));
+      break;
+    case Bytecodes::recv_2_args:
+      masm->movl(eax, Address(esp, 2 * slotSize));
+      break;
     case Bytecodes::recv_n_args:
       // byte after send byte code specifies the number of arguments (0..255)
       masm->movb(ebx, Address(esi, 1));
       masm->movl(eax, Address(esp, ebx, deltaStackScale));
       break;
-    case Bytecodes::args_only  : masm->movl(eax, self_addr()); break;
-    default                    : ShouldNotReachHere();
+    case Bytecodes::args_only:
+      masm->movl(eax, self_addr());
+      break;
+    default:
+      ShouldNotReachHere();
   }
   STAMP_EAX_WRITER(22);
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Instructions
@@ -951,7 +983,6 @@ char* InterpreterGenerator::push_temp(int i) {
   return ep;
 }
 
-
 char* InterpreterGenerator::push_temp_n() {
   char* ep = entry_point();
   masm->addl(esi, 2);
@@ -963,7 +994,6 @@ char* InterpreterGenerator::push_temp_n() {
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::push_arg(int i) {
   char* ep = entry_point();
@@ -993,7 +1023,6 @@ char* InterpreterGenerator::push_arg(int i) {
   return ep;
 }
 
-
 char* InterpreterGenerator::push_arg_n() {
   char* ep = entry_point();
   masm->addl(esi, 2);
@@ -1006,25 +1035,23 @@ char* InterpreterGenerator::push_arg_n() {
   return ep;
 }
 
-
 char* InterpreterGenerator::push_smi(bool negative) {
   char* ep = entry_point();
-  masm->movb(ebx, Address(esi, 1));	// get b
-  masm->addq(esi, 2);			// advance to next bytecode
-  masm->pushl(eax);			// save tos
-  masm->shll(ebx, Tag_Size);		// convert b to a smi (b is a byte, fits in 32 bits)
-  masm->movl(eax, ebx);			// zero-extend to a 64-bit smi
+  masm->movb(ebx, Address(esi, 1)); // get b
+  masm->addq(esi, 2); // advance to next bytecode
+  masm->pushl(eax); // save tos
+  masm->shll(ebx, Tag_Size); // convert b to a smi (b is a byte, fits in 32 bits)
+  masm->movl(eax, ebx); // zero-extend to a 64-bit smi
   if (negative) {
-    masm->negq(eax);			// sign-extended 64-bit negate for smi(-b)
+    masm->negq(eax); // sign-extended 64-bit negate for smi(-b)
   } else {
-    masm->leal(eax, Address(ebx, 4));	// smi(b+1)
+    masm->leal(eax, Address(ebx, 4)); // smi(b+1)
   }
   STAMP_EAX_WRITER(38);
   load_ebx();
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::push_literal() {
   char* ep = entry_point();
@@ -1054,7 +1081,6 @@ char* InterpreterGenerator::push_literal() {
   return ep;
 }
 
-
 char* InterpreterGenerator::push_tos() {
   char* ep = entry_point();
   next_ebx();
@@ -1062,7 +1088,6 @@ char* InterpreterGenerator::push_tos() {
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::push_self() {
   char* ep = entry_point();
@@ -1095,7 +1120,6 @@ char* InterpreterGenerator::push_self() {
   return ep;
 }
 
-
 char* InterpreterGenerator::push_const(Address obj_addr) {
   char* ep = entry_point();
   masm->pushl(eax);
@@ -1105,7 +1129,6 @@ char* InterpreterGenerator::push_const(Address obj_addr) {
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::push_instVar() {
   char* ep = entry_point();
@@ -1140,7 +1163,6 @@ char* InterpreterGenerator::push_instVar() {
   return ep;
 }
 
-
 char* InterpreterGenerator::store_instVar(bool pop) {
   char* ep = entry_point();
   advance_aligned(1 + oopSize);
@@ -1149,11 +1171,13 @@ char* InterpreterGenerator::store_instVar(bool pop) {
   load_ebx();
   masm->movl(field_addr(ecx, edx), eax);
   masm->store_check(ecx, edx);
-  if (pop) { masm->popl(eax); STAMP_EAX_WRITER(26); }
+  if (pop) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(26);
+  }
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::return_instVar() {
   char* ep = entry_point();
@@ -1169,7 +1193,6 @@ char* InterpreterGenerator::return_instVar() {
   return ep;
 }
 
-
 char* InterpreterGenerator::only_pop() {
   char* ep = entry_point();
   next_ebx();
@@ -1182,7 +1205,6 @@ char* InterpreterGenerator::only_pop() {
   return ep;
 }
 
-
 char* InterpreterGenerator::store_temp(int i, bool pop) {
   char* ep = entry_point();
   next_ebx();
@@ -1194,7 +1216,7 @@ char* InterpreterGenerator::store_temp(int i, bool pop) {
     masm->movq(ecx, (intptr_t)3);
     masm->movq(Address((intptr_t)&diag_pre_check_id, relocInfo::external_word_type), ecx);
     masm->test(eax, Mem_Tag);
-    masm->jcc(Assembler::zero, oop_ok_st);        // Smi — skip check
+    masm->jcc(Assembler::zero, oop_ok_st); // Smi — skip check
     masm->movq(ecx, (intptr_t)0x100000000);
     masm->cmpq(eax, ecx);
     masm->jcc(Assembler::greaterEqual, oop_ok_st);
@@ -1209,11 +1231,13 @@ char* InterpreterGenerator::store_temp(int i, bool pop) {
   }
 #endif
   masm->movl(temp_addr(i), eax);
-  if (pop) { masm->popl(eax); STAMP_EAX_WRITER(24); }
+  if (pop) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(24);
+  }
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::store_temp_n(bool pop) {
   char* ep = entry_point();
@@ -1242,7 +1266,10 @@ char* InterpreterGenerator::store_temp_n(bool pop) {
 #endif
   masm->movl(temp_addr(ebx), eax);
   load_ebx();
-  if (pop) { masm->popl(eax); STAMP_EAX_WRITER(25); }
+  if (pop) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(25);
+  }
   jump_ebx();
   return ep;
 }
@@ -1251,9 +1278,9 @@ char* InterpreterGenerator::push_global() {
   char* ep = entry_point();
   skip_words(1);
   masm->pushl(eax);
-  masm->movq(ecx, Address(esi, -oopSize));					// get association
+  masm->movq(ecx, Address(esi, -oopSize)); // get association
   load_ebx();
-  masm->movq(eax, field_addr(ecx, associationOopDesc::value_offset()));	// get value via association
+  masm->movq(eax, field_addr(ecx, associationOopDesc::value_offset())); // get value via association
 #if DELTA_X86_64
   {
     Label oop_ok_pg;
@@ -1276,19 +1303,20 @@ char* InterpreterGenerator::push_global() {
   return ep;
 }
 
-
 char* InterpreterGenerator::store_global(bool pop) {
   char* ep = entry_point();
   skip_words(1);
-  masm->movl(ecx, Address(esi, -oopSize));					// get association
+  masm->movl(ecx, Address(esi, -oopSize)); // get association
   load_ebx();
-  masm->movl(field_addr(ecx, associationOopDesc::value_offset()), eax);	// store value via association
+  masm->movl(field_addr(ecx, associationOopDesc::value_offset()), eax); // store value via association
   masm->store_check(ecx, edx);
-  if (pop) { masm->popl(eax); STAMP_EAX_WRITER(27); }
+  if (pop) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(27);
+  }
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::allocate_temps(int n) {
   char* ep = entry_point();
@@ -1296,11 +1324,11 @@ char* InterpreterGenerator::allocate_temps(int n) {
   next_ebx();
   masm->pushl(eax);
   masm->movl(eax, nil_addr());
-  while (--n > 0) masm->pushl(eax);
+  while (--n > 0)
+    masm->pushl(eax);
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::allocate_temps_n() {
   Label entry, loop;
@@ -1314,15 +1342,14 @@ char* InterpreterGenerator::allocate_temps_n() {
   jump_ebx();
 
   char* ep = entry_point();
-  masm->movb(ebx, Address(esi, 1));		// get n (n = 0 ==> 256 temps)
-  masm->addl(esi, 2);				// advance to next bytecode
+  masm->movb(ebx, Address(esi, 1)); // get n (n = 0 ==> 256 temps)
+  masm->addl(esi, 2); // advance to next bytecode
   masm->pushl(eax);
   masm->movl(eax, nil_addr());
   masm->jmp(entry);
 
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Context temporaries
@@ -1334,14 +1361,14 @@ char* InterpreterGenerator::set_self_via_context() {
   Label loop;
   char* ep = entry_point();
   next_ebx();
-  masm->movl(edx, self_addr());		// get incoming context (stored in receiver)
-  masm->bind(loop);				// search for home context
-  masm->movl(ecx, edx);			// save current context
+  masm->movl(edx, self_addr()); // get incoming context (stored in receiver)
+  masm->bind(loop); // search for home context
+  masm->movl(ecx, edx); // save current context
   masm->movl(edx, Address(edx, contextOopDesc::parent_byte_offset()));
-  masm->test(edx, Mem_Tag);			// check if parent is_smi
-  masm->jcc(Assembler::notZero, loop);		// if not, current context is not home context
+  masm->test(edx, Mem_Tag); // check if parent is_smi
+  masm->jcc(Assembler::notZero, loop); // if not, current context is not home context
   masm->movl(edx, Address(ecx, contextOopDesc::temp0_byte_offset()));
-  masm->movl(self_addr(), edx);		// set self in activation frame
+  masm->movl(self_addr(), edx); // set self in activation frame
   jump_ebx();
   return ep;
 }
@@ -1362,7 +1389,7 @@ char* InterpreterGenerator::with_context_temp(bool store, int tempNo, int contex
   masm->movl(ecx, context_addr());
 
   if (contextNo == -1) {
-    masm->movb(ebx, Address(esi, codeSize-1));
+    masm->movb(ebx, Address(esi, codeSize - 1));
     masm->bind(_loop);
     masm->movl(ecx, Address(ecx, contextOopDesc::parent_byte_offset()));
     masm->decb(ebx);
@@ -1371,15 +1398,15 @@ char* InterpreterGenerator::with_context_temp(bool store, int tempNo, int contex
     for (int i = 0; i < contextNo; i++)
       masm->movl(ecx, Address(ecx, contextOopDesc::parent_byte_offset()));
   }
-    //slr debugging
-    //if (!store && tempNo == 1 && contextNo == 1) {
-    //  Label not_frame;
-    //  masm->testl(ecx, 1); // test for a frame in the context
-    //  masm->jcc(Assembler::notZero, not_frame);
-    //  masm->int3();
-    //  masm->bind(not_frame);
-    //}
-    //
+  //slr debugging
+  //if (!store && tempNo == 1 && contextNo == 1) {
+  //  Label not_frame;
+  //  masm->testl(ecx, 1); // test for a frame in the context
+  //  masm->jcc(Assembler::notZero, not_frame);
+  //  masm->int3();
+  //  masm->bind(not_frame);
+  //}
+  //
 
   Address slot;
   if (tempNo == -1) {
@@ -1390,7 +1417,7 @@ char* InterpreterGenerator::with_context_temp(bool store, int tempNo, int contex
     slot = Address(ecx, ebx, Address::times_4, contextOopDesc::temp0_byte_offset());
 #endif
   } else {
-    slot = Address(ecx, contextOopDesc::temp0_byte_offset() + tempNo*oopSize);
+    slot = Address(ecx, contextOopDesc::temp0_byte_offset() + tempNo * oopSize);
   }
 
   if (!store) {
@@ -1424,7 +1451,7 @@ char* InterpreterGenerator::copy_params_into_context(bool self, int paramsCount)
 
   char* ep = entry_point();
 
-  masm->pushl(eax);					// save tos (make sure temp0 is in memory)
+  masm->pushl(eax); // save tos (make sure temp0 is in memory)
   masm->movl(ecx, context_addr());
   masm->movl(eax, ecx);
   masm->store_check(eax, edx);
@@ -1436,29 +1463,29 @@ char* InterpreterGenerator::copy_params_into_context(bool self, int paramsCount)
   }
 
   if (paramsCount == -1) {
-    masm->addl(esi, 2);					// esi points to first parameter index
-    masm->movb(eax, Address(esi, -1));			// get b (nof params)
-   masm->bind(_loop);
-    masm->movb(ebx, Address(esi));			// get parameter index
-    masm->movl(edx, arg_addr(ebx));			// get parameter
-    Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize*oneIfSelf);
-    masm->movl(slot, edx);				// store in context variable
+    masm->addl(esi, 2); // esi points to first parameter index
+    masm->movb(eax, Address(esi, -1)); // get b (nof params)
+    masm->bind(_loop);
+    masm->movb(ebx, Address(esi)); // get parameter index
+    masm->movl(edx, arg_addr(ebx)); // get parameter
+    Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize * oneIfSelf);
+    masm->movl(slot, edx); // store in context variable
     masm->addl(ecx, 4);
     masm->incl(esi);
     masm->decb(eax);
     masm->jcc(Assembler::notZero, _loop);
   } else {
     for (int i = 0; i < paramsCount; i++) {
-      masm->movb(ebx, Address(esi, 1+i));		// get i.th parameter index
-      masm->movl(edx, arg_addr(ebx));			// get parameter
-      Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize*(i + oneIfSelf));
-      masm->movl(slot, edx);				// store (i+oneIfSelf).th in context variable
+      masm->movb(ebx, Address(esi, 1 + i)); // get i.th parameter index
+      masm->movl(edx, arg_addr(ebx)); // get parameter
+      Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize * (i + oneIfSelf));
+      masm->movl(slot, edx); // store (i+oneIfSelf).th in context variable
     }
-    masm->addl(esi, 1+paramsCount);
+    masm->addl(esi, 1 + paramsCount);
   }
 
   load_ebx();
-  masm->popl(eax);					// restore tos
+  masm->popl(eax); // restore tos
   jump_ebx();
 
   return ep;
@@ -1484,25 +1511,26 @@ extern "C" oop allocateBlock2();
 
 char* InterpreterGenerator::push_closure(int nofArgs, bool use_context) {
   char* ep = entry_point();
-  masm->pushl(eax);							// save tos
+  masm->pushl(eax); // save tos
   if (nofArgs == -1) {
     // no. of arguments specified by 2nd byte
-    masm->movb(ebx, Address(esi, 1));					// get no. of arguments
-    advance_aligned(2 + oopSize);					// go to next instruction
-    masm->shll(ebx, Tag_Size);						// convert into smi (pushed on the stack!)
-    save_esi();								// save vital registers
-    masm->pushl(ebx);							// pass as argument
-    masm->set_last_Delta_frame_before_call();				// allocateBlock needs last Delta frame!
-    masm->call(GeneratedPrimitives::allocateBlock(nofArgs), relocInfo::runtime_call_type);	// eax := block closure(nof. args)
+    masm->movb(ebx, Address(esi, 1)); // get no. of arguments
+    advance_aligned(2 + oopSize); // go to next instruction
+    masm->shll(ebx, Tag_Size); // convert into smi (pushed on the stack!)
+    save_esi(); // save vital registers
+    masm->pushl(ebx); // pass as argument
+    masm->set_last_Delta_frame_before_call(); // allocateBlock needs last Delta frame!
+    masm->call(GeneratedPrimitives::allocateBlock(nofArgs),
+               relocInfo::runtime_call_type); // eax := block closure(nof. args)
     masm->reset_last_Delta_frame();
-    masm->popl(ebx);							// get rid of argument
+    masm->popl(ebx); // get rid of argument
   } else {
     // no. of arguments implied by 1st byte
-    advance_aligned(1 + oopSize);					// go to next instruction
-    save_esi();								// no last Delta frame setup needed => save vital registers
-    masm->call(GeneratedPrimitives::allocateBlock(nofArgs), relocInfo::runtime_call_type);	// eax := block closure
+    advance_aligned(1 + oopSize); // go to next instruction
+    save_esi(); // no last Delta frame setup needed => save vital registers
+    masm->call(GeneratedPrimitives::allocateBlock(nofArgs), relocInfo::runtime_call_type); // eax := block closure
   }
-  restore_esi();							// returning from C land => restore esi (ebx is restored later)
+  restore_esi(); // returning from C land => restore esi (ebx is restored later)
 #if DELTA_X86_64
   {
     Label oop_ok_pc;
@@ -1520,16 +1548,16 @@ char* InterpreterGenerator::push_closure(int nofArgs, bool use_context) {
     masm->bind(oop_ok_pc);
   }
 #endif
-  masm->movl(ecx, Address(esi, -oopSize));				// get block methodOop
-  if (use_context) {							// if full block then
-    masm->movl(edx, context_addr());					//   get context of this activation
+  masm->movl(ecx, Address(esi, -oopSize)); // get block methodOop
+  if (use_context) { // if full block then
+    masm->movl(edx, context_addr()); //   get context of this activation
     if (_debug) {
       // should check if edx is really pointing to a context
       // (can it ever happen that temp0 is not holding a context
       // but push_closure is used with the use_context attribute?)
     }
-  } else {								// else
-    masm->popl(edx);							//   use tos as context information
+  } else { // else
+    masm->popl(edx); //   use tos as context information
   }
   // install methodOop and context in block closure and increment
   // the invocation counter of the parent (= enclosing) methodOop
@@ -1537,28 +1565,27 @@ char* InterpreterGenerator::push_closure(int nofArgs, bool use_context) {
   // eax: block closure
   // ecx: block methodOop
   // edx: context
-  masm->movl(ebx, Address(ecx, methodOopDesc::selector_or_method_byte_offset()));	// get parent (= running) methodOop
-  masm->movl(Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()), ecx);	// set block method
+  masm->movl(ebx, Address(ecx, methodOopDesc::selector_or_method_byte_offset())); // get parent (= running) methodOop
+  masm->movl(Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()), ecx); // set block method
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  masm->ldr_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset()));// get counter of parent methodOop
+  masm->ldr_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // get counter of parent methodOop
 #else
-  masm->movl(ecx, Address(ebx, methodOopDesc::counters_byte_offset()));// get counter of parent methodOop
+  masm->movl(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // get counter of parent methodOop
 #endif
-  masm->movl(Address(eax, blockClosureOopDesc::context_byte_offset()), edx);		// set context
-  masm->addl(ecx, 1 << methodOopDesc::_invocation_count_offset);	// increment invocation counter of parent methodOop
-  masm->movl(edx, eax);						// make sure eax is not destroyed
+  masm->movl(Address(eax, blockClosureOopDesc::context_byte_offset()), edx); // set context
+  masm->addl(ecx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter of parent methodOop
+  masm->movl(edx, eax); // make sure eax is not destroyed
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  masm->str_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset()));// store counter of parent methodOop
+  masm->str_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // store counter of parent methodOop
 #else
-  masm->movl(Address(ebx, methodOopDesc::counters_byte_offset()), ecx);// store counter of parent methodOop
+  masm->movl(Address(ebx, methodOopDesc::counters_byte_offset()), ecx); // store counter of parent methodOop
 #endif
   restore_ebx();
-  load_ebx();								// get next instruction
-  masm->store_check(edx, ecx);						// do a store check on edx, use ecx as scratch register
+  load_ebx(); // get next instruction
+  masm->store_check(edx, ecx); // do a store check on edx, use ecx as scratch register
   jump_ebx();
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Contexts
@@ -1579,42 +1606,43 @@ extern "C" oop allocateContext2();
 
 char* InterpreterGenerator::install_context(int nofArgs, bool for_method) {
   char* ep = entry_point();
-  masm->pushl(eax);				// save tos
+  masm->pushl(eax); // save tos
   if (nofArgs == -1) {
     // no. of variables specified by 2nd byte
-    masm->movb(ebx, Address(esi, 1));		// get no. of variables
-    masm->addl(esi, 2);			// go to next instruction
-    masm->shll(ebx, Tag_Size);			// convert into smi (pushed on the stack!)
-    save_esi();					// no last Delta frame setup needed => save vital registers
-    masm->pushl(ebx);				// pass as argument
-    masm->call(GeneratedPrimitives::allocateContext(nofArgs), relocInfo::runtime_call_type);		// eax := context(nof. vars)
-    masm->popl(ebx);				// get rid of argument
+    masm->movb(ebx, Address(esi, 1)); // get no. of variables
+    masm->addl(esi, 2); // go to next instruction
+    masm->shll(ebx, Tag_Size); // convert into smi (pushed on the stack!)
+    save_esi(); // no last Delta frame setup needed => save vital registers
+    masm->pushl(ebx); // pass as argument
+    masm->call(GeneratedPrimitives::allocateContext(nofArgs),
+               relocInfo::runtime_call_type); // eax := context(nof. vars)
+    masm->popl(ebx); // get rid of argument
   } else {
     // no. of variables implied by 1st byte
-    masm->incl(esi);				// go to next instruction
-    save_esi();					// no last Delta frame setup needed => save vital registers
-    masm->call(GeneratedPrimitives::allocateContext(nofArgs), relocInfo::runtime_call_type);		// eax := context
+    masm->incl(esi); // go to next instruction
+    save_esi(); // no last Delta frame setup needed => save vital registers
+    masm->call(GeneratedPrimitives::allocateContext(nofArgs), relocInfo::runtime_call_type); // eax := context
   }
-  restore_esi();				// returning from C land => restore vital registers
+  restore_esi(); // returning from C land => restore vital registers
   restore_ebx();
 #if DELTA_X86_64
   CHECK_EAX_OOP(52);
 #endif
-  if (for_method) {				// if method context then
-    masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ebp);	// parent points to method frame
-  } else {					// else
-    masm->movl(ecx, context_addr());		// get (incoming) enclosing context
+  if (for_method) { // if method context then
+    masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ebp); // parent points to method frame
+  } else { // else
+    masm->movl(ecx, context_addr()); // get (incoming) enclosing context
     if (_debug) {
       // should check if ecx is really pointing to a context
       // (can it ever happen that temp0 is not holding a context
       // but install_context is used with the use_context attribute?)
     }
-    masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ecx);	// parent points to enclosing context
+    masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ecx); // parent points to enclosing context
   }
-  load_ebx();					// get next instruction
-  masm->movl(context_addr(), eax);		// install context
-  masm->store_check(eax, ecx);			// store check on eax, use ecx as scratch register
-  masm->popl(eax);				// restore tos
+  load_ebx(); // get next instruction
+  masm->movl(context_addr(), eax); // install context
+  masm->store_check(eax, ecx); // store check on eax, use ecx as scratch register
+  masm->popl(eax); // restore tos
   jump_ebx();
   return ep;
 }
@@ -1632,19 +1660,52 @@ char* InterpreterGenerator::control_cond(Bytecodes::Code code) {
   bool isByte, isTrue, isCond;
 
   switch (code) {
-    case Bytecodes::ifTrue_byte		: isByte = true;  isTrue = true;  isCond = false; break;
-    case Bytecodes::ifTrue_word		: isByte = false; isTrue = true;  isCond = false; break;
-    case Bytecodes::ifFalse_byte	: isByte = true;  isTrue = false; isCond = false; break;
-    case Bytecodes::ifFalse_word	: isByte = false; isTrue = false; isCond = false; break;
-    case Bytecodes::and_byte		: isByte = true;  isTrue = true;  isCond = true;  break;
-    case Bytecodes::and_word		: isByte = false; isTrue = true;  isCond = true;  break;
-    case Bytecodes::or_byte		: isByte = true;  isTrue = false; isCond = true;  break;
-    case Bytecodes::or_word		: isByte = false; isTrue = false; isCond = true;  break;
-    default               		: ShouldNotReachHere();
+    case Bytecodes::ifTrue_byte:
+      isByte = true;
+      isTrue = true;
+      isCond = false;
+      break;
+    case Bytecodes::ifTrue_word:
+      isByte = false;
+      isTrue = true;
+      isCond = false;
+      break;
+    case Bytecodes::ifFalse_byte:
+      isByte = true;
+      isTrue = false;
+      isCond = false;
+      break;
+    case Bytecodes::ifFalse_word:
+      isByte = false;
+      isTrue = false;
+      isCond = false;
+      break;
+    case Bytecodes::and_byte:
+      isByte = true;
+      isTrue = true;
+      isCond = true;
+      break;
+    case Bytecodes::and_word:
+      isByte = false;
+      isTrue = true;
+      isCond = true;
+      break;
+    case Bytecodes::or_byte:
+      isByte = true;
+      isTrue = false;
+      isCond = true;
+      break;
+    case Bytecodes::or_word:
+      isByte = false;
+      isTrue = false;
+      isCond = true;
+      break;
+    default:
+      ShouldNotReachHere();
   }
 
   Label _else;
-  Address cond	   =  isTrue ? true_addr() : false_addr();
+  Address cond = isTrue ? true_addr() : false_addr();
   Address not_cond = !isTrue ? true_addr() : false_addr();
   int codeSize = (isCond ? 1 : 2) + (isByte ? 1 : 4);
 
@@ -1653,29 +1714,29 @@ char* InterpreterGenerator::control_cond(Bytecodes::Code code) {
   if (!isByte) {
     advance_aligned(codeSize);
   }
-  masm->cmpl(eax, cond);					// if tos # cond
-  masm->jcc(Assembler::notEqual, _else);			// then jump to else part
+  masm->cmpl(eax, cond); // if tos # cond
+  masm->jcc(Assembler::notEqual, _else); // then jump to else part
   if (isByte) {
-    masm->addl(esi, codeSize);					// skip info & offset byte
+    masm->addl(esi, codeSize); // skip info & offset byte
   }
   load_ebx();
-  masm->popl(eax);						// discard condition
+  masm->popl(eax); // discard condition
   jump_ebx();
 
- masm->bind(_else);
-  masm->cmpl(eax, not_cond);					// if tos # ~cond
-  masm->jcc(Assembler::notEqual, _boolean_expected);		// then non-boolean arguments
+  masm->bind(_else);
+  masm->cmpl(eax, not_cond); // if tos # ~cond
+  masm->jcc(Assembler::notEqual, _boolean_expected); // then non-boolean arguments
 
   // jump relative to next instr (must happen after the check for non-booleans)
   if (isByte) {
-    masm->movb(ebx, Address(esi, codeSize -1));
+    masm->movb(ebx, Address(esi, codeSize - 1));
     masm->leal(esi, Address(esi, ebx, Address::times_1, codeSize));
   } else {
     masm->addl(esi, Address(esi, -oopSize));
   }
   load_ebx();
   if (!isCond) {
-    masm->popl(eax);						// discard condition
+    masm->popl(eax); // discard condition
   }
   jump_ebx();
 
@@ -1687,67 +1748,80 @@ char* InterpreterGenerator::control_while(Bytecodes::Code code) {
   bool isByte, isTrue;
 
   switch (code) {
-    case Bytecodes::whileTrue_byte	: isByte = true;  isTrue = true;  break;
-    case Bytecodes::whileTrue_word	: isByte = false; isTrue = true;  break;
-    case Bytecodes::whileFalse_byte	: isByte = true;  isTrue = false; break;
-    case Bytecodes::whileFalse_word	: isByte = false; isTrue = false; break;
-    default               		: ShouldNotReachHere();
+    case Bytecodes::whileTrue_byte:
+      isByte = true;
+      isTrue = true;
+      break;
+    case Bytecodes::whileTrue_word:
+      isByte = false;
+      isTrue = true;
+      break;
+    case Bytecodes::whileFalse_byte:
+      isByte = true;
+      isTrue = false;
+      break;
+    case Bytecodes::whileFalse_word:
+      isByte = false;
+      isTrue = false;
+      break;
+    default:
+      ShouldNotReachHere();
   }
 
   Label _exit, _overflow, _call_overflow;
-  Address cond	   =  isTrue ? true_addr() : false_addr();
+  Address cond = isTrue ? true_addr() : false_addr();
   Address not_cond = !isTrue ? true_addr() : false_addr();
   int codeSize = 1 + (isByte ? 1 : oopSize);
 
   char* ep = entry_point();
 
-  masm->cmpl(eax, cond);					// if tos # cond
-  masm->jcc(Assembler::notEqual, _exit);			// then jump to else part
+  masm->cmpl(eax, cond); // if tos # cond
+  masm->jcc(Assembler::notEqual, _exit); // then jump to else part
 
   if (isByte) {
     masm->movb(ebx, Address(esi, codeSize - 1));
     masm->subl(esi, ebx);
   } else {
-    masm->leal(edx, Address(esi, codeSize + oopSize - 1));	// unaligned address of next instruction
-    masm->andl(edx, -oopSize);    				// aligned address of next instruction
+    masm->leal(edx, Address(esi, codeSize + oopSize - 1)); // unaligned address of next instruction
+    masm->andl(edx, -oopSize); // aligned address of next instruction
     masm->subl(esi, Address(edx, -oopSize));
   }
 
   masm->movl(edx, Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type));
   load_ebx();
-  masm->popl(eax);						// discard loop condition
+  masm->popl(eax); // discard loop condition
   masm->incl(edx);
   masm->movl(Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type), edx);
   masm->cmpl(edx, Address((intptr_t)&interpreter_loop_counter_limit, relocInfo::external_word_type));
   masm->jcc(Assembler::greater, _overflow);
   jump_ebx();
 
- masm->bind(_exit);
-  masm->cmpl(eax, not_cond);					// if tos # ~cond
-  masm->jcc(Assembler::notEqual, _boolean_expected);		// then non-boolean arguments
+  masm->bind(_exit);
+  masm->cmpl(eax, not_cond); // if tos # ~cond
+  masm->jcc(Assembler::notEqual, _boolean_expected); // then non-boolean arguments
 
   // advance to next instruction (must happen after the check for non-booleans)
   if (isByte) {
     masm->addl(esi, codeSize);
   } else {
-    masm->leal(edx, Address(esi, codeSize + oopSize - 1));	// unaligned address of next instruction
-    masm->andl(edx, -oopSize);     				// aligned address of next instruction
+    masm->leal(edx, Address(esi, codeSize + oopSize - 1)); // unaligned address of next instruction
+    masm->andl(edx, -oopSize); // aligned address of next instruction
     masm->movl(esi, edx);
   }
   load_ebx();
-  masm->popl(eax);						// discard loop condition
+  masm->popl(eax); // discard loop condition
   stack_check_pop();
   jump_ebx();
 
- masm->bind(_overflow);
+  masm->bind(_overflow);
   call_C(_call_overflow);
   load_ebx();
   jump_ebx();
 
- masm->bind(_call_overflow);
-  masm->pushl(eax);						// save eax
+  masm->bind(_call_overflow);
+  masm->pushl(eax); // save eax
   masm->call_C((char*)&Interpreter::loop_counter_overflow, relocInfo::runtime_call_type);
-  masm->popl(eax);						// restore eax
+  masm->popl(eax); // restore eax
   masm->ret(0);
 
   return ep;
@@ -1758,11 +1832,24 @@ char* InterpreterGenerator::control_jump(Bytecodes::Code code) {
   bool isByte, isLoop;
 
   switch (code) {
-    case Bytecodes::jump_else_byte	: isByte = true;  isLoop = false; break;
-    case Bytecodes::jump_else_word	: isByte = false; isLoop = false; break;
-    case Bytecodes::jump_loop_byte	: isByte = true;  isLoop = true;  break;
-    case Bytecodes::jump_loop_word	: isByte = false; isLoop = true;  break;
-    default               		: ShouldNotReachHere();
+    case Bytecodes::jump_else_byte:
+      isByte = true;
+      isLoop = false;
+      break;
+    case Bytecodes::jump_else_word:
+      isByte = false;
+      isLoop = false;
+      break;
+    case Bytecodes::jump_loop_byte:
+      isByte = true;
+      isLoop = true;
+      break;
+    case Bytecodes::jump_loop_word:
+      isByte = false;
+      isLoop = true;
+      break;
+    default:
+      ShouldNotReachHere();
   }
 
   int codeSize = 1 + (isByte ? 1 : oopSize) * (isLoop ? 2 : 1);
@@ -1774,11 +1861,11 @@ char* InterpreterGenerator::control_jump(Bytecodes::Code code) {
   }
 
   if (isByte) {
-    masm->movb(ebx, Address(esi, codeSize -1));				// get jump offset
-    masm->leal(esi, Address(esi, ebx, Address::times_1, codeSize));	// jump destination
+    masm->movb(ebx, Address(esi, codeSize - 1)); // get jump offset
+    masm->leal(esi, Address(esi, ebx, Address::times_1, codeSize)); // jump destination
   } else {
     advance_aligned(codeSize);
-    masm->addl(esi, Address(esi, -oopSize));				// jump destination
+    masm->addl(esi, Address(esi, -oopSize)); // jump destination
   }
 
   load_ebx();
@@ -1786,7 +1873,6 @@ char* InterpreterGenerator::control_jump(Bytecodes::Code code) {
 
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Floating-point operations
@@ -1824,14 +1910,14 @@ char* InterpreterGenerator::control_jump(Bytecodes::Code code) {
 // (this is not an extra burden since eax often has to be saved anyway).
 
 char* InterpreterGenerator::float_allocate() {
-// Allocates (additional) temps and floats in a stack frame.
-// Bytecode format:
-//
-// <float_allocate code> <nofTemps> <nofFloats> <floatExprStackSize>
-//
-// <nofTemps>			no. of additional temps to allocate (in chunks of two) besides temp0 & temp1
-// <nofFloats>			no. of initialized floats to allocate
-// <floatExprStackSize>		no. of uninitialized floats to allocate
+  // Allocates (additional) temps and floats in a stack frame.
+  // Bytecode format:
+  //
+  // <float_allocate code> <nofTemps> <nofFloats> <floatExprStackSize>
+  //
+  // <nofTemps>			no. of additional temps to allocate (in chunks of two) besides temp0 & temp1
+  // <nofFloats>			no. of initialized floats to allocate
+  // <floatExprStackSize>		no. of uninitialized floats to allocate
 
   Label tLoop, tDone, fLoop, fDone;
   assert(oop(Floats::magic)->is_smi(), "must be a smi");
@@ -1854,29 +1940,29 @@ char* InterpreterGenerator::float_allocate() {
     should_not_reach_here();
     masm->bind(L2);
   }
-  masm->addl(esi, 4);				// advance to next bytecode
-  masm->pushl(eax);				// save tos (i.e. temp0)
-  masm->pushl(Floats::magic);			// initialize temp1 (indicates a float section)
+  masm->addl(esi, 4); // advance to next bytecode
+  masm->pushl(eax); // save tos (i.e. temp0)
+  masm->pushl(Floats::magic); // initialize temp1 (indicates a float section)
 
   // allocate additional temps in multiples of 2 (to compensate for one float)
-  masm->movb(ebx, Address(esi, -3));		// get nofTemps
-  masm->testl(ebx, ebx);			// allocate no additional temps if nofTemps = 0
+  masm->movb(ebx, Address(esi, -3)); // get nofTemps
+  masm->testl(ebx, ebx); // allocate no additional temps if nofTemps = 0
   masm->jcc(Assembler::zero, tDone);
   masm->movl(eax, nil_addr());
   masm->bind(tLoop);
-  masm->pushl(eax);				// push nil
-  masm->pushl(eax);				// push nil
+  masm->pushl(eax); // push nil
+  masm->pushl(eax); // push nil
   masm->decl(ebx);
   masm->jcc(Assembler::notZero, tLoop);
   masm->bind(tDone);
 
   // allocate floats
-  masm->movb(ebx, Address(esi, -2));		// get nofFloats
-  masm->testl(ebx, ebx);			// allocate no additional floats if nofFloats = 0
+  masm->movb(ebx, Address(esi, -2)); // get nofFloats
+  masm->testl(ebx, ebx); // allocate no additional floats if nofFloats = 0
   masm->jcc(Assembler::zero, fDone);
-  masm->xorl(eax, eax);			// use 0 to initialize the stack with 0.0
+  masm->xorl(eax, eax); // use 0 to initialize the stack with 0.0
   masm->bind(fLoop);
-  masm->pushl(eax);				// push 0.0 (allocate a double)
+  masm->pushl(eax); // push 0.0 (allocate a double)
   masm->pushl(eax);
   masm->decb(ebx);
   masm->jcc(Assembler::notZero, fLoop);
@@ -1884,128 +1970,127 @@ char* InterpreterGenerator::float_allocate() {
 
   // allocate floats expression stack
   assert(floatSize == 8, "change the constant for shhl below");
-  masm->movb(ebx, Address(esi, -1));		// get floats expression stack size
-  masm->shll(ebx, 3);				// multiply with floatSize
-  masm->subl(esp, ebx);			// adjust esp
+  masm->movb(ebx, Address(esi, -1)); // get floats expression stack size
+  masm->shll(ebx, 3); // multiply with floatSize
+  masm->subl(esp, ebx); // adjust esp
   restore_ebx();
 
   // continue with next instruction
-  load_ebx();					// continue with next instruction
-  masm->popl(eax);				// restore tos in eax
+  load_ebx(); // continue with next instruction
+  masm->popl(eax); // restore tos in eax
   jump_ebx();
 
   return ep;
 }
-
 
 char* InterpreterGenerator::float_floatify() {
   Label is_smi;
   char* ep = entry_point();
-  masm->addl(esi, 2);				// advance to next instruction
-  masm->testb(eax, Mem_Tag);			// check if smi
+  masm->addl(esi, 2); // advance to next instruction
+  masm->testb(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::zero, is_smi);
-  masm->movl(ecx, Address(eax, memOopDesc::klass_byte_offset()));	// check if float
+  masm->movl(ecx, Address(eax, memOopDesc::klass_byte_offset())); // check if float
   masm->cmpl(ecx, doubleKlass_addr());
   masm->jcc(Assembler::notEqual, _float_expected);
 
   // unbox doubleOop
-  masm->movb(ebx, Address(esi, -1));		// get float number
+  masm->movb(ebx, Address(esi, -1)); // get float number
   masm->fld_d(Address(eax, byteOffset(doubleOopDesc::value_offset()))); // unbox float
-  masm->fstp_d(float_addr(ebx));		// store float
+  masm->fstp_d(float_addr(ebx)); // store float
   load_ebx();
-  masm->popl(eax);				// discard argument
+  masm->popl(eax); // discard argument
   jump_ebx();
 
   // convert smi
   masm->bind(is_smi);
-  masm->movb(ebx, Address(esi, -1));		// get float number
+  masm->movb(ebx, Address(esi, -1)); // get float number
   masm->leal(ecx, float_addr(ebx));
-  masm->sarl(eax, Tag_Size);			// convert smi argument into int
-  masm->movl(Address(ecx), eax);		// store it in memory (use float target location)
-  masm->fild_s(Address(ecx));			// convert it into float
-  masm->fstp_d(Address(ecx));			// store float
+  masm->sarl(eax, Tag_Size); // convert smi argument into int
+  masm->movl(Address(ecx), eax); // store it in memory (use float target location)
+  masm->fild_s(Address(ecx)); // convert it into float
+  masm->fstp_d(Address(ecx)); // store float
   load_ebx();
-  masm->popl(eax);				// discard argument
+  masm->popl(eax); // discard argument
   jump_ebx();
 
   return ep;
 }
 
-
 char* InterpreterGenerator::float_oopify() {
-// Implements the Floats::oopify operation. It is implemented
-// here rather than in Floats because it needs to do a C call.
-// Instead of returning regularly, it directly continues with
-// the next byte code.
+  // Implements the Floats::oopify operation. It is implemented
+  // here rather than in Floats because it needs to do a C call.
+  // Instead of returning regularly, it directly continues with
+  // the next byte code.
   char* ep = entry_point();
   // here the return address to float_op is on the stack
   // discard it so that C routine can be called regularly.
-  masm->popl(eax);				// discard return address
-  masm->fpop();				// pop ST (in order to avoid FPU stack overflows) -> get rid of argument
-  call_C((char*)Interpreter::oopify_FloatValue);// eax := oopify_FloatValue() (gets its argument by looking at the last bytecode)
+  masm->popl(eax); // discard return address
+  masm->fpop(); // pop ST (in order to avoid FPU stack overflows) -> get rid of argument
+  call_C(
+    (char*)
+      Interpreter::oopify_FloatValue); // eax := oopify_FloatValue() (gets its argument by looking at the last bytecode)
   load_ebx();
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::float_move() {
   char* ep = entry_point();
-  masm->pushl(eax);				// make sure last float is completely in memory
-  masm->addl(esi, 3);				// advance to next instruction
-  masm->xorl(ecx, ecx);			// clear ecx
-  masm->movb(ebx, Address(esi, -1));		// get source float number
-  masm->movb(ecx, Address(esi, -2));		// get destination float number
-  masm->fld_d(float_addr(ebx));		// load source
+  masm->pushl(eax); // make sure last float is completely in memory
+  masm->addl(esi, 3); // advance to next instruction
+  masm->xorl(ecx, ecx); // clear ecx
+  masm->movb(ebx, Address(esi, -1)); // get source float number
+  masm->movb(ecx, Address(esi, -2)); // get destination float number
+  masm->fld_d(float_addr(ebx)); // load source
   load_ebx();
-  masm->fstp_d(float_addr(ecx));		// store at destination
-  masm->popl(eax);				// re-adjust esp
+  masm->fstp_d(float_addr(ecx)); // store at destination
+  masm->popl(eax); // re-adjust esp
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::float_set() {
   char* ep = entry_point();
-  masm->pushl(eax);				// make sure last float is completely in memory
-  masm->movb(ebx, Address(esi, 1));		// get float number
-  advance_aligned(2 + oopSize);			// advance to next instruction
-  masm->movl(ecx, Address(esi, -oopSize));	// get doubleOop address
+  masm->pushl(eax); // make sure last float is completely in memory
+  masm->movb(ebx, Address(esi, 1)); // get float number
+  advance_aligned(2 + oopSize); // advance to next instruction
+  masm->movl(ecx, Address(esi, -oopSize)); // get doubleOop address
   masm->fld_d(Address(ecx, byteOffset(doubleOopDesc::value_offset()))); // unbox float
-  masm->fstp_d(float_addr(ebx));		// store it
+  masm->fstp_d(float_addr(ebx)); // store it
   load_ebx();
-  masm->popl(eax);				// re-adjust esp
+  masm->popl(eax); // re-adjust esp
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::float_op(int nof_args, bool returns_float) {
   assert(0 <= nof_args && nof_args <= 8, "illegal nof_args specification");
   char* ep = entry_point();
-  masm->pushl(eax);				// make sure all floats are completely in memory
-  masm->addl(esi, 3);				// advance to next instruction
-  masm->movb(ebx, Address(esi, -2));		// get float number
-  masm->leal(edx, float_addr(ebx));		// get float address
-  masm->movb(ebx, Address(esi, -1));		// get function number
-  masm->leaq(ecx, Address(noreg, noreg, Address::no_scale, intptr_t(Floats::_function_table), relocInfo::external_word_type));
+  masm->pushl(eax); // make sure all floats are completely in memory
+  masm->addl(esi, 3); // advance to next instruction
+  masm->movb(ebx, Address(esi, -2)); // get float number
+  masm->leal(edx, float_addr(ebx)); // get float address
+  masm->movb(ebx, Address(esi, -1)); // get function number
+  masm->leaq(
+    ecx, Address(noreg, noreg, Address::no_scale, intptr_t(Floats::_function_table), relocInfo::external_word_type));
   masm->movq(eax, Address(ecx, ebx, Address::times_8));
-  for (int i = 0; i < nof_args; i++) masm->fld_d(Address(edx, -i*floatSize));
-  masm->call(eax);				// invoke operation
-  load_ebx();					// get next byte code
+  for (int i = 0; i < nof_args; i++)
+    masm->fld_d(Address(edx, -i * floatSize));
+  masm->call(eax); // invoke operation
+  load_ebx(); // get next byte code
   if (returns_float) {
     // The operation left its result on the float stack (depth 1 at runtime);
     // the aarch64 backend generates st(i) from the generation-time depth, so
     // set it to the runtime depth here (no-op on x86).
     masm->set_float_depth(1);
-    masm->fstp_d(Address(edx));		// store result
+    masm->fstp_d(Address(edx)); // store result
     masm->set_float_depth(0);
-    masm->popl(eax);				// re-adjust esp
+    masm->popl(eax); // re-adjust esp
   } else {
     // to-oop operations consume their operands; depth back to the boundary
     // value (no-op on x86).
     masm->set_float_depth(0);
-  }						// otherwise: result in eax
+  } // otherwise: result in eax
   jump_ebx();
   return ep;
 }
@@ -2022,7 +2107,7 @@ char* InterpreterGenerator::predict_prim(bool canFail) {
   // _predict_prim & _predict_prim_ifFail are two bytecodes that are
   // used during lookup, during execution they can be simply ignored.
   char* ep = entry_point();
-  advance_aligned(1 + (canFail ? 2 : 1)*oopSize);
+  advance_aligned(1 + (canFail ? 2 : 1) * oopSize);
   load_ebx();
   jump_ebx();
   return ep;
@@ -2030,14 +2115,13 @@ char* InterpreterGenerator::predict_prim(bool canFail) {
 
 char* InterpreterGenerator::lookup_primitive() {
   char* ep = entry_point();
-  masm->pushl(eax);				// push last argument
-  call_C((char*)primitives::lookup_and_patch);	// do the lookup and patch call site appropriately
+  masm->pushl(eax); // push last argument
+  call_C((char*)primitives::lookup_and_patch); // do the lookup and patch call site appropriately
   load_ebx();
-  masm->popl(eax);				// restore last argument
+  masm->popl(eax); // restore last argument
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::call_primitive() {
   char* ep = entry_point();
@@ -2045,41 +2129,41 @@ char* InterpreterGenerator::call_primitive() {
 #if DELTA_X86_64
   // On x86-64, esi (bytecode ptr) aliases rsi (SysV arg #2).
   // Save it to r12 (callee-saved, preserved by C call) first.
-  masm->movq(r12, esi);                           // r12 = bytecode ptr
-  masm->pushl(eax);                                // push last argument
+  masm->movq(r12, esi); // r12 = bytecode ptr
+  masm->pushl(eax); // push last argument
   // Load primitive entry point from saved bytecode ptr (before esi is clobbered).
-  masm->movl(eax, Address(r12, -oopSize));         // eax = entry point
+  masm->movl(eax, Address(r12, -oopSize)); // eax = entry point
   // SysV AMD64 ABI: first 6 args in rdi, rsi, rdx, rcx, r8, r9
-  masm->movq(edi, Address(esp, 0*oopSize));
-  masm->movq(esi, Address(esp, 1*oopSize));
-  masm->movq(edx, Address(esp, 2*oopSize));
-  masm->movq(ecx, Address(esp, 3*oopSize));
-  masm->movq(r8,  Address(esp, 4*oopSize));
-  masm->movq(r9,  Address(esp, 5*oopSize));
+  masm->movq(edi, Address(esp, 0 * oopSize));
+  masm->movq(esi, Address(esp, 1 * oopSize));
+  masm->movq(edx, Address(esp, 2 * oopSize));
+  masm->movq(ecx, Address(esp, 3 * oopSize));
+  masm->movq(r8, Address(esp, 4 * oopSize));
+  masm->movq(r9, Address(esp, 5 * oopSize));
   call_C(eax);
-  masm->movq(esi, r12);                            // restore bytecode ptr
+  masm->movq(esi, r12); // restore bytecode ptr
 #elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->pushl(eax);                                // push last argument
+  masm->pushl(eax); // push last argument
   // AAPCS64 wants args in x0-x7.
   masm->movl(x0, Address(sp, 0));
   masm->movl(x1, Address(sp, slotSize));
-  masm->movl(x2, Address(sp, 2*slotSize));
-  masm->movl(x3, Address(sp, 3*slotSize));
-  masm->movl(x4, Address(sp, 4*slotSize));
-  masm->movl(x5, Address(sp, 5*slotSize));
-  masm->movl(x6, Address(sp, 6*slotSize));
-  masm->movl(x7, Address(sp, 7*slotSize));
-  masm->movl(eax, Address(esi, -oopSize));         // get primitive entry point
+  masm->movl(x2, Address(sp, 2 * slotSize));
+  masm->movl(x3, Address(sp, 3 * slotSize));
+  masm->movl(x4, Address(sp, 4 * slotSize));
+  masm->movl(x5, Address(sp, 5 * slotSize));
+  masm->movl(x6, Address(sp, 6 * slotSize));
+  masm->movl(x7, Address(sp, 7 * slotSize));
+  masm->movl(eax, Address(esi, -oopSize)); // get primitive entry point
   call_C(eax);
 #else
-  masm->pushl(eax);                                // push last argument
-  masm->movl(eax, Address(esi, -oopSize));         // get primitive entry point
+  masm->pushl(eax); // push last argument
+  masm->movl(eax, Address(esi, -oopSize)); // get primitive entry point
   call_C(eax);
 #endif
 #if DELTA_X86_64
   CHECK_EAX_OOP(53);
 #endif
-  if (_debug) {                                     // (Pascal calling conv. => args are popped by callee)
+  if (_debug) { // (Pascal calling conv. => args are popped by callee)
     masm->testb(eax, Mark_Tag_Bit);
     masm->jcc(Assembler::notZero, _primitive_result_wrong);
   }
@@ -2088,53 +2172,52 @@ char* InterpreterGenerator::call_primitive() {
   return ep;
 }
 
-
 char* InterpreterGenerator::call_primitive_can_fail() {
   Label failed;
   char* ep = entry_point();
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
 #if DELTA_X86_64
   // On x86-64, esi (bytecode ptr) aliases rsi (SysV arg #2).
   // Save it to r12 (callee-saved) before it gets clobbered.
-  masm->movq(r12, esi);                           // r12 = bytecode ptr
-  masm->pushl(eax);                                // push last argument
+  masm->movq(r12, esi); // r12 = bytecode ptr
+  masm->pushl(eax); // push last argument
   // Load primitive entry point from saved bytecode ptr (before esi is clobbered).
-  masm->movl(eax, Address(r12, -2*oopSize));       // eax = entry point
+  masm->movl(eax, Address(r12, -2 * oopSize)); // eax = entry point
   // SysV AMD64 ABI: first 6 args in rdi, rsi, rdx, rcx, r8, r9
-  masm->movq(edi, Address(esp, 0*oopSize));
-  masm->movq(esi, Address(esp, 1*oopSize));
-  masm->movq(edx, Address(esp, 2*oopSize));
-  masm->movq(ecx, Address(esp, 3*oopSize));
-  masm->movq(r8,  Address(esp, 4*oopSize));
-  masm->movq(r9,  Address(esp, 5*oopSize));
+  masm->movq(edi, Address(esp, 0 * oopSize));
+  masm->movq(esi, Address(esp, 1 * oopSize));
+  masm->movq(edx, Address(esp, 2 * oopSize));
+  masm->movq(ecx, Address(esp, 3 * oopSize));
+  masm->movq(r8, Address(esp, 4 * oopSize));
+  masm->movq(r9, Address(esp, 5 * oopSize));
   call_C(eax);
   // Restore bytecode ptr before using it for jump offset / dispatch.
   masm->movq(esi, r12);
 #elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->pushl(eax);                                // push last argument
+  masm->pushl(eax); // push last argument
   // AAPCS64 wants args in x0-x7.
   masm->movl(x0, Address(sp, 0));
   masm->movl(x1, Address(sp, slotSize));
-  masm->movl(x2, Address(sp, 2*slotSize));
-  masm->movl(x3, Address(sp, 3*slotSize));
-  masm->movl(x4, Address(sp, 4*slotSize));
-  masm->movl(x5, Address(sp, 5*slotSize));
-  masm->movl(x6, Address(sp, 6*slotSize));
-  masm->movl(x7, Address(sp, 7*slotSize));
-  masm->movl(eax, Address(esi, -2*oopSize));       // get primitive entry point
+  masm->movl(x2, Address(sp, 2 * slotSize));
+  masm->movl(x3, Address(sp, 3 * slotSize));
+  masm->movl(x4, Address(sp, 4 * slotSize));
+  masm->movl(x5, Address(sp, 5 * slotSize));
+  masm->movl(x6, Address(sp, 6 * slotSize));
+  masm->movl(x7, Address(sp, 7 * slotSize));
+  masm->movl(eax, Address(esi, -2 * oopSize)); // get primitive entry point
   call_C(eax);
 #else
 #endif
-  masm->testb(eax, Mark_Tag_Bit);                 // if not marked then
+  masm->testb(eax, Mark_Tag_Bit); // if not marked then
   masm->jcc(Assembler::notZero, failed);
-  masm->movl(ecx, Address(esi, -oopSize));         // get jump offset
-  masm->addl(esi, ecx);                            // jump over failure block
+  masm->movl(ecx, Address(esi, -oopSize)); // get jump offset
+  masm->addl(esi, ecx); // jump over failure block
   load_ebx();
   jump_ebx();
 
   masm->bind(failed);
-  masm->andl(eax, ~Mark_Tag_Bit);                 // unmark result
-  load_ebx();                                      // and execute failure block
+  masm->andl(eax, ~Mark_Tag_Bit); // unmark result
+  load_ebx(); // and execute failure block
   jump_ebx();
   return ep;
 }
@@ -2178,35 +2261,35 @@ char* InterpreterGenerator::call_primitive_can_fail() {
 char* InterpreterGenerator::call_DLL(bool async) {
   char* ep = entry_point();
   Label L;
-  advance_aligned(1 + 3*oopSize);		// advance to no. of arguments byte
-  masm->incl(esi);				// advance to next instruction (skip no. of arguments byte)
-  masm->pushl(eax);				// push last argument
-  masm->movl(edx, Address(esi, -1 - oopSize));	// get dll function ptr
-  masm->testl(edx, edx);			// test if function has been looked up already
-  masm->jcc(Assembler::notZero, L); 		// and continue - otherwise lookup dll function & patch
-  call_C((char*)DLLs::lookup_and_patch_InterpretedDLL_Cache);	// eax := returns dll function ptr
-  masm->movl(edx, eax);			// move dll function ptr into right register
-  masm->bind(L);				// and continue
-  masm->movb(ebx, Address(esi, -1));		// get no. of arguments
-  masm->movl(ecx, esp);			// get address of last argument
-  save_esi();					// don't use call_C because no last_Delta_frame setup needed
-  masm->call(StubRoutines::call_DLL_entry(async), relocInfo::runtime_call_type);// eax := DLL call via a separate frame (parameter conversion)
+  advance_aligned(1 + 3 * oopSize); // advance to no. of arguments byte
+  masm->incl(esi); // advance to next instruction (skip no. of arguments byte)
+  masm->pushl(eax); // push last argument
+  masm->movl(edx, Address(esi, -1 - oopSize)); // get dll function ptr
+  masm->testl(edx, edx); // test if function has been looked up already
+  masm->jcc(Assembler::notZero, L); // and continue - otherwise lookup dll function & patch
+  call_C((char*)DLLs::lookup_and_patch_InterpretedDLL_Cache); // eax := returns dll function ptr
+  masm->movl(edx, eax); // move dll function ptr into right register
+  masm->bind(L); // and continue
+  masm->movb(ebx, Address(esi, -1)); // get no. of arguments
+  masm->movl(ecx, esp); // get address of last argument
+  save_esi(); // don't use call_C because no last_Delta_frame setup needed
+  masm->call(StubRoutines::call_DLL_entry(async),
+             relocInfo::runtime_call_type); // eax := DLL call via a separate frame (parameter conversion)
   masm->ic_info(_nlr_testpoint, 0);
   restore_esi();
   restore_ebx();
 #if DELTA_X86_64
   CHECK_EAX_OOP(55);
 #endif
-  masm->movb(ebx, Address(esi, -1));		// get no. of arguments
+  masm->movb(ebx, Address(esi, -1)); // get no. of arguments
   masm->leal(esp, Address(esp, ebx, deltaStackScale)); // pop arguments
-  masm->popl(ecx);				// get proxy object
+  masm->popl(ecx); // get proxy object
   masm->movl(Address(ecx, pointer_offset), eax); // box result
   load_ebx();
-  masm->movl(eax, ecx);			// return proxy
+  masm->movl(eax, ecx); // return proxy
   jump_ebx();
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Redo send code
@@ -2220,13 +2303,12 @@ char* Interpreter::_redo_send_entry = NULL;
 void InterpreterGenerator::generate_redo_send_code() {
   assert(Interpreter::_redo_send_entry == NULL, "code generated twice");
   Interpreter::_redo_send_entry = masm->pc();
-  restore_esi();				// has been saved by call_native
-  restore_ebx();				// possibly destroyed
+  restore_esi(); // has been saved by call_native
+  restore_ebx(); // possibly destroyed
   load_ebx();
-  masm->popl(eax);				// get last argument into eax again
-  jump_ebx();					// restart send
+  masm->popl(eax); // get last argument into eax again
+  jump_ebx(); // restart send
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Return entry points for deoptimized interpreter frames
@@ -2236,108 +2318,103 @@ void InterpreterGenerator::generate_redo_send_code() {
 //    - from primitive call (with or without failure block)           X (with or without restoring result value)
 //    - from DLL call                                                   (with or without restoring result value)
 
-char* Interpreter::_dr_from_send_without_receiver				= NULL;
-char* Interpreter::_dr_from_send_without_receiver_restore			= NULL;
-char* Interpreter::_dr_from_send_without_receiver_pop				= NULL;
-char* Interpreter::_dr_from_send_without_receiver_pop_restore			= NULL;
-char* Interpreter::_dr_from_send_with_receiver					= NULL;
-char* Interpreter::_dr_from_send_with_receiver_restore				= NULL;
-char* Interpreter::_dr_from_send_with_receiver_pop				= NULL;
-char* Interpreter::_dr_from_send_with_receiver_pop_restore			= NULL;
-char* Interpreter::_dr_from_primitive_call_without_failure_block		= NULL;
-char* Interpreter::_dr_from_primitive_call_without_failure_block_restore	= NULL;
-char* Interpreter::_dr_from_primitive_call_with_failure_block			= NULL;
-char* Interpreter::_dr_from_primitive_call_with_failure_block_restore		= NULL;
-char* Interpreter::_dr_from_dll_call						= NULL;
-char* Interpreter::_dr_from_dll_call_restore					= NULL;
+char* Interpreter::_dr_from_send_without_receiver = NULL;
+char* Interpreter::_dr_from_send_without_receiver_restore = NULL;
+char* Interpreter::_dr_from_send_without_receiver_pop = NULL;
+char* Interpreter::_dr_from_send_without_receiver_pop_restore = NULL;
+char* Interpreter::_dr_from_send_with_receiver = NULL;
+char* Interpreter::_dr_from_send_with_receiver_restore = NULL;
+char* Interpreter::_dr_from_send_with_receiver_pop = NULL;
+char* Interpreter::_dr_from_send_with_receiver_pop_restore = NULL;
+char* Interpreter::_dr_from_primitive_call_without_failure_block = NULL;
+char* Interpreter::_dr_from_primitive_call_without_failure_block_restore = NULL;
+char* Interpreter::_dr_from_primitive_call_with_failure_block = NULL;
+char* Interpreter::_dr_from_primitive_call_with_failure_block_restore = NULL;
+char* Interpreter::_dr_from_dll_call = NULL;
+char* Interpreter::_dr_from_dll_call_restore = NULL;
 
-extern "C" int	 number_of_arguments_through_unpacking;
-extern "C" oop   result_through_unpacking;
+extern "C" int number_of_arguments_through_unpacking;
+extern "C" oop result_through_unpacking;
 
 void InterpreterGenerator::generate_deoptimized_return_restore() {
-  masm->movl(eax, Address((intptr_t)&number_of_arguments_through_unpacking,   relocInfo::external_word_type));
+  masm->movl(eax, Address((intptr_t)&number_of_arguments_through_unpacking, relocInfo::external_word_type));
   masm->shll(eax, 2);
   masm->addl(esp, eax);
-  masm->movl(eax, Address((intptr_t)&result_through_unpacking,   relocInfo::external_word_type));
+  masm->movl(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
 }
 
 void InterpreterGenerator::generate_deoptimized_return_code() {
   assert(Interpreter::_dr_from_dll_call == NULL, "code generated twice");
 
 //#define  maybeINT3() masm->int3();
-#define  maybeINT3()
+#define maybeINT3()
 
   Label deoptimized_C_nlr_continuation;
   Label deoptimized_nlr_continuation;
 
- masm->bind(deoptimized_C_nlr_continuation);
+  masm->bind(deoptimized_C_nlr_continuation);
   masm->reset_last_Delta_frame();
   // fall through
- masm->bind(deoptimized_nlr_continuation);
+  masm->bind(deoptimized_nlr_continuation);
   // mov	eax, [_nlr_result]
   masm->jmp(_nlr_testpoint);
 
- Interpreter::_dr_from_send_without_receiver_restore = masm->pc();
+  Interpreter::_dr_from_send_without_receiver_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_send_without_receiver = masm->pc();
+  Interpreter::_dr_from_send_without_receiver = masm->pc();
   masm->ic_info(deoptimized_nlr_continuation, 0); // last part of the _call_method macro
-  maybeINT3()
-  restore_esi();
+  maybeINT3() restore_esi();
   restore_ebx();
   load_ebx();
   jump_ebx();
 
- Interpreter::_dr_from_send_without_receiver_pop_restore = masm->pc();
+  Interpreter::_dr_from_send_without_receiver_pop_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_send_without_receiver_pop = masm->pc();
+  Interpreter::_dr_from_send_without_receiver_pop = masm->pc();
   masm->ic_info(deoptimized_nlr_continuation, 0); // last part of the _call_method macro
-  maybeINT3()
-  restore_esi();
+  maybeINT3() restore_esi();
   restore_ebx();
   load_ebx();
-  masm->popl(eax);		// pop result
+  masm->popl(eax); // pop result
   jump_ebx();
 
- Interpreter::_dr_from_send_with_receiver_restore = masm->pc();
+  Interpreter::_dr_from_send_with_receiver_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_send_with_receiver = masm->pc();
+  Interpreter::_dr_from_send_with_receiver = masm->pc();
   masm->ic_info(deoptimized_nlr_continuation, 0); // last part of the _call_method macro
-  maybeINT3()
-  restore_esi();
+  maybeINT3() restore_esi();
   restore_ebx();
-  masm->popl(ecx);		// pop receiver
+  masm->popl(ecx); // pop receiver
   load_ebx();
   jump_ebx();
 
- Interpreter::_dr_from_send_with_receiver_pop_restore = masm->pc();
+  Interpreter::_dr_from_send_with_receiver_pop_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_send_with_receiver_pop = masm->pc();
+  Interpreter::_dr_from_send_with_receiver_pop = masm->pc();
   masm->ic_info(deoptimized_nlr_continuation, 0); // last part of the _call_method macro
-  maybeINT3()
-  restore_esi();
+  maybeINT3() restore_esi();
   restore_ebx();
-  masm->popl(ecx);		// pop receiver
+  masm->popl(ecx); // pop receiver
   load_ebx();
-  masm->popl(eax);		// pop result
+  masm->popl(eax); // pop result
   jump_ebx();
 
- Interpreter::_dr_from_primitive_call_without_failure_block_restore = masm->pc();
+  Interpreter::_dr_from_primitive_call_without_failure_block_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_primitive_call_without_failure_block = masm->pc();
+  Interpreter::_dr_from_primitive_call_without_failure_block = masm->pc();
   masm->ic_info(deoptimized_C_nlr_continuation, 0);
-  maybeINT3()
-  restore_esi();
-  restore_ebx();				  // ebx := 0
+  maybeINT3() restore_esi();
+  restore_ebx(); // ebx := 0
   masm->reset_last_Delta_frame();
   if (_debug) {
     masm->test(eax, Mark_Tag_Bit);
@@ -2348,46 +2425,44 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
 
   Label _deoptimized_return_from_primitive_call_with_failure_block_failed;
 
- Interpreter::_dr_from_primitive_call_with_failure_block_restore = masm->pc();
+  Interpreter::_dr_from_primitive_call_with_failure_block_restore = masm->pc();
   generate_deoptimized_return_restore();
   // fall through
 
- Interpreter::_dr_from_primitive_call_with_failure_block = masm->pc();
- masm->ic_info(deoptimized_C_nlr_continuation, 0);
-  maybeINT3()
-  restore_esi();
-  restore_ebx();				  // ebx := 0
+  Interpreter::_dr_from_primitive_call_with_failure_block = masm->pc();
+  masm->ic_info(deoptimized_C_nlr_continuation, 0);
+  maybeINT3() restore_esi();
+  restore_ebx(); // ebx := 0
   masm->reset_last_Delta_frame();
-  masm->test(eax, Mark_Tag_Bit);		  // if not marked then
+  masm->test(eax, Mark_Tag_Bit); // if not marked then
   masm->jcc(Assembler::notZero, _deoptimized_return_from_primitive_call_with_failure_block_failed);
-  masm->movl(ecx, Address(esi, -oopSize));	  // load jump offset
-  masm->addl(esi, ecx);				  // and jump over failure block
+  masm->movl(ecx, Address(esi, -oopSize)); // load jump offset
+  masm->addl(esi, ecx); // and jump over failure block
   load_ebx();
   jump_ebx();
 
- masm->bind(_deoptimized_return_from_primitive_call_with_failure_block_failed);
-  masm->andl(eax, ~Mark_Tag_Bit);		// else unmark result
-  load_ebx();					// and execute failure block
-  jump_ebx();					// the result will be stored
-						// into a temp in the failure block
+  masm->bind(_deoptimized_return_from_primitive_call_with_failure_block_failed);
+  masm->andl(eax, ~Mark_Tag_Bit); // else unmark result
+  load_ebx(); // and execute failure block
+  jump_ebx(); // the result will be stored
+  // into a temp in the failure block
 
- Interpreter::_dr_from_dll_call_restore = masm->pc();
- masm->movl(eax, Address((intptr_t)&result_through_unpacking,   relocInfo::external_word_type));
+  Interpreter::_dr_from_dll_call_restore = masm->pc();
+  masm->movl(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
   // fall through
 
- Interpreter::_dr_from_dll_call = masm->pc();
+  Interpreter::_dr_from_dll_call = masm->pc();
   masm->ic_info(deoptimized_C_nlr_continuation, 0);
-  maybeINT3()
-  masm->reset_last_Delta_frame();
+  maybeINT3() masm->reset_last_Delta_frame();
   restore_esi();
-  restore_ebx();				  // ebx := 0
+  restore_ebx(); // ebx := 0
   // eax: DLL result
-  masm->movb(ebx, Address(esi, -1));				    // get no. of arguments
-  masm->leal(esp, Address(esp, ebx, deltaStackScale));		    // adjust sp (pop arguments)
-  masm->popl(ecx);						    // get proxy object
-  masm->movl(Address(ecx, proxyOopDesc::pointer_byte_offset()), eax);   // box result
+  masm->movb(ebx, Address(esi, -1)); // get no. of arguments
+  masm->leal(esp, Address(esp, ebx, deltaStackScale)); // adjust sp (pop arguments)
+  masm->popl(ecx); // get proxy object
+  masm->movl(Address(ecx, proxyOopDesc::pointer_byte_offset()), eax); // box result
   load_ebx();
-  masm->movl(eax, ecx);	  					    // return proxy
+  masm->movl(eax, ecx); // return proxy
   jump_ebx();
 }
 
@@ -2397,40 +2472,38 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
 //  primitiveValue0..9 are the primitives called in block value messages.
 //  i is the number of arguments for the block.
 
-
 void InterpreterGenerator::generate_primitiveValue(int i) {
-  GeneratedPrimitives::set_primitiveValue(i,masm->pc());
+  GeneratedPrimitives::set_primitiveValue(i, masm->pc());
   masm->movl(eax, Address(esp, (i + 1) * slotSize)); // load recv (= block)
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
   // call_C pushed the 16-byte return address, so the block's arguments sit one
   // slot too high for the block frame (arg1 would read [fp+16] = the saved
   // x30). Shift the i arguments down one slot so the block sees them at [fp+16].
   for (int j = i; j >= 1; j--) {
-    masm->movl(x0, Address(esp, j*slotSize));
-    masm->movl(Address(esp, (j - 1)*slotSize), x0);
+    masm->movl(x0, Address(esp, j * slotSize));
+    masm->movl(Address(esp, (j - 1) * slotSize), x0);
   }
 #endif
   masm->jmp(_block_entry);
 }
 
-
-extern "C" int redo_send_offset;			      // offset when redoing send
+extern "C" int redo_send_offset; // offset when redoing send
 extern "C" void verify_at_end_of_deoptimization();
 
-char* Interpreter::_restart_primitiveValue		= NULL;
-char* Interpreter::_redo_bytecode_after_deoptimization	= NULL;
-char* Interpreter::_nlr_single_step_continuation_entry	= NULL;
+char* Interpreter::_restart_primitiveValue = NULL;
+char* Interpreter::_redo_bytecode_after_deoptimization = NULL;
+char* Interpreter::_nlr_single_step_continuation_entry = NULL;
 Label Interpreter::_nlr_single_step_continuation = Label();
 
 void InterpreterGenerator::generate_forStubRountines() {
   const int invocation_counter_inc = 0x10000;
 
- Interpreter::_restart_primitiveValue = masm->pc();
+  Interpreter::_restart_primitiveValue = masm->pc();
   masm->enter();
   masm->movl(ecx, Address(eax, blockClosureOopDesc::context_byte_offset()));
   masm->movl(edx, Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()));
-  masm->pushl(ecx);			// save recv (initialize with context)
-  restore_ebx();			// if value... is called from compiled code
+  masm->pushl(ecx); // save recv (initialize with context)
+  restore_ebx(); // if value... is called from compiled code
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
   masm->ldr_w(x16, Address(edx, methodOopDesc::counters_byte_offset()));
   masm->addl(x16, invocation_counter_inc);
@@ -2439,12 +2512,12 @@ void InterpreterGenerator::generate_forStubRountines() {
   masm->addl(Address(edx, methodOopDesc::counters_byte_offset()), invocation_counter_inc);
 #endif
   masm->leal(esi, Address(edx, methodOopDesc::codes_byte_offset()));
-  masm->movl(eax, ecx);			// initialize temp 1 with context
-  masm->pushl(esi);			// initialize esi save
+  masm->movl(eax, ecx); // initialize temp 1 with context
+  masm->pushl(esi); // initialize esi save
   load_ebx();
   jump_ebx();
 
- Interpreter::_redo_bytecode_after_deoptimization = masm->pc();
+  Interpreter::_redo_bytecode_after_deoptimization = masm->pc();
 
   // Call verify
   masm->call_C((char*)verify_at_end_of_deoptimization, relocInfo::runtime_call_type);
@@ -2452,13 +2525,13 @@ void InterpreterGenerator::generate_forStubRountines() {
   // Redo the send
   restore_esi();
   restore_ebx();
-  masm->movl(eax, Address((intptr_t)&redo_send_offset,   relocInfo::external_word_type));
+  masm->movl(eax, Address((intptr_t)&redo_send_offset, relocInfo::external_word_type));
   masm->subl(esi, eax);
   load_ebx();
-  masm->popl(eax);		  // get top of stack
+  masm->popl(eax); // get top of stack
   jump_ebx();
 
- Interpreter::_nlr_single_step_continuation_entry = masm->pc();
+  Interpreter::_nlr_single_step_continuation_entry = masm->pc();
   masm->bind(Interpreter::_nlr_single_step_continuation);
   masm->reset_last_Delta_frame();
   masm->jmp(_nlr_testpoint);
@@ -2480,7 +2553,7 @@ void InterpreterGenerator::call_method() {
   // trace_send code should come here - fix this
   if (TraceMessageSend) {
     masm->pushad();
-    masm->call_C((char*)trace_send, eax, ecx);	// trace_send(receiver, method)
+    masm->call_C((char*)trace_send, eax, ecx); // trace_send(receiver, method)
     masm->popad();
   }
 
@@ -2508,21 +2581,21 @@ void InterpreterGenerator::call_method() {
 #endif
 }
 
-char* Interpreter::_last_native_called = NULL;		// debugging only - see comment in header file
+char* Interpreter::_last_native_called = NULL; // debugging only - see comment in header file
 
 void InterpreterGenerator::call_native(Register entry) {
 
   // trace_send code should come here - fix this
   if (TraceMessageSend) {
     masm->pushad();
-    masm->call_C((char*)trace_send, eax, ecx);	// trace_send(receiver, method)
+    masm->call_C((char*)trace_send, eax, ecx); // trace_send(receiver, method)
     masm->popad();
   }
 
   save_esi();
   masm->movl(Address(intptr_t(&Interpreter::_last_native_called), relocInfo::external_word_type), entry);
   masm->call(entry);
-  masm->ic_info(_nlr_testpoint, 0);			// ordinary inline cache info
+  masm->ic_info(_nlr_testpoint, 0); // ordinary inline cache info
   restore_esi();
   restore_ebx();
 #if DELTA_X86_64
@@ -2545,26 +2618,25 @@ void InterpreterGenerator::call_native(Register entry) {
 #endif
 }
 
-
 extern "C" {
-char* method_entry_point = NULL;		// for interpreter_asm.asm (remove if not used anymore)
-char* block_entry_point  = NULL;		// for interpreter_asm.asm (remove if not used anymore)
+char* method_entry_point = NULL; // for interpreter_asm.asm (remove if not used anymore)
+char* block_entry_point = NULL; // for interpreter_asm.asm (remove if not used anymore)
 }
-extern "C" char* active_stack_limit();                  // address of pointer to the current process' stack limit
+extern "C" char* active_stack_limit(); // address of pointer to the current process' stack limit
 
 extern "C" void check_stack_overflow();
 
 void InterpreterGenerator::generate_method_entry_code() {
-// This generates the code sequence called to activate methodOop execution.
-// It is usually called via the call_method() macro, which saves the old
-// instruction counter (esi) and provides the ic_info word for NLRs.
+  // This generates the code sequence called to activate methodOop execution.
+  // It is usually called via the call_method() macro, which saves the old
+  // instruction counter (esi) and provides the ic_info word for NLRs.
 
   const int counter_offset = methodOopDesc::counters_byte_offset();
-  const int code_offset    = methodOopDesc::codes_byte_offset();
+  const int code_offset = methodOopDesc::codes_byte_offset();
 
   assert(!_method_entry.is_bound(), "code has been generated before");
-  Label start_setup, counter_overflow, start_execution, handle_counter_overflow, is_interpreted, 
-    handle_stack_overflow, continue_from_stack_overflow;
+  Label start_setup, counter_overflow, start_execution, handle_counter_overflow, is_interpreted, handle_stack_overflow,
+    continue_from_stack_overflow;
 
   // eax: receiver
   // ebx: 000000xx
@@ -2580,20 +2652,20 @@ void InterpreterGenerator::generate_method_entry_code() {
   // edi: initial value for temp0
   // parameters on the stack
   masm->bind(start_setup);
-  masm->enter();							// setup new stack frame
-  masm->pushl(eax);							// install receiver
+  masm->enter(); // setup new stack frame
+  masm->pushl(eax); // install receiver
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
   // The invocation counter is a 32-bit field and the x86 generator only ever
   // touches 32 bits of it. Use 32-bit accesses here so the 4 padding bytes
   // after _counters are never read or written; a 64-bit read would pick up
   // whatever garbage sits in those bytes and make the counter look >= the
   // limit on every entry (infinite counter-overflow loop).
-  masm->ldr_w(edx, Address(ecx, counter_offset));			// get method invocation counter
-  masm->leaq(esi, Address(ecx, code_offset));				// set bytecode pointer to first instruction
-  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset);	// increment invocation counter (only upper word)
-  masm->pushl(esi);							// initialize esi stack location for profiler
-  masm->str_w(edx, Address(ecx, counter_offset));			// store method invocation counter
-  load_ebx();								// get first byte code of method
+  masm->ldr_w(edx, Address(ecx, counter_offset)); // get method invocation counter
+  masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
+  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
+  masm->pushl(esi); // initialize esi stack location for profiler
+  masm->str_w(edx, Address(ecx, counter_offset)); // store method invocation counter
+  load_ebx(); // get first byte code of method
   // No compare-with-large-immediate; load the limit from the global that
   // set_invocation_counter_limit patches (data, not code).
   masm->load_absolute_address(x16, Address((intptr_t)&invocation_counter_limit_value, relocInfo::external_word_type));
@@ -2601,18 +2673,18 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->cmp(edx, x16, LSL, 0, sz_32);
   Interpreter::_invocation_counter_addr = &invocation_counter_limit_value;
 #else
-  masm->movl_32(edx, Address(ecx, counter_offset));			// get method invocation counter (32-bit!)
-  masm->leaq(esi, Address(ecx, code_offset));				// set bytecode pointer to first instruction
-  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset);	// increment invocation counter (only upper word)
-  masm->pushl(esi);							// initialize esi stack location for profiler
-  masm->movl_32(Address(ecx, counter_offset), edx);			// store method invocation counter (32-bit!)
-  load_ebx();								// get first byte code of method
-  masm->cmpl(edx, 0xFFFF << methodOopDesc::_invocation_count_offset);	// make sure cmpl uses imm32 field
-  Interpreter::_invocation_counter_addr = (int*)(masm->pc() - sizeof(int));// compute invocation counter address
+  masm->movl_32(edx, Address(ecx, counter_offset)); // get method invocation counter (32-bit!)
+  masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
+  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
+  masm->pushl(esi); // initialize esi stack location for profiler
+  masm->movl_32(Address(ecx, counter_offset), edx); // store method invocation counter (32-bit!)
+  load_ebx(); // get first byte code of method
+  masm->cmpl(edx, 0xFFFF << methodOopDesc::_invocation_count_offset); // make sure cmpl uses imm32 field
+  Interpreter::_invocation_counter_addr = (int*)(masm->pc() - sizeof(int)); // compute invocation counter address
 #endif
-  masm->jcc(Assembler::aboveEqual, counter_overflow);			// treat invocation counter overflow
-  masm->bind(start_execution);						// continuation point after overflow
-  masm->movq(eax, edi);						// initialize temp0
+  masm->jcc(Assembler::aboveEqual, counter_overflow); // treat invocation counter overflow
+  masm->bind(start_execution); // continuation point after overflow
+  masm->movq(eax, edi); // initialize temp0
 #if DELTA_X86_64
   {
     Label oop_ok_se;
@@ -2634,16 +2706,16 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->cmpl(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
   masm->jcc(Assembler::lessEqual, handle_stack_overflow);
   masm->bind(continue_from_stack_overflow);
-  jump_ebx();								// start execution
+  jump_ebx(); // start execution
 
   // invocation counter overflow
   masm->bind(counter_overflow);
   // not necessary to store esi since it has been just initialized
-  masm->pushl(edi);							// move tos on stack (temp0, always here)
+  masm->pushl(edi); // move tos on stack (temp0, always here)
   masm->set_last_Delta_frame_before_call();
-  masm->call(handle_counter_overflow);					// introduce extra frame to pass arguments
+  masm->call(handle_counter_overflow); // introduce extra frame to pass arguments
   masm->reset_last_Delta_frame();
-  masm->popl(edi);							// restore edi, used to initialize eax
+  masm->popl(edi); // restore edi, used to initialize eax
   // Should check here if recompilation created a nmethod for this
   // methodOop. If so, one should redo the send and thus start the
   // nmethod.
@@ -2666,27 +2738,28 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->call_C((char*)Recompilation::methodOop_invocation_counter_overflow, eax, ecx);
   masm->ret(0);
 
-
-// This generates the code sequence called to activate block execution.
-// It is jumped to from one of the primitiveValue primitives. eax is
-// expected to hold the receiver (i.e., the block closure).
+  // This generates the code sequence called to activate block execution.
+  // It is jumped to from one of the primitiveValue primitives. eax is
+  // expected to hold the receiver (i.e., the block closure).
 
   // eax: receiver (block closure)
   // primitiveValue parameters on the stack
   block_entry_point = masm->pc();
   masm->bind(_block_entry);
-  masm->movl(ecx, Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()));	// get methodOop/jump table entry out of closure
-  masm->reset_last_Delta_frame();					// if called from the interpreter, the last Delta frame is setup
-  masm->test(ecx, Mem_Tag);						// if methodOop then
-  masm->jcc(Assembler::notZero, is_interpreted);			//   start methodOop execution
-  masm->jmp(ecx);							// else jump to jump table entry
+  masm->movl(
+    ecx,
+    Address(eax, blockClosureOopDesc::method_or_entry_byte_offset())); // get methodOop/jump table entry out of closure
+  masm->reset_last_Delta_frame(); // if called from the interpreter, the last Delta frame is setup
+  masm->test(ecx, Mem_Tag); // if methodOop then
+  masm->jcc(Assembler::notZero, is_interpreted); //   start methodOop execution
+  masm->jmp(ecx); // else jump to jump table entry
 
   masm->bind(is_interpreted);
   // eax: receiver (block closure)
   // ecx: block methodOop
-  restore_ebx();							// if value... is called from compiled code, ebx may be not zero
-  masm->movl(eax, Address(eax, blockClosureOopDesc::context_byte_offset()));		// get context out of closure
-  masm->movl(edi, eax);						// initial value for temp0 is (incoming) context/value
+  restore_ebx(); // if value... is called from compiled code, ebx may be not zero
+  masm->movl(eax, Address(eax, blockClosureOopDesc::context_byte_offset())); // get context out of closure
+  masm->movl(edi, eax); // initial value for temp0 is (incoming) context/value
   // eax: context (= receiver)
   // ebx: 00000000
   // ecx: block methodOop
@@ -2703,7 +2776,6 @@ void InterpreterGenerator::generate_method_entry_code() {
   load_ebx();
   masm->jmp(continue_from_stack_overflow);
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Inline cache misses
@@ -2730,10 +2802,8 @@ void InterpreterGenerator::generate_inline_cache_miss_handler() {
   jump_ebx();
 }
 
-
 //-----------------------------------------------------------------------------------------
 // smi predicted sends
-
 
 void InterpreterGenerator::generate_predicted_smi_send_failure_handler() {
   assert(!_smi_send_failure.is_bound(), "code has been generated before");
@@ -2741,23 +2811,21 @@ void InterpreterGenerator::generate_predicted_smi_send_failure_handler() {
   // Note: Has to jump to normal_send entry point because the entry point is
   //       not necessarily in the beginning of the normal send code pattern.
   masm->bind(_smi_send_failure);
-  masm->pushl(edx);					// push receiver back on tos
+  masm->pushl(edx); // push receiver back on tos
   masm->jmp(ep, relocInfo::runtime_call_type);
 }
-
 
 void InterpreterGenerator::check_smi_tags() {
   // tos: receiver
   // eax: argument
-  masm->popl(edx);					// get receiver
-  masm->movl(ecx, eax);				// copy it to ecx
-  masm->orl(ecx, edx);					// or tag bits
-  masm->test(ecx, Mem_Tag);				// if one of them is set then
-  masm->jcc(Assembler::notZero, _smi_send_failure);	// arguments are not bot smis
+  masm->popl(edx); // get receiver
+  masm->movl(ecx, eax); // copy it to ecx
+  masm->orl(ecx, edx); // or tag bits
+  masm->test(ecx, Mem_Tag); // if one of them is set then
+  masm->jcc(Assembler::notZero, _smi_send_failure); // arguments are not bot smis
   // edx: receiver
   // eax: argument
 }
-
 
 char* InterpreterGenerator::smi_add() {
   Label overflow;
@@ -2765,7 +2833,7 @@ char* InterpreterGenerator::smi_add() {
   check_smi_tags();
   masm->addl(eax, edx);
   masm->jcc(Assembler::overflow, overflow);
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   load_ebx();
   jump_ebx();
 
@@ -2777,14 +2845,13 @@ char* InterpreterGenerator::smi_add() {
   return ep;
 }
 
-
 char* InterpreterGenerator::smi_sub() {
   Label overflow;
   char* ep = entry_point();
   check_smi_tags();
   masm->subl(edx, eax);
   masm->jcc(Assembler::overflow, overflow);
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   masm->movl(eax, edx);
   load_ebx();
   jump_ebx();
@@ -2797,16 +2864,15 @@ char* InterpreterGenerator::smi_sub() {
   return ep;
 }
 
-
 char* InterpreterGenerator::smi_mul() {
   Label overflow;
   char* ep = entry_point();
   check_smi_tags();
-  masm->movl(ecx, eax);				// save argument for overflow case
+  masm->movl(ecx, eax); // save argument for overflow case
   masm->sarl(edx, Tag_Size);
   masm->imull(eax, edx);
   masm->jcc(Assembler::overflow, overflow);
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   load_ebx();
   jump_ebx();
 
@@ -2814,29 +2880,41 @@ char* InterpreterGenerator::smi_mul() {
   // eax: argument * (receiver >> Tag_Size)
   // ecx: argument
   // edx: receiver >> Tag_Size
-  masm->movl(eax, ecx);				// restore argument
-  masm->shll(edx, Tag_Size);				// undo shift
+  masm->movl(eax, ecx); // restore argument
+  masm->shll(edx, Tag_Size); // undo shift
   masm->jmp(_smi_send_failure);
   return ep;
 }
-
 
 char* InterpreterGenerator::smi_compare_op(Bytecodes::Code code) {
   Label is_true;
   char* ep = entry_point();
   check_smi_tags();
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   load_ebx();
   masm->cmpl(edx, eax);
   Assembler::Condition cc;
   switch (code) {
-    case Bytecodes::smi_equal		: cc = Assembler::equal;	break;
-    case Bytecodes::smi_not_equal	: cc = Assembler::notEqual;	break;
-    case Bytecodes::smi_less		: cc = Assembler::less;		break;
-    case Bytecodes::smi_less_equal	: cc = Assembler::lessEqual;	break;
-    case Bytecodes::smi_greater		: cc = Assembler::greater;	break;
-    case Bytecodes::smi_greater_equal	: cc = Assembler::greaterEqual;	break;
-    default				: ShouldNotReachHere();
+    case Bytecodes::smi_equal:
+      cc = Assembler::equal;
+      break;
+    case Bytecodes::smi_not_equal:
+      cc = Assembler::notEqual;
+      break;
+    case Bytecodes::smi_less:
+      cc = Assembler::less;
+      break;
+    case Bytecodes::smi_less_equal:
+      cc = Assembler::lessEqual;
+      break;
+    case Bytecodes::smi_greater:
+      cc = Assembler::greater;
+      break;
+    case Bytecodes::smi_greater_equal:
+      cc = Assembler::greaterEqual;
+      break;
+    default:
+      ShouldNotReachHere();
   }
   masm->jcc(cc, is_true);
   masm->movl(eax, false_addr());
@@ -2848,22 +2926,27 @@ char* InterpreterGenerator::smi_compare_op(Bytecodes::Code code) {
   return ep;
 }
 
-
 char* InterpreterGenerator::smi_logical_op(Bytecodes::Code code) {
   char* ep = entry_point();
   check_smi_tags();
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   load_ebx();
   switch (code) {
-    case Bytecodes::smi_and: masm->andl(eax, edx); break;
-    case Bytecodes::smi_or : masm->orl (eax, edx); break;
-    case Bytecodes::smi_xor: masm->xorl(eax, edx); break;
-    default                : ShouldNotReachHere();
+    case Bytecodes::smi_and:
+      masm->andl(eax, edx);
+      break;
+    case Bytecodes::smi_or:
+      masm->orl(eax, edx);
+      break;
+    case Bytecodes::smi_xor:
+      masm->xorl(eax, edx);
+      break;
+    default:
+      ShouldNotReachHere();
   }
   jump_ebx();
   return ep;
 }
-
 
 char* InterpreterGenerator::smi_shift() {
   // overflow is ignored for now (as in smi_prims.cpp)
@@ -2872,27 +2955,26 @@ char* InterpreterGenerator::smi_shift() {
 
   char* ep = entry_point();
   check_smi_tags();
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
   load_ebx();
-  masm->sarl(eax, Tag_Size);				// convert argument (shift count) into int (sets zero flag)
-  masm->movl(ecx, eax);				// move shift count into CL
-  masm->jcc(Assembler::negative, shift_right);		// shift right or shift left?
+  masm->sarl(eax, Tag_Size); // convert argument (shift count) into int (sets zero flag)
+  masm->movl(ecx, eax); // move shift count into CL
+  masm->jcc(Assembler::negative, shift_right); // shift right or shift left?
 
   // shift left
-  masm->shll(edx);					// else receiver << (argument mod 32)
-  masm->movl(eax, edx);				// set result
+  masm->shll(edx); // else receiver << (argument mod 32)
+  masm->movl(eax, edx); // set result
   jump_ebx();
 
   // shift right
   masm->bind(shift_right);
   masm->negl(ecx);
-  masm->sarl(edx);					// receiver >> (argument mod 32)
-  masm->andl(edx, (int)((unsigned)-1 << Tag_Size));			// clear tag bits
-  masm->movl(eax, edx);				// set result
+  masm->sarl(edx); // receiver >> (argument mod 32)
+  masm->andl(edx, (int)((unsigned)-1 << Tag_Size)); // clear tag bits
+  masm->movl(eax, edx); // set result
   jump_ebx();
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // objArray predicted sends
@@ -2908,20 +2990,17 @@ char* InterpreterGenerator::objArray_size() {
   return ep;
 }
 
-
 char* InterpreterGenerator::objArray_at() {
   char* ep = entry_point();
   Unimplemented();
   return ep;
 }
 
-
 char* InterpreterGenerator::objArray_at_put() {
   char* ep = entry_point();
   Unimplemented();
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Returns
@@ -2931,26 +3010,33 @@ char* InterpreterGenerator::objArray_at_put() {
 void InterpreterGenerator::return_tos(Bytecodes::ArgumentSpec arg_spec) {
   masm->leave();
   switch (arg_spec) {
-    case Bytecodes::recv_0_args: masm->ret(0*slotSize); break;
-    case Bytecodes::recv_1_args: masm->ret(1*slotSize); break;
-    case Bytecodes::recv_2_args: masm->ret(2*slotSize); break;
+    case Bytecodes::recv_0_args:
+      masm->ret(0 * slotSize);
+      break;
+    case Bytecodes::recv_1_args:
+      masm->ret(1 * slotSize);
+      break;
+    case Bytecodes::recv_2_args:
+      masm->ret(2 * slotSize);
+      break;
     case Bytecodes::recv_n_args: {
       // no. of arguments is in the next byte
-      masm->movb(ebx, Address(esi, 1));			// get no. of arguments
+      masm->movb(ebx, Address(esi, 1)); // get no. of arguments
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
       // AArch64: after leave() the return address lives in x30, not on the
       // stack, and [sp] holds the first argument. Skip all n argument slots
       // and branch back through x30.
-      masm->leal(esp, Address(esp, ebx, deltaStackScale));	// adjust esp (remove arguments)
+      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // adjust esp (remove arguments)
       masm->ret(0);
 #else
-      masm->popl(ecx);						// get return address
-      masm->leal(esp, Address(esp, ebx, deltaStackScale));	// adjust esp (remove arguments)
-      masm->jmp(ecx);						// return
+      masm->popl(ecx); // get return address
+      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // adjust esp (remove arguments)
+      masm->jmp(ecx); // return
 #endif
       break;
     }
-    default: ShouldNotReachHere();
+    default:
+      ShouldNotReachHere();
   }
 }
 
@@ -2961,7 +3047,7 @@ void InterpreterGenerator::return_tos(Bytecodes::ArgumentSpec arg_spec) {
 // Only method contexts must be zapped.
 
 void InterpreterGenerator::zap_context() {
-  masm->pushl(eax); 			// make sure temp0 (context) is in memory
+  masm->pushl(eax); // make sure temp0 (context) is in memory
   masm->movl(ecx, context_addr());
   masm->popl(eax);
   masm->movl(Address(ecx, contextOopDesc::parent_byte_offset()), 0);
@@ -2988,11 +3074,20 @@ char* InterpreterGenerator::local_return(bool push_self, int nofArgs, bool zap) 
   // return_tos takes one as argument ... hence this weird device		-Marc 4/07
   Bytecodes::ArgumentSpec arg_spec;
   switch (nofArgs) {
-    case  0: arg_spec = Bytecodes::recv_0_args; break;
-    case  1: arg_spec = Bytecodes::recv_1_args; break;
-    case  2: arg_spec = Bytecodes::recv_2_args; break;
-    case -1: arg_spec = Bytecodes::recv_n_args; break;
-    default: ShouldNotReachHere();
+    case 0:
+      arg_spec = Bytecodes::recv_0_args;
+      break;
+    case 1:
+      arg_spec = Bytecodes::recv_1_args;
+      break;
+    case 2:
+      arg_spec = Bytecodes::recv_2_args;
+      break;
+    case -1:
+      arg_spec = Bytecodes::recv_n_args;
+      break;
+    default:
+      ShouldNotReachHere();
   }
 
   return_tos(arg_spec);
@@ -3008,7 +3103,7 @@ char* InterpreterGenerator::local_return(bool push_self, int nofArgs, bool zap) 
 
 extern "C" void suspend_on_error(InterpreterErrorConstants error_code);
 
-char* Interpreter::_illegal  = NULL;
+char* Interpreter::_illegal = NULL;
 
 void InterpreterGenerator::generate_error_handler_code() {
   assert(!_boolean_expected.is_bound(), "code has been generated before");
@@ -3017,58 +3112,57 @@ void InterpreterGenerator::generate_error_handler_code() {
   // eax: top of expression stack
   // ecx: error code
   // esi: points to next instruction
- masm->bind(suspend);
-  masm->pushl(eax);				// save tos
+  masm->bind(suspend);
+  masm->pushl(eax); // save tos
   call_C(call_suspend);
   should_not_reach_here();
 
- masm->bind(call_suspend);			// extra stack frame to pass error code in C land
-  masm->call_C((char*)suspend_on_error, ecx);	// pass error code
+  masm->bind(call_suspend); // extra stack frame to pass error code in C land
+  masm->call_C((char*)suspend_on_error, ecx); // pass error code
   should_not_reach_here();
 
- masm->bind(_boolean_expected);
+  masm->bind(_boolean_expected);
   masm->movl(ecx, boolean_expected);
   masm->jmp(suspend);
 
- masm->bind(_float_expected);
+  masm->bind(_float_expected);
   masm->movl(ecx, float_expected);
   masm->jmp(suspend);
 
- masm->bind(_NLR_to_dead_frame);
+  masm->bind(_NLR_to_dead_frame);
   masm->movl(ecx, nonlocal_return_error);
   masm->jmp(suspend);
 
- masm->bind(_halted);
+  masm->bind(_halted);
   masm->movl(ecx, halted);
   masm->jmp(suspend);
 
- masm->bind(_stack_missaligned);
+  masm->bind(_stack_missaligned);
   masm->movl(ecx, stack_missaligned);
   masm->jmp(suspend);
 
- masm->bind(_ebx_wrong);
+  masm->bind(_ebx_wrong);
   masm->movl(ecx, ebx_wrong);
   masm->jmp(suspend);
 
- masm->bind(_obj_wrong);
+  masm->bind(_obj_wrong);
   masm->movl(ecx, obj_wrong);
   masm->jmp(suspend);
 
- masm->bind(_last_Delta_fp_wrong);
+  masm->bind(_last_Delta_fp_wrong);
   masm->movl(ecx, last_Delta_fp_wrong);
   masm->jmp(suspend);
 
- masm->bind(_primitive_result_wrong);
+  masm->bind(_primitive_result_wrong);
   masm->movl(ecx, primitive_result_wrong);
   masm->jmp(suspend);
 
- _illegal = masm->pc();
-  masm->movl(ecx,   illegal_code);
+  _illegal = masm->pc();
+  masm->movl(ecx, illegal_code);
   masm->jmp(suspend);
 
   Interpreter::_illegal = _illegal;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Non-local returns
@@ -3098,48 +3192,48 @@ void InterpreterGenerator::generate_error_handler_code() {
 // made negative (compiled NLR home ids are always >= 0).
 
 extern "C" {
-char* nlr_testpoint_entry = NULL;	// for interpreter_asm.asm (remove if not used anymore)
+char* nlr_testpoint_entry = NULL; // for interpreter_asm.asm (remove if not used anymore)
 }
 extern "C" contextOop nlr_home_context;
 
 void InterpreterGenerator::generate_nonlocal_return_code() {
   assert(eax == NLR_result_reg, "NLR register use changed");
-  assert(edi == NLR_home_reg  , "NLR register use changed");
+  assert(edi == NLR_home_reg, "NLR register use changed");
   assert(esi == NLR_homeId_reg, "NLR register use changed");
 
-  assert(!_issue_NLR.is_bound()    , "code has been generated before");
+  assert(!_issue_NLR.is_bound(), "code has been generated before");
   assert(!_nlr_testpoint.is_bound(), "code has been generated before");
 
   Label zapped_context, loop, no_zapping, compiled_code_NLR;
 
   // context already zapped
   masm->bind(zapped_context);
-  masm->popl(eax);				// get NLR result back
-  masm->addl(esi, 2);				// adjust esi (must point to next instruction)
+  masm->popl(eax); // get NLR result back
+  masm->addl(esi, 2); // adjust esi (must point to next instruction)
   masm->jmp(_NLR_to_dead_frame);
 
   masm->bind(_issue_NLR);
-  masm->pushl(eax);				// make sure context (temp0) is in memory
-  masm->movl(edi, context_addr());		// get context
+  masm->pushl(eax); // make sure context (temp0) is in memory
+  masm->movl(edi, context_addr()); // get context
   if (_debug) {
     // should check here if edx is really a context
   }
 
   // find home stack frame by following the context chain
   // edi: current context in chain
-  masm->bind(loop);				// repeat
-  masm->movq(eax, edi);			//   eax := last context used
+  masm->bind(loop); // repeat
+  masm->movq(eax, edi); //   eax := last context used
   masm->movl(edi, Address(edi, contextOopDesc::parent_byte_offset()));
-  masm->test(edi, Mem_Tag);			//   edi := edi.home
-  masm->jcc(Assembler::notZero, loop);		// until is_smi(edi)
-  masm->testl(edi, edi);			// if edi = 0 then
-  masm->jcc(Assembler::zero, zapped_context);	//   context has been zapped
+  masm->test(edi, Mem_Tag); //   edi := edi.home
+  masm->jcc(Assembler::notZero, loop); // until is_smi(edi)
+  masm->testl(edi, edi); // if edi = 0 then
+  masm->jcc(Assembler::zero, zapped_context); //   context has been zapped
   masm->movl(Address(intptr_t(&nlr_home_context), relocInfo::external_word_type), eax);
-                                                // else save the context containing the home (edi points to home stack frame)
-  masm->movb(ebx, Address(esi, 1));		// get no. of arguments to pop
-  masm->popl(eax);				// get NLR result back
-  masm->movl(esi, ebx);			// keep no. of arguments in esi
-  masm->notl(esi);				// make negative to distinguish from compiled NLRs
+  // else save the context containing the home (edi points to home stack frame)
+  masm->movb(ebx, Address(esi, 1)); // get no. of arguments to pop
+  masm->popl(eax); // get NLR result back
+  masm->movl(esi, ebx); // keep no. of arguments in esi
+  masm->notl(esi); // make negative to distinguish from compiled NLRs
 
   // entry point for all methods to do NLR test & continuation,
   // first check if context zap is necessary
@@ -3159,16 +3253,16 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   //masm->testl(esi, esi);
   //masm->jcc(Assembler::positive, compiled_code_NLR);
 
-  masm->movl(ecx, context_addr());		// get potential context
-  masm->test(ecx, Mem_Tag);			// if is_smi(ecx) then
-  masm->jcc(Assembler::zero, no_zapping);	//   can't be a context pointer
-  masm->movl(edx, Address(ecx, memOopDesc::klass_byte_offset()));	// else isOop: get its class
-  masm->cmpl(edx, contextKlass_addr());	// if class # contextKlass then
-  masm->jcc(Assembler::notEqual, no_zapping);	//   is not a context
-  masm->movl(ebx, Address(ecx, contextOopDesc::parent_byte_offset()));	// else is context: get home
-  masm->cmpl(ebx, ebp);			// if home # ebp then
-  masm->jcc(Assembler::notEqual, no_zapping);	//   is not a methoc context
-  masm->movl(Address(ecx, contextOopDesc::parent_byte_offset()), 0);	// else method context: zap home
+  masm->movl(ecx, context_addr()); // get potential context
+  masm->test(ecx, Mem_Tag); // if is_smi(ecx) then
+  masm->jcc(Assembler::zero, no_zapping); //   can't be a context pointer
+  masm->movl(edx, Address(ecx, memOopDesc::klass_byte_offset())); // else isOop: get its class
+  masm->cmpl(edx, contextKlass_addr()); // if class # contextKlass then
+  masm->jcc(Assembler::notEqual, no_zapping); //   is not a context
+  masm->movl(ebx, Address(ecx, contextOopDesc::parent_byte_offset())); // else is context: get home
+  masm->cmpl(ebx, ebp); // if home # ebp then
+  masm->jcc(Assembler::notEqual, no_zapping); //   is not a methoc context
+  masm->movl(Address(ecx, contextOopDesc::parent_byte_offset()), 0); // else method context: zap home
 
   masm->bind(no_zapping);
   masm->cmpl(edi, ebp);
@@ -3178,18 +3272,18 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   // eax: NLR result
   // edi: NLR home
   // esi: no. of arguments to pop (1s complement)
-  restore_ebx();				// make sure ebx = 0
-  masm->leave();				// remove stack frame
-  masm->notl(esi);				// make positive again
+  restore_ebx(); // make sure ebx = 0
+  masm->leave(); // remove stack frame
+  masm->notl(esi); // make positive again
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
   // AArch64: after leave() the return address lives in x30, not on the
   // stack; [sp] holds the first argument.
-  masm->leal(esp, Address(esp, esi, deltaStackScale));	// pop arguments
-  masm->ret(0);						// return
+  masm->leal(esp, Address(esp, esi, deltaStackScale)); // pop arguments
+  masm->ret(0); // return
 #else
-  masm->popl(ecx);				// get return address
-  masm->leal(esp, Address(esp, esi, deltaStackScale));	// pop arguments
-  masm->jmp(ecx);				// return
+  masm->popl(ecx); // get return address
+  masm->leal(esp, Address(esp, esi, deltaStackScale)); // pop arguments
+  masm->jmp(ecx); // return
 #endif
 
   // error handler for compiled code NLRs - can be removed as soon
@@ -3203,13 +3297,11 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   //masm->testl(eax, 0x0badcafe);
 }
 
-
 char* InterpreterGenerator::nonlocal_return_tos() {
   char* ep = entry_point();
   masm->jmp(_issue_NLR);
   return ep;
 }
-
 
 char* InterpreterGenerator::nonlocal_return_self() {
   char* ep = entry_point();
@@ -3246,8 +3338,8 @@ char* InterpreterGenerator::access_send(bool self) {
   char* ep = entry_point();
 
   Bytecodes::ArgumentSpec arg_spec;
-  Address method_addr = Address(esi, -2*oopSize);
-  Address klass_addr  = Address(esi, -1*oopSize);
+  Address method_addr = Address(esi, -2 * oopSize);
+  Address klass_addr = Address(esi, -1 * oopSize);
 
   if (self) {
     arg_spec = Bytecodes::args_only;
@@ -3256,7 +3348,7 @@ char* InterpreterGenerator::access_send(bool self) {
   }
 
   load_recv(arg_spec);
-  advance_aligned(1 + 2*oopSize);
+  advance_aligned(1 + 2 * oopSize);
 
   // mov ecx, [method]		; get method
   // lea edx, [ecx._hcodes(4)]	; start address of hcode + 4
@@ -3264,11 +3356,11 @@ char* InterpreterGenerator::access_send(bool self) {
   // mov edx, [edx]
   // mov eax, [eax + edx - Mem_Tag]	; load instVar at offset
 
-  masm->test(eax, Mem_Tag);				// check if smi
-  masm->movl(ecx, method_addr);				// get cached method (assuming infrequent cache misses)
-  masm->movl(edx, klass_addr);				// get cached klass
-  masm->jcc(Assembler::zero, _inline_cache_miss);	// if smi then it's a cache miss
-  masm->movl(edi, Address(eax, memOopDesc::klass_byte_offset()));	// get recv class
+  masm->test(eax, Mem_Tag); // check if smi
+  masm->movl(ecx, method_addr); // get cached method (assuming infrequent cache misses)
+  masm->movl(edx, klass_addr); // get cached klass
+  masm->jcc(Assembler::zero, _inline_cache_miss); // if smi then it's a cache miss
+  masm->movl(edi, Address(eax, memOopDesc::klass_byte_offset())); // get recv class
 
   // eax: receiver
   // ebx: 000000xx (load_recv may modify bl)
@@ -3276,11 +3368,11 @@ char* InterpreterGenerator::access_send(bool self) {
   // edx: cached klass
   // edi: receiver klass
   // esi: next instruction
-  masm->cmpl(edx, edi);			// compare with inline cache
+  masm->cmpl(edx, edi); // compare with inline cache
   masm->jcc(Assembler::notEqual, _inline_cache_miss);
 
   Address primitive_addr = Address(ecx, methodOopDesc::codes_byte_offset() + oopSize);
-  masm->movl(edx, primitive_addr);		// get instVar offset
+  masm->movl(edx, primitive_addr); // get instVar offset
   masm->movl(eax, field_addr(eax, edx));
 #if DELTA_X86_64
   CHECK_EAX_OOP(58);
@@ -3288,14 +3380,13 @@ char* InterpreterGenerator::access_send(bool self) {
 #endif
 
   if (!self) {
-    masm->popl(ecx);				//    receiver still on stack: remove it
+    masm->popl(ecx); //    receiver still on stack: remove it
   }
   load_ebx();
   jump_ebx();
 
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Inline cache structure for non-polymorphic sends
@@ -3316,7 +3407,8 @@ char* InterpreterGenerator::access_send(bool self) {
 //       the chance for this to happen by loading the cached method as soon as possible, thereby
 //       reducing the time frame for the sweeper (gri).
 
-char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodOop, bool allow_nmethod, bool primitive_send) {
+char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodOop, bool allow_nmethod,
+                                        bool primitive_send) {
   assert(allow_methodOop || allow_nmethod || primitive_send, "must allow at least one method representation");
 
   Label is_smi, compare_class, is_methodOop, is_nmethod;
@@ -3325,12 +3417,12 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   bool pop_tos = Bytecodes::pop_tos(code);
 
   // inline cache layout
-  int     length      = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2*oopSize;
-  Address method_addr = Address(esi, -2*oopSize);
-  Address klass_addr  = Address(esi, -1*oopSize);
+  int length = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2 * oopSize;
+  Address method_addr = Address(esi, -2 * oopSize);
+  Address klass_addr = Address(esi, -1 * oopSize);
 
-  masm->bind(is_smi);				// smi case (assumed to be infrequent)
-  masm->movl(edi, smiKlass_addr());		// load smi klass
+  masm->bind(is_smi); // smi case (assumed to be infrequent)
+  masm->movl(edi, smiKlass_addr()); // load smi klass
   masm->jmp(compare_class);
 
   char* ep = entry_point();
@@ -3340,15 +3432,15 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   {
     Label oop_ok;
     masm->test(eax, Mem_Tag);
-    masm->jcc(Assembler::zero, oop_ok);        // Smi — skip check
+    masm->jcc(Assembler::zero, oop_ok); // Smi — skip check
     // On x86-64 macOS, heap pointers are >= 0x100000000 (4GB).
     // A truncated pointer would be < 4GB.
-    masm->movq(ecx, (intptr_t)0x100000000);   // heap base threshold
+    masm->movq(ecx, (intptr_t)0x100000000); // heap base threshold
     masm->cmpq(eax, ecx);
     masm->jcc(Assembler::greaterEqual, oop_ok); // >= 4GB → valid pointer
     // Truncated pointer detected — store value and PC, then trap
     masm->movq(Address((intptr_t)&diag_truncated_oop_value, relocInfo::external_word_type), eax);
-    masm->movq(ecx, esi);  // esi = current bytecode PC
+    masm->movq(ecx, esi); // esi = current bytecode PC
     masm->movq(Address((intptr_t)&diag_truncated_oop_pc, relocInfo::external_word_type), ecx);
     masm->movq(ecx, (intptr_t)7);
     masm->movq(Address((intptr_t)&diag_truncated_oop_check_id, relocInfo::external_word_type), ecx);
@@ -3357,11 +3449,11 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   }
 #endif
   advance_aligned(length);
-  masm->test(eax, Mem_Tag);			// check if smi
-  masm->movl(ecx, method_addr);			// get cached method (assuming infrequent cache misses)
-  masm->movl(edx, klass_addr);			// get cached klass
+  masm->test(eax, Mem_Tag); // check if smi
+  masm->movl(ecx, method_addr); // get cached method (assuming infrequent cache misses)
+  masm->movl(edx, klass_addr); // get cached klass
   masm->jcc(Assembler::zero, is_smi);
-  masm->movl(edi, Address(eax, memOopDesc::klass_byte_offset()));	// get recv class
+  masm->movl(edi, Address(eax, memOopDesc::klass_byte_offset())); // get recv class
 
   masm->bind(compare_class);
   // eax: receiver
@@ -3370,30 +3462,38 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   // edx: cached klass
   // edi: receiver klass
   // esi: next instruction
-  masm->cmpl(edx, edi);			// compare with inline cache
+  masm->cmpl(edx, edi); // compare with inline cache
   masm->jcc(Assembler::notEqual, _inline_cache_miss);
 
   if (allow_methodOop && allow_nmethod) {
     // make case distinction at run-time
-    masm->test(ecx, Mem_Tag);			// check if nmethod
-    masm->jcc(Assembler::zero, is_nmethod);	// nmethods (jump table entries) are 4-byte alligned
+    masm->test(ecx, Mem_Tag); // check if nmethod
+    masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte alligned
   }
 
   if (allow_methodOop) {
     masm->bind(is_methodOop);
     call_method();
-    if (arg_spec != Bytecodes::args_only) masm->popl(ecx);// discard receiver if on stack
+    if (arg_spec != Bytecodes::args_only)
+      masm->popl(ecx); // discard receiver if on stack
     load_ebx();
-    if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(28); }		// discard result if not used
+    if (pop_tos) {
+      masm->popl(eax);
+      STAMP_EAX_WRITER(28);
+    } // discard result if not used
     jump_ebx();
   }
 
   if (allow_nmethod) {
     masm->bind(is_nmethod);
     call_native(ecx);
-    if (arg_spec != Bytecodes::args_only) masm->popl(ecx);// discard receiver if on stack
+    if (arg_spec != Bytecodes::args_only)
+      masm->popl(ecx); // discard receiver if on stack
     load_ebx();
-    if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(29); }		// discard result if not used
+    if (pop_tos) {
+      masm->popl(eax);
+      STAMP_EAX_WRITER(29);
+    } // discard result if not used
     jump_ebx();
   }
 
@@ -3401,30 +3501,33 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
     Label _failed;
     Address primitive_addr = Address(ecx, methodOopDesc::codes_byte_offset() + oopSize);
 
-    masm->movl(edx, primitive_addr);		// get primitive address
-    call_C(edx);				// eax := primitive call
+    masm->movl(edx, primitive_addr); // get primitive address
+    call_C(edx); // eax := primitive call
 #if DELTA_X86_64
-  {
-    Label oop_ok_ps;
-    masm->test(eax, Mem_Tag);
-    masm->jcc(Assembler::zero, oop_ok_ps);
-    masm->movq(ecx, (intptr_t)0x100000000);
-    masm->cmpq(eax, ecx);
-    masm->jcc(Assembler::greaterEqual, oop_ok_ps);
-    masm->movq(Address((intptr_t)&diag_truncated_oop_value, relocInfo::external_word_type), eax);
-    masm->movq(ecx, esi);
-    masm->movq(Address((intptr_t)&diag_truncated_oop_pc, relocInfo::external_word_type), ecx);
-    masm->movq(ecx, (intptr_t)45);
-    masm->movq(Address((intptr_t)&diag_truncated_oop_check_id, relocInfo::external_word_type), ecx);
-    masm->int3();
-    masm->bind(oop_ok_ps);
-    STAMP_EAX_WRITER(45);
-  }
+    {
+      Label oop_ok_ps;
+      masm->test(eax, Mem_Tag);
+      masm->jcc(Assembler::zero, oop_ok_ps);
+      masm->movq(ecx, (intptr_t)0x100000000);
+      masm->cmpq(eax, ecx);
+      masm->jcc(Assembler::greaterEqual, oop_ok_ps);
+      masm->movq(Address((intptr_t)&diag_truncated_oop_value, relocInfo::external_word_type), eax);
+      masm->movq(ecx, esi);
+      masm->movq(Address((intptr_t)&diag_truncated_oop_pc, relocInfo::external_word_type), ecx);
+      masm->movq(ecx, (intptr_t)45);
+      masm->movq(Address((intptr_t)&diag_truncated_oop_check_id, relocInfo::external_word_type), ecx);
+      masm->int3();
+      masm->bind(oop_ok_ps);
+      STAMP_EAX_WRITER(45);
+    }
 #endif
     masm->test(eax, Mark_Tag_Bit);
     masm->jcc(Assembler::notZero, _failed);
     load_ebx();
-    if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(30); }		// discard result if not used
+    if (pop_tos) {
+      masm->popl(eax);
+      STAMP_EAX_WRITER(30);
+    } // discard result if not used
     jump_ebx();
     masm->bind(_failed);
     //_print 'predicted primitive failed - not yet implemented', 0, 0
@@ -3434,7 +3537,6 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   return ep;
 }
 
-
 char* InterpreterGenerator::primitive_send(Bytecodes::Code code) {
   return normal_send(code, false, false, true);
 }
@@ -3443,36 +3545,35 @@ char* InterpreterGenerator::interpreted_send(Bytecodes::Code code) {
   return normal_send(code, true, false);
 }
 
-
 char* InterpreterGenerator::compiled_send(Bytecodes::Code code) {
   return normal_send(code, false, true);
 }
 
-
 char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // Handle super sends conventionally - most probably infrequent anyway
-  if (Bytecodes::is_super_send(code)) return normal_send(code, true, true);
+  if (Bytecodes::is_super_send(code))
+    return normal_send(code, true, true);
 
   Label is_smi, probe_primary_cache, is_methodOop, is_nmethod, probe_secondary_cache;
   Bytecodes::ArgumentSpec arg_spec = Bytecodes::argument_spec(code);
 
   // inline cache layout
-  int     length        = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2*oopSize;
-  bool    pop_tos       = Bytecodes::pop_tos(code);
-  Address selector_addr = Address(esi, -2*oopSize);
-  Address klass_addr    = Address(esi, -1*oopSize);
+  int length = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2 * oopSize;
+  bool pop_tos = Bytecodes::pop_tos(code);
+  Address selector_addr = Address(esi, -2 * oopSize);
+  Address klass_addr = Address(esi, -1 * oopSize);
 
-  masm->bind(is_smi);				// smi case (assumed to be infrequent)
-  masm->movl(ecx, smiKlass_addr());		// load smi klass
+  masm->bind(is_smi); // smi case (assumed to be infrequent)
+  masm->movl(ecx, smiKlass_addr()); // load smi klass
   masm->jmp(probe_primary_cache);
 
   char* ep = entry_point();
 
   load_recv(arg_spec);
   advance_aligned(length);
-  masm->test(eax, Mem_Tag);			// check if smi
-  masm->jcc(Assembler::zero, is_smi);		// otherwise
-  masm->movl(ecx, Address(eax, memOopDesc::klass_byte_offset()));	// get recv class
+  masm->test(eax, Mem_Tag); // check if smi
+  masm->jcc(Assembler::zero, is_smi); // otherwise
+  masm->movl(ecx, Address(eax, memOopDesc::klass_byte_offset())); // get recv class
 
   // probe primary cache
   //
@@ -3480,33 +3581,41 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // ebx: 000000xx
   // ecx: receiver klass
   // esi: next instruction
-  masm->bind(probe_primary_cache);		// compute hash value
-  masm->movl(edx, selector_addr);		// get selector
+  masm->bind(probe_primary_cache); // compute hash value
+  masm->movl(edx, selector_addr); // get selector
   // compute hash value
   masm->movl(edi, ecx);
   masm->xorl(edi, edx);
   masm->andl(edi, (primary_cache_size - 1) << 4);
   // probe cache
-  masm->cmpl(ecx, Address(edi, lookupCache::primary_cache_address() + 0*oopSize));
+  masm->cmpl(ecx, Address(edi, lookupCache::primary_cache_address() + 0 * oopSize));
   masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->cmpl(edx, Address(edi, lookupCache::primary_cache_address() + 1*oopSize));
+  masm->cmpl(edx, Address(edi, lookupCache::primary_cache_address() + 1 * oopSize));
   masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->movl(ecx, Address(edi, lookupCache::primary_cache_address() + 2*oopSize));
-  masm->test(ecx, Mem_Tag);			// check if nmethod
-  masm->jcc(Assembler::zero, is_nmethod);	// nmethods (jump table entries) are 4-byte aligned
+  masm->movl(ecx, Address(edi, lookupCache::primary_cache_address() + 2 * oopSize));
+  masm->test(ecx, Mem_Tag); // check if nmethod
+  masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
 
   masm->bind(is_methodOop);
   call_method();
-  if (arg_spec != Bytecodes::args_only) masm->popl(ecx);// discard receiver if on stack
+  if (arg_spec != Bytecodes::args_only)
+    masm->popl(ecx); // discard receiver if on stack
   load_ebx();
-  if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(31); }		// discard result if not used
+  if (pop_tos) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(31);
+  } // discard result if not used
   jump_ebx();
 
   masm->bind(is_nmethod);
   call_native(ecx);
-  if (arg_spec != Bytecodes::args_only) masm->popl(ecx);// discard receiver if on stack
+  if (arg_spec != Bytecodes::args_only)
+    masm->popl(ecx); // discard receiver if on stack
   load_ebx();
-  if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(32); }		// discard result if not used
+  if (pop_tos) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(32);
+  } // discard result if not used
   jump_ebx();
 
   // probe secondary cache
@@ -3520,13 +3629,13 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   masm->bind(probe_secondary_cache);
   masm->andl(edi, (secondary_cache_size - 1) << 4);
   // probe cache
-  masm->cmpl(ecx, Address(edi, lookupCache::secondary_cache_address() + 0*oopSize));
+  masm->cmpl(ecx, Address(edi, lookupCache::secondary_cache_address() + 0 * oopSize));
   masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->cmpl(edx, Address(edi, lookupCache::secondary_cache_address() + 1*oopSize));
+  masm->cmpl(edx, Address(edi, lookupCache::secondary_cache_address() + 1 * oopSize));
   masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->movl(ecx, Address(edi, lookupCache::secondary_cache_address() + 2*oopSize));
-  masm->test(ecx, Mem_Tag);			// check if nmethod
-  masm->jcc(Assembler::zero, is_nmethod);	// nmethods (jump table entries) are 4-byte aligned
+  masm->movl(ecx, Address(edi, lookupCache::secondary_cache_address() + 2 * oopSize));
+  masm->test(ecx, Mem_Tag); // check if nmethod
+  masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
   masm->jmp(is_methodOop);
 
   return ep;
@@ -3552,26 +3661,26 @@ char* InterpreterGenerator::polymorphic_send(Bytecodes::Code code) {
   bool pop_tos = Bytecodes::pop_tos(code);
 
   // inline cache layout
-  int     length        = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2*oopSize;
-  Address selector_addr = Address(esi, -2*oopSize);
-  Address pic_addr      = Address(esi, -1*oopSize);
+  int length = (arg_spec == Bytecodes::recv_n_args ? 2 : 1) + 2 * oopSize;
+  Address selector_addr = Address(esi, -2 * oopSize);
+  Address pic_addr = Address(esi, -1 * oopSize);
 
   // pic layout
-  int length_offset = 2*oopSize - Mem_Tag;	// these constants should be mapped to the objectArrayOop definition
-  int data_offset   = 3*oopSize - Mem_Tag;	// these constants should be mapped to the objectArrayOop definition
+  int length_offset = 2 * oopSize - Mem_Tag; // these constants should be mapped to the objectArrayOop definition
+  int data_offset = 3 * oopSize - Mem_Tag; // these constants should be mapped to the objectArrayOop definition
 
   char* ep = entry_point();
   load_recv(arg_spec);
   advance_aligned(length);
-  masm->movl(ebx, pic_addr);			// get pic
-  masm->movl(ecx, Address(ebx, length_offset));// get pic length (smi)
-  masm->sarl(ecx, Tag_Size);			// get pic length (int) = number of slots
+  masm->movl(ebx, pic_addr); // get pic
+  masm->movl(ecx, Address(ebx, length_offset)); // get pic length (smi)
+  masm->sarl(ecx, Tag_Size); // get pic length (int) = number of slots
   // verifyPIC here
 
-  masm->movl(edx, smiKlass_addr());		// preload smi klass
-  masm->testl(eax, Mem_Tag);			// check if smi
-  masm->jcc(Assembler::zero, loop);		// otherwise
-  masm->movl(edx, Address(eax, memOopDesc::klass_byte_offset()));	// get receiver klass
+  masm->movl(edx, smiKlass_addr()); // preload smi klass
+  masm->testl(eax, Mem_Tag); // check if smi
+  masm->jcc(Assembler::zero, loop); // otherwise
+  masm->movl(edx, Address(eax, memOopDesc::klass_byte_offset())); // get receiver klass
 
   // search pic for appropriate entry
   masm->bind(loop);
@@ -3580,7 +3689,7 @@ char* InterpreterGenerator::polymorphic_send(Bytecodes::Code code) {
   // ecx: counter
   // edx: receiver class
   // esi: next instruction
-  masm->cmpl(edx, Address(ebx, ecx, Address::times_8, data_offset - 1*oopSize, relocInfo::none));
+  masm->cmpl(edx, Address(ebx, ecx, Address::times_8, data_offset - 1 * oopSize, relocInfo::none));
   masm->jcc(Assembler::equal, found);
   masm->decl(ecx);
   masm->jcc(Assembler::notZero, loop);
@@ -3594,29 +3703,36 @@ char* InterpreterGenerator::polymorphic_send(Bytecodes::Code code) {
   // ecx: counter (> 0)
   // edx: receiver class
   // esi: next instruction
-  masm->movl(ecx, Address(ebx, ecx, Address::times_8, data_offset - 2*oopSize, relocInfo::none));
+  masm->movl(ecx, Address(ebx, ecx, Address::times_8, data_offset - 2 * oopSize, relocInfo::none));
   masm->testl(ecx, Mem_Tag);
   masm->jcc(Assembler::zero, is_nmethod);
   restore_ebx();
 
   // methodOop found
   call_method();
-  if (arg_spec != Bytecodes::args_only) masm->popl(ecx);	// discard receiver if on stack
+  if (arg_spec != Bytecodes::args_only)
+    masm->popl(ecx); // discard receiver if on stack
   load_ebx();
-  if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(33); }			// discard result if not used
+  if (pop_tos) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(33);
+  } // discard result if not used
   jump_ebx();
 
   // nmethod found
   masm->bind(is_nmethod);
   call_native(ecx);
-  if (arg_spec != Bytecodes::args_only) masm->popl(ecx);	// discard receiver if on stack
+  if (arg_spec != Bytecodes::args_only)
+    masm->popl(ecx); // discard receiver if on stack
   load_ebx();
-  if (pop_tos) { masm->popl(eax); STAMP_EAX_WRITER(34); }			// discard result if not used
+  if (pop_tos) {
+    masm->popl(eax);
+    STAMP_EAX_WRITER(34);
+  } // discard result if not used
   jump_ebx();
 
   return ep;
 }
-
 
 //-----------------------------------------------------------------------------------------
 // Miscellaneous
@@ -3624,7 +3740,7 @@ char* InterpreterGenerator::polymorphic_send(Bytecodes::Code code) {
 char* InterpreterGenerator::special_primitive_send_hint() {
   char* ep = entry_point();
   assert(Bytecodes::format(Bytecodes::special_primitive_send_1_hint) == Bytecodes::BB, "unexpected format");
-  masm->addl(esi, 2);				// simply skip this instruction
+  masm->addl(esi, 2); // simply skip this instruction
   load_ebx();
   jump_ebx();
   return ep;
@@ -3635,10 +3751,10 @@ char* InterpreterGenerator::compare(bool equal) {
 
   Label _return_true;
 
- char* ep = entry_point();
+  char* ep = entry_point();
   next_ebx();
-  masm->popl(edx);			// get receiver
-  masm->cmpl(eax, edx);			// compare with argument
+  masm->popl(edx); // get receiver
+  masm->cmpl(eax, edx); // compare with argument
   masm->jcc(cond, _return_true);
 
   masm->movl(eax, false_addr());
@@ -3647,7 +3763,7 @@ char* InterpreterGenerator::compare(bool equal) {
 #endif
   jump_ebx();
 
- masm->bind(_return_true);
+  masm->bind(_return_true);
   masm->movl(eax, true_addr());
 #if DELTA_X86_64
   CHECK_EAX_OOP(59);
@@ -3659,7 +3775,7 @@ char* InterpreterGenerator::compare(bool equal) {
 
 char* InterpreterGenerator::halt() {
   char* ep = entry_point();
-  masm->incl(esi);				// advance to next instruction
+  masm->incl(esi); // advance to next instruction
   masm->jmp(_halted);
   return ep;
 }
@@ -3669,370 +3785,508 @@ char* InterpreterGenerator::halt() {
 
 char* InterpreterGenerator::generate_instruction(Bytecodes::Code code) {
   // constants for readability
-  const bool pop		= true;
-  const bool returns_float	= true;
-  const bool push		= false;
-  const bool store_pop		= true;
-  const int  n			= -1;
+  const bool pop = true;
+  const bool returns_float = true;
+  const bool push = false;
+  const bool store_pop = true;
+  const int n = -1;
 
   switch (code) {
     // temporaries
-    case Bytecodes::push_temp_0				: return push_temp(0);
-    case Bytecodes::push_temp_1				: return push_temp(1);
-    case Bytecodes::push_temp_2				: return push_temp(2);
-    case Bytecodes::push_temp_3				: return push_temp(3);
-    case Bytecodes::push_temp_4				: return push_temp(4);
-    case Bytecodes::push_temp_5				: return push_temp(5);
-    case Bytecodes::push_temp_n				: return push_temp_n();
+    case Bytecodes::push_temp_0:
+      return push_temp(0);
+    case Bytecodes::push_temp_1:
+      return push_temp(1);
+    case Bytecodes::push_temp_2:
+      return push_temp(2);
+    case Bytecodes::push_temp_3:
+      return push_temp(3);
+    case Bytecodes::push_temp_4:
+      return push_temp(4);
+    case Bytecodes::push_temp_5:
+      return push_temp(5);
+    case Bytecodes::push_temp_n:
+      return push_temp_n();
 
-    case Bytecodes::store_temp_0_pop			: return store_temp(0, pop);
-    case Bytecodes::store_temp_1_pop			: return store_temp(1, pop);
-    case Bytecodes::store_temp_2_pop			: return store_temp(2, pop);
-    case Bytecodes::store_temp_3_pop			: return store_temp(3, pop);
-    case Bytecodes::store_temp_4_pop			: return store_temp(4, pop);
-    case Bytecodes::store_temp_5_pop			: return store_temp(5, pop);
-    case Bytecodes::store_temp_n_pop			: return store_temp_n(pop);
-    case Bytecodes::store_temp_n			: return store_temp_n();
+    case Bytecodes::store_temp_0_pop:
+      return store_temp(0, pop);
+    case Bytecodes::store_temp_1_pop:
+      return store_temp(1, pop);
+    case Bytecodes::store_temp_2_pop:
+      return store_temp(2, pop);
+    case Bytecodes::store_temp_3_pop:
+      return store_temp(3, pop);
+    case Bytecodes::store_temp_4_pop:
+      return store_temp(4, pop);
+    case Bytecodes::store_temp_5_pop:
+      return store_temp(5, pop);
+    case Bytecodes::store_temp_n_pop:
+      return store_temp_n(pop);
+    case Bytecodes::store_temp_n:
+      return store_temp_n();
 
     // arguments
-    case Bytecodes::push_arg_1				: return push_arg(1);
-    case Bytecodes::push_arg_2				: return push_arg(2);
-    case Bytecodes::push_arg_3				: return push_arg(3);
-    case Bytecodes::push_arg_n				: return push_arg_n();
+    case Bytecodes::push_arg_1:
+      return push_arg(1);
+    case Bytecodes::push_arg_2:
+      return push_arg(2);
+    case Bytecodes::push_arg_3:
+      return push_arg(3);
+    case Bytecodes::push_arg_n:
+      return push_arg_n();
 
     // space allocation
-    case Bytecodes::allocate_temp_1			: return allocate_temps(1);
-    case Bytecodes::allocate_temp_2			: return allocate_temps(2);
-    case Bytecodes::allocate_temp_3			: return allocate_temps(3);
-    case Bytecodes::allocate_temp_n			: return allocate_temps_n();
+    case Bytecodes::allocate_temp_1:
+      return allocate_temps(1);
+    case Bytecodes::allocate_temp_2:
+      return allocate_temps(2);
+    case Bytecodes::allocate_temp_3:
+      return allocate_temps(3);
+    case Bytecodes::allocate_temp_n:
+      return allocate_temps_n();
 
     // literals / expressions
-    case Bytecodes::push_neg_n				: return push_smi(true);
-    case Bytecodes::push_succ_n				: return push_smi(false);
-    case Bytecodes::push_literal			: return push_literal();
-    case Bytecodes::push_tos				: return push_tos();
-    case Bytecodes::push_self				: return push_self();
-    case Bytecodes::push_nil				: return push_const(nil_addr());
-    case Bytecodes::push_true				: return push_const(true_addr());
-    case Bytecodes::push_false				: return push_const(false_addr());
-    case Bytecodes::only_pop				: return only_pop();
+    case Bytecodes::push_neg_n:
+      return push_smi(true);
+    case Bytecodes::push_succ_n:
+      return push_smi(false);
+    case Bytecodes::push_literal:
+      return push_literal();
+    case Bytecodes::push_tos:
+      return push_tos();
+    case Bytecodes::push_self:
+      return push_self();
+    case Bytecodes::push_nil:
+      return push_const(nil_addr());
+    case Bytecodes::push_true:
+      return push_const(true_addr());
+    case Bytecodes::push_false:
+      return push_const(false_addr());
+    case Bytecodes::only_pop:
+      return only_pop();
 
     // instance variables
-    case Bytecodes::return_instVar			: return return_instVar();
-    case Bytecodes::push_instVar			: return push_instVar();
-    case Bytecodes::store_instVar_pop			: return store_instVar(pop);
-    case Bytecodes::store_instVar			: return store_instVar();
+    case Bytecodes::return_instVar:
+      return return_instVar();
+    case Bytecodes::push_instVar:
+      return push_instVar();
+    case Bytecodes::store_instVar_pop:
+      return store_instVar(pop);
+    case Bytecodes::store_instVar:
+      return store_instVar();
 
     // context temporaries
-    case Bytecodes::push_temp_0_context_0		: return with_context_temp(push, 0, 0);
-    case Bytecodes::push_temp_1_context_0		: return with_context_temp(push, 1, 0);
-    case Bytecodes::push_temp_2_context_0		: return with_context_temp(push, 2, 0);
-    case Bytecodes::push_temp_n_context_0		: return with_context_temp(push, n, 0);
+    case Bytecodes::push_temp_0_context_0:
+      return with_context_temp(push, 0, 0);
+    case Bytecodes::push_temp_1_context_0:
+      return with_context_temp(push, 1, 0);
+    case Bytecodes::push_temp_2_context_0:
+      return with_context_temp(push, 2, 0);
+    case Bytecodes::push_temp_n_context_0:
+      return with_context_temp(push, n, 0);
 
-    case Bytecodes::push_temp_0_context_1		: return with_context_temp(push, 0, 1);
-    case Bytecodes::push_temp_1_context_1		: return with_context_temp(push, 1, 1);
-    case Bytecodes::push_temp_2_context_1		: return with_context_temp(push, 2, 1);
-    case Bytecodes::push_temp_n_context_1		: return with_context_temp(push, n, 1);
+    case Bytecodes::push_temp_0_context_1:
+      return with_context_temp(push, 0, 1);
+    case Bytecodes::push_temp_1_context_1:
+      return with_context_temp(push, 1, 1);
+    case Bytecodes::push_temp_2_context_1:
+      return with_context_temp(push, 2, 1);
+    case Bytecodes::push_temp_n_context_1:
+      return with_context_temp(push, n, 1);
 
-    case Bytecodes::push_temp_0_context_n		: return with_context_temp(push, 0, n);
-    case Bytecodes::push_temp_1_context_n		: return with_context_temp(push, 1, n);
-    case Bytecodes::push_temp_2_context_n		: return with_context_temp(push, 2, n);
-    case Bytecodes::push_temp_n_context_n		: return with_context_temp(push, n, n);
+    case Bytecodes::push_temp_0_context_n:
+      return with_context_temp(push, 0, n);
+    case Bytecodes::push_temp_1_context_n:
+      return with_context_temp(push, 1, n);
+    case Bytecodes::push_temp_2_context_n:
+      return with_context_temp(push, 2, n);
+    case Bytecodes::push_temp_n_context_n:
+      return with_context_temp(push, n, n);
 
-    case Bytecodes::store_temp_0_context_0_pop		: return with_context_temp(store_pop, 0, 0);
-    case Bytecodes::store_temp_1_context_0_pop		: return with_context_temp(store_pop, 1, 0);
-    case Bytecodes::store_temp_2_context_0_pop		: return with_context_temp(store_pop, 2, 0);
-    case Bytecodes::store_temp_n_context_0_pop		: return with_context_temp(store_pop, n, 0);
+    case Bytecodes::store_temp_0_context_0_pop:
+      return with_context_temp(store_pop, 0, 0);
+    case Bytecodes::store_temp_1_context_0_pop:
+      return with_context_temp(store_pop, 1, 0);
+    case Bytecodes::store_temp_2_context_0_pop:
+      return with_context_temp(store_pop, 2, 0);
+    case Bytecodes::store_temp_n_context_0_pop:
+      return with_context_temp(store_pop, n, 0);
 
-    case Bytecodes::store_temp_0_context_1_pop		: return with_context_temp(store_pop, 0, 1);
-    case Bytecodes::store_temp_1_context_1_pop		: return with_context_temp(store_pop, 1, 1);
-    case Bytecodes::store_temp_2_context_1_pop		: return with_context_temp(store_pop, 2, 1);
-    case Bytecodes::store_temp_n_context_1_pop		: return with_context_temp(store_pop, n, 1);
+    case Bytecodes::store_temp_0_context_1_pop:
+      return with_context_temp(store_pop, 0, 1);
+    case Bytecodes::store_temp_1_context_1_pop:
+      return with_context_temp(store_pop, 1, 1);
+    case Bytecodes::store_temp_2_context_1_pop:
+      return with_context_temp(store_pop, 2, 1);
+    case Bytecodes::store_temp_n_context_1_pop:
+      return with_context_temp(store_pop, n, 1);
 
-    case Bytecodes::store_temp_0_context_n_pop		: return with_context_temp(store_pop, 0, n);
-    case Bytecodes::store_temp_1_context_n_pop		: return with_context_temp(store_pop, 1, n);
-    case Bytecodes::store_temp_2_context_n_pop		: return with_context_temp(store_pop, 2, n);
-    case Bytecodes::store_temp_n_context_n_pop		: return with_context_temp(store_pop, n, n);
+    case Bytecodes::store_temp_0_context_n_pop:
+      return with_context_temp(store_pop, 0, n);
+    case Bytecodes::store_temp_1_context_n_pop:
+      return with_context_temp(store_pop, 1, n);
+    case Bytecodes::store_temp_2_context_n_pop:
+      return with_context_temp(store_pop, 2, n);
+    case Bytecodes::store_temp_n_context_n_pop:
+      return with_context_temp(store_pop, n, n);
 
-    case Bytecodes::copy_1_into_context			: return copy_params_into_context(false, 1);
-    case Bytecodes::copy_2_into_context			: return copy_params_into_context(false, 2);
-    case Bytecodes::copy_n_into_context			: return copy_params_into_context(false, n);
-    case Bytecodes::copy_self_into_context		: return copy_params_into_context(true, 0);
-    case Bytecodes::copy_self_1_into_context		: return copy_params_into_context(true, 1);
-    case Bytecodes::copy_self_2_into_context		: return copy_params_into_context(true, 2);
-    case Bytecodes::copy_self_n_into_context		: return copy_params_into_context(true, n);
+    case Bytecodes::copy_1_into_context:
+      return copy_params_into_context(false, 1);
+    case Bytecodes::copy_2_into_context:
+      return copy_params_into_context(false, 2);
+    case Bytecodes::copy_n_into_context:
+      return copy_params_into_context(false, n);
+    case Bytecodes::copy_self_into_context:
+      return copy_params_into_context(true, 0);
+    case Bytecodes::copy_self_1_into_context:
+      return copy_params_into_context(true, 1);
+    case Bytecodes::copy_self_2_into_context:
+      return copy_params_into_context(true, 2);
+    case Bytecodes::copy_self_n_into_context:
+      return copy_params_into_context(true, n);
 
     // self/context initialization
-    case Bytecodes::set_self_via_context		: return set_self_via_context();
+    case Bytecodes::set_self_via_context:
+      return set_self_via_context();
 
     // block closure allocation
-    case Bytecodes::push_new_closure_context_0		: return push_closure(0, true);
-    case Bytecodes::push_new_closure_context_1		: return push_closure(1, true);
-    case Bytecodes::push_new_closure_context_2		: return push_closure(2, true);
-    case Bytecodes::push_new_closure_context_n		: return push_closure(n, true);
+    case Bytecodes::push_new_closure_context_0:
+      return push_closure(0, true);
+    case Bytecodes::push_new_closure_context_1:
+      return push_closure(1, true);
+    case Bytecodes::push_new_closure_context_2:
+      return push_closure(2, true);
+    case Bytecodes::push_new_closure_context_n:
+      return push_closure(n, true);
 
-    case Bytecodes::push_new_closure_tos_0		: return push_closure(0, false);
-    case Bytecodes::push_new_closure_tos_1		: return push_closure(1, false);
-    case Bytecodes::push_new_closure_tos_2		: return push_closure(2, false);
-    case Bytecodes::push_new_closure_tos_n		: return push_closure(n, false);
+    case Bytecodes::push_new_closure_tos_0:
+      return push_closure(0, false);
+    case Bytecodes::push_new_closure_tos_1:
+      return push_closure(1, false);
+    case Bytecodes::push_new_closure_tos_2:
+      return push_closure(2, false);
+    case Bytecodes::push_new_closure_tos_n:
+      return push_closure(n, false);
 
     // context allocation
-    case Bytecodes::install_new_context_method_0	: return install_context(0, true);
-    case Bytecodes::install_new_context_method_1	: return install_context(1, true);
-    case Bytecodes::install_new_context_method_2	: return install_context(2, true);
-    case Bytecodes::install_new_context_method_n	: return install_context(n, true);
+    case Bytecodes::install_new_context_method_0:
+      return install_context(0, true);
+    case Bytecodes::install_new_context_method_1:
+      return install_context(1, true);
+    case Bytecodes::install_new_context_method_2:
+      return install_context(2, true);
+    case Bytecodes::install_new_context_method_n:
+      return install_context(n, true);
 
-    case Bytecodes::install_new_context_block_1		: return install_context(1, false);
-    case Bytecodes::install_new_context_block_2		: return install_context(2, false);
-    case Bytecodes::install_new_context_block_n		: return install_context(n, false);
+    case Bytecodes::install_new_context_block_1:
+      return install_context(1, false);
+    case Bytecodes::install_new_context_block_2:
+      return install_context(2, false);
+    case Bytecodes::install_new_context_block_n:
+      return install_context(n, false);
 
     // primitive calls
-    case Bytecodes::prim_call				: // fall through
-    case Bytecodes::prim_call_self			: return call_primitive();
-    case Bytecodes::prim_call_failure			: // fall through
-    case Bytecodes::prim_call_self_failure		: return call_primitive_can_fail();
+    case Bytecodes::prim_call: // fall through
+    case Bytecodes::prim_call_self:
+      return call_primitive();
+    case Bytecodes::prim_call_failure: // fall through
+    case Bytecodes::prim_call_self_failure:
+      return call_primitive_can_fail();
 
-    case Bytecodes::prim_call_lookup			: // fall through
-    case Bytecodes::prim_call_self_lookup		: // fall through
-    case Bytecodes::prim_call_failure_lookup		: // fall through
-    case Bytecodes::prim_call_self_failure_lookup	: return lookup_primitive();
+    case Bytecodes::prim_call_lookup: // fall through
+    case Bytecodes::prim_call_self_lookup: // fall through
+    case Bytecodes::prim_call_failure_lookup: // fall through
+    case Bytecodes::prim_call_self_failure_lookup:
+      return lookup_primitive();
 
-    case Bytecodes::dll_call_sync			: return call_DLL(false);
-    case Bytecodes::dll_call_async			: return call_DLL(true);
+    case Bytecodes::dll_call_sync:
+      return call_DLL(false);
+    case Bytecodes::dll_call_async:
+      return call_DLL(true);
 
-    case Bytecodes::predict_prim_call			: // fall through
-    case Bytecodes::predict_prim_call_lookup		: // fall through
-    case Bytecodes::predict_prim_call_failure		: // fall through
-    case Bytecodes::predict_prim_call_failure_lookup	: return predict_prim(true);
+    case Bytecodes::predict_prim_call: // fall through
+    case Bytecodes::predict_prim_call_lookup: // fall through
+    case Bytecodes::predict_prim_call_failure: // fall through
+    case Bytecodes::predict_prim_call_failure_lookup:
+      return predict_prim(true);
 
     // control flow
-    case Bytecodes::ifTrue_byte			  	: // fall through
-    case Bytecodes::ifFalse_byte			: // fall through
-    case Bytecodes::and_byte				: // fall through
-    case Bytecodes::or_byte				: // fall through
-    case Bytecodes::ifTrue_word				: // fall through
-    case Bytecodes::ifFalse_word			: // fall through
-    case Bytecodes::and_word				: // fall through
-    case Bytecodes::or_word				: return control_cond(code);
+    case Bytecodes::ifTrue_byte: // fall through
+    case Bytecodes::ifFalse_byte: // fall through
+    case Bytecodes::and_byte: // fall through
+    case Bytecodes::or_byte: // fall through
+    case Bytecodes::ifTrue_word: // fall through
+    case Bytecodes::ifFalse_word: // fall through
+    case Bytecodes::and_word: // fall through
+    case Bytecodes::or_word:
+      return control_cond(code);
 
-    case Bytecodes::whileTrue_byte			: // fall through
-    case Bytecodes::whileFalse_byte			: // fall through
-    case Bytecodes::whileTrue_word			: // fall through
-    case Bytecodes::whileFalse_word			: return control_while(code);
+    case Bytecodes::whileTrue_byte: // fall through
+    case Bytecodes::whileFalse_byte: // fall through
+    case Bytecodes::whileTrue_word: // fall through
+    case Bytecodes::whileFalse_word:
+      return control_while(code);
 
-    case Bytecodes::jump_else_byte			: // fall through
-    case Bytecodes::jump_loop_byte			: // fall through
-    case Bytecodes::jump_else_word			: // fall through
-    case Bytecodes::jump_loop_word			: return control_jump(code);
+    case Bytecodes::jump_else_byte: // fall through
+    case Bytecodes::jump_loop_byte: // fall through
+    case Bytecodes::jump_else_word: // fall through
+    case Bytecodes::jump_loop_word:
+      return control_jump(code);
 
     // floating-point operations
-    case Bytecodes::float_allocate			: return float_allocate();
-    case Bytecodes::float_floatify_pop			: return float_floatify();
-    case Bytecodes::float_move				: return float_move();
-    case Bytecodes::float_set				: return float_set();
-    case Bytecodes::float_nullary_op			: return float_op(0, returns_float);
-    case Bytecodes::float_unary_op			: return float_op(1, returns_float);
-    case Bytecodes::float_binary_op			: return float_op(2, returns_float);
-    case Bytecodes::float_unary_op_to_oop		: return float_op(1);
-    case Bytecodes::float_binary_op_to_oop		: return float_op(2);
+    case Bytecodes::float_allocate:
+      return float_allocate();
+    case Bytecodes::float_floatify_pop:
+      return float_floatify();
+    case Bytecodes::float_move:
+      return float_move();
+    case Bytecodes::float_set:
+      return float_set();
+    case Bytecodes::float_nullary_op:
+      return float_op(0, returns_float);
+    case Bytecodes::float_unary_op:
+      return float_op(1, returns_float);
+    case Bytecodes::float_binary_op:
+      return float_op(2, returns_float);
+    case Bytecodes::float_unary_op_to_oop:
+      return float_op(1);
+    case Bytecodes::float_binary_op_to_oop:
+      return float_op(2);
 
     // accessor sends
-    case Bytecodes::access_send_0			: return access_send(false);
-    case Bytecodes::access_send_self			: return access_send(true);
+    case Bytecodes::access_send_0:
+      return access_send(false);
+    case Bytecodes::access_send_self:
+      return access_send(true);
 
     // primitive sends
-    case Bytecodes::primitive_send_0			: // fall through
-    case Bytecodes::primitive_send_1			: // fall through
-    case Bytecodes::primitive_send_2			: // fall through
-    case Bytecodes::primitive_send_n			: // fall through
+    case Bytecodes::primitive_send_0: // fall through
+    case Bytecodes::primitive_send_1: // fall through
+    case Bytecodes::primitive_send_2: // fall through
+    case Bytecodes::primitive_send_n: // fall through
 
-    case Bytecodes::primitive_send_0_pop		: // fall through
-    case Bytecodes::primitive_send_1_pop		: // fall through
-    case Bytecodes::primitive_send_2_pop		: // fall through
-    case Bytecodes::primitive_send_n_pop		: // fall through
+    case Bytecodes::primitive_send_0_pop: // fall through
+    case Bytecodes::primitive_send_1_pop: // fall through
+    case Bytecodes::primitive_send_2_pop: // fall through
+    case Bytecodes::primitive_send_n_pop: // fall through
 
-    case Bytecodes::primitive_send_self			: // fall through
-    case Bytecodes::primitive_send_self_pop		: // fall through
+    case Bytecodes::primitive_send_self: // fall through
+    case Bytecodes::primitive_send_self_pop: // fall through
 
-    case Bytecodes::primitive_send_super		: // fall through
-    case Bytecodes::primitive_send_super_pop		: return primitive_send(code);
+    case Bytecodes::primitive_send_super: // fall through
+    case Bytecodes::primitive_send_super_pop:
+      return primitive_send(code);
 
     // interpreted sends
-    case Bytecodes::interpreted_send_0			: // fall through
-    case Bytecodes::interpreted_send_1			: // fall through
-    case Bytecodes::interpreted_send_2			: // fall through
-    case Bytecodes::interpreted_send_n			: // fall through
+    case Bytecodes::interpreted_send_0: // fall through
+    case Bytecodes::interpreted_send_1: // fall through
+    case Bytecodes::interpreted_send_2: // fall through
+    case Bytecodes::interpreted_send_n: // fall through
 
-    case Bytecodes::interpreted_send_0_pop		: // fall through
-    case Bytecodes::interpreted_send_1_pop		: // fall through
-    case Bytecodes::interpreted_send_2_pop		: // fall through
-    case Bytecodes::interpreted_send_n_pop		: // fall through
+    case Bytecodes::interpreted_send_0_pop: // fall through
+    case Bytecodes::interpreted_send_1_pop: // fall through
+    case Bytecodes::interpreted_send_2_pop: // fall through
+    case Bytecodes::interpreted_send_n_pop: // fall through
 
-    case Bytecodes::interpreted_send_self		: // fall through
-    case Bytecodes::interpreted_send_self_pop		: // fall through
+    case Bytecodes::interpreted_send_self: // fall through
+    case Bytecodes::interpreted_send_self_pop: // fall through
 
-    case Bytecodes::interpreted_send_super		: // fall through
-    case Bytecodes::interpreted_send_super_pop		: return interpreted_send(code);
+    case Bytecodes::interpreted_send_super: // fall through
+    case Bytecodes::interpreted_send_super_pop:
+      return interpreted_send(code);
 
     // compiled sends
-    case Bytecodes::compiled_send_0			: // fall through
-    case Bytecodes::compiled_send_1			: // fall through
-    case Bytecodes::compiled_send_2			: // fall through
-    case Bytecodes::compiled_send_n			: // fall through
+    case Bytecodes::compiled_send_0: // fall through
+    case Bytecodes::compiled_send_1: // fall through
+    case Bytecodes::compiled_send_2: // fall through
+    case Bytecodes::compiled_send_n: // fall through
 
-    case Bytecodes::compiled_send_0_pop			: // fall through
-    case Bytecodes::compiled_send_1_pop			: // fall through
-    case Bytecodes::compiled_send_2_pop			: // fall through
-    case Bytecodes::compiled_send_n_pop			: // fall through
+    case Bytecodes::compiled_send_0_pop: // fall through
+    case Bytecodes::compiled_send_1_pop: // fall through
+    case Bytecodes::compiled_send_2_pop: // fall through
+    case Bytecodes::compiled_send_n_pop: // fall through
 
-    case Bytecodes::compiled_send_self			: // fall through
-    case Bytecodes::compiled_send_self_pop		: // fall through
+    case Bytecodes::compiled_send_self: // fall through
+    case Bytecodes::compiled_send_self_pop: // fall through
 
-    case Bytecodes::compiled_send_super			: // fall through
-    case Bytecodes::compiled_send_super_pop		: return compiled_send(code);
+    case Bytecodes::compiled_send_super: // fall through
+    case Bytecodes::compiled_send_super_pop:
+      return compiled_send(code);
 
     // polymorphic sends
-    case Bytecodes::polymorphic_send_0			: // fall through
-    case Bytecodes::polymorphic_send_1			: // fall through
-    case Bytecodes::polymorphic_send_2			: // fall through
-    case Bytecodes::polymorphic_send_n			: // fall through
+    case Bytecodes::polymorphic_send_0: // fall through
+    case Bytecodes::polymorphic_send_1: // fall through
+    case Bytecodes::polymorphic_send_2: // fall through
+    case Bytecodes::polymorphic_send_n: // fall through
 
-    case Bytecodes::polymorphic_send_0_pop		: // fall through
-    case Bytecodes::polymorphic_send_1_pop		: // fall through
-    case Bytecodes::polymorphic_send_2_pop		: // fall through
-    case Bytecodes::polymorphic_send_n_pop		: // fall through
+    case Bytecodes::polymorphic_send_0_pop: // fall through
+    case Bytecodes::polymorphic_send_1_pop: // fall through
+    case Bytecodes::polymorphic_send_2_pop: // fall through
+    case Bytecodes::polymorphic_send_n_pop: // fall through
 
-    case Bytecodes::polymorphic_send_self		: // fall through
-    case Bytecodes::polymorphic_send_self_pop		: // fall through
+    case Bytecodes::polymorphic_send_self: // fall through
+    case Bytecodes::polymorphic_send_self_pop: // fall through
 
-    case Bytecodes::polymorphic_send_super		: // fall through
-    case Bytecodes::polymorphic_send_super_pop		: return polymorphic_send(code);
+    case Bytecodes::polymorphic_send_super: // fall through
+    case Bytecodes::polymorphic_send_super_pop:
+      return polymorphic_send(code);
 
     // megamorphic sends
-    case Bytecodes::megamorphic_send_0			: // fall through
-    case Bytecodes::megamorphic_send_1			: // fall through
-    case Bytecodes::megamorphic_send_2			: // fall through
-    case Bytecodes::megamorphic_send_n			: // fall through
+    case Bytecodes::megamorphic_send_0: // fall through
+    case Bytecodes::megamorphic_send_1: // fall through
+    case Bytecodes::megamorphic_send_2: // fall through
+    case Bytecodes::megamorphic_send_n: // fall through
 
-    case Bytecodes::megamorphic_send_0_pop		: // fall through
-    case Bytecodes::megamorphic_send_1_pop		: // fall through
-    case Bytecodes::megamorphic_send_2_pop		: // fall through
-    case Bytecodes::megamorphic_send_n_pop		: // fall through
+    case Bytecodes::megamorphic_send_0_pop: // fall through
+    case Bytecodes::megamorphic_send_1_pop: // fall through
+    case Bytecodes::megamorphic_send_2_pop: // fall through
+    case Bytecodes::megamorphic_send_n_pop: // fall through
 
-    case Bytecodes::megamorphic_send_self		: // fall through
-    case Bytecodes::megamorphic_send_self_pop		: // fall through
+    case Bytecodes::megamorphic_send_self: // fall through
+    case Bytecodes::megamorphic_send_self_pop: // fall through
 
-    case Bytecodes::megamorphic_send_super		: // fall through
-    case Bytecodes::megamorphic_send_super_pop		: return megamorphic_send(code);
+    case Bytecodes::megamorphic_send_super: // fall through
+    case Bytecodes::megamorphic_send_super_pop:
+      return megamorphic_send(code);
 
     // predicted smi sends
-    case Bytecodes::smi_add				: return smi_add();
-    case Bytecodes::smi_sub				: return smi_sub();
-    case Bytecodes::smi_mult				: return smi_mul();
+    case Bytecodes::smi_add:
+      return smi_add();
+    case Bytecodes::smi_sub:
+      return smi_sub();
+    case Bytecodes::smi_mult:
+      return smi_mul();
 
-    case Bytecodes::smi_equal				: // fall through
-    case Bytecodes::smi_not_equal			: // fall through
-    case Bytecodes::smi_less				: // fall through
-    case Bytecodes::smi_less_equal			: // fall through
-    case Bytecodes::smi_greater				: // fall through
-    case Bytecodes::smi_greater_equal			: return smi_compare_op(code);
+    case Bytecodes::smi_equal: // fall through
+    case Bytecodes::smi_not_equal: // fall through
+    case Bytecodes::smi_less: // fall through
+    case Bytecodes::smi_less_equal: // fall through
+    case Bytecodes::smi_greater: // fall through
+    case Bytecodes::smi_greater_equal:
+      return smi_compare_op(code);
 
-    case Bytecodes::smi_and				: // fall through
-    case Bytecodes::smi_or				: // fall through
-    case Bytecodes::smi_xor				: return smi_logical_op(code);
-    case Bytecodes::smi_shift				: return smi_shift();
+    case Bytecodes::smi_and: // fall through
+    case Bytecodes::smi_or: // fall through
+    case Bytecodes::smi_xor:
+      return smi_logical_op(code);
+    case Bytecodes::smi_shift:
+      return smi_shift();
 
     // local returns
-    case Bytecodes::return_tos_pop_0			: return local_return(false, 0);
-    case Bytecodes::return_tos_pop_1			: return local_return(false, 1);
-    case Bytecodes::return_tos_pop_2			: return local_return(false, 2);
-    case Bytecodes::return_tos_pop_n			: return local_return(false, n);
+    case Bytecodes::return_tos_pop_0:
+      return local_return(false, 0);
+    case Bytecodes::return_tos_pop_1:
+      return local_return(false, 1);
+    case Bytecodes::return_tos_pop_2:
+      return local_return(false, 2);
+    case Bytecodes::return_tos_pop_n:
+      return local_return(false, n);
 
-    case Bytecodes::return_self_pop_0			: return local_return(true, 0);
-    case Bytecodes::return_self_pop_1			: return local_return(true, 1);
-    case Bytecodes::return_self_pop_2			: return local_return(true, 2);
-    case Bytecodes::return_self_pop_n			: return local_return(true, n);
+    case Bytecodes::return_self_pop_0:
+      return local_return(true, 0);
+    case Bytecodes::return_self_pop_1:
+      return local_return(true, 1);
+    case Bytecodes::return_self_pop_2:
+      return local_return(true, 2);
+    case Bytecodes::return_self_pop_n:
+      return local_return(true, n);
 
-    case Bytecodes::return_tos_zap_pop_n		: return local_return(false, n, true);
-    case Bytecodes::return_self_zap_pop_n		: return local_return(true, n, true);
+    case Bytecodes::return_tos_zap_pop_n:
+      return local_return(false, n, true);
+    case Bytecodes::return_self_zap_pop_n:
+      return local_return(true, n, true);
 
     // non-local returns
-    case Bytecodes::non_local_return_tos_pop_n		: return nonlocal_return_tos();
-    case Bytecodes::non_local_return_self_pop_n		: return nonlocal_return_self();
+    case Bytecodes::non_local_return_tos_pop_n:
+      return nonlocal_return_tos();
+    case Bytecodes::non_local_return_self_pop_n:
+      return nonlocal_return_self();
 
     // globals
-    case Bytecodes::push_global				: return push_global();
-    case Bytecodes::store_global_pop			: return store_global(pop);
-    case Bytecodes::store_global			: return store_global();
+    case Bytecodes::push_global:
+      return push_global();
+    case Bytecodes::store_global_pop:
+      return store_global(pop);
+    case Bytecodes::store_global:
+      return store_global();
 
-    case Bytecodes::push_classVar			: return push_global();		// same as for globals
-    case Bytecodes::store_classVar_pop			: return store_global(pop);	// same as for globals
-    case Bytecodes::store_classVar			: return store_global();	// same as for globals
+    case Bytecodes::push_classVar:
+      return push_global(); // same as for globals
+    case Bytecodes::store_classVar_pop:
+      return store_global(pop); // same as for globals
+    case Bytecodes::store_classVar:
+      return store_global(); // same as for globals
 
     // miscellaneous
-    case Bytecodes::special_primitive_send_1_hint	: return special_primitive_send_hint();
+    case Bytecodes::special_primitive_send_1_hint:
+      return special_primitive_send_hint();
 
-    case Bytecodes::double_equal			: return compare(true);
-    case Bytecodes::double_tilde			: return compare(false);
+    case Bytecodes::double_equal:
+      return compare(true);
+    case Bytecodes::double_tilde:
+      return compare(false);
 
-    case Bytecodes::halt				: return halt();
+    case Bytecodes::halt:
+      return halt();
 
     // not implemented yet
-    case Bytecodes::smi_div				: // fall through
-    case Bytecodes::smi_mod				: // fall through
-    case Bytecodes::smi_create_point			: // fall through
+    case Bytecodes::smi_div: // fall through
+    case Bytecodes::smi_mod: // fall through
+    case Bytecodes::smi_create_point: // fall through
 
-    case Bytecodes::objArray_at				: // fall through
-    case Bytecodes::objArray_at_put			: // fall through
+    case Bytecodes::objArray_at: // fall through
+    case Bytecodes::objArray_at_put: // fall through
 
-    case Bytecodes::return_instVar_name			: // fall through
-    case Bytecodes::push_instVar_name			: // fall through
-    case Bytecodes::store_instVar_pop_name		: // fall through
-    case Bytecodes::store_instVar_name			: // fall through
+    case Bytecodes::return_instVar_name: // fall through
+    case Bytecodes::push_instVar_name: // fall through
+    case Bytecodes::store_instVar_pop_name: // fall through
+    case Bytecodes::store_instVar_name: // fall through
 
-    case Bytecodes::push_classVar_name			: // fall through
-    case Bytecodes::store_classVar_pop_name		: // fall through
-    case Bytecodes::store_classVar_name			: // fall through
+    case Bytecodes::push_classVar_name: // fall through
+    case Bytecodes::store_classVar_pop_name: // fall through
+    case Bytecodes::store_classVar_name: // fall through
 
     // unimplemented
-    case Bytecodes::unimplemented_06			: // fall through
+    case Bytecodes::unimplemented_06: // fall through
 
-    case Bytecodes::unimplemented_20			: // fall through
-    case Bytecodes::unimplemented_21			: // fall through
-    case Bytecodes::unimplemented_22			: // fall through
-    case Bytecodes::unimplemented_23			: // fall through
-    case Bytecodes::unimplemented_24			: // fall through
-    case Bytecodes::unimplemented_25			: // fall through
-    case Bytecodes::unimplemented_26			: // fall through
-    case Bytecodes::unimplemented_27			: // fall through
+    case Bytecodes::unimplemented_20: // fall through
+    case Bytecodes::unimplemented_21: // fall through
+    case Bytecodes::unimplemented_22: // fall through
+    case Bytecodes::unimplemented_23: // fall through
+    case Bytecodes::unimplemented_24: // fall through
+    case Bytecodes::unimplemented_25: // fall through
+    case Bytecodes::unimplemented_26: // fall through
+    case Bytecodes::unimplemented_27: // fall through
 
-    case Bytecodes::unimplemented_39			: // fall through
-    case Bytecodes::unimplemented_3a			: // fall through
-    case Bytecodes::unimplemented_3b			: // fall through
-    case Bytecodes::unimplemented_3c			: // fall through
+    case Bytecodes::unimplemented_39: // fall through
+    case Bytecodes::unimplemented_3a: // fall through
+    case Bytecodes::unimplemented_3b: // fall through
+    case Bytecodes::unimplemented_3c: // fall through
 
-    case Bytecodes::unimplemented_b7			: // fall through
-    case Bytecodes::unimplemented_bc			: // fall through
+    case Bytecodes::unimplemented_b7: // fall through
+    case Bytecodes::unimplemented_bc: // fall through
 
-    case Bytecodes::unimplemented_c7			: // fall through
-    case Bytecodes::unimplemented_cc			: // fall through
+    case Bytecodes::unimplemented_c7: // fall through
+    case Bytecodes::unimplemented_cc: // fall through
 
-    case Bytecodes::unimplemented_dc			: // fall through
-    case Bytecodes::unimplemented_de			: // fall through
-    case Bytecodes::unimplemented_df			: // fall through
+    case Bytecodes::unimplemented_dc: // fall through
+    case Bytecodes::unimplemented_de: // fall through
+    case Bytecodes::unimplemented_df: // fall through
 
-    case Bytecodes::unimplemented_fa			: // fall through
-    case Bytecodes::unimplemented_fb			: // fall through
-    case Bytecodes::unimplemented_fc			: // fall through
-    case Bytecodes::unimplemented_fd			: // fall through
-    case Bytecodes::unimplemented_fe			: return NULL;
+    case Bytecodes::unimplemented_fa: // fall through
+    case Bytecodes::unimplemented_fb: // fall through
+    case Bytecodes::unimplemented_fc: // fall through
+    case Bytecodes::unimplemented_fd: // fall through
+    case Bytecodes::unimplemented_fe:
+      return NULL;
 
 #ifdef TEST_GENERATION
-    default						: ShouldNotReachHere();
+    default:
+      ShouldNotReachHere();
 #else
-    default						: return NULL;
+    default:
+      return NULL;
 #endif // TEST_GENERATION
-
   }
   ShouldNotReachHere();
 }
@@ -4044,7 +4298,6 @@ void InterpreterGenerator::info(char* name) {
     mystd->cr();
   }
 }
-
 
 void InterpreterGenerator::generate_all() {
   Interpreter::_code_begin_addr = masm->pc();
@@ -4059,7 +4312,7 @@ void InterpreterGenerator::generate_all() {
   // oopify is entered (via the function table) with one operand on the float
   // stack; set the generation-time depth accordingly (no-op on x86).
   masm->set_float_depth(1);
-  Floats::_function_table[Floats::oopify] = float_oopify();	// patch - no code generated in Floats for oopify
+  Floats::_function_table[Floats::oopify] = float_oopify(); // patch - no code generated in Floats for oopify
   masm->set_float_depth(0);
   info("Floats::oopify patch");
 
@@ -4089,7 +4342,6 @@ void InterpreterGenerator::generate_all() {
     generate_primitiveValue(n);
   info("primitiveValues");
 
-
   // generate individual instructions
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
     char* start_point = masm->pc();
@@ -4098,13 +4350,13 @@ void InterpreterGenerator::generate_all() {
       // bytecode implemented
       Bytecodes::set_entry_point(Bytecodes::Code(i), entry_point);
       if (!Disclaimer::is_product() && PrintInterpreter) {
-      #ifndef PRODUCT
+#ifndef PRODUCT
         int length = masm->pc() - start_point;
-	char* name = Bytecodes::name((Bytecodes::Code)i);
+        char* name = Bytecodes::name((Bytecodes::Code)i);
         mystd->print("Bytecode 0x%02x: %s (%d bytes), entry point = 0x%x\n", i, name, length, entry_point);
-	masm->code()->decode();
-	mystd->cr();
-      #endif
+        masm->code()->decode();
+        mystd->cr();
+#endif
       }
     }
   }
@@ -4113,14 +4365,12 @@ void InterpreterGenerator::generate_all() {
   Interpreter::_code_end_addr = masm->pc();
 }
 
-
 InterpreterGenerator::InterpreterGenerator(CodeBuffer* code, bool debug) {
   masm = new MacroAssembler(code);
   _debug = debug;
   _stack_check = Interpreter::has_stack_checks();
   generate_all();
 }
-
 
 // Interpreter initialization
 
@@ -4134,7 +4384,6 @@ static const int interpreter_size = 40000;
 //static char interpreter_code[interpreter_size];
 static char* interpreter_code;
 
-
 void interpreter_init() {
   const bool debug = false; // change this to switch between debug/optimized version
   if (!Disclaimer::is_product() && PrintInterpreter) {
@@ -4142,13 +4391,13 @@ void interpreter_init() {
   }
 
   interpreter_code = os::exec_memory(interpreter_size);
-  
+
   CodeBuffer* code = new CodeBuffer(&interpreter_code[0], interpreter_size);
   InterpreterGenerator g(code, debug);
 
   if (!Disclaimer::is_product() && PrintInterpreter) {
     mystd->print("%d bytes generated for the interpreter\n", code->code_size());
-//    exit(0);
+    //    exit(0);
   }
 
   Interpreter::init();

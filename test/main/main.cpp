@@ -41,7 +41,8 @@ typedef int (*fn)(DeltaProcess*);
 // It is there to allow VM operations to be executed on the VMProcess thread.
 class TestDeltaProcess : public DeltaProcess {
 private:
-  static int launch_tests(DeltaProcess *process);
+  static int launch_tests(DeltaProcess* process);
+
 public:
   TestDeltaProcess();
   TestDeltaProcess(fn launchfn);
@@ -51,12 +52,12 @@ public:
   void deoptimized_wrt_marked_nmethods() {}
   bool has_stack() const { return false; }
 
-  static int launch_scheduler(DeltaProcess *process);
+  static int launch_scheduler(DeltaProcess* process);
 };
 
-TestDeltaProcess*    testProcess = NULL;
-static VMProcess*    vmProcess;
-static Thread*       vmThread;
+TestDeltaProcess* testProcess = NULL;
+static VMProcess* vmProcess;
+static Thread* vmThread;
 
 void addTestToProcesses() {
   testProcess->addToProcesses();
@@ -81,11 +82,11 @@ void TestDeltaProcess::addToProcesses() {
   Processes::add(this);
 }
 
-TestDeltaProcess::TestDeltaProcess(): DeltaProcess(NULL, NULL, false) {
+TestDeltaProcess::TestDeltaProcess() : DeltaProcess(NULL, NULL, false) {
   int ignore;
   Processes::remove(this);
   // no launch_delta thread is created by the base class; we run our own
-  _thread = os::create_thread((int (*)(void*)) &launch_tests, this, &ignore);
+  _thread = os::create_thread((int (*)(void*))&launch_tests, this, &ignore);
   _stack_limit = (char*)os::stack_limit(_thread);
 
   oop process = newProcess();
@@ -93,13 +94,13 @@ TestDeltaProcess::TestDeltaProcess(): DeltaProcess(NULL, NULL, false) {
   set_processObj(processOop(process));
   processOop(process)->set_process(this);
 }
-TestDeltaProcess::TestDeltaProcess(fn launchfn): DeltaProcess(NULL, NULL, false) {
+TestDeltaProcess::TestDeltaProcess(fn launchfn) : DeltaProcess(NULL, NULL, false) {
   int ignore;
   Processes::remove(this);
   // no launch_delta thread is created by the base class; we run our own
-  _thread = os::create_thread((osfn) launchfn, this, &ignore);
+  _thread = os::create_thread((osfn)launchfn, this, &ignore);
   _stack_limit = (char*)os::stack_limit(_thread);
-  
+
   oop process = newProcess();
   assert(process->is_process(), "Should be process");
   set_processObj(processOop(process));
@@ -134,7 +135,7 @@ void initializeSmalltalkEnvironment() {
   Delta::call(systemInitializer.as_oop(), runBase.as_oop());
   Delta::call(smalltalk.as_oop(), initialize.as_oop());
 }
-int TestDeltaProcess::launch_tests(DeltaProcess *process) {
+int TestDeltaProcess::launch_tests(DeltaProcess* process) {
   process->suspend_at_creation();
   DeltaProcess::set_active(process);
   initializeSmalltalkEnvironment();
@@ -143,10 +144,10 @@ int TestDeltaProcess::launch_tests(DeltaProcess *process) {
   return 0;
 }
 // mock scheduler loop to allow test process->scheduler transfers and returns
-int TestDeltaProcess::launch_scheduler(DeltaProcess *process) {
+int TestDeltaProcess::launch_scheduler(DeltaProcess* process) {
   process->suspend_at_creation();
   DeltaProcess::set_active(process);
-  while(true) {
+  while (true) {
     if (DeltaProcess::wait_for_async_dll(10))
       process->transfer_to(testProcess);
   }
@@ -162,7 +163,7 @@ void start_vm_process(TestDeltaProcess* testProcess) {
   vmProcess = new VMProcess();
   DeltaProcess::initialize_async_dll_event();
   ::testProcess = testProcess;
-  vmThread = os::create_thread((int(*)(void*))&vmLoopLauncher, testProcess, &threadId);
+  vmThread = os::create_thread((int (*)(void*))&vmLoopLauncher, testProcess, &threadId);
 }
 void stop_vm_process() {
   os::terminate_thread(vmThread);

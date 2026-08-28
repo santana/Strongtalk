@@ -28,21 +28,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // super class for all heap objects
 
-class memOopKlass: public Klass {
- protected:
+class memOopKlass : public Klass {
+protected:
   oop* basicAllocate(int size, klassOop* klass, bool permit_scavenge, bool tenured) {
-    return tenured ?
-      Universe::allocate_tenured(size, permit_scavenge) :
-      Universe::allocate(size, (memOop*) klass, permit_scavenge);
+    return tenured ? Universe::allocate_tenured(size, permit_scavenge)
+                   : Universe::allocate(size, (memOop*)klass, permit_scavenge);
   }
 
- public:
+public:
   // allocation properties
-  bool can_inline_allocation()       const { return true; }
+  bool can_inline_allocation() const { return true; }
 
   // reflective properties
   bool can_have_instance_variables() const { return true; }
-  bool can_be_subclassed()           const { return true; }
+  bool can_be_subclassed() const { return true; }
 
   // allocation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
@@ -67,14 +66,14 @@ class memOopKlass: public Klass {
   friend void set_memOopKlass_vtbl(Klass* k);
 
   // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
- public:
+public:
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // printing operations
-  void oop_print_on      (oop obj, outputStream* st);
+  void oop_print_on(oop obj, outputStream* st);
   void oop_print_value_on(oop obj, outputStream* st);
 
   // iterators

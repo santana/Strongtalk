@@ -30,23 +30,24 @@ template <class E> class GrowableArray;
 
 // The StackChunkBuilder helps generate the canonical form
 // of vframes.
-// Used for: 
+// Used for:
 //  - stack deoptimization.
 //  - save stacks in heap.
 
-class StackChunkBuilder: public ResourceObj {
- private:
+class StackChunkBuilder : public ResourceObj {
+private:
   // These numbers makes it possible to compute the
   // size of the corresponding deoptimized interpreter stack.
-  int number_of_vframes;    // Number of vframes collected
-  int number_of_locals;     // Sum of all temporaries and expressions in colleced vframes
-  static void** frame_pointer;// Frame pointer of the resulting frame
+  int number_of_vframes; // Number of vframes collected
+  int number_of_locals; // Sum of all temporaries and expressions in colleced vframes
+  static void** frame_pointer; // Frame pointer of the resulting frame
 
   static int header_size() { return 2; }
   static bool _is_deoptimizing;
 
   GrowableArray<oop>* array;
- public:
+
+public:
   // Constructor
   StackChunkBuilder(void** fp, int size = 100);
   ~StackChunkBuilder();
@@ -60,8 +61,8 @@ class StackChunkBuilder: public ResourceObj {
   // Constants for the resulting object array
   enum {
     number_of_vframes_index = 1,
-    number_of_locals_index  = 2,
-    first_frame_index       = 3
+    number_of_locals_index = 2,
+    first_frame_index = 3
   };
 
   static void begin_deoptimization();
@@ -70,7 +71,7 @@ class StackChunkBuilder: public ResourceObj {
   static bool is_deoptimizing() { return _is_deoptimizing; }
 
   // The context cache
-  static void       context_at_put(const compiledVFrame* frame, contextOop con);
+  static void context_at_put(const compiledVFrame* frame, contextOop con);
   static contextOop context_at(const compiledVFrame* frame);
 };
 #endif // _STACK_CHUNK_HPP

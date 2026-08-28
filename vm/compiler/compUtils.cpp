@@ -41,7 +41,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 PerformanceDebugger::PerformanceDebugger(Compiler* c) {
-  this->c = c; compileReported = false;
+  this->c = c;
+  compileReported = false;
   blocks = new GrowableArray<BlockPReg*>(5);
   reports = new GrowableArray<char*>(5);
   str = NULL;
@@ -56,7 +57,8 @@ void PerformanceDebugger::start_report() {
 void PerformanceDebugger::stop_report() {
   char* report = str->as_string();
   for (int i = reports->length() - 1; i >= 0; i--) {
-    if (strcmp(reports->at(i), report) == 0) return;  // already printed identical msg
+    if (strcmp(reports->at(i), report) == 0)
+      return; // already printed identical msg
   }
   mystd->print(report);
   reports->append(report);
@@ -74,8 +76,12 @@ void PerformanceDebugger::report_compile() {
 // see PerformanceDebugger::report_context for an example
 class Reporter {
   PerformanceDebugger* d;
+
 public:
-  Reporter(PerformanceDebugger* d) { this->d = d; d->start_report(); }
+  Reporter(PerformanceDebugger* d) {
+    this->d = d;
+    d->start_report();
+  }
   ~Reporter() { d->stop_report(); }
 };
 
@@ -87,50 +93,58 @@ void PerformanceDebugger::finish_reporting() {
     int len = notInlinedBecauseNmethodTooBig->length();
     int i;
     for (i = 0; i < min(9, len); i++) {
-      if (i % 3 == 0) str->print("\n    ");
+      if (i % 3 == 0)
+        str->print("\n    ");
       InlinedScope* s = notInlinedBecauseNmethodTooBig->at(i);
       str->print("%s  ", s->key()->print_string());
     }
-    if (i < len) str->print("\n    (%d more sends omitted)\n", len);
+    if (i < len)
+      str->print("\n    (%d more sends omitted)\n", len);
     str->put('\n');
   }
 }
 
 void PerformanceDebugger::report_context(InlinedScope* s) {
-  if (!DebugPerformance) return;
+  if (!DebugPerformance)
+    return;
   Reporter r(this);
   GrowableArray<Expr*>* temps = s->contextTemporaries();
   const int len = temps->length();
   int nused = 0;
   for (int i = 0; i < len; i++) {
     PReg* r = temps->at(i)->preg();
-    if (r->uplevelR() || r->uplevelW() || (r->isBlockPReg() && !r->isUnused())) nused++;
+    if (r->uplevelR() || r->uplevelW() || (r->isBlockPReg() && !r->isUnused()))
+      nused++;
   }
   if (nused == 0) {
-    str->print("  could not eliminate context of scope %s (fixable compiler restriction; should be eliminated)\n", s->key()->print_string());
+    str->print("  could not eliminate context of scope %s (fixable compiler restriction; should be eliminated)\n",
+               s->key()->print_string());
   } else {
     str->print("  could not eliminate context of scope %s; temp(s) still used: ", s->key()->print_string());
     for (int j = 0; j < len; j++) {
       PReg* r = temps->at(j)->preg();
       if (r->uplevelR() || r->uplevelW()) {
-	str->print("%d ", j);
+        str->print("%d ", j);
       } else if (r->isBlockPReg() && !r->isUnused()) {
-	str->print("%d (non-inlined block)", j);
+        str->print("%d (non-inlined block)", j);
       }
     }
     str->print("\n");
-  } 
+  }
 }
 
 void PerformanceDebugger::report_toobig(InlinedScope* s) {
-  if (!DebugPerformance) return;
+  if (!DebugPerformance)
+    return;
   report_compile();
-  if (!notInlinedBecauseNmethodTooBig) notInlinedBecauseNmethodTooBig = new GrowableArray<InlinedScope*>(20);
+  if (!notInlinedBecauseNmethodTooBig)
+    notInlinedBecauseNmethodTooBig = new GrowableArray<InlinedScope*>(20);
   notInlinedBecauseNmethodTooBig->append(s);
 }
 
 void PerformanceDebugger::report_uncommon(bool reoptimizing) {
-  if (!DebugPerformance) return;
+  if (!DebugPerformance)
+    return;
   Reporter r(this);
   if (reoptimizing) {
     str->print(" -- reoptimizing previously compiled 'uncommon' version of nmethod\n");
@@ -141,22 +155,26 @@ void PerformanceDebugger::report_uncommon(bool reoptimizing) {
 
 void PerformanceDebugger::report_prim_failure(primitive_desc* pd) {
   // suppress methods for uncommon compiles -- too many (and not interesting)
-  if (!DebugPerformance || theCompiler->is_uncommon_compile()) return;
+  if (!DebugPerformance || theCompiler->is_uncommon_compile())
+    return;
   Reporter r(this);
   str->print(" primitive failure of %s not uncommon\n", pd->name());
 }
 
 void PerformanceDebugger::report_block(Node* n, BlockPReg* blk, const char* what) {
-  if (!DebugPerformance) return;
-  if (blocks->contains(blk)) return;
-  if (blk->method()->is_clean_block()) return;
+  if (!DebugPerformance)
+    return;
+  if (blocks->contains(blk))
+    return;
+  if (blk->method()->is_clean_block())
+    return;
   Reporter r(this);
   str->print(" could not eliminate block in ");
   blk->method()->home()->selector()->print_symbol_on(str);
-  str->print(" because it is %s in scope %s at bytecode %d", 
-             what, n->scope()->key()->print_string(), n->bci());
+  str->print(" because it is %s in scope %s at bytecode %d", what, n->scope()->key()->print_string(), n->bci());
   InterpretedIC* ic = n->scope()->method()->ic_at(n->bci());
-  if (ic) str->print(" (send of %s)", ic->selector()->copy_null_terminated());
+  if (ic)
+    str->print(" (send of %s)", ic->selector()->copy_null_terminated());
   str->print("\n");
   blocks->append(blk);
 }

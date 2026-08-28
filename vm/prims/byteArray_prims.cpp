@@ -53,16 +53,16 @@ int byteArrayPrimitives::number_of_calls;
 PRIM_DECL_2(byteArrayPrimitives::allocateSize, oop receiver, oop argument) {
   PROLOGUE_2("allocateSize", receiver, argument)
   assert(receiver->is_klass() && klassOop(receiver)->klass_part()->oop_is_byteArray(),
-        "receiver must byte array class");
+         "receiver must byte array class");
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   if (smiOop(argument)->value() < 0)
     return markSymbol(vmSymbols::negative_size());
 
-  klassOop k        = klassOop(receiver);
-  int      ni_size  = k->klass_part()->non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(smiOop(argument)->value(), image_oop_size) / image_oop_size;
+  klassOop k = klassOop(receiver);
+  int ni_size = k->klass_part()->non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(smiOop(argument)->value(), image_oop_size) / image_oop_size;
   // allocate
   byteArrayOop obj = as_byteArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -70,14 +70,15 @@ PRIM_DECL_2(byteArrayPrimitives::allocateSize, oop receiver, oop argument) {
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // indexables
-  oop* base = (oop*) obj->addr();
-  oop* end  = base + obj_size;
+  oop* base = (oop*)obj->addr();
+  oop* end = base + obj_size;
   // %optimized 'obj->set_length(size)'
   base[ni_size] = argument;
   // %optimized 'for (int index = 1; index <= size; index++)
   //               obj->byte_at_put(index, '\000')'
-  base = &base[ni_size+1];
-  while (base < end) *base++ = (oop) 0;
+  base = &base[ni_size + 1];
+  while (base < end)
+    *base++ = (oop)0;
   return obj;
 }
 
@@ -100,7 +101,8 @@ PRIM_DECL_3(byteArrayPrimitives::allocateSize2, oop receiver, oop argument, oop 
 
   memOopKlass* theKlass = (memOopKlass*)klassOop(receiver)->klass_part();
   oop result = theKlass->allocateObjectSize(smiOop(argument)->value(), false, tenured == trueObj);
-  if (result == NULL) return markSymbol(vmSymbols::failed_allocation());
+  if (result == NULL)
+    return markSymbol(vmSymbols::failed_allocation());
   return result;
 }
 
@@ -128,7 +130,7 @@ PRIM_DECL_2(byteArrayPrimitives::at, oop receiver, oop index) {
 
   // check index value
   if (!byteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // do the operation
   return as_smiOop(byteArrayOop(receiver)->byte_at(smiOop(index)->value()));
@@ -148,11 +150,11 @@ PRIM_DECL_3(byteArrayPrimitives::atPut, oop receiver, oop index, oop value) {
 
   // check index value
   if (!byteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // check value range (must be byte)
-  unsigned int v = (unsigned int) smiOop(value)->value();
-  if (v  >= (1<<8))
+  unsigned int v = (unsigned int)smiOop(value)->value();
+  if (v >= (1 << 8))
     return markSymbol(vmSymbols::value_out_of_range());
 
   // do the operation
@@ -164,7 +166,7 @@ PRIM_DECL_2(byteArrayPrimitives::compare, oop receiver, oop argument) {
   PROLOGUE_2("comare", receiver, argument);
   ASSERT_RECEIVER;
 
-  if( receiver == argument)
+  if (receiver == argument)
     return as_smiOop(0);
 
   if (argument->is_byteArray())
@@ -180,8 +182,7 @@ PRIM_DECL_1(byteArrayPrimitives::intern, oop receiver) {
   PROLOGUE_1("intern", receiver);
   ASSERT_RECEIVER;
 
-  return Universe::symbol_table->lookup(byteArrayOop(receiver)->chars(),
-                                        byteArrayOop(receiver)->length());
+  return Universe::symbol_table->lookup(byteArrayOop(receiver)->chars(), byteArrayOop(receiver)->length());
 }
 
 PRIM_DECL_2(byteArrayPrimitives::characterAt, oop receiver, oop index) {
@@ -194,13 +195,13 @@ PRIM_DECL_2(byteArrayPrimitives::characterAt, oop receiver, oop index) {
 
   // range check
   if (!byteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
-     return markSymbol(vmSymbols::out_of_bounds());
+    return markSymbol(vmSymbols::out_of_bounds());
 
   // fetch byte
   int byte = byteArrayOop(receiver)->byte_at(smiOop(index)->value());
-  
+
   // return the n+1'th element in asciiCharacter
-  return Universe::asciiCharacters()->obj_at(byte+1);
+  return Universe::asciiCharacters()->obj_at(byte + 1);
 }
 
 PRIM_DECL_2(byteArrayPrimitives::at_all_put, oop receiver, oop value) {
@@ -212,8 +213,8 @@ PRIM_DECL_2(byteArrayPrimitives::at_all_put, oop receiver, oop value) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   // check value range (must be byte)
-  unsigned int v = (unsigned int) smiOop(value)->value();
-  if (v  >= (1<<8))
+  unsigned int v = (unsigned int)smiOop(value)->value();
+  if (v >= (1 << 8))
     return markSymbol(vmSymbols::value_out_of_range());
 
   int length = byteArrayOop(receiver)->length();
@@ -237,13 +238,15 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerFromSmallInteger, oop receiver, oop
   assert(receiver->is_klass() && klassOop(receiver)->klass_part()->oop_is_byteArray(), "just checking");
 
   // Check arguments
-  if (!number->is_smi()) return markSymbol(vmSymbols::second_argument_has_wrong_type());
+  if (!number->is_smi())
+    return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
   BlockScavenge bs;
-  int           i = smiOop(number)->value();
-  byteArrayOop  z;
+  int i = smiOop(number)->value();
+  byteArrayOop z;
 
-  z = byteArrayOop(klassOop(receiver)->klass_part()->allocateObjectSize(IntegerOps::int_to_Integer_result_size_in_bytes(i)));
+  z = byteArrayOop(
+    klassOop(receiver)->klass_part()->allocateObjectSize(IntegerOps::int_to_Integer_result_size_in_bytes(i)));
   IntegerOps::int_to_Integer(i, z->number());
   return z;
 }
@@ -252,13 +255,15 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerFromDouble, oop receiver, oop numbe
   PROLOGUE_2("largeIntegerFromDouble", receiver, number);
   assert(receiver->is_klass() && klassOop(receiver)->klass_part()->oop_is_byteArray(), "just checking");
 
-  if (!number->is_double()) return markSymbol(vmSymbols::first_argument_has_wrong_type());
+  if (!number->is_double())
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   BlockScavenge bs;
   double x = doubleOop(number)->value();
   byteArrayOop z;
 
-  z = byteArrayOop(klassOop(receiver)->klass_part()->allocateObjectSize(IntegerOps::double_to_Integer_result_size_in_bytes(x)));
+  z = byteArrayOop(
+    klassOop(receiver)->klass_part()->allocateObjectSize(IntegerOps::double_to_Integer_result_size_in_bytes(x)));
   IntegerOps::double_to_Integer(x, z->number());
   return z;
 }
@@ -267,15 +272,18 @@ PRIM_DECL_3(byteArrayPrimitives::largeIntegerFromString, oop receiver, oop argum
   PROLOGUE_3("largeIntegerFromString", receiver, argument, base);
   assert(receiver->is_klass() && klassOop(receiver)->klass_part()->oop_is_byteArray(), "just checking");
 
-  if (!argument->is_byteArray()) return markSymbol(vmSymbols::first_argument_has_wrong_type ());
-  if (!base->is_smi()          ) return markSymbol(vmSymbols::second_argument_has_wrong_type());
+  if (!argument->is_byteArray())
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());
+  if (!base->is_smi())
+    return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
   BlockScavenge bs;
 
   byteArrayOop x = byteArrayOop(argument);
   byteArrayOop z;
 
-  z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::string_to_Integer_result_size_in_bytes(x->chars(), smiOop(base)->value())));
+  z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(
+    IntegerOps::string_to_Integer_result_size_in_bytes(x->chars(), smiOop(base)->value())));
   IntegerOps::string_to_Integer(x->chars(), smiOop(base)->value(), z->number());
   return z;
 }
@@ -293,9 +301,11 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerAdd, oop receiver, oop argument) {
   byteArrayOop y = byteArrayOop(argument);
   byteArrayOop z;
 
-  if (!x->number().is_valid() || !y->number().is_valid()) return markSymbol(vmSymbols::argument_is_invalid());
+  if (!x->number().is_valid() || !y->number().is_valid())
+    return markSymbol(vmSymbols::argument_is_invalid());
 
-  z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::add_result_size_in_bytes(x->number(), y->number())));
+  z = byteArrayOop(
+    x->klass()->klass_part()->allocateObjectSize(IntegerOps::add_result_size_in_bytes(x->number(), y->number())));
   x = byteArrayOop(receiver);
   y = byteArrayOop(argument);
   IntegerOps::add(x->number(), y->number(), z->number());
@@ -315,9 +325,11 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerSubtract, oop receiver, oop argumen
   byteArrayOop y = byteArrayOop(argument);
   byteArrayOop z;
 
-  if (!x->number().is_valid() || !y->number().is_valid()) return markSymbol(vmSymbols::argument_is_invalid());
+  if (!x->number().is_valid() || !y->number().is_valid())
+    return markSymbol(vmSymbols::argument_is_invalid());
 
-  z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::sub_result_size_in_bytes(x->number(), y->number())));
+  z = byteArrayOop(
+    x->klass()->klass_part()->allocateObjectSize(IntegerOps::sub_result_size_in_bytes(x->number(), y->number())));
   x = byteArrayOop(receiver);
   y = byteArrayOop(argument);
   IntegerOps::sub(x->number(), y->number(), z->number());
@@ -337,41 +349,47 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerMultiply, oop receiver, oop argumen
   byteArrayOop y = byteArrayOop(argument);
   byteArrayOop z;
 
-  if (!x->number().is_valid() || !y->number().is_valid()) return markSymbol(vmSymbols::argument_is_invalid());
+  if (!x->number().is_valid() || !y->number().is_valid())
+    return markSymbol(vmSymbols::argument_is_invalid());
 
-  z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::mul_result_size_in_bytes(x->number(), y->number())));
+  z = byteArrayOop(
+    x->klass()->klass_part()->allocateObjectSize(IntegerOps::mul_result_size_in_bytes(x->number(), y->number())));
   x = byteArrayOop(receiver);
   y = byteArrayOop(argument);
   IntegerOps::mul(x->number(), y->number(), z->number());
   return simplified(z);
 }
-#define BIT_OP(receiver, argument, sizeFn, opFn, label)\
-  ARG_CHECK(receiver, argument, label);\
-  BlockScavenge bs;\
-  byteArrayOop z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::sizeFn(x->number(), y->number())));\
-\
-  IntegerOps::opFn(x->number(), y->number(), z->number());\
+#define BIT_OP(receiver, argument, sizeFn, opFn, label)                                                                \
+  ARG_CHECK(receiver, argument, label);                                                                                \
+  BlockScavenge bs;                                                                                                    \
+  byteArrayOop z =                                                                                                     \
+    byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::sizeFn(x->number(), y->number())));          \
+                                                                                                                       \
+  IntegerOps::opFn(x->number(), y->number(), z->number());                                                             \
   return simplified(z)
-#define DIVISION(receiver, argument, sizeFn, divFn, label)\
-  ARG_CHECK(receiver, argument, label);\
-  if (y->number().is_zero()) return markSymbol(vmSymbols::division_by_zero   ());\
-\
-  BlockScavenge bs;\
-  byteArrayOop z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::sizeFn(x->number(), y->number())));\
-\
-  IntegerOps::divFn(x->number(), y->number(), z->number());\
+#define DIVISION(receiver, argument, sizeFn, divFn, label)                                                             \
+  ARG_CHECK(receiver, argument, label);                                                                                \
+  if (y->number().is_zero())                                                                                           \
+    return markSymbol(vmSymbols::division_by_zero());                                                                  \
+                                                                                                                       \
+  BlockScavenge bs;                                                                                                    \
+  byteArrayOop z =                                                                                                     \
+    byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::sizeFn(x->number(), y->number())));          \
+                                                                                                                       \
+  IntegerOps::divFn(x->number(), y->number(), z->number());                                                            \
   return simplified(z)
-#define ARG_CHECK(receiver, argument, label)\
-  PROLOGUE_2(label, receiver, argument);\
-  ASSERT_RECEIVER;\
-\
-  if (!argument->is_byteArray())\
-    return markSymbol(vmSymbols::first_argument_has_wrong_type());\
-\
-  byteArrayOop x = byteArrayOop(receiver);\
-  byteArrayOop y = byteArrayOop(argument);\
-\
-  if (!x->number().is_valid() || !y->number().is_valid()) return markSymbol(vmSymbols::argument_is_invalid())
+#define ARG_CHECK(receiver, argument, label)                                                                           \
+  PROLOGUE_2(label, receiver, argument);                                                                               \
+  ASSERT_RECEIVER;                                                                                                     \
+                                                                                                                       \
+  if (!argument->is_byteArray())                                                                                       \
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
+                                                                                                                       \
+  byteArrayOop x = byteArrayOop(receiver);                                                                             \
+  byteArrayOop y = byteArrayOop(argument);                                                                             \
+                                                                                                                       \
+  if (!x->number().is_valid() || !y->number().is_valid())                                                              \
+  return markSymbol(vmSymbols::argument_is_invalid())
 
 PRIM_DECL_2(byteArrayPrimitives::largeIntegerQuo, oop receiver, oop argument) {
   DIVISION(receiver, argument, quo_result_size_in_bytes, quo, "largeIntegerQuo");
@@ -406,7 +424,8 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerShift, oop receiver, oop argument) 
   if (!byteArrayOop(receiver)->number().is_valid())
     return markSymbol(vmSymbols::argument_is_invalid());
 
-  byteArrayOop z = byteArrayOop(x->klass()->klass_part()->allocateObjectSize(IntegerOps::ash_result_size_in_bytes(x->number(), shift)));
+  byteArrayOop z = byteArrayOop(
+    x->klass()->klass_part()->allocateObjectSize(IntegerOps::ash_result_size_in_bytes(x->number(), shift)));
 
   IntegerOps::ash(x->number(), shift, z->number());
 
@@ -425,11 +444,14 @@ PRIM_DECL_2(byteArrayPrimitives::largeIntegerCompare, oop receiver, oop argument
   byteArrayOop x = byteArrayOop(receiver);
   byteArrayOop y = byteArrayOop(argument);
 
-  if (!x->number().is_valid() || !y->number().is_valid()) return markSymbol(vmSymbols::argument_is_invalid());
+  if (!x->number().is_valid() || !y->number().is_valid())
+    return markSymbol(vmSymbols::argument_is_invalid());
 
   int res = IntegerOps::cmp(x->number(), y->number());
-  if (res < 0) return as_smiOop(-1);
-  if (res > 0) return as_smiOop(1);
+  if (res < 0)
+    return as_smiOop(-1);
+  if (res > 0)
+    return as_smiOop(1);
   return as_smiOop(0);
 }
 
@@ -440,7 +462,8 @@ PRIM_DECL_1(byteArrayPrimitives::largeIntegerToFloat, oop receiver) {
   bool ok;
   double result = byteArrayOop(receiver)->number().as_double(ok);
 
-  if (!ok) return markSymbol(vmSymbols::conversion_failed());
+  if (!ok)
+    return markSymbol(vmSymbols::conversion_failed());
 
   BlockScavenge bs;
   return oopFactory::new_double(result);
@@ -484,7 +507,8 @@ klassOop largeIntegerClass() {
     return _largeIntegerClass->as_klassOop();
   oop liKlass = Universe::find_global("LargeInteger");
   assert(liKlass && liKlass->is_klass(), "LargeInteger not found");
-  if (!liKlass) return NULL;
+  if (!liKlass)
+    return NULL;
   _largeIntegerClass = new PersistentHandle(liKlass);
   return klassOop(liKlass);
 }
@@ -493,7 +517,8 @@ klassOop unsafeAlienClass() {
     return _unsafeAlienClass->as_klassOop();
   oop uaKlass = Universe::find_global("UnsafeAlien");
   assert(uaKlass && uaKlass->is_klass(), "UnsafeAlien not found");
-  if (!uaKlass) return NULL;
+  if (!uaKlass)
+    return NULL;
   _unsafeAlienClass = new PersistentHandle(uaKlass);
   return klassOop(uaKlass);
 }
@@ -502,120 +527,108 @@ oop unsafeContents(oop unsafeAlien) {
   int offset = unsafeAlienClass()->klass_part()->lookup_inst_var(ivarName);
   return memOop(unsafeAlien)->instVarAt(offset);
 }
-#define checkAlienReceiver(receiver)\
-  if (!receiver->is_byteArray())\
-    return markSymbol(vmSymbols::receiver_has_wrong_type())
+#define checkAlienReceiver(receiver)                                                                                   \
+  if (!receiver->is_byteArray())                                                                                       \
+  return markSymbol(vmSymbols::receiver_has_wrong_type())
 
-#define isUnsafe(argument)\
-  (!oop(argument)->is_smi()\
-  && memOop(argument)->klass_field() == unsafeAlienClass()\
-  && unsafeContents(argument)->is_byteArray())
+#define isUnsafe(argument)                                                                                             \
+  (!oop(argument)->is_smi() && memOop(argument)->klass_field() == unsafeAlienClass() &&                                \
+   unsafeContents(argument)->is_byteArray())
 
-#define alienArg(argument)      (void*)argument
+#define alienArg(argument) (void*)argument
 
-#define alienArray(receiver)    ((int*)byteArrayOop(receiver)->bytes())
+#define alienArray(receiver) ((int*)byteArrayOop(receiver)->bytes())
 
-#define alienSize(receiver)     (alienArray(receiver)[0])
+#define alienSize(receiver) (alienArray(receiver)[0])
 
-#define alienAddress(receiver)  ((void**)alienArray(receiver))[1]
+#define alienAddress(receiver) ((void**)alienArray(receiver))[1]
 
-#define alienResult(handle)     (handle.as_oop() == nilObj ? NULL : (void*)handle.asPointer())
-#define alienResult2(handle)     (handle->as_oop() == nilObj ? NULL : (void*)handle->asPointer())
+#define alienResult(handle) (handle.as_oop() == nilObj ? NULL : (void*)handle.asPointer())
+#define alienResult2(handle) (handle->as_oop() == nilObj ? NULL : (void*)handle->asPointer())
 
-#define checkAlienCalloutReceiver(receiver) \
-  checkAlienReceiver(receiver);\
-  if (/*alienSize(receiver) > 0 || */ alienAddress(receiver) == NULL)\
-    return markSymbol(vmSymbols::illegal_state())
+#define checkAlienCalloutReceiver(receiver)                                                                            \
+  checkAlienReceiver(receiver);                                                                                        \
+  if (/*alienSize(receiver) > 0 || */ alienAddress(receiver) == NULL)                                                  \
+  return markSymbol(vmSymbols::illegal_state())
 
-#define checkAlienCalloutResult(argument) \
-  if (!(argument->is_byteArray() || argument == nilObj))\
-    return markSymbol(vmSymbols::argument_has_wrong_type())
+#define checkAlienCalloutResult(argument)                                                                              \
+  if (!(argument->is_byteArray() || argument == nilObj))                                                               \
+  return markSymbol(vmSymbols::argument_has_wrong_type())
 
-#define checkAlienCalloutResultArgs(argument) \
-  if (!(argument->is_byteArray() || argument == nilObj))\
-    return markSymbol(vmSymbols::first_argument_has_wrong_type())
+#define checkAlienCalloutResultArgs(argument)                                                                          \
+  if (!(argument->is_byteArray() || argument == nilObj))                                                               \
+  return markSymbol(vmSymbols::first_argument_has_wrong_type())
 
-#define checkAlienCalloutArg(argument, symbol)\
-  if (!((argument->is_byteArray() && memOop(argument)->klass() != largeIntegerClass())\
-      || argument->is_smi() || isUnsafe(argument)))\
-    return markSymbol(symbol)
+#define checkAlienCalloutArg(argument, symbol)                                                                         \
+  if (!((argument->is_byteArray() && memOop(argument)->klass() != largeIntegerClass()) || argument->is_smi() ||        \
+        isUnsafe(argument)))                                                                                           \
+  return markSymbol(symbol)
 
-#define checkAlienCalloutArg1(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::second_argument_has_wrong_type())
+#define checkAlienCalloutArg1(argument) checkAlienCalloutArg(argument, vmSymbols::second_argument_has_wrong_type())
 
-#define checkAlienCalloutArg2(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::third_argument_has_wrong_type())
+#define checkAlienCalloutArg2(argument) checkAlienCalloutArg(argument, vmSymbols::third_argument_has_wrong_type())
 
-#define checkAlienCalloutArg3(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::fourth_argument_has_wrong_type())
+#define checkAlienCalloutArg3(argument) checkAlienCalloutArg(argument, vmSymbols::fourth_argument_has_wrong_type())
 
-#define checkAlienCalloutArg4(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::fifth_argument_has_wrong_type())
+#define checkAlienCalloutArg4(argument) checkAlienCalloutArg(argument, vmSymbols::fifth_argument_has_wrong_type())
 
-#define checkAlienCalloutArg5(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::sixth_argument_has_wrong_type())
+#define checkAlienCalloutArg5(argument) checkAlienCalloutArg(argument, vmSymbols::sixth_argument_has_wrong_type())
 
-#define checkAlienCalloutArg6(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::seventh_argument_has_wrong_type())
+#define checkAlienCalloutArg6(argument) checkAlienCalloutArg(argument, vmSymbols::seventh_argument_has_wrong_type())
 
-#define checkAlienCalloutArg7(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::eighth_argument_has_wrong_type())
+#define checkAlienCalloutArg7(argument) checkAlienCalloutArg(argument, vmSymbols::eighth_argument_has_wrong_type())
 
-#define checkAlienCalloutArg8(argument)\
-  checkAlienCalloutArg(argument, vmSymbols::ninth_argument_has_wrong_type())
+#define checkAlienCalloutArg8(argument) checkAlienCalloutArg(argument, vmSymbols::ninth_argument_has_wrong_type())
 
 #define alienIndex(argument) (smiOop(argument)->value())
 
-#define checkAlienAtIndex(receiver, argument, type)\
-  if (!argument->is_smi())\
-    return markSymbol(vmSymbols::argument_has_wrong_type());\
-  if (alienIndex(argument) < 1 ||\
-      (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) > abs(alienSize(receiver)) - sizeof(type) + 1))\
-    return markSymbol(vmSymbols::index_not_valid())
+#define checkAlienAtIndex(receiver, argument, type)                                                                    \
+  if (!argument->is_smi())                                                                                             \
+    return markSymbol(vmSymbols::argument_has_wrong_type());                                                           \
+  if (alienIndex(argument) < 1 || (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) >                  \
+                                                                 abs(alienSize(receiver)) - sizeof(type) + 1))         \
+  return markSymbol(vmSymbols::index_not_valid())
 
-#define checkAlienAtPutIndex(receiver, argument, type)\
-  if (!argument->is_smi())\
-    return markSymbol(vmSymbols::first_argument_has_wrong_type());\
-  if (alienIndex(argument) < 1 ||\
-      (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) > abs(alienSize(receiver)) - sizeof(type) + 1))\
-    return markSymbol(vmSymbols::index_not_valid())
+#define checkAlienAtPutIndex(receiver, argument, type)                                                                 \
+  if (!argument->is_smi())                                                                                             \
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
+  if (alienIndex(argument) < 1 || (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) >                  \
+                                                                 abs(alienSize(receiver)) - sizeof(type) + 1))         \
+  return markSymbol(vmSymbols::index_not_valid())
 
-#define checkAlienAtPutValue(receiver, argument, type, min, max)\
-  if (!argument->is_smi())\
-    return markSymbol(vmSymbols::second_argument_has_wrong_type());\
-  {\
-    int value = smiOop(argument)->value();\
-    if (value < min || value > max)\
-      return markSymbol(vmSymbols::argument_is_invalid());\
+#define checkAlienAtPutValue(receiver, argument, type, min, max)                                                       \
+  if (!argument->is_smi())                                                                                             \
+    return markSymbol(vmSymbols::second_argument_has_wrong_type());                                                    \
+  {                                                                                                                    \
+    int value = smiOop(argument)->value();                                                                             \
+    if (value < min || value > max)                                                                                    \
+      return markSymbol(vmSymbols::argument_is_invalid());                                                             \
   }
 
-#define checkAlienAtReceiver(receiver)\
-  checkAlienReceiver(receiver);\
-  if (alienSize(receiver) <= 0 && alienAddress(receiver) == NULL)\
-    return markSymbol(vmSymbols::illegal_state())
+#define checkAlienAtReceiver(receiver)                                                                                 \
+  checkAlienReceiver(receiver);                                                                                        \
+  if (alienSize(receiver) <= 0 && alienAddress(receiver) == NULL)                                                      \
+  return markSymbol(vmSymbols::illegal_state())
 
-#define alienContents(receiver)\
-  (alienSize(receiver) > 0\
-    ? ((void*)(alienArray(receiver) + 1))\
-    : (alienAddress(receiver)))
+#define alienContents(receiver)                                                                                        \
+  (alienSize(receiver) > 0 ? ((void*)(alienArray(receiver) + 1)) : (alienAddress(receiver)))
 
-#define alienAt(receiver, argument, type)\
-  *((type*)(((char*)alienContents(receiver)) + alienIndex(argument) - 1))
+#define alienAt(receiver, argument, type) *((type*)(((char*)alienContents(receiver)) + alienIndex(argument) - 1))
 
 PRIM_DECL_2(byteArrayPrimitives::alienUnsignedByteAt, oop receiver, oop argument) {
   PROLOGUE_2("alienUnsignedByteAt", receiver, argument);
   checkAlienAtReceiver(receiver);
   checkAlienAtIndex(receiver, argument, u_char);
-  
+
   return as_smiOop(alienAt(receiver, argument, u_char));
 }
 
-PRIM_DECL_3(byteArrayPrimitives::alienUnsignedByteAtPut, oop receiver, oop argument1, oop argument2){
+PRIM_DECL_3(byteArrayPrimitives::alienUnsignedByteAtPut, oop receiver, oop argument1, oop argument2) {
   PROLOGUE_3("alienUnsignedByteAtPut", receiver, argument1, argument2);
   checkAlienAtReceiver(receiver);
   checkAlienAtPutIndex(receiver, argument1, u_char);
   checkAlienAtPutValue(receiver, argument2, u_char, 0, 255);
-  
+
   alienAt(receiver, argument1, u_char) = smiOop(argument2)->value();
 
   return argument2;
@@ -653,9 +666,9 @@ PRIM_DECL_3(byteArrayPrimitives::alienUnsignedShortAtPut, oop receiver, oop argu
   checkAlienAtReceiver(receiver);
   checkAlienAtPutIndex(receiver, argument1, unsigned short);
   checkAlienAtPutValue(receiver, argument2, unsigned short, 0, 65535);
-  
+
   alienAt(receiver, argument1, unsigned short) = smiOop(argument2)->value();
-  
+
   return argument2;
 }
 
@@ -682,7 +695,7 @@ PRIM_DECL_2(byteArrayPrimitives::alienUnsignedLongAt, oop receiver, oop argument
   PROLOGUE_2("alienUnsignedLongAt", receiver, argument);
   checkAlienAtReceiver(receiver);
   checkAlienAtIndex(receiver, argument, unsigned long);
-  
+
   unsigned long value = alienAt(receiver, argument, unsigned long);
 
   int resultSize = IntegerOps::int_to_Integer_result_size_in_bytes(value);
@@ -760,7 +773,7 @@ PRIM_DECL_2(byteArrayPrimitives::alienDoubleAt, oop receiver, oop argument) {
 
   doubleOop result = doubleOop(Universe::doubleKlassObj()->klass_part()->allocateObject());
   result->set_value(alienAt(receiver, argument, double));
-  
+
   return result;
 }
 
@@ -783,7 +796,7 @@ PRIM_DECL_2(byteArrayPrimitives::alienFloatAt, oop receiver, oop argument) {
 
   doubleOop result = doubleOop(Universe::doubleKlassObj()->klass_part()->allocateObject());
   result->set_value(alienAt(receiver, argument, float));
-  
+
   return result;
 }
 
@@ -794,7 +807,7 @@ PRIM_DECL_3(byteArrayPrimitives::alienFloatAtPut, oop receiver, oop argument1, o
   if (!argument2->is_double())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
-  alienAt(receiver, argument1, float) = (float) doubleOop(argument2)->value();
+  alienAt(receiver, argument1, float) = (float)doubleOop(argument2)->value();
 
   return argument2;
 }
@@ -819,8 +832,8 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetSize, oop receiver, oop argument) {
 PRIM_DECL_1(byteArrayPrimitives::alienGetAddress, oop receiver) {
   PROLOGUE_1("alienGetAddress", receiver);
   checkAlienReceiver(receiver);
-//  if (alienSize(receiver) > 0)
-//    return markSymbol(vmSymbols::illegal_state());
+  //  if (alienSize(receiver) > 0)
+  //    return markSymbol(vmSymbols::illegal_state());
 
   uintptr_t address = (uintptr_t)alienAddress(receiver);
   int size = IntegerOps::unsigned_int_to_Integer_result_size_in_bytes(address);
@@ -836,8 +849,7 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetAddress, oop receiver, oop argument) {
   checkAlienReceiver(receiver);
   if (alienSize(receiver) > 0)
     return markSymbol(vmSymbols::illegal_state());
-  if (!argument->is_smi() && 
-     !(argument->is_byteArray() && byteArrayOop(argument)->number().signum() > 0))
+  if (!argument->is_smi() && !(argument->is_byteArray() && byteArrayOop(argument)->number().signum() > 0))
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   unsigned int value;
@@ -854,19 +866,21 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetAddress, oop receiver, oop argument) {
   return receiver;
 }
 
-typedef void (__stdcall *call_out_func_0)(void*, void*);
-typedef void (__stdcall *call_out_func_1)(void*, void*, void*);
-typedef void (__stdcall *call_out_func_2)(void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_3)(void*, void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_4)(void*, void*, void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_5)(void*, void*, void*, void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_6)(void*, void*, void*, void*, void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_7)(void*, void*, void*, void*, void*, void*, void*, void*, void*);
-typedef void (__stdcall *call_out_func_args)(void*, void*, oop, oop*);
+typedef void(__stdcall* call_out_func_0)(void*, void*);
+typedef void(__stdcall* call_out_func_1)(void*, void*, void*);
+typedef void(__stdcall* call_out_func_2)(void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_3)(void*, void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_4)(void*, void*, void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_5)(void*, void*, void*, void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_6)(void*, void*, void*, void*, void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_7)(void*, void*, void*, void*, void*, void*, void*, void*, void*);
+typedef void(__stdcall* call_out_func_args)(void*, void*, oop, oop*);
 
 void break_on_error(void* address, oop result) {
-  if (true) return;
-  if (!result->is_byteArray()) return;
+  if (true)
+    return;
+  if (!result->is_byteArray())
+    return;
 
   int value = alienAt(byteArrayOop(result), as_smiOop(1), int);
 
@@ -886,10 +900,9 @@ PRIM_DECL_2(byteArrayPrimitives::alienCallResult0, oop receiver, oop argument) {
 
   PersistentHandle* resultHandle = new PersistentHandle(argument);
   call_out_func_0 entry = call_out_func_0(StubRoutines::alien_call_entry(0));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle));
+  entry(address, alienResult2(resultHandle));
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -905,11 +918,9 @@ PRIM_DECL_3(byteArrayPrimitives::alienCallResult1, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_1 entry = call_out_func_1(StubRoutines::alien_call_entry(1));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2));
+  entry(address, alienResult2(resultHandle), alienArg(argument2));
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -926,20 +937,18 @@ PRIM_DECL_4(byteArrayPrimitives::alienCallResult2, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_2 entry = call_out_func_2(StubRoutines::alien_call_entry(2));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3));
-  
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3));
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
 
-PRIM_DECL_5(byteArrayPrimitives::alienCallResult3, oop receiver, oop argument1, oop argument2, oop argument3, oop argument4) {
+PRIM_DECL_5(byteArrayPrimitives::alienCallResult3, oop receiver, oop argument1, oop argument2, oop argument3,
+            oop argument4) {
   PROLOGUE_5("alienCallResult3", receiver, argument1, argument2, argument3, argument4);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResultArgs(argument1);
@@ -949,24 +958,19 @@ PRIM_DECL_5(byteArrayPrimitives::alienCallResult3, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_3 entry = call_out_func_3(StubRoutines::alien_call_entry(3));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3),
-        alienArg(argument4));
-  
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4));
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
 
-PRIM_DECL_6(byteArrayPrimitives::alienCallResult4, oop receiver, oop argument1, oop argument2,
-            oop argument3, oop argument4, oop argument5) {
-  PROLOGUE_6("alienCallResult4", receiver, argument1, argument2, argument3, argument4, 
-    argument5);
+PRIM_DECL_6(byteArrayPrimitives::alienCallResult4, oop receiver, oop argument1, oop argument2, oop argument3,
+            oop argument4, oop argument5) {
+  PROLOGUE_6("alienCallResult4", receiver, argument1, argument2, argument3, argument4, argument5);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResultArgs(argument1);
   checkAlienCalloutArg1(argument2);
@@ -976,25 +980,20 @@ PRIM_DECL_6(byteArrayPrimitives::alienCallResult4, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_4 entry = call_out_func_4(StubRoutines::alien_call_entry(4));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3),
-        alienArg(argument4),
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
         alienArg(argument5));
-  
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
 
-PRIM_DECL_7(byteArrayPrimitives::alienCallResult5, oop receiver, oop argument1, oop argument2,
-            oop argument3, oop argument4, oop argument5, oop argument6) {
-  PROLOGUE_7("alienCallResult5", receiver, argument1, argument2, argument3, argument4, 
-    argument5, argument6);
+PRIM_DECL_7(byteArrayPrimitives::alienCallResult5, oop receiver, oop argument1, oop argument2, oop argument3,
+            oop argument4, oop argument5, oop argument6) {
+  PROLOGUE_7("alienCallResult5", receiver, argument1, argument2, argument3, argument4, argument5, argument6);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResultArgs(argument1);
   checkAlienCalloutArg1(argument2);
@@ -1005,26 +1004,20 @@ PRIM_DECL_7(byteArrayPrimitives::alienCallResult5, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_5 entry = call_out_func_5(StubRoutines::alien_call_entry(5));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3),
-        alienArg(argument4),
-        alienArg(argument5),
-        alienArg(argument6));
-  
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
+        alienArg(argument5), alienArg(argument6));
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
 
-PRIM_DECL_8(byteArrayPrimitives::alienCallResult6, oop receiver, oop argument1, oop argument2,
-            oop argument3, oop argument4, oop argument5, oop argument6, oop argument7) {
-  PROLOGUE_8("alienCallResult6", receiver, argument1, argument2, argument3, argument4, 
-    argument5, argument6, argument7);
+PRIM_DECL_8(byteArrayPrimitives::alienCallResult6, oop receiver, oop argument1, oop argument2, oop argument3,
+            oop argument4, oop argument5, oop argument6, oop argument7) {
+  PROLOGUE_8("alienCallResult6", receiver, argument1, argument2, argument3, argument4, argument5, argument6, argument7);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResultArgs(argument1);
   checkAlienCalloutArg1(argument2);
@@ -1036,26 +1029,20 @@ PRIM_DECL_8(byteArrayPrimitives::alienCallResult6, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_6 entry = call_out_func_6(StubRoutines::alien_call_entry(6));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3),
-        alienArg(argument4),
-        alienArg(argument5),
-        alienArg(argument6),
-        alienArg(argument7));
-  
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
+        alienArg(argument5), alienArg(argument6), alienArg(argument7));
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
-PRIM_DECL_9(byteArrayPrimitives::alienCallResult7, oop receiver, oop argument1, oop argument2,
-    oop argument3, oop argument4, oop argument5, oop argument6, oop argument7, oop argument8) {
-  PROLOGUE_9("alienCallResult7", receiver, argument1, argument2, argument3, argument4, 
-    argument5, argument6, argument7, argument8);
+PRIM_DECL_9(byteArrayPrimitives::alienCallResult7, oop receiver, oop argument1, oop argument2, oop argument3,
+            oop argument4, oop argument5, oop argument6, oop argument7, oop argument8) {
+  PROLOGUE_9("alienCallResult7", receiver, argument1, argument2, argument3, argument4, argument5, argument6, argument7,
+             argument8);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResultArgs(argument1);
   checkAlienCalloutArg1(argument2);
@@ -1068,17 +1055,10 @@ PRIM_DECL_9(byteArrayPrimitives::alienCallResult7, oop receiver, oop argument1, 
 
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_7 entry = call_out_func_7(StubRoutines::alien_call_entry(7));
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        alienArg(argument2),
-        alienArg(argument3),
-        alienArg(argument4),
-        alienArg(argument5),
-        alienArg(argument6),
-        alienArg(argument7),
-        alienArg(argument8));
+  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
+        alienArg(argument5), alienArg(argument6), alienArg(argument7), alienArg(argument8));
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
@@ -1095,12 +1075,9 @@ PRIM_DECL_3(byteArrayPrimitives::alienCallResultWithArguments, oop receiver, oop
   }
   PersistentHandle* resultHandle = new PersistentHandle(argument1);
   call_out_func_args entry = call_out_func_args(StubRoutines::alien_call_with_args_entry());
-  
+
   void* address = alienAddress(receiver);
-  entry(address,
-        alienResult2(resultHandle),
-        as_smiOop(length),
-        objArrayOop(argument2)->objs(1));
+  entry(address, alienResult2(resultHandle), as_smiOop(length), objArrayOop(argument2)->objs(1));
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;

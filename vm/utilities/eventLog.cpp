@@ -26,14 +26,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 EventLog* eventLog;
 
-void eventlog_init() { eventLog = new EventLog; }
+void eventlog_init() {
+  eventLog = new EventLog;
+}
 
 static char* noEvent = "no event";
 
 void EventLog::init() {
-  buf = next = NEW_C_HEAP_ARRAY( EL_Event, EventLogLength);
+  buf = next = NEW_C_HEAP_ARRAY(EL_Event, EventLogLength);
   bufEnd = buf + EventLogLength;
-  for (EL_Event* e = buf; e < bufEnd; e++) e->name = noEvent;
+  for (EL_Event* e = buf; e < bufEnd; e++)
+    e->name = noEvent;
 }
 
 EventLog::EventLog() {
@@ -51,34 +54,44 @@ void EventLog::resize() {
        e = nextEvent(e, oldBuf, oldEnd), next = nextEvent(next, buf, bufEnd)) {
     *next = *e;
   }
-  FreeHeap( oldBuf);
+  FreeHeap(oldBuf);
 }
 
 void EventLog::printPartial(int n) {
   EL_Event* e = next;
   // find starting point
-  if (n >= EventLogLength) n = EventLogLength - 1;
+  if (n >= EventLogLength)
+    n = EventLogLength - 1;
   int i;
-  for (i = 0; i < n; i++, e = prevEvent(e, buf, bufEnd)) ;
-  
+  for (i = 0; i < n; i++, e = prevEvent(e, buf, bufEnd))
+    ;
+
   // skip empty entries
   i = 0;
-  for (; e != next && e->name == noEvent; i++, e = nextEvent(e, buf, bufEnd)) ;
+  for (; e != next && e->name == noEvent; i++, e = nextEvent(e, buf, bufEnd))
+    ;
 
   int indent = 0;
   for (; i < n && e != next; i++, e = nextEvent(e, buf, bufEnd)) {
     char* s;
     switch (e->status) {
-     case starting: s = "[ "; break;
-     case ending:   s = "] "; indent--; break;
-     case atomic:   s = "- "; break;
+      case starting:
+        s = "[ ";
+        break;
+      case ending:
+        s = "] ";
+        indent--;
+        break;
+      case atomic:
+        s = "- ";
+        break;
     }
-    lprintf("%*.s%s", 2*indent, " ", s);
+    lprintf("%*.s%s", 2 * indent, " ", s);
     lprintf(e->name, e->args[0], e->args[1], e->args[2]);
     lprintf("\n");
-    if (e->status == starting) indent++;
+    if (e->status == starting)
+      indent++;
   }
   if (indent != nesting)
-    lprintf("Actual event nesting is %ld greater than shown.\n",
-	   nesting - indent);
+    lprintf("Actual event nesting is %ld greater than shown.\n", nesting - indent);
 }

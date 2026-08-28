@@ -23,53 +23,39 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Bogosity alert:  for non-ANSI C, `obj' and `t' must not be separated
 //  by whitespace in either the parameters of the definition or
-//  the arguments of the call.  
+//  the arguments of the call.
 
-#define assert_type(obj,t,msg)                                               \
-  assert(CONC(oop(obj)->is_,t()), msg)
+#define assert_type(obj, t, msg) assert(CONC(oop(obj)->is_, t()), msg)
 
-#define assert_mark(obj,msg)                                                 \
-  assert_type(obj,mark,msg)
+#define assert_mark(obj, msg) assert_type(obj, mark, msg)
 
-#define assert_smi(obj,msg)                                                  \
-  assert_type(obj,smi,msg)
+#define assert_smi(obj, msg) assert_type(obj, smi, msg)
 
-#define assert_mem(obj,msg)                                                  \
-  assert_type(obj,mem,msg)
+#define assert_mem(obj, msg) assert_type(obj, mem, msg)
 
-#define assert_objArray(obj,msg)                                             \
-  assert_type(obj,objArray,msg)
+#define assert_objArray(obj, msg) assert_type(obj, objArray, msg)
 
-#define assert_byteArray(obj,msg)                                            \
-  assert_type(obj,byteArray,msg)
+#define assert_byteArray(obj, msg) assert_type(obj, byteArray, msg)
 
-#define assert_doubleByteArray(obj,msg)                                      \
-  assert_type(obj,doubleByteArray,msg)
+#define assert_doubleByteArray(obj, msg) assert_type(obj, doubleByteArray, msg)
 
-#define assert_doubleValueArray(obj,msg)                                     \
-  assert_type(obj,doubleValueArray,msg)
+#define assert_doubleValueArray(obj, msg) assert_type(obj, doubleValueArray, msg)
 
-#define assert_symbol(obj,msg)                                               \
-  assert_type(obj,symbol,msg)
+#define assert_symbol(obj, msg) assert_type(obj, symbol, msg)
 
-#define assert_double(obj,msg)                                               \
-  assert_type(obj,double,msg)
+#define assert_double(obj, msg) assert_type(obj, double, msg)
 
-#define assert_block(obj,msg)                                                \
-  assert_type(obj,block,msg)
+#define assert_block(obj, msg) assert_type(obj, block, msg)
 
-#define assert_klass(obj,msg)                                                \
-  assert_type(obj,klass,msg)
+#define assert_klass(obj, msg) assert_type(obj, klass, msg)
 
-#define assert_process(obj,msg)                                              \
-  assert_type(obj,process,msg)
+#define assert_process(obj, msg) assert_type(obj, process, msg)
 
-#define assert_oop_aligned(p) \
-  assert((intptr_t)(p) % 4 == 0, "not word aligned")
-
+#define assert_oop_aligned(p) assert((intptr_t)(p) % 4 == 0, "not word aligned")
 
 #ifndef DEBUG
-  #ifndef PRODUCT
-    for now DEBUG should always be set in non-production versions  -Urs
-  #endif
+#ifndef PRODUCT
+    for
+    now DEBUG should always be set in non - production versions - Urs
+#endif
 #endif

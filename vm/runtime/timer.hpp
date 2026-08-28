@@ -29,34 +29,35 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Timers for simple measurements
 
 class timer {
- private:
+private:
   double userTime;
   double systemTime;
- public:
+
+public:
   void start();
   void stop();
   void print();
   double seconds();
 };
-
 
 class elapsedTimer {
- private:
+private:
   long_int counter;
- public:
-  elapsedTimer() : counter(0,0) {}
+
+public:
+  elapsedTimer() : counter(0, 0) {}
   void start();
   void stop();
   void print();
   double seconds();
 };
 
-// TimeStamp is used based on elapsed time and 
+// TimeStamp is used based on elapsed time and
 class TimeStamp {
- private:
+private:
   long_int counter;
 
- public:
+public:
   // Constructor
   TimeStamp();
 
@@ -75,10 +76,11 @@ class TimeStamp {
 //
 
 class TraceTime {
- private:
-  bool   active;
+private:
+  bool active;
   elapsedTimer t;
- public:
+
+public:
   TraceTime(const char* title, bool doit = true);
   ~TraceTime();
 };

@@ -65,31 +65,31 @@ void IllegalNameDesc::print() {
 
 bool LocationNameDesc::equal(NameDesc* other) const {
   if (other->isLocation()) {
-    return location() == ((LocationNameDesc*) other)->location();
+    return location() == ((LocationNameDesc*)other)->location();
   }
   return false;
 }
 
 bool ValueNameDesc::equal(NameDesc* other) const {
   if (other->isValue()) {
-    return value() == ((ValueNameDesc*) other)->value();
+    return value() == ((ValueNameDesc*)other)->value();
   }
   return false;
 }
 
 bool BlockValueNameDesc::equal(NameDesc* other) const {
   if (other->isBlockValue()) {
-    return block_method() == ((BlockValueNameDesc*) other)->block_method()
-        && parent_scope()->s_equivalent(((BlockValueNameDesc*) other)->parent_scope());
+    return block_method() == ((BlockValueNameDesc*)other)->block_method() &&
+           parent_scope()->s_equivalent(((BlockValueNameDesc*)other)->parent_scope());
   }
   return false;
 }
 
 bool MemoizedBlockNameDesc::equal(NameDesc* other) const {
   if (other->isMemoizedBlock()) {
-    return location()     == ((MemoizedBlockNameDesc*) other)->location()
-        && block_method() == ((MemoizedBlockNameDesc*) other)->block_method()
-        && parent_scope()->s_equivalent(((MemoizedBlockNameDesc*) other)->parent_scope());
+    return location() == ((MemoizedBlockNameDesc*)other)->location() &&
+           block_method() == ((MemoizedBlockNameDesc*)other)->block_method() &&
+           parent_scope()->s_equivalent(((MemoizedBlockNameDesc*)other)->parent_scope());
   }
   return false;
 }
@@ -103,8 +103,7 @@ extern "C" blockClosureOop allocateBlock(smiOop nofArgs);
 oop BlockValueNameDesc::value(const frame* fr) const {
   // create a block closure
   if (MaterializeEliminatedBlocks || StackChunkBuilder::is_deoptimizing()) {
-    blockClosureOop blk = blockClosureOop(
-	 allocateBlock(as_smiOop(block_method()->number_of_arguments())));
+    blockClosureOop blk = blockClosureOop(allocateBlock(as_smiOop(block_method()->number_of_arguments())));
     blk->set_method(block_method());
 
     compiledVFrame* vf = compiledVFrame::new_vframe(fr, parent_scope(), 0);
@@ -121,19 +120,16 @@ oop BlockValueNameDesc::value(const frame* fr) const {
 
 oop MemoizedBlockNameDesc::value(const frame* fr) const {
   // check if the block has been created
-  compiledVFrame* vf = fr 
-                     ? compiledVFrame::new_vframe(fr, parent_scope(), 0)
-		     : NULL;
+  compiledVFrame* vf = fr ? compiledVFrame::new_vframe(fr, parent_scope(), 0) : NULL;
 
   oop stored_value = compiledVFrame::resolve_location(location(), vf);
   if (stored_value != uncreatedBlockValue()) {
     return stored_value;
   }
-  
+
   // otherwise do the same as for a BlockValueNameDesc
   if (MaterializeEliminatedBlocks || StackChunkBuilder::is_deoptimizing()) {
-    blockClosureOop blk = blockClosureOop(
-	 allocateBlock(as_smiOop(block_method()->number_of_arguments())));
+    blockClosureOop blk = blockClosureOop(allocateBlock(as_smiOop(block_method()->number_of_arguments())));
     blk->set_method(block_method());
 
     blk->set_lexical_scope(vf->canonical_context());

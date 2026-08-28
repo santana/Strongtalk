@@ -13,7 +13,7 @@ SETUP(UniverseTests) {
   eden_old_top = eden_top;
 }
 
-TEARDOWN(UniverseTests){
+TEARDOWN(UniverseTests) {
   //Can't collect because the allocated space is not an object.
   eden_top = eden_old_top;
 }
@@ -27,12 +27,12 @@ TESTF(UniverseTests, allocateShouldAllocateInNewSpaceWhenSpaceAvailable) {
 
 TESTF(UniverseTests, allocateShouldFailWhenNoSpaceAndScavengeDisallowed) {
   int freeSpace = Universe::new_gen.eden()->free();
-  oop* chunk = Universe::allocate(freeSpace/oopSize + 1, NULL, false);
+  oop* chunk = Universe::allocate(freeSpace / oopSize + 1, NULL, false);
   ASSERT_EQUALS(0L, (char*)chunk);
 }
 
 TESTF(UniverseTests, allocateTenuredShouldFailWhenNoSpaceAndExpansionDisallowed) {
   int freeSpace = Universe::old_gen.free();
-  oop* chunk = Universe::allocate_tenured(freeSpace/oopSize + 1, false);
+  oop* chunk = Universe::allocate_tenured(freeSpace / oopSize + 1, false);
   ASSERT_EQUALS(0L, (char*)chunk);
 }

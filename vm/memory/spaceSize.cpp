@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "memory/spaceSize.hpp"
 #include "memory/universe.hpp"
 #include "runtime/debug.hpp"
@@ -35,18 +34,18 @@ static int scale_and_adjust(int value) {
 }
 
 void spaceSizes::initialize() {
-  reserved_object_size   = scale_and_adjust(ReservedHeapSize);
-  eden_size              = scale_and_adjust(EdenSize);
-  surv_size              = scale_and_adjust(SurvivorSize);
-  old_size               = scale_and_adjust(OldSize);
+  reserved_object_size = scale_and_adjust(ReservedHeapSize);
+  eden_size = scale_and_adjust(EdenSize);
+  surv_size = scale_and_adjust(SurvivorSize);
+  old_size = scale_and_adjust(OldSize);
 
-  reserved_codes_size    = scale_and_adjust(ReservedCodeSize); // not used?
-  code_size              = scale_and_adjust(CodeSize);
+  reserved_codes_size = scale_and_adjust(ReservedCodeSize); // not used?
+  code_size = scale_and_adjust(CodeSize);
 
-  reserved_pic_heap_size = scale_and_adjust(ReservedPICSize);  // not used?
-  pic_heap_size          = scale_and_adjust(PICSize);
+  reserved_pic_heap_size = scale_and_adjust(ReservedPICSize); // not used?
+  pic_heap_size = scale_and_adjust(PICSize);
 
-  jump_table_size        = JumpTableSize;
+  jump_table_size = JumpTableSize;
 }
 
 #ifdef unused_but_maybe_useful_later
@@ -76,4 +75,3 @@ static int getSize(int def) {
 }
 
 #endif
-

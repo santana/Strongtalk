@@ -27,17 +27,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/blockOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class blockClosureKlass: public memOopKlass {
- public:
+class blockClosureKlass : public memOopKlass {
+public:
   // testers
-  bool oop_is_block()                const { return true;  }
+  bool oop_is_block() const { return true; }
 
   // allocation properties
-  bool can_inline_allocation()       const { return false; }
+  bool can_inline_allocation() const { return false; }
 
   // reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // arity
   int number_of_arguments() const;
@@ -53,8 +53,8 @@ class blockClosureKlass: public memOopKlass {
   Format format() { return blockClosure_klass; }
 
   // scavenge
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators
@@ -75,20 +75,20 @@ class blockClosureKlass: public memOopKlass {
   friend void set_blockClosureKlass_vtbl(Klass* k);
 };
 void set_blockClosureKlass_vtbl(Klass* k);
-class contextKlass: public memOopKlass {
- public:
+class contextKlass : public memOopKlass {
+public:
   // testers
-  bool oop_is_context()              const { return true;  }
+  bool oop_is_context() const { return true; }
 
   // allocation properties
-  bool can_inline_allocation()       const { return false; }
+  bool can_inline_allocation() const { return false; }
 
   // reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // allocation
-  oop allocateObjectSize(int num_of_temps, bool permit_scavenge=true, bool tenured = false);
+  oop allocateObjectSize(int num_of_temps, bool permit_scavenge = true, bool tenured = false);
   static contextOop allocate_context(int num_of_temps);
 
   // creates invocation
@@ -98,8 +98,8 @@ class contextKlass: public memOopKlass {
   Format format() { return context_klass; }
 
   // scavenge
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators

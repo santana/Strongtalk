@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 // StubRoutines contains a set of little assembly run-time routines.
 // Instead of relying on an assembler, these routines are generated
 // during system initialization.
@@ -40,22 +39,28 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "asm/assembler.hpp"
 #include "runtime/os.hpp"
 
-class StubRoutines: AllStatic {
- private:
+class StubRoutines : AllStatic {
+private:
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   // AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
   // bytes), so the stub routines need a larger code buffer.
-  enum { _code_size = 60000 };
+  enum {
+    _code_size = 60000
+  };
 #elif DELTA_X86_64
   // x86-64 stubs use REX.W prefixes on all pointer operations, growing ~30%.
-  enum { _code_size = 24000 };
+  enum {
+    _code_size = 24000
+  };
 #else
-  enum { _code_size = 12000 };			// simply increase if too small (assembler will crash if too small)
+  enum {
+    _code_size = 12000
+  }; // simply increase if too small (assembler will crash if too small)
 #endif
-  static bool _is_initialized;			// true if StubRoutines has been initialized
-//  static char _code[_code_size];		// the code buffer for the stub routines
-  static char* _code;		// the code buffer for the stub routines
-  static void (*single_step_fn)();              // pointer to the current single step function (used by evaluator and ST debugger)
+  static bool _is_initialized; // true if StubRoutines has been initialized
+  //  static char _code[_code_size];		// the code buffer for the stub routines
+  static char* _code; // the code buffer for the stub routines
+  static void (*single_step_fn)(); // pointer to the current single step function (used by evaluator and ST debugger)
 
   // add entry points here
   static char* _ic_normal_lookup_entry;
@@ -91,96 +96,96 @@ class StubRoutines: AllStatic {
   static char* _allocate_entries[];
   static char* _alien_call_entries[];
   static char* _alien_call_with_args_entry;
-  
+
   // add tracing routines here
   static void trace_DLL_call_1(dll_func function, oop* last_argument, int nof_arguments);
   static void trace_DLL_call_2(int result);
   static void wrong_DLL_call();
 
-
   // add generators here
   static char* generate_ic_lookup(MacroAssembler* masm, char* lookup_routine_entry);
   static char* generate_call_DLL(MacroAssembler* masm, bool async);
   static char* generate_lookup_DLL(MacroAssembler* masm, bool async);
-  
-  static char* generate_ic_normal_lookup		(MacroAssembler* masm);
-  static char* generate_ic_super_lookup			(MacroAssembler* masm);
-  static char* generate_zombie_nmethod	    		(MacroAssembler* masm);
-  static char* generate_zombie_block_nmethod		(MacroAssembler* masm);
-  static char* generate_megamorphic_ic			(MacroAssembler* masm);
-  static char* generate_compile_block			(MacroAssembler* masm);
-  static char* generate_continue_NLR			(MacroAssembler* masm);
-  static char* generate_call_sync_DLL			(MacroAssembler* masm)	{ return generate_call_DLL  (masm, false); }
-  static char* generate_call_async_DLL			(MacroAssembler* masm)	{ return generate_call_DLL  (masm, true ); }
-  static char* generate_lookup_sync_DLL			(MacroAssembler* masm)	{ return generate_lookup_DLL(masm, false); }
-  static char* generate_lookup_async_DLL		(MacroAssembler* masm)	{ return generate_lookup_DLL(masm, true ); }
-  static char* generate_recompile_stub			(MacroAssembler* masm);
-  static char* generate_uncommon_trap			(MacroAssembler* masm);
-  static char* generate_verify_context_chain		(MacroAssembler* masm);
-  static char* generate_deoptimize_block		(MacroAssembler* masm);
-  static char* generate_call_inspector			(MacroAssembler* masm);
 
-  static char* generate_nlr_return_from_Delta		(MacroAssembler* masm);
-  static char* generate_call_delta			(MacroAssembler* masm);
+  static char* generate_ic_normal_lookup(MacroAssembler* masm);
+  static char* generate_ic_super_lookup(MacroAssembler* masm);
+  static char* generate_zombie_nmethod(MacroAssembler* masm);
+  static char* generate_zombie_block_nmethod(MacroAssembler* masm);
+  static char* generate_megamorphic_ic(MacroAssembler* masm);
+  static char* generate_compile_block(MacroAssembler* masm);
+  static char* generate_continue_NLR(MacroAssembler* masm);
+  static char* generate_call_sync_DLL(MacroAssembler* masm) { return generate_call_DLL(masm, false); }
+  static char* generate_call_async_DLL(MacroAssembler* masm) { return generate_call_DLL(masm, true); }
+  static char* generate_lookup_sync_DLL(MacroAssembler* masm) { return generate_lookup_DLL(masm, false); }
+  static char* generate_lookup_async_DLL(MacroAssembler* masm) { return generate_lookup_DLL(masm, true); }
+  static char* generate_recompile_stub(MacroAssembler* masm);
+  static char* generate_uncommon_trap(MacroAssembler* masm);
+  static char* generate_verify_context_chain(MacroAssembler* masm);
+  static char* generate_deoptimize_block(MacroAssembler* masm);
+  static char* generate_call_inspector(MacroAssembler* masm);
+
+  static char* generate_nlr_return_from_Delta(MacroAssembler* masm);
+  static char* generate_call_delta(MacroAssembler* masm);
   // generate_call_delta assigns _return_from_Delta
-  static char* generate_single_step_stub		(MacroAssembler* masm);
-  static char* generate_unpack_unoptimized_frames	(MacroAssembler* masm);
-  static char* generate_provoke_nlr_at			(MacroAssembler* masm);
-  static char* generate_continue_nlr_in_delta		(MacroAssembler* masm);
-  static char* generate_handle_pascal_callback_stub	(MacroAssembler* masm);
-  static char* generate_handle_C_callback_stub		(MacroAssembler* masm);
-  static char* generate_oopify_float			(MacroAssembler* masm);
-  
-  static char* generate_PIC_stub			(MacroAssembler* masm, int pic_size	);
-  static char* generate_allocate			(MacroAssembler* masm, int size		);
-  static char* generate_alien_call			(MacroAssembler* masm, int args		);
-  static char* generate_alien_call_with_args            (MacroAssembler* masm);
+  static char* generate_single_step_stub(MacroAssembler* masm);
+  static char* generate_unpack_unoptimized_frames(MacroAssembler* masm);
+  static char* generate_provoke_nlr_at(MacroAssembler* masm);
+  static char* generate_continue_nlr_in_delta(MacroAssembler* masm);
+  static char* generate_handle_pascal_callback_stub(MacroAssembler* masm);
+  static char* generate_handle_C_callback_stub(MacroAssembler* masm);
+  static char* generate_oopify_float(MacroAssembler* masm);
+
+  static char* generate_PIC_stub(MacroAssembler* masm, int pic_size);
+  static char* generate_allocate(MacroAssembler* masm, int size);
+  static char* generate_alien_call(MacroAssembler* masm, int args);
+  static char* generate_alien_call_with_args(MacroAssembler* masm);
 
   // helpers for generation
   static char* generate(MacroAssembler* masm, char* title, char* gen(MacroAssembler*));
   static char* generate(MacroAssembler* masm, char* title, char* gen(MacroAssembler*, int argument), int argument);
-  static void  alien_arg_size(MacroAssembler* masm, Label &nextArg);
-  static void  push_alien_arg(MacroAssembler* masm, Label &nextArg);
-  static void  push_alignment_spacers(MacroAssembler* masm);
+  static void alien_arg_size(MacroAssembler* masm, Label& nextArg);
+  static void push_alien_arg(MacroAssembler* masm, Label& nextArg);
+  static void push_alignment_spacers(MacroAssembler* masm);
 
- public:
+public:
   // add entry point accessors here
-  static char* ic_normal_lookup_entry()		{ return _ic_normal_lookup_entry; }
-  static char* ic_super_lookup_entry()		{ return _ic_super_lookup_entry; }
-  static char* zombie_nmethod_entry()		{ return _zombie_nmethod_entry; }
-  static char* zombie_block_nmethod_entry()     { return _zombie_block_nmethod_entry; }
-  static char* megamorphic_ic_entry()		{ return _megamorphic_ic_entry; }
-  static char* compile_block_entry() 		{ return _compile_block_entry; }
-  static char* continue_NLR_entry()		{ return _continue_NLR_entry; }
-  static char* call_DLL_entry(bool async)	{ return async ? _call_async_DLL_entry   : _call_sync_DLL_entry; }
-  static char* lookup_DLL_entry(bool async)	{ return async ? _lookup_async_DLL_entry : _lookup_sync_DLL_entry; }
-  static char* recompile_stub_entry()		{ return _recompile_stub_entry; }
-  static char* used_uncommon_trap_entry()	{ return _used_uncommon_trap_entry; }
-  static char* unused_uncommon_trap_entry()	{ return _unused_uncommon_trap_entry; }
-  static char* verify_context_chain()		{ return _verify_context_chain_entry; }
-  static char* deoptimize_block_entry()		{ return _deoptimize_block_entry; }
-  static char* call_inspector_entry()		{ return _call_inspector_entry; }
+  static char* ic_normal_lookup_entry() { return _ic_normal_lookup_entry; }
+  static char* ic_super_lookup_entry() { return _ic_super_lookup_entry; }
+  static char* zombie_nmethod_entry() { return _zombie_nmethod_entry; }
+  static char* zombie_block_nmethod_entry() { return _zombie_block_nmethod_entry; }
+  static char* megamorphic_ic_entry() { return _megamorphic_ic_entry; }
+  static char* compile_block_entry() { return _compile_block_entry; }
+  static char* continue_NLR_entry() { return _continue_NLR_entry; }
+  static char* call_DLL_entry(bool async) { return async ? _call_async_DLL_entry : _call_sync_DLL_entry; }
+  static char* lookup_DLL_entry(bool async) { return async ? _lookup_async_DLL_entry : _lookup_sync_DLL_entry; }
+  static char* recompile_stub_entry() { return _recompile_stub_entry; }
+  static char* used_uncommon_trap_entry() { return _used_uncommon_trap_entry; }
+  static char* unused_uncommon_trap_entry() { return _unused_uncommon_trap_entry; }
+  static char* verify_context_chain() { return _verify_context_chain_entry; }
+  static char* deoptimize_block_entry() { return _deoptimize_block_entry; }
+  static char* call_inspector_entry() { return _call_inspector_entry; }
 
-  static char* call_delta()			{ return _call_delta; }
-  static char* return_from_Delta()		{ return _return_from_Delta; }
-  static char* single_step_stub()		{ return _single_step_stub; }
-  static char* single_step_continuation()	{ return _single_step_continuation; }
-  static char* unpack_unoptimized_frames()	{ return _unpack_unoptimized_frames; }
-  static char* provoke_nlr_at()			{ return _provoke_nlr_at; }
-  static char* continue_nlr_in_delta()		{ return _continue_nlr_in_delta; }
-  static char* handle_pascal_callback_stub()	{ return _handle_pascal_callback_stub; }
-  static char* handle_C_callback_stub()		{ return _handle_C_callback_stub; }
-  static char* oopify_float()			{ return _oopify_float; }
-  static char* alien_call_with_args_entry()     { return _alien_call_with_args_entry; }
-  
-  static char* PIC_stub_entry(int pic_size);	// PIC interpreter stubs: pic_size is the number of entries
-  static char* allocate_entry(int size);	// allocation of memOops: size is words in addition to header
-  static char* alien_call_entry(int args);      // alien call out       : args is the number of arguments passed to the function called
+  static char* call_delta() { return _call_delta; }
+  static char* return_from_Delta() { return _return_from_Delta; }
+  static char* single_step_stub() { return _single_step_stub; }
+  static char* single_step_continuation() { return _single_step_continuation; }
+  static char* unpack_unoptimized_frames() { return _unpack_unoptimized_frames; }
+  static char* provoke_nlr_at() { return _provoke_nlr_at; }
+  static char* continue_nlr_in_delta() { return _continue_nlr_in_delta; }
+  static char* handle_pascal_callback_stub() { return _handle_pascal_callback_stub; }
+  static char* handle_C_callback_stub() { return _handle_C_callback_stub; }
+  static char* oopify_float() { return _oopify_float; }
+  static char* alien_call_with_args_entry() { return _alien_call_with_args_entry; }
+
+  static char* PIC_stub_entry(int pic_size); // PIC interpreter stubs: pic_size is the number of entries
+  static char* allocate_entry(int size); // allocation of memOops: size is words in addition to header
+  static char*
+  alien_call_entry(int args); // alien call out       : args is the number of arguments passed to the function called
 
   // Support for profiling
-  static bool contains(char* pc)                { return (_code <= pc) && (pc < &_code[_code_size]); }
+  static bool contains(char* pc) { return (_code <= pc) && (pc < &_code[_code_size]); }
 
-  static void init();				// must be called in system initialization phase
+  static void init(); // must be called in system initialization phase
   static void setSingleStepHandler(void (*fn)()) { single_step_fn = fn; }
 };
 #endif // _STUB_ROUTINES_HPP

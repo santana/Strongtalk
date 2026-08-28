@@ -22,8 +22,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #ifdef WIN32
-#define STACK_SIZE ThreadStackSize * K
-# include "incls/_os.cpp.incl"
+#define STACK_SIZE ThreadStackSize* K
+#include "incls/_os.cpp.incl"
 
 #include <windows.h>
 #include <signal.h>
@@ -39,18 +39,15 @@ class Thread : public CHeapObj {
   static GrowableArray<Thread*>* threads;
   static Event* thread_created;
   HANDLE thread_handle;
-  int    thread_id;
-  void*  stack_limit;
-  
+  int thread_id;
+  void* stack_limit;
+
   static void initialize() {
-    threads = new(true) GrowableArray<Thread*>(10, true);
+    threads = new (true) GrowableArray<Thread*>(10, true);
     thread_created = os::create_event(false);
   }
-  static void release() {
-  }
-  static bool equals(void* token, Thread* element) {
-    return token == (void*) element;
-  }
+  static void release() {}
+  static bool equals(void* token, Thread* element) { return token == (void*)element; }
   Thread(HANDLE handle, int id, void* stackLimit) : thread_handle(handle), thread_id(id), stack_limit(stackLimit) {
     int index = threads->find(NULL, equals);
     if (index < 0)
@@ -68,20 +65,23 @@ class Thread : public CHeapObj {
     thread_start params;
     params.main = main;
     params.parameter = parameter;
-    
+
     os::reset_event(thread_created);
-    HANDLE result = CreateThread(NULL, STACK_SIZE, (LPTHREAD_START_ROUTINE) startThread, &params, 0, (unsigned long*) id_addr);
-    if (result == NULL) return NULL;
-    
+    HANDLE result =
+      CreateThread(NULL, STACK_SIZE, (LPTHREAD_START_ROUTINE)startThread, &params, 0, (unsigned long*)id_addr);
+    if (result == NULL)
+      return NULL;
+
     os::wait_for_event(thread_created);
-    
+
     return new Thread(result, *id_addr, params.stackLimit);
   }
 
   static Thread* findThread(int thread_id) {
     for (int index = 0; index < threads->length(); index++) {
       Thread* thread = threads->at(index);
-      if (thread == NULL) continue;
+      if (thread == NULL)
+        continue;
       if (thread->thread_id == thread_id)
         return thread;
     }
@@ -98,10 +98,10 @@ int WINAPI startThread(void* params) {
   char* spptr;
   __asm mov spptr, esp;
   int stackHeadroom = 2 * os::vm_page_size();
-  ((thread_start*) params)->stackLimit = spptr - STACK_SIZE + stackHeadroom;
+  ((thread_start*)params)->stackLimit = spptr - STACK_SIZE + stackHeadroom;
 
-  int (*main)(void*) = ((thread_start*) params)->main;
-  void* parameter    = ((thread_start*) params)->parameter;
+  int (*main)(void*) = ((thread_start*)params)->main;
+  void* parameter = ((thread_start*)params)->parameter;
 
   os::signal_event(Thread::thread_created);
   return main(parameter);
@@ -112,7 +112,7 @@ GrowableArray<Thread*>* Thread::threads = NULL;
 
 static HANDLE main_process;
 //static HANDLE main_thread;
-static int    main_thread_id;
+static int main_thread_id;
 static HANDLE watcher_thread;
 static Thread* main_thread;
 
@@ -124,27 +124,27 @@ static FILETIME process_kernel_time;
 extern void intercept_for_single_step();
 
 static inline double fileTimeAsDouble(FILETIME* time) {
-  const double high  = (double) ((unsigned int) ~0);
+  const double high = (double)((unsigned int)~0);
   const double split = 10000000.0;
-  double result = (time->dwLowDateTime / split) +
-                   time->dwHighDateTime * (high/split);
+  double result = (time->dwLowDateTime / split) + time->dwHighDateTime * (high / split);
   return result;
 }
 
-int os::getenv(char* name,char* buffer,int len) {
- int result = GetEnvironmentVariable(name, buffer, len);
- return result != 0;
+int os::getenv(char* name, char* buffer, int len) {
+  int result = GetEnvironmentVariable(name, buffer, len);
+  return result != 0;
 }
 
 bool os::move_file(char* from, char* to) {
-	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) ? true : false;
+  return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) ? true : false;
 }
 
 bool os::check_directory(char* dir_name) {
-	bool result = CreateDirectory(dir_name, NULL) ? true : false;
+  bool result = CreateDirectory(dir_name, NULL) ? true : false;
   if (!result) {
     int error = GetLastError();
-    if (error == ERROR_ALREADY_EXISTS) return true;
+    if (error == ERROR_ALREADY_EXISTS)
+      return true;
     return false;
   }
   return true;
@@ -175,21 +175,19 @@ void os::terminate_thread(Thread* thread) {
 }
 
 void os::delete_event(Event* event) {
-  CloseHandle((HANDLE) event);
+  CloseHandle((HANDLE)event);
 }
 
 Event* os::create_event(bool initial_state) {
   HANDLE result = CreateEvent(NULL, TRUE, initial_state, NULL);
-  if (result == NULL) fatal("CreateEvent failed");
-  return (Event*) result;
+  if (result == NULL)
+    fatal("CreateEvent failed");
+  return (Event*)result;
 }
 
 int os::updateTimes() {
-  return GetProcessTimes(main_process,
-			 &process_creation_time,
-			 &process_exit_time,
-			 &process_kernel_time,
-			 &process_user_time);
+  return GetProcessTimes(main_process, &process_creation_time, &process_exit_time, &process_kernel_time,
+                         &process_user_time);
 }
 
 double os::userTime() {
@@ -222,9 +220,9 @@ double os::system_time_for(Thread* thread) {
   return 0.0;
 }
 
-static int      has_performance_count = 0;
-static long_int initial_performance_count(0,0);
-static long_int performance_frequency(0,0);
+static int has_performance_count = 0;
+static long_int initial_performance_count(0, 0);
+static long_int performance_frequency(0, 0);
 
 long_int os::elapsed_counter() {
   LARGE_INTEGER count;
@@ -250,20 +248,21 @@ static void initialze_performance_counter() {
 }
 
 double os::elapsedTime() {
-  if (!has_performance_count) return 0.0;
+  if (!has_performance_count)
+    return 0.0;
   LARGE_INTEGER current_count;
   QueryPerformanceCounter(&current_count);
 
   long_int current(current_count.LowPart, current_count.HighPart);
   double count = (current - initial_performance_count).as_double();
-  double freq  = performance_frequency.as_double();
+  double freq = performance_frequency.as_double();
 
-  return count/freq;
+  return count / freq;
 }
 
 double os::currentTime() {
   SYSTEMTIME s;
-  FILETIME   f;
+  FILETIME f;
   GetSystemTime(&s);
   SystemTimeToFileTime(&s, &f);
   return fileTimeAsDouble(&f);
@@ -274,51 +273,73 @@ void os::fatalExit(int num) {
 }
 
 dll_func os::dll_lookup(char* name, DLL* library) {
-  dll_func result = (dll_func) GetProcAddress((HINSTANCE) library, name);
+  dll_func result = (dll_func)GetProcAddress((HINSTANCE)library, name);
   return result;
 }
 
 DLL* os::dll_load(char* name) {
   HINSTANCE lib = LoadLibrary(name);
-  return (DLL*) lib;
+  return (DLL*)lib;
 }
 
 bool os::dll_unload(DLL* library) {
-	return FreeLibrary((HINSTANCE) library) ? true : false;
+  return FreeLibrary((HINSTANCE)library) ? true : false;
 }
 
 char* os::dll_extension() {
   return ".dll";
 }
 char* exception_name(int code) {
-  switch(code) {
-    case EXCEPTION_ACCESS_VIOLATION:         return "Access violation";
-    case EXCEPTION_DATATYPE_MISALIGNMENT:    return "Data misaligned";
-    case EXCEPTION_BREAKPOINT:               return "Breakpoint";
-    case EXCEPTION_SINGLE_STEP:              return "Single step";
-    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:    return "Array bounds exceeded";
-    case EXCEPTION_FLT_DENORMAL_OPERAND:     return "Float denormal operand";
-    case EXCEPTION_FLT_DIVIDE_BY_ZERO:       return "Float divide by zero";
-    case EXCEPTION_FLT_INEXACT_RESULT:       return "Float inexact result";
-    case EXCEPTION_FLT_INVALID_OPERATION:    return "Float invalid operation";
-    case EXCEPTION_FLT_OVERFLOW:             return "Float overflow";
-    case EXCEPTION_FLT_STACK_CHECK:          return "Float stack check";
-    case EXCEPTION_FLT_UNDERFLOW:            return "Float underflow";
-    case EXCEPTION_INT_DIVIDE_BY_ZERO:       return "Integer divide by zero";
-    case EXCEPTION_INT_OVERFLOW:             return "Integer overflow";
-    case EXCEPTION_PRIV_INSTRUCTION:         return "Privileged instruction";
-    case EXCEPTION_IN_PAGE_ERROR:            return "In page error";
-    case EXCEPTION_ILLEGAL_INSTRUCTION:      return "Illegal Instruction";
-    case EXCEPTION_STACK_OVERFLOW:           return "Stack overflow";
-    case EXCEPTION_GUARD_PAGE:               return "Guard page";
-    case EXCEPTION_NONCONTINUABLE_EXCEPTION: return "Noncontinuable exception";
-    case EXCEPTION_INVALID_DISPOSITION:      return "Invalid disposition";
-    default:                                 return "Unknown exception";
+  switch (code) {
+    case EXCEPTION_ACCESS_VIOLATION:
+      return "Access violation";
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+      return "Data misaligned";
+    case EXCEPTION_BREAKPOINT:
+      return "Breakpoint";
+    case EXCEPTION_SINGLE_STEP:
+      return "Single step";
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+      return "Array bounds exceeded";
+    case EXCEPTION_FLT_DENORMAL_OPERAND:
+      return "Float denormal operand";
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+      return "Float divide by zero";
+    case EXCEPTION_FLT_INEXACT_RESULT:
+      return "Float inexact result";
+    case EXCEPTION_FLT_INVALID_OPERATION:
+      return "Float invalid operation";
+    case EXCEPTION_FLT_OVERFLOW:
+      return "Float overflow";
+    case EXCEPTION_FLT_STACK_CHECK:
+      return "Float stack check";
+    case EXCEPTION_FLT_UNDERFLOW:
+      return "Float underflow";
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+      return "Integer divide by zero";
+    case EXCEPTION_INT_OVERFLOW:
+      return "Integer overflow";
+    case EXCEPTION_PRIV_INSTRUCTION:
+      return "Privileged instruction";
+    case EXCEPTION_IN_PAGE_ERROR:
+      return "In page error";
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+      return "Illegal Instruction";
+    case EXCEPTION_STACK_OVERFLOW:
+      return "Stack overflow";
+    case EXCEPTION_GUARD_PAGE:
+      return "Guard page";
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+      return "Noncontinuable exception";
+    case EXCEPTION_INVALID_DISPOSITION:
+      return "Invalid disposition";
+    default:
+      return "Unknown exception";
   }
 }
 
 void trace_stack_at_exception(int* sp, int* fp, char* pc);
-void suspend_process_at_stack_overflow(int *sp, int* fp, char* pc);
+void suspend_process_at_stack_overflow(int* sp, int* fp, char* pc);
 
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   int code = exceptionInfo->ExceptionRecord->ExceptionCode;
@@ -335,10 +356,8 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   if (code == EXCEPTION_STACK_OVERFLOW) {
     lprintf("  Oops, we encounted a stack overflow.\n");
     lprintf("  You should check your program for infinite recursion!\n");
-    suspend_process_at_stack_overflow(
-      (int*)  exceptionInfo->ContextRecord->Esp,
-      (int*)  exceptionInfo->ContextRecord->Ebp,
-      (char*) exceptionInfo->ContextRecord->Eip);
+    suspend_process_at_stack_overflow((int*)exceptionInfo->ContextRecord->Esp, (int*)exceptionInfo->ContextRecord->Ebp,
+                                      (char*)exceptionInfo->ContextRecord->Eip);
     lprintf("  Coutinue execution ??????????????\n");
   } else {
     // Do not report vm state when getting stack overflow
@@ -346,23 +365,21 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   }
 
   if (os::message_box("Exception caught", "Do you want a stack trace?")) {
-    trace_stack_at_exception((int*)    exceptionInfo->ContextRecord->Esp,
-                             (int*)    exceptionInfo->ContextRecord->Ebp,
-			     (char*)   exceptionInfo->ContextRecord->Eip);
+    trace_stack_at_exception((int*)exceptionInfo->ContextRecord->Esp, (int*)exceptionInfo->ContextRecord->Ebp,
+                             (char*)exceptionInfo->ContextRecord->Eip);
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-HINSTANCE hInstance     = NULL;
+HINSTANCE hInstance = NULL;
 HINSTANCE hPrevInstance = NULL;
-int       nCmdShow      = 0;
+int nCmdShow = 0;
 
 extern int vm_main(int argc, char* argv[]);
 
-void os::set_args(int argc, char* argv[]) {
-}
+void os::set_args(int argc, char* argv[]) {}
 
-extern int    __argc;
+extern int __argc;
 extern char** __argv;
 
 int os::argc() {
@@ -377,9 +394,9 @@ char** os::argv() {
 
 int CALLBACK WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdLine, int cmdShow) {
   // Save all parameters
-  hInstance     = hInst;
+  hInstance = hInst;
   hPrevInstance = hPrevInst;
-  nCmdShow      = cmdShow;
+  nCmdShow = cmdShow;
   return my_main(__argc, __argv);
 }
 #else
@@ -388,9 +405,15 @@ int CALLBACK WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdLine, int cm
 //}
 #endif
 
-void* os::get_hInstance()    { return (void*) hInstance;     }
-void* os::get_prevInstance() { return (void*) hPrevInstance; }
-int   os::get_nCmdShow()     { return nCmdShow;            }
+void* os::get_hInstance() {
+  return (void*)hInstance;
+}
+void* os::get_prevInstance() {
+  return (void*)hPrevInstance;
+}
+int os::get_nCmdShow() {
+  return nCmdShow;
+}
 
 extern int bootstrapping;
 static CONTEXT context;
@@ -404,7 +427,7 @@ void os::timerPrintBuffer() {}
 // Virtual Memory
 
 char* os::reserve_memory(int size) {
-  return (char*) VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE);
+  return (char*)VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE);
 }
 
 bool os::commit_memory(char* addr, int size) {
@@ -417,11 +440,11 @@ bool os::commit_memory(char* addr, int size) {
 }
 
 bool os::uncommit_memory(char* addr, int size) {
-	return VirtualFree(addr, size, MEM_DECOMMIT) ? true : false;
+  return VirtualFree(addr, size, MEM_DECOMMIT) ? true : false;
 }
 
 bool os::release_memory(char* addr, int size) {
-	return VirtualFree(addr, 0, MEM_RELEASE) ? true : false;
+  return VirtualFree(addr, 0, MEM_RELEASE) ? true : false;
 }
 
 bool os::guard_memory(char* addr, int size) {
@@ -430,7 +453,7 @@ bool os::guard_memory(char* addr, int size) {
 }
 
 char* os::exec_memory(int size) {
-  return (char*) VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  return (char*)VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 }
 
 void* os::malloc(int size) {
@@ -461,14 +484,14 @@ void os::free(void* p) {
 }
 
 void os::transfer(Thread* from_thread, Event* from_event, Thread* to_thread, Event* to_event) {
-  ResetEvent((HANDLE) from_event);
-  SetEvent((HANDLE) to_event);
-  WaitForSingleObject((HANDLE) from_event, INFINITE);
+  ResetEvent((HANDLE)from_event);
+  SetEvent((HANDLE)to_event);
+  WaitForSingleObject((HANDLE)from_event, INFINITE);
 }
 
 void os::transfer_and_continue(Thread* from_thread, Event* from_event, Thread* to_thread, Event* to_event) {
-  ResetEvent((HANDLE) from_event);
-  SetEvent((HANDLE) to_event);
+  ResetEvent((HANDLE)from_event);
+  SetEvent((HANDLE)to_event);
 }
 
 void os::suspend_thread(Thread* thread) {
@@ -487,9 +510,9 @@ void os::fetch_top_frame(Thread* thread, int** sp, int** fp, char** pc) {
   CONTEXT context;
   context.ContextFlags = CONTEXT_CONTROL;
   if (GetThreadContext(thread->thread_handle, &context)) {
-    *sp = (int*)  context.Esp;
-    *fp = (int*)  context.Ebp;
-    *pc = (char*) context.Eip;
+    *sp = (int*)context.Esp;
+    *fp = (int*)context.Ebp;
+    *pc = (char*)context.Eip;
   } else {
     *sp = NULL;
     *fp = NULL;
@@ -502,19 +525,19 @@ int os::current_thread_id() {
 }
 
 void os::wait_for_event(Event* event) {
-  WaitForSingleObject((HANDLE) event, INFINITE);
+  WaitForSingleObject((HANDLE)event, INFINITE);
 }
 
 void os::reset_event(Event* event) {
-  ResetEvent((HANDLE) event);
+  ResetEvent((HANDLE)event);
 }
 
 void os::signal_event(Event* event) {
-  SetEvent((HANDLE) event);
+  SetEvent((HANDLE)event);
 }
 
 bool os::wait_for_event_or_timer(Event* event, int timeout_in_ms) {
-  return WAIT_TIMEOUT == WaitForSingleObject((HANDLE) event, timeout_in_ms);
+  return WAIT_TIMEOUT == WaitForSingleObject((HANDLE)event, timeout_in_ms);
 }
 
 extern "C" bool WizardMode;
@@ -528,10 +551,10 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType) {
     lprintf("\n{receiving break}\n");
     intercept_for_single_step();
   } else {
-   // if (number_of_ctrl_c < 10) {
-      lprintf("\n{reading .breakrc}");
-      process_settings_file(".breakrc", false);
-   /* } else {
+    // if (number_of_ctrl_c < 10) {
+    lprintf("\n{reading .breakrc}");
+    process_settings_file(".breakrc", false);
+    /* } else {
       lprintf("\n{aborting}\n");
    //   _asm { int 3 }
    breakpoint();
@@ -548,7 +571,7 @@ void real_time_tick(int delay_time);
 
 DWORD WINAPI WatcherMain(LPVOID lpvParam) {
   const int delay_interval = 1; // Delay 1 ms
-  while(1) {
+  while (1) {
     Sleep(delay_interval);
     real_time_tick(delay_interval);
   }
@@ -565,14 +588,16 @@ void os::initialize_system_info() {
 }
 
 int os::message_box(char* title, char* message) {
-/*  int result = MessageBox(NULL, message, title,
+  /*  int result = MessageBox(NULL, message, title,
                           MB_YESNO | MB_ICONERROR | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
 			  */
-    int result = IDYES; // ugly hack to reduce DLL depends
+  int result = IDYES; // ugly hack to reduce DLL depends
   return result == IDYES;
 }
 
-char*	  os::platform_class_name() { return "Win32Platform"; }
+char* os::platform_class_name() {
+  return "Win32Platform";
+}
 
 extern "C" bool EnableTasks;
 
@@ -581,11 +606,13 @@ LARGE_INTEGER counter;
 CRITICAL_SECTION ThreadSection;
 
 bool ThreadCritical::_initialized = false;
-void ThreadCritical::intialize() { 
-  InitializeCriticalSection(&ThreadSection); 
+void ThreadCritical::intialize() {
+  InitializeCriticalSection(&ThreadSection);
   _initialized = true;
 }
-void ThreadCritical::release()   { DeleteCriticalSection(&ThreadSection);     }
+void ThreadCritical::release() {
+  DeleteCriticalSection(&ThreadSection);
+}
 
 ThreadCritical::ThreadCritical() {
   EnterCriticalSection(&ThreadSection);
@@ -602,17 +629,16 @@ LONG WINAPI testVectoredHandler(struct _EXCEPTION_POINTERS* exceptionInfo) {
   //lprintf("Caught exception.\n");
   if (false && handler && !handling_exception) {
     handling_exception = true;
-    handler((void*)exceptionInfo->ContextRecord->Ebp,
-      (void*) exceptionInfo->ContextRecord->Esp,
-      (void*) exceptionInfo->ContextRecord->Eip);
+    handler((void*)exceptionInfo->ContextRecord->Ebp, (void*)exceptionInfo->ContextRecord->Esp,
+            (void*)exceptionInfo->ContextRecord->Eip);
     handling_exception = false;
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::add_exception_handler(void new_handler(void* fp, void* sp, void* pc)) {
-    handler = new_handler;
-    AddVectoredExceptionHandler(0, testVectoredHandler);
+  handler = new_handler;
+  AddVectoredExceptionHandler(0, testVectoredHandler);
 }
 
 int os::error_code() {
@@ -625,12 +651,12 @@ void os_init() {
 
   if (hInstance == NULL) {
     hInstance = GetModuleHandle(NULL);
-    nCmdShow  = SW_SHOWNORMAL;
+    nCmdShow = SW_SHOWNORMAL;
   }
 
   os::initialize_system_info();
 
-  //%todo: remove this processor affinity stuff 
+  //%todo: remove this processor affinity stuff
   ULONG systemMask;
   ULONG processMask;
   GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask);
@@ -647,17 +673,16 @@ void os_init() {
 
   HANDLE threadHandle;
   // Initialize main_process and main_thread
-  main_process = GetCurrentProcess();  // Remember main_process is a pseudo handle
-  if (!DuplicateHandle(main_process, GetCurrentThread(), main_process,
-                       &threadHandle, THREAD_ALL_ACCESS, FALSE, 0)) {
+  main_process = GetCurrentProcess(); // Remember main_process is a pseudo handle
+  if (!DuplicateHandle(main_process, GetCurrentThread(), main_process, &threadHandle, THREAD_ALL_ACCESS, FALSE, 0)) {
     fatal("DuplicateHandle failed\n");
   }
-  main_thread_id = (int) GetCurrentThreadId();
+  main_thread_id = (int)GetCurrentThreadId();
 
   main_thread = new Thread(threadHandle, main_thread_id, NULL);
 
   // Setup Windows Exceptions
-  
+
   SetUnhandledExceptionFilter(topLevelExceptionFilter);
 
   // Create the watcher thread

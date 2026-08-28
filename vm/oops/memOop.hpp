@@ -37,39 +37,39 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-class memOopDesc: public oopDesc {
- protected:
+class memOopDesc : public oopDesc {
+protected:
   // instance variable
   // markOop _mark;			// see comment in oop.hpp
-  klassOop _klass_field;		// the receiver's class
+  klassOop _klass_field; // the receiver's class
 
- public:
+public:
   // returns the header size of a memOop
-  static int header_size()		{ return sizeof(memOopDesc)/oopSize; }
+  static int header_size() { return sizeof(memOopDesc) / oopSize; }
 
   // field offsets for code generation
-  static int mark_byte_offset()		{ return (0 * oopSize) - Mem_Tag; }
-  static int klass_byte_offset()	{ return (1 * oopSize) - Mem_Tag; }
+  static int mark_byte_offset() { return (0 * oopSize) - Mem_Tag; }
+  static int klass_byte_offset() { return (1 * oopSize) - Mem_Tag; }
 
   // coercions
   friend memOop as_memOop(void* p);
 
   // conversion from memOop to memOopDesc*
-  memOopDesc* addr() const		{ return (memOopDesc*) (intptr_t(this) - Mem_Tag); }
+  memOopDesc* addr() const { return (memOopDesc*)(intptr_t(this) - Mem_Tag); }
 
   // space operations, is_old/new work w/o conversion to memOopDesc*
   // since oop > pointer (Mem_Tag >= 0)!
-  bool is_old() const			{ return (char*)this >= Universe::old_gen.low_boundary;  }
-  bool is_new() const			{ return (char*)this <  Universe::new_gen.high_boundary; }
+  bool is_old() const { return (char*)this >= Universe::old_gen.low_boundary; }
+  bool is_new() const { return (char*)this < Universe::new_gen.high_boundary; }
 
   // mark accessors
-  markOop mark() const			{ return addr()->_mark; }
+  markOop mark() const { return addr()->_mark; }
 
-  void set_mark(markOop m)		{ addr()->_mark = m; }
-  void set_mark(memOop p)		{ set_mark(markOop(p)); }
-  void set_mark(oop* p)			{ set_mark(markOop(p)); }
+  void set_mark(markOop m) { addr()->_mark = m; }
+  void set_mark(memOop p) { set_mark(markOop(p)); }
+  void set_mark(oop* p) { set_mark(markOop(p)); }
 
-  oop* klass_addr() const		{ return (oop*) &addr()->_klass_field; }
+  oop* klass_addr() const { return (oop*)&addr()->_klass_field; }
 
   void set_klass_field(klassOop k, bool cs = true) {
     // %optimization
@@ -77,35 +77,29 @@ class memOopDesc: public oopDesc {
     addr()->_klass_field = k;
   }
 
-  klassOop klass_field() const		{ return addr()->_klass_field; }
+  klassOop klass_field() const { return addr()->_klass_field; }
 
   Klass* blueprint() const {
     // %include-conflict "return klass_field()->klass_part();"
     // To avoid include problems the above code has be translated into:
-    return (Klass*) (((char*) klass_field()) + sizeof(memOopDesc) - Mem_Tag);
+    return (Klass*)(((char*)klass_field()) + sizeof(memOopDesc) - Mem_Tag);
   }
 
   // mark operations
 
   // use this after a copy to get a new mark
-  void init_mark() {
-    set_mark(markOopDesc::tagged_prototype());
-  }
-  void init_untagged_contents_mark() {
-    set_mark(markOopDesc::untagged_prototype());
-  }
+  void init_mark() { set_mark(markOopDesc::tagged_prototype()); }
+  void init_untagged_contents_mark() { set_mark(markOopDesc::untagged_prototype()); }
 
-  void mark_as_dying() {
-    set_mark(mark()->set_near_death());
-  }
+  void mark_as_dying() { set_mark(mark()->set_near_death()); }
 
   // Notification queue support
-  bool is_queued() const		{ return mark()->is_queued();       }
-  void set_queued()			{ set_mark(mark()->set_queued());   }
-  void clear_queued()			{ set_mark(mark()->clear_queued()); }
+  bool is_queued() const { return mark()->is_queued(); }
+  void set_queued() { set_mark(mark()->set_queued()); }
+  void clear_queued() { set_mark(mark()->clear_queued()); }
 
   // mark operations
-  inline smi identity_hash();		// inlined in memOop.inline.hpp
+  inline smi identity_hash(); // inlined in memOop.inline.hpp
   void set_identity_hash(smi);
 
   // memory operations
@@ -117,7 +111,7 @@ class memOopDesc: public oopDesc {
   // scavenge the body [begin..[end
   inline void scavenge_body(int begin, int end);
 
-  inline void scavenge_tenured_header()	{}
+  inline void scavenge_tenured_header() {}
   inline void scavenge_tenured_body(int begin, int end);
 
   // Scavenge all pointers in this object and return the oop size
@@ -140,7 +134,7 @@ class memOopDesc: public oopDesc {
 
   // support for iterate the layout of an object (see oop_layout_iterate).
   inline void layout_iterate_header(ObjectLayoutClosure* blk);
-         void layout_iterate_body(ObjectLayoutClosure* blk, int begin, int end);
+  void layout_iterate_body(ObjectLayoutClosure* blk, int begin, int end);
 
   // support for initializing objects (see allocateObject[Size]).
   inline void initialize_header(bool has_untagged, klassOop klass);
@@ -149,25 +143,25 @@ class memOopDesc: public oopDesc {
   bool verify();
 
   // forwarding operations
-  bool is_forwarded()			{ return mark()->is_mem(); }
+  bool is_forwarded() { return mark()->is_mem(); }
   void forward_to(memOop p) {
     assert(p->is_mem(), "forwarding to something that's not a memOop");
     set_mark(p);
   }
-  memOop forwardee()			{ return memOop(mark()); }
+  memOop forwardee() { return memOop(mark()); }
 
   // marking operations
-  bool is_gc_marked()     { return !(mark()->is_mark() && mark()->has_sentinel()); } // Changed from mark()->is_smi(), Lars
+  bool is_gc_marked() { return !(mark()->is_mark() && mark()->has_sentinel()); } // Changed from mark()->is_smi(), Lars
   //bool is_gc_marked()			{ return !mark()->has_sentinel(); } // Changed from mark()->is_smi(), Lars
 
   // GC operations (see discussion in universe_more.cpp for rational)
-  void gc_store_size();			// Store object size in age field and remembered set
-  int  gc_retrieve_size();		// Retrieve object size from age field and remembered set
+  void gc_store_size(); // Store object size in age field and remembered set
+  int gc_retrieve_size(); // Retrieve object size from age field and remembered set
 
   // accessors
-  oop* oops(int which = 0)		{ return &((oop*) addr())[which]; }
+  oop* oops(int which = 0) { return &((oop*)addr())[which]; }
 
-  oop raw_at(int which)			{ return *oops(which); }
+  oop raw_at(int which) { return *oops(which); }
   inline void raw_at_put(int which, oop contents, bool cs = true);
 
   // accessing instance variables
@@ -194,9 +188,8 @@ class memOopDesc: public oopDesc {
   friend class memOopKlass;
 };
 
-inline memOop as_memOop(void* p)
-{
-    assert((intptr_t(p) & Tag_Mask) == 0, "not an aligned C pointer");
-    return memOop(intptr_t(p) + Mem_Tag);
+inline memOop as_memOop(void* p) {
+  assert((intptr_t(p) & Tag_Mask) == 0, "not an aligned C pointer");
+  return memOop(intptr_t(p) + Mem_Tag);
 }
 #endif // _MEM_OOP_HPP

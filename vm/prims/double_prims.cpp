@@ -43,31 +43,29 @@ TRACE_FUNC(TraceDoublePrims, "double")
 int doubleOopPrimitives::number_of_calls;
 
 inline static oop new_double(double value) {
-  doubleOop d = as_doubleOop(Universe::allocate(sizeof(doubleOopDesc)/oopSize));
+  doubleOop d = as_doubleOop(Universe::allocate(sizeof(doubleOopDesc) / oopSize));
   d->init_untagged_contents_mark();
   d->set_klass_field(doubleKlassObj);
   d->set_value(value);
   return d;
 }
 
-# define ASSERT_RECEIVER assert(receiver->is_double(), "receiver must be double")
+#define ASSERT_RECEIVER assert(receiver->is_double(), "receiver must be double")
 
-# define DOUBLE_RELATIONAL_OP(op)                                     \
-  ASSERT_RECEIVER;                                                    \
-  if (!argument->is_double())                                         \
-    return markSymbol(vmSymbols::first_argument_has_wrong_type());    \
-  return doubleOop(receiver)->value() op doubleOop(argument)->value() \
-         ? trueObj : falseObj
+#define DOUBLE_RELATIONAL_OP(op)                                                                                       \
+  ASSERT_RECEIVER;                                                                                                     \
+  if (!argument->is_double())                                                                                          \
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
+  return doubleOop(receiver)->value() op doubleOop(argument) -> value() ? trueObj : falseObj
 
-# define DOUBLE_ARITH_OP(op)                                          \
-  ASSERT_RECEIVER;                                                    \
-  if (!argument->is_double())                                         \
-    return markSymbol(vmSymbols::first_argument_has_wrong_type());    \
+#define DOUBLE_ARITH_OP(op)                                                                                            \
+  ASSERT_RECEIVER;                                                                                                     \
+  if (!argument->is_double())                                                                                          \
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
   return new_double(doubleOop(receiver)->value() op doubleOop(argument)->value())
 
-
 PRIM_DECL_2(doubleOopPrimitives::lessThan, oop receiver, oop argument) {
-  PROLOGUE_2("lessThan", receiver, argument); 
+  PROLOGUE_2("lessThan", receiver, argument);
   DOUBLE_RELATIONAL_OP(<);
 }
 
@@ -146,7 +144,6 @@ PRIM_DECL_1(doubleOopPrimitives::tangent, oop receiver) {
   ASSERT_RECEIVER;
   return new_double(tan(doubleOop(receiver)->value()));
 }
-
 
 PRIM_DECL_1(doubleOopPrimitives::arcCosine, oop receiver) {
   PROLOGUE_1("arcCosine", receiver);
@@ -238,12 +235,13 @@ PRIM_DECL_1(doubleOopPrimitives::smi_floor, oop receiver) {
   ASSERT_RECEIVER;
   double result = ::floor(doubleOop(receiver)->value());
   if (result < 0.0) {
-    if (result > smi_min) return as_smiOop((int) result);
+    if (result > smi_min)
+      return as_smiOop((int)result);
   } else {
-    if (result < (double) smi_max) return as_smiOop((int) result);
+    if (result < (double)smi_max)
+      return as_smiOop((int)result);
   }
   return markSymbol(vmSymbols::conversion_failed());
-
 }
 
 PRIM_DECL_1(doubleOopPrimitives::ceiling, oop receiver) {
@@ -257,7 +255,7 @@ PRIM_DECL_1(doubleOopPrimitives::exponent, oop receiver) {
   PROLOGUE_1("exponent", receiver);
   ASSERT_RECEIVER;
   int result;
-  (void) frexp(doubleOop(receiver)->value(), &result);
+  (void)frexp(doubleOop(receiver)->value(), &result);
   return as_smiOop(result);
 }
 
@@ -289,11 +287,11 @@ PRIM_DECL_1(doubleOopPrimitives::roundedAsSmallInteger, oop receiver) {
   if (doubleOop(receiver)->value() < 0.0) {
     double result = ::ceil(doubleOop(receiver)->value() - 0.5);
     if (result > smi_min)
-    	return as_smiOop((int) result);
+      return as_smiOop((int)result);
   } else {
     double result = ::floor(doubleOop(receiver)->value() + 0.5);
-    if (result < (double) smi_max)
-    	 return as_smiOop((int) result);
+    if (result < (double)smi_max)
+      return as_smiOop((int)result);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
 }
@@ -302,25 +300,24 @@ PRIM_DECL_1(doubleOopPrimitives::asSmallInteger, oop receiver) {
   PROLOGUE_1("asSmallInteger", receiver);
   ASSERT_RECEIVER;
   double value = doubleOop(receiver)->value();
-  if (value != ::floor(value)) 
+  if (value != ::floor(value))
     return markSymbol(vmSymbols::smi_conversion_failed());
   if (value < 0.0) {
     if (value > smi_min)
-    	return as_smiOop((int) value);
+      return as_smiOop((int)value);
   } else {
-    if (value < (double) smi_max)
-    	 return as_smiOop((int) value);
+    if (value < (double)smi_max)
+      return as_smiOop((int)value);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
 }
-
 
 PRIM_DECL_2(doubleOopPrimitives::printFormat, oop receiver, oop argument) {
   PROLOGUE_2("printFormat", receiver, argument);
   ASSERT_RECEIVER;
   const int size = 100;
   char format[size];
-  
+
   if (argument->is_byteArray()) {
     byteArrayOop(argument)->copy_null_terminated(format, size);
   } else if (argument->is_doubleByteArray()) {
@@ -336,15 +333,16 @@ PRIM_DECL_1(doubleOopPrimitives::printString, oop receiver) {
   PROLOGUE_1("printString", receiver);
   ASSERT_RECEIVER;
   ResourceMark rm;
-  char* result = NEW_RESOURCE_ARRAY(char, 4*K);
-  int len = snprintf(result, 4*K, "%1.6f", doubleOop(receiver)->value());
-  while (len > 1 && result[len-1] == '0' && result[len-2] != '.') len--;
+  char* result = NEW_RESOURCE_ARRAY(char, 4 * K);
+  int len = snprintf(result, 4 * K, "%1.6f", doubleOop(receiver)->value());
+  while (len > 1 && result[len - 1] == '0' && result[len - 2] != '.')
+    len--;
   result[len] = '\0';
 
   BlockScavenge bs;
   byteArrayOop ba = oopFactory::new_byteArray(len);
   for (int i = 0; i < len; i++) {
-    ba->byte_at_put(i+1, result[i]);
+    ba->byte_at_put(i + 1, result[i]);
   }
   return ba;
 }
@@ -365,11 +363,11 @@ PRIM_DECL_1(doubleOopPrimitives::store_string, oop receiver) {
   BlockScavenge bs;
 
   double value = doubleOop(receiver)->value();
-  u_char* addr = (u_char*) &value;
+  u_char* addr = (u_char*)&value;
 
   byteArrayOop result = oopFactory::new_byteArray(8);
   for (int index = 0; index < 8; index++) {
-    result->byte_at_put(index+1, addr[index]); 
+    result->byte_at_put(index + 1, addr[index]);
   }
   return result;
 }
@@ -377,10 +375,13 @@ PRIM_DECL_1(doubleOopPrimitives::store_string, oop receiver) {
 PRIM_DECL_3(doubleOopPrimitives::mandelbrot, oop re, oop im, oop n) {
   PROLOGUE_3("mandelbrot", re, im, n);
 
-  if (!re->is_double()) return markSymbol(vmSymbols::first_argument_has_wrong_type ());
-  if (!im->is_double()) return markSymbol(vmSymbols::second_argument_has_wrong_type());
-  if (!n ->is_smi   ()) return markSymbol(vmSymbols::third_argument_has_wrong_type ());
-  
+  if (!re->is_double())
+    return markSymbol(vmSymbols::first_argument_has_wrong_type());
+  if (!im->is_double())
+    return markSymbol(vmSymbols::second_argument_has_wrong_type());
+  if (!n->is_smi())
+    return markSymbol(vmSymbols::third_argument_has_wrong_type());
+
   double c_re = doubleOop(re)->value();
   double c_im = doubleOop(im)->value();
   double z_re = c_re;
@@ -388,9 +389,9 @@ PRIM_DECL_3(doubleOopPrimitives::mandelbrot, oop re, oop im, oop n) {
   double d_re = z_re * z_re;
   double d_im = z_im * z_im;
 
-  int i    = 0;
+  int i = 0;
   int imax = smiOop(n)->value() - 1;
-  
+
   while (i < imax && d_re + d_im <= 4.0) {
     z_im = 2.0 * z_re * z_im + c_im;
     z_re = d_re - d_im + c_re;
@@ -402,10 +403,27 @@ PRIM_DECL_3(doubleOopPrimitives::mandelbrot, oop re, oop im, oop n) {
   return as_smiOop(i);
 }
 
-static void trap() { assert(false, "This primitive should be patched"); };
+static void trap() {
+  assert(false, "This primitive should be patched");
+};
 
-extern "C" oop PRIM_API double_subtract(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API double_divide(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API double_add(oop receiver, oop argument) 		{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API double_multiply(oop receiver, oop argument) 	{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop PRIM_API double_from_smi(oop receiver) 			{ trap(); return markSymbol(vmSymbols::primitive_trap()); };
+extern "C" oop PRIM_API double_subtract(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API double_divide(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API double_add(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API double_multiply(oop receiver, oop argument) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop PRIM_API double_from_smi(oop receiver) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};

@@ -34,21 +34,27 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // (e.g. an argument, local, or expression stack entry).  NameDescs are usually
 // stored in the zone as part of the debugging information.
 
-class NameDesc: public PrintableResourceObj {
+class NameDesc : public PrintableResourceObj {
   // are ResourceObj because some are created on-the-fly
- public:
-  virtual bool isLocation() const 	{ return false; }
-  virtual bool isValue() const 		{ return false; }
-  virtual bool isBlockValue() const 	{ return false; }
-  virtual bool isMemoizedBlock() const	{ return false; }
-  virtual bool isIllegal() const 	{ return false; }
+public:
+  virtual bool isLocation() const { return false; }
+  virtual bool isValue() const { return false; }
+  virtual bool isBlockValue() const { return false; }
+  virtual bool isMemoizedBlock() const { return false; }
+  virtual bool isIllegal() const { return false; }
 
-  virtual bool hasLocation() const 	{ return false; }
-  virtual Location location() const	{ SubclassResponsibility(); return unAllocated; }
-  virtual oop value(const frame* f = NULL) const { SubclassResponsibility(); return NULL; } 
-  
-  virtual bool verify()			{ return true; }
-  virtual void print()			= 0;
+  virtual bool hasLocation() const { return false; }
+  virtual Location location() const {
+    SubclassResponsibility();
+    return unAllocated;
+  }
+  virtual oop value(const frame* f = NULL) const {
+    SubclassResponsibility();
+    return NULL;
+  }
+
+  virtual bool verify() { return true; }
+  virtual void print() = 0;
 
   virtual bool equal(NameDesc* other) const { return false; }
 
@@ -56,103 +62,99 @@ class NameDesc: public PrintableResourceObj {
 };
 
 // something stored at a location
-struct LocationNameDesc: public NameDesc {
+struct LocationNameDesc : public NameDesc {
   Location _loc;
 
-  LocationNameDesc(Location loc) {
-    _loc = loc; 
-  }
+  LocationNameDesc(Location loc) { _loc = loc; }
 
-  bool isLocation() const 	{ return true; }
-  Location location() const 	{ return _loc; }
-  bool hasLocation() const  	{ return true; }
+  bool isLocation() const { return true; }
+  Location location() const { return _loc; }
+  bool hasLocation() const { return true; }
 
-  bool equal(NameDesc* other) const; 
-  
+  bool equal(NameDesc* other) const;
+
   void print();
 };
 
 // a run-time constant
-struct ValueNameDesc: public NameDesc {
+struct ValueNameDesc : public NameDesc {
   oop _v;
 
-  ValueNameDesc(oop v) {
-    _v = v;
-  }
-  
+  ValueNameDesc(oop v) { _v = v; }
+
   bool isValue() const { return true; }
-  
+
   oop value(const frame* f = NULL) const { return _v; }
 
-  bool equal(NameDesc* other) const; 
+  bool equal(NameDesc* other) const;
 
   void print();
 };
 
 // a block closure "constant", i.e., a block that has been optimized away
-struct BlockValueNameDesc: public NameDesc {
-  methodOop  _block_method;
+struct BlockValueNameDesc : public NameDesc {
+  methodOop _block_method;
   ScopeDesc* _parent_scope;
-  
+
   BlockValueNameDesc(methodOop block_method, ScopeDesc* parent_scope) {
     _block_method = block_method;
     _parent_scope = parent_scope;
   }
 
-  bool isBlockValue() const 	{ return true; }
-  
+  bool isBlockValue() const { return true; }
+
   // Returns a blockClosureOop
   // There are two cases:
-  // 1. During deoptmization, 
+  // 1. During deoptmization,
   //      where the contextOop referred by the block must be canonicalized
   //      to preserve language semantics.
-  // 2. Normal operation (use during stack tracing etc.), 
-  //      where contextOop canonicalization is not needed.     
+  // 2. Normal operation (use during stack tracing etc.),
+  //      where contextOop canonicalization is not needed.
   oop value(const frame* f = NULL) const;
 
-  methodOop block_method() const  { return _block_method; }
+  methodOop block_method() const { return _block_method; }
   ScopeDesc* parent_scope() const { return _parent_scope; }
 
-  bool equal(NameDesc* other) const; 
-  
+  bool equal(NameDesc* other) const;
+
   void print();
 };
 
-// a block closure that may or may not be created at runtime, so location l 
+// a block closure that may or may not be created at runtime, so location l
 // contains either the real block or a dummy block
-struct MemoizedBlockNameDesc: public NameDesc {
-  Location   _loc;
-  methodOop  _block_method;
+struct MemoizedBlockNameDesc : public NameDesc {
+  Location _loc;
+  methodOop _block_method;
   ScopeDesc* _parent_scope;
 
   MemoizedBlockNameDesc(Location loc, methodOop block_method, ScopeDesc* parent_scope) {
-    _loc          = loc;
+    _loc = loc;
     _block_method = block_method;
     _parent_scope = parent_scope;
   }
 
-  bool isMemoizedBlock() const 		{ return true; }
-  
-  Location location() const 		{ return _loc; }
-  methodOop block_method() const        { return _block_method; }
-  ScopeDesc* parent_scope() const       { return _parent_scope; }
-  static oop uncreatedBlockValue()	{ return smiOop_zero; }
+  bool isMemoizedBlock() const { return true; }
 
-  bool hasLocation() const  		{ return true; }
+  Location location() const { return _loc; }
+  methodOop block_method() const { return _block_method; }
+  ScopeDesc* parent_scope() const { return _parent_scope; }
+  static oop uncreatedBlockValue() { return smiOop_zero; }
+
+  bool hasLocation() const { return true; }
   oop value(const frame* f = NULL) const;
 
-  bool equal(NameDesc* other) const; 
-  
+  bool equal(NameDesc* other) const;
+
   void print();
 };
 
-struct IllegalNameDesc: public NameDesc {
+struct IllegalNameDesc : public NameDesc {
 
   IllegalNameDesc() {}
-  bool isIllegal() const 	{ return true; }
+  bool isIllegal() const { return true; }
 
-  bool equal(NameDesc* other) const; 
-  
+  bool equal(NameDesc* other) const;
+
   void print();
 };
 

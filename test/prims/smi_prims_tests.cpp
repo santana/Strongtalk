@@ -10,12 +10,12 @@
 
 using namespace easyunit;
 
-typedef oop (__stdcall * smifntype)(smiOop, smiOop);
+typedef oop(__stdcall* smifntype)(smiOop, smiOop);
 
 extern "C" int expansion_count;
 DECLARE(SmiPrimsTests)
-  smifntype smiQuo;
-  symbolOop quoSymbol;
+smifntype smiQuo;
+symbolOop quoSymbol;
 END_DECLARE
 
 SETUP(SmiPrimsTests) {
@@ -24,8 +24,7 @@ SETUP(SmiPrimsTests) {
   smiQuo = smifntype(prim->fn());
 }
 
-TEARDOWN(SmiPrimsTests){
-}
+TEARDOWN(SmiPrimsTests) {}
 
 TESTF(SmiPrimsTests, quoShouldReturnDivideReceiverByArgument) {
   ASSERT_EQUALS(5, smiOop(smiQuo(as_smiOop(2), as_smiOop(10)))->value());

@@ -23,7 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Compiler/New Backend/Value Conformance
 //
-// Used by the new backed to make mappings conform before merging code pieces. 
+// Used by the new backed to make mappings conform before merging code pieces.
 //
 // Usage:
 //   MapConformance mp(1);
@@ -46,18 +46,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 template <class E> class GrowableArray;
 
 class Variable : ValueObj {
- private:
+private:
   int _value;
 
   enum {
-   special_type = 0,
-   reg_type     = 1,
-   stack_type   = 2
+    special_type = 0,
+    reg_type = 1,
+    stack_type = 2
   };
 
-  int type()   const { return _value & 0x3; }
-  int offset() const { return _value >> 2;  }
-  int value()  const { return _value; }
+  int type() const { return _value & 0x3; }
+  int offset() const { return _value >> 2; }
+  int value() const { return _value; }
 
   static Variable new_variable(int type, int offset) {
     Variable result;
@@ -65,45 +65,44 @@ class Variable : ValueObj {
     return result;
   }
 
- public:
+public:
   Variable() { _value = 0; }
 
   // Generators
-  static Variable new_register(int offset) { return new_variable(reg_type,     offset); }
-  static Variable new_stack(int offset)    { return new_variable(stack_type,   offset); }
-  static Variable unused()                 { return new_variable(special_type, 0);      }
-  static Variable top_of_stack()           { return new_variable(special_type, 1);      }
+  static Variable new_register(int offset) { return new_variable(reg_type, offset); }
+  static Variable new_stack(int offset) { return new_variable(stack_type, offset); }
+  static Variable unused() { return new_variable(special_type, 0); }
+  static Variable top_of_stack() { return new_variable(special_type, 1); }
 
   // Testing
-  bool in_register() const { return type() == reg_type;    }
-  bool on_stack()    const { return type() == stack_type;  }
+  bool in_register() const { return type() == reg_type; }
+  bool on_stack() const { return type() == stack_type; }
 
-  bool is_unused()       const { return type() == special_type && offset() == 0; }
+  bool is_unused() const { return type() == special_type && offset() == 0; }
   bool is_top_of_stack() const { return type() == special_type && offset() == 1; }
 
   // Accessors
   int register_number() const { return offset(); }
-  int stack_offset()    const { return offset(); }
-   
+  int stack_offset() const { return offset(); }
+
   void set_unused() { _value = 0; }
 
   // Prints the variable.
   void print();
 
   // Comparison
-  friend bool operator == (Variable x, Variable y) { return x.value() == y.value(); }
-  friend bool operator != (Variable x, Variable y) { return x.value() != y.value(); }
+  friend bool operator==(Variable x, Variable y) { return x.value() == y.value(); }
+  friend bool operator!=(Variable x, Variable y) { return x.value() != y.value(); }
 };
-
 
 class MappingTask;
 
 class MapConformance : public ResourceObj {
- private:
-  Variable                     _free_register;
+private:
+  Variable _free_register;
   GrowableArray<MappingTask*>* mappings;
-  Variable*                    used_variables;
-  int                          number_of_used_variables;
+  Variable* used_variables;
+  int number_of_used_variables;
 
   bool reduce_noop_task(MappingTask* task);
   void simplify();
@@ -115,7 +114,8 @@ class MapConformance : public ResourceObj {
   void push(Variable src, int n);
 
   friend class MappingTask;
- public:
+
+public:
   // Constructor
   MapConformance();
 

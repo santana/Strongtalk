@@ -27,14 +27,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/klass.hpp"
 
 // A klassOop is the C++ equivalent of a Delta class.
-// Part of a klassOopDesc is a Klass which handle the 
+// Part of a klassOopDesc is a Klass which handle the
 // dispatching for the C++ method calls.
 
 //  klassOop object layout:
 //    [header     ]
 //    [klass_field]
 //      [vtbl                 ] <-- the Klass object starts here
-//      [non_indexable_size   ]  
+//      [non_indexable_size   ]
 //      [has_untagged_contents]  can be avoided if prototype is stored.
 //      [instvar              ]
 //      [superKlass           ]
@@ -43,27 +43,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <cstdint>
 
 class klassOopDesc : public memOopDesc {
- private:
-  Klass _klass_part; 
- public:
+private:
+  Klass _klass_part;
+
+public:
   klassOop addr() const { return reinterpret_cast<klassOop>(memOopDesc::addr()); }
   Klass* klass_part() const { return &addr()->_klass_part; }
 
   bool is_invalid() const { return mark()->is_klass_invalid(); }
 
-  void set_invalid(bool value) {
-    set_mark(value ? mark()->set_klass_invalid() : mark()->clear_klass_invalid());
-  }
+  void set_invalid(bool value) { set_mark(value ? mark()->set_klass_invalid() : mark()->clear_klass_invalid()); }
 
   // sizing
-  static int header_size() { return sizeof(klassOopDesc)/oopSize; }
+  static int header_size() { return sizeof(klassOopDesc) / oopSize; }
 
   // debugging
   void print_superclasses();
 
   void bootstrap_object(bootstrap* st);
   static intptr_t nonIndexableSizeOffset() {
-    return (intptr_t)(&((klassOopDesc*) NULL)->_klass_part._non_indexable_size);
+    return (intptr_t)(&((klassOopDesc*)NULL)->_klass_part._non_indexable_size);
   }
 };
 #endif // _KLASS_OOP_HPP

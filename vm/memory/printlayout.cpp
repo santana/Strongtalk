@@ -35,8 +35,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-const int indent_col =  3;
-const int value_col  = 16;
+const int indent_col = 3;
+const int value_col = 16;
 
 PrintObjectClosure::PrintObjectClosure(outputStream* st) {
   this->st = st ? st : mystd;
@@ -51,22 +51,22 @@ void PrintObjectClosure::do_object(memOop obj) {
   st->cr();
 }
 
-void PrintObjectClosure::do_mark(markOop *m) {
+void PrintObjectClosure::do_mark(markOop* m) {
   st->fill_to(indent_col);
   st->print("mark");
   st->sp();
   st->fill_to(value_col);
   (*m)->print_value();
-  st->cr(); 
+  st->cr();
 }
 
 void PrintObjectClosure::do_oop(char* title, oop* o) {
-  symbolOop name = obj->blueprint()->inst_var_name_at(o-(oop*)obj->addr());
+  symbolOop name = obj->blueprint()->inst_var_name_at(o - (oop*)obj->addr());
   st->fill_to(indent_col);
   if (name) {
     name->print_symbol_on(st);
   } else {
-    st->print("%s", title); 
+    st->print("%s", title);
   }
   st->sp();
   st->fill_to(value_col);
@@ -79,9 +79,11 @@ void PrintObjectClosure::do_byte(char* title, u_char* b) {
   st->print("%s", title);
   st->sp();
   st->fill_to(value_col);
-  char c = (char) *b;
-  if (isprint(c)) st->print_cr("%c",   c);
-  else            st->print_cr("\\%o", c);
+  char c = (char)*b;
+  if (isprint(c))
+    st->print_cr("%c", c);
+  else
+    st->print_cr("\\%o", c);
 }
 
 void PrintObjectClosure::do_long(char* title, void** p) {
@@ -100,14 +102,13 @@ void PrintObjectClosure::do_double(char* title, double* d) {
   st->print_cr("%.15f", *d);
 }
 
-void PrintObjectClosure::begin_indexables() {
-}
+void PrintObjectClosure::begin_indexables() {}
 
-void PrintObjectClosure::end_indexables() {
-}
- 
+void PrintObjectClosure::end_indexables() {}
+
 void PrintObjectClosure::do_indexable_oop(int index, oop* o) {
-  if (index > MaxElementPrintSize) return;
+  if (index > MaxElementPrintSize)
+    return;
   st->fill_to(indent_col);
   st->print("%d", index);
   st->sp();
@@ -117,29 +118,36 @@ void PrintObjectClosure::do_indexable_oop(int index, oop* o) {
 }
 
 void PrintObjectClosure::do_indexable_byte(int index, u_char* b) {
-  if (index > MaxElementPrintSize) return;
+  if (index > MaxElementPrintSize)
+    return;
   st->fill_to(indent_col);
   st->print("%d", index);
   st->sp();
   st->fill_to(value_col);
-  int c = (int) *b;
-  if (isprint(c)) st->print_cr("%c",   c);
-  else            st->print_cr("\\%o", c);
+  int c = (int)*b;
+  if (isprint(c))
+    st->print_cr("%c", c);
+  else
+    st->print_cr("\\%o", c);
 }
 
 void PrintObjectClosure::do_indexable_doubleByte(int index, doubleByte* b) {
-  if (index > MaxElementPrintSize) return;
+  if (index > MaxElementPrintSize)
+    return;
   st->fill_to(indent_col);
   st->print("%d", index);
   st->sp();
   st->fill_to(value_col);
-  int c = (int) *b;
-  if (isprint(c)) st->print_cr("%c",   c);
-  else            st->print_cr("\\%o", c);
+  int c = (int)*b;
+  if (isprint(c))
+    st->print_cr("%c", c);
+  else
+    st->print_cr("\\%o", c);
 }
 
 void PrintObjectClosure::do_indexable_long(int index, long* l) {
-  if (index > MaxElementPrintSize) return;
+  if (index > MaxElementPrintSize)
+    return;
   st->fill_to(indent_col);
   st->print("%d", index);
   st->sp();

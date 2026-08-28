@@ -40,8 +40,8 @@ extern "C" bool PrintVMMessages;
 extern "C" bool LogVMMessages;
 extern "C" bool AlwaysFlushVMMessages;
 extern "C" {
-  void breakpoint();
-  void error_breakpoint();
+void breakpoint();
+void error_breakpoint();
 }
 
 void lprintf_exit() {
@@ -59,7 +59,6 @@ static void check_log_file() {
   }
 }
 
-
 extern "C" void lprintf(const char* m, ...) {
   char buf[1024];
   va_list ap;
@@ -70,11 +69,13 @@ extern "C" void lprintf(const char* m, ...) {
   check_log_file();
   if (LogVMMessages) {
     fputs(buf, logFile);
-    if (AlwaysFlushVMMessages) fflush(logFile);
+    if (AlwaysFlushVMMessages)
+      fflush(logFile);
   }
   if (PrintVMMessages) {
     fputs(buf, stdout);
-    if (AlwaysFlushVMMessages) fflush(stdout);
+    if (AlwaysFlushVMMessages)
+      fflush(stdout);
   }
 }
 
@@ -82,11 +83,13 @@ extern "C" void lputc(char c) {
   check_log_file();
   if (LogVMMessages) {
     fputc(c, logFile);
-    if (AlwaysFlushVMMessages) fflush(logFile);
+    if (AlwaysFlushVMMessages)
+      fflush(logFile);
   }
   if (PrintVMMessages) {
     fputc(c, stdout);
-    if (AlwaysFlushVMMessages) fflush(stdout);
+    if (AlwaysFlushVMMessages)
+      fflush(stdout);
   }
 }
 
@@ -94,11 +97,13 @@ extern "C" void lputs(char* str) {
   check_log_file();
   if (LogVMMessages) {
     fputs(str, logFile);
-    if (AlwaysFlushVMMessages) fflush(logFile);
+    if (AlwaysFlushVMMessages)
+      fflush(logFile);
   }
   if (PrintVMMessages) {
     fputs(str, stdout);
-    if (AlwaysFlushVMMessages) fflush(stdout);
+    if (AlwaysFlushVMMessages)
+      fflush(stdout);
   }
 }
 
@@ -125,9 +130,12 @@ extern "C" void compiler_warning(char* format, ...) {
   }
 }
 
-void flush_logFile() { if (logFile) fflush(logFile); }
+void flush_logFile() {
+  if (logFile)
+    fflush(logFile);
+}
 
-extern "C" void my_sprintf(char*& buf, const char* format, ...){
+extern "C" void my_sprintf(char*& buf, const char* format, ...) {
   // like sprintf, but updates the buf pointer so that subsequent
   // sprintfs append to the string
   va_list ap;
@@ -142,19 +150,19 @@ extern "C" void my_sprintf(char*& buf, const char* format, ...){
   buf += strlen(buf);
 }
 
-extern "C" void my_sprintf_len(char*& buf, const int len, const char* format, ...){
+extern "C" void my_sprintf_len(char*& buf, const int len, const char* format, ...) {
   char* oldbuf = buf;
   va_list ap;
   va_start(ap, format);
   vsnprintf(buf, len, format, ap);
   va_end(ap);
   buf += strlen(buf);
-  for ( ; buf < oldbuf + len; *buf++ = ' ') ;
+  for (; buf < oldbuf + len; *buf++ = ' ')
+    ;
   *buf = '\0';
 }
 
-
-class DebugNotifier: public Notifier, public CHeapObj {
+class DebugNotifier : public Notifier, public CHeapObj {
 public:
   DebugNotifier() {}
   void error(char* m, va_list ap);
@@ -173,10 +181,13 @@ void DebugNotifier::error(char* m, va_list ap) {
 void DebugNotifier::warning(char* m, va_list ap) {
   mystd->print_cr("VM Warning:");
   mystd->vprint_cr(m, ap);
-  if (BreakAtWarning) DEBUG_EXCEPTION;
+  if (BreakAtWarning)
+    DEBUG_EXCEPTION;
 }
 
 void DebugNotifier::compiler_warning(char* m, va_list ap) {
   mystd->print_cr("Compiler Warning:");
   mystd->vprint_cr(m, ap);
-  if (BreakAtWarning) DEBUG_EXCEPTION;}
+  if (BreakAtWarning)
+    DEBUG_EXCEPTION;
+}

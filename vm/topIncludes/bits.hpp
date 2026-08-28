@@ -26,42 +26,43 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "memory/error.hpp"
 
-# define AllBits	~0UL
-# define NoBits		0UL
-# define OneBit		1UL
+#define AllBits ~0UL
+#define NoBits 0UL
+#define OneBit 1UL
 
-# define addBits(x, m)	((x) | (m))
-# define setBits(x, m)	((x) |= (m))
-# define subBits(x, m)	((x) & ~(m))
-# define clearBits(x, m) ((x) &= ~(m))
-# define maskBits(x, m)	((x) & (m))
-# define anySet(x, m)	(maskBits((x), (m)) != NoBits)
-# define nthBit(n)	(OneBit << (n))
-# define addNth(x, n)	addBits((x), nthBit(n))
-# define setNth(x, n)	setBits((x), nthBit(n))
-# define clearNth(x, n)	clearBits((x), nthBit(n))
-# define subNth(x, n)	subBits((x), nthBit(n))
-# define isSet(x, n)	anySet((x), nthBit(n))
-# define nthMask(n)	((n) >= (int)(sizeof(AllBits) * 8) ? AllBits : (nthBit(n) - OneBit))
-# define lowerBits(x, n) maskBits((x), nthMask(n))
+#define addBits(x, m) ((x) | (m))
+#define setBits(x, m) ((x) |= (m))
+#define subBits(x, m) ((x) & ~(m))
+#define clearBits(x, m) ((x) &= ~(m))
+#define maskBits(x, m) ((x) & (m))
+#define anySet(x, m) (maskBits((x), (m)) != NoBits)
+#define nthBit(n) (OneBit << (n))
+#define addNth(x, n) addBits((x), nthBit(n))
+#define setNth(x, n) setBits((x), nthBit(n))
+#define clearNth(x, n) clearBits((x), nthBit(n))
+#define subNth(x, n) subBits((x), nthBit(n))
+#define isSet(x, n) anySet((x), nthBit(n))
+#define nthMask(n) ((n) >= (int)(sizeof(AllBits) * 8) ? AllBits : (nthBit(n) - OneBit))
+#define lowerBits(x, n) maskBits((x), nthMask(n))
 
-# define roundMask(x, m) (((x) + (m)) & ~(m))
-# define roundBits(x, n) roundMask((x), nthMask(n))
-# define roundTo(x, v)	roundMask((x), (v) - OneBit)
+#define roundMask(x, m) (((x) + (m)) & ~(m))
+#define roundBits(x, n) roundMask((x), nthMask(n))
+#define roundTo(x, v) roundMask((x), (v) - OneBit)
 
-inline int arithmetic_shift_right(int value, int shift) { return value >> shift; }
-inline int logic_shift_right(int value, int shift)      { return value << shift; }
-
+inline int arithmetic_shift_right(int value, int shift) {
+  return value >> shift;
+}
+inline int logic_shift_right(int value, int shift) {
+  return value << shift;
+}
 
 inline int get_unsigned_bitfield(int value, int start_bit_no, int field_length) {
-  return (int) lowerBits((unsigned int) value >> start_bit_no, field_length);
+  return (int)lowerBits((unsigned int)value >> start_bit_no, field_length);
 }
 
 inline int get_signed_bitfield(int value, int start_bit_no, int field_length) {
   int result = get_unsigned_bitfield(value, start_bit_no, field_length);
-  return isSet(result, start_bit_no + field_length -1)
-         ? addBits(result, ~nthMask(field_length))
-         : result;
+  return isSet(result, start_bit_no + field_length - 1) ? addBits(result, ~nthMask(field_length)) : result;
 }
 
 inline int set_unsigned_bitfield(int value, int start_bit_no, int field_length, unsigned int new_field_value) {

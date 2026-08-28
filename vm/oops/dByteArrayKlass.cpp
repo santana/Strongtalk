@@ -39,28 +39,29 @@ oop doubleByteArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 }
 
 oop doubleByteArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool tenured) {
-  klassOop k        = as_klassOop();
-  int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size * 2, image_oop_size) / image_oop_size;
+  klassOop k = as_klassOop();
+  int ni_size = non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(size * 2, image_oop_size) / image_oop_size;
   // allocate
-  oop* result = tenured ?
-    Universe::allocate_tenured(obj_size, permit_scavenge) :
-    Universe::allocate(obj_size, (memOop*)&k, permit_scavenge);
-  if (result == NULL) return NULL;
+  oop* result = tenured ? Universe::allocate_tenured(obj_size, permit_scavenge)
+                        : Universe::allocate(obj_size, (memOop*)&k, permit_scavenge);
+  if (result == NULL)
+    return NULL;
   doubleByteArrayOop obj = as_doubleByteArrayOop(result);
   // header
   memOop(obj)->initialize_header(true, k);
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // indexables
-  oop* base = (oop*) obj->addr();
-  oop* end  = base + obj_size;
+  oop* base = (oop*)obj->addr();
+  oop* end = base + obj_size;
   // %optimized 'obj->set_length(size)'
   base[ni_size] = as_smiOop(size);
   // %optimized 'for (int index = 1; index <= size; index++)
   //               obj->doubleByte_at_put(index, 0)'
-  base = &base[ni_size+1];
-  while (base < end) *base++ = (oop) 0;
+  base = &base[ni_size + 1];
+  while (base < end)
+    *base++ = (oop)0;
   return obj;
 }
 
@@ -82,29 +83,32 @@ void set_doubleByteArrayKlass_vtbl(Klass* k) {
 }
 
 bool doubleByteArrayKlass::oop_verify(oop obj) {
-  assert_doubleByteArray(obj,"Argument must be doubleByteArray");
+  assert_doubleByteArray(obj, "Argument must be doubleByteArray");
   return doubleByteArrayOop(obj)->verify();
 }
 
 void doubleByteArrayKlass::oop_print_value_on(oop obj, outputStream* st) {
-  assert_doubleByteArray(obj,"Argument must be doubleByteArray");
+  assert_doubleByteArray(obj, "Argument must be doubleByteArray");
   doubleByteArrayOop array = doubleByteArrayOop(obj);
   int len = array->length();
-  int n   = min(MaxElementPrintSize, len);
+  int n = min(MaxElementPrintSize, len);
   st->print("'");
-  for(int index = 1; index <= n; index++) {
+  for (int index = 1; index <= n; index++) {
     int c = array->doubleByte_at(index);
-    if (isprint(c)) st->print("%c",   c);
-    else            st->print("\\%o", c);
+    if (isprint(c))
+      st->print("%c", c);
+    else
+      st->print("\\%o", c);
   }
-  if (n < len) st->print("...");
+  if (n < len)
+    st->print("...");
   st->print("'");
 }
 
 void doubleByteArrayKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
-  doubleByte* p   = doubleByteArrayOop(obj)->doubleBytes();
-  oop*        l   = doubleByteArrayOop(obj)->length_addr();
-  int         len = doubleByteArrayOop(obj)->length();
+  doubleByte* p = doubleByteArrayOop(obj)->doubleBytes();
+  oop* l = doubleByteArrayOop(obj)->length_addr();
+  int len = doubleByteArrayOop(obj)->length();
   memOopKlass::oop_layout_iterate(obj, blk);
   blk->do_oop("length", l);
   blk->begin_indexables();
@@ -122,11 +126,10 @@ void doubleByteArrayKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
 
 int doubleByteArrayKlass::oop_scavenge_contents(oop obj) {
   memOopKlass::oop_scavenge_contents(obj);
-  return object_size(doubleByteArrayOop(obj)->length());  
+  return object_size(doubleByteArrayOop(obj)->length());
 }
 
 int doubleByteArrayKlass::oop_scavenge_tenured_contents(oop obj) {
   memOopKlass::oop_scavenge_tenured_contents(obj);
-  return object_size(doubleByteArrayOop(obj)->length());  
+  return object_size(doubleByteArrayOop(obj)->length());
 }
-

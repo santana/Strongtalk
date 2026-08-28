@@ -39,43 +39,43 @@ class bootstrap;
 typedef intptr_t smi;
 
 #ifdef WIN32
-typedef          long  int32_t;
-typedef unsigned long  uint32_t;
-typedef unsigned char  uint8_t;
+typedef long int32_t;
+typedef unsigned long uint32_t;
+typedef unsigned char uint8_t;
 #else
 #include <inttypes.h>
 #endif
 
-typedef unsigned char  u_char;
+typedef unsigned char u_char;
 typedef unsigned short doubleByte;
 typedef unsigned short uint16;
 typedef unsigned short u_short;
-typedef          short int16;
-typedef unsigned long  uint32;
+typedef short int16;
+typedef unsigned long uint32;
 
-class  universe;
-class  space;
-class    newSpace;
-class    oldSpace;
-class  generation;
-class    newGeneration;
-class    oldGeneration;
-class  rSet;
-class  symbolTable;
-class  klassTable;
-class  ageTable;
+class universe;
+class space;
+class newSpace;
+class oldSpace;
+class generation;
+class newGeneration;
+class oldGeneration;
+class rSet;
+class symbolTable;
+class klassTable;
+class ageTable;
 
 class ReservedSpace;
 class VirtualSpace;
 
-class  ResourceObj;
-class    PrintableResourceObj;
+class ResourceObj;
+class PrintableResourceObj;
 
-class  CHeapObj;
-class    PrintableCHeapObj;
+class CHeapObj;
+class PrintableCHeapObj;
 
-class  StackObj;
-class    PrintableStackObj;
+class StackObj;
+class PrintableStackObj;
 
 class ostream;
 class stringStream;
@@ -83,51 +83,51 @@ class stringStream;
 class Thread;
 class Event;
 
-class  primitive_desc;
-class  DLLCache;
-class  CompiledDLL_Cache;
+class primitive_desc;
+class DLLCache;
+class CompiledDLL_Cache;
 
 class scopeNode;
 
-class  frame;
-class  vframe;
-class    deltaVFrame;
-class      compiledVFrame;
-class      interpretedVFrame;
-class    cVFrame;
-class      cChunk;
-class  Stack;
+class frame;
+class vframe;
+class deltaVFrame;
+class compiledVFrame;
+class interpretedVFrame;
+class cVFrame;
+class cChunk;
+class Stack;
 
-class   Process;
-class     VMProcess;
-class     DeltaProcess;
-class   Processes;
+class Process;
+class VMProcess;
+class DeltaProcess;
+class Processes;
 
-class   VM_Operation;
+class VM_Operation;
 
-class   spaceSizes;
+class spaceSizes;
 
-class  EventBuffer;
-class  varDesc;
+class EventBuffer;
+class varDesc;
 
-class  LookupKey;
-class  LookupTable;
+class LookupKey;
+class LookupTable;
 
 class InterpretedIC;
 
 class IC_Iterator;
-class   InterpretedIC_Iterator;
-class   CompiledIC_Iterator;
+class InterpretedIC_Iterator;
+class CompiledIC_Iterator;
 
 class InterpretedPrim_Cache;
 class InterpretedDLL_Cache;
 
-class   Heap;
+class Heap;
 
 // type of runtime functions
-typedef oop     (* fntype) (...);
-typedef void    (*oopsDoFn)(oop* p);
-typedef void    (*doFn)();
+typedef oop (*fntype)(...);
+typedef void (*oopsDoFn)(oop* p);
+typedef void (*doFn)();
 
 class ResourceArea;
 class ResourceMark;
@@ -146,110 +146,110 @@ class outputStream;
 
 #ifdef DELTA_COMPILER
 
-  class Compiler;
-  class OldAssembler;
-  class Register;
-  class Inliner;
-  class CompiledLoop;
-  class LoopRegCandidate;
-  class HoistedTypeTest;
-  class IntervalInfo;
+class Compiler;
+class OldAssembler;
+class Register;
+class Inliner;
+class CompiledLoop;
+class LoopRegCandidate;
+class HoistedTypeTest;
+class IntervalInfo;
 
-  class	zone;
-  class jumpTable;
-  class jumpTableEntry;
-  class codeTable;
-  class	Heap;
-  class relocInfo;
-  class PcDesc;
-  class	ScopeDesc;
-  class NonInlinedBlockScopeDesc;
-  class NameDesc;
+class zone;
+class jumpTable;
+class jumpTableEntry;
+class codeTable;
+class Heap;
+class relocInfo;
+class PcDesc;
+class ScopeDesc;
+class NonInlinedBlockScopeDesc;
+class NameDesc;
 
-  class nmethodScopes;
-  class PcDesc;
-  class ScopeDescRecorder;
-  class NameNode;
-  typedef class ScopeDescNode    *ScopeInfo;
-  typedef class PcDescInfoClass  *PcDescInfo;
-  class LogicalAddress;
-  class ScopeDescRecorder;
-  class NonInlinedBlockScopeNode;
+class nmethodScopes;
+class PcDesc;
+class ScopeDescRecorder;
+class NameNode;
+typedef class ScopeDescNode* ScopeInfo;
+typedef class PcDescInfoClass* PcDescInfo;
+class LogicalAddress;
+class ScopeDescRecorder;
+class NonInlinedBlockScopeNode;
 
-  class	NCodeBase;
-  class	  OopNCode;
-  class	    nmethod;
-  class	    PIC;
-  class	CompiledIC;
-  class PrimitiveIC;
+class NCodeBase;
+class OopNCode;
+class nmethod;
+class PIC;
+class CompiledIC;
+class PrimitiveIC;
 
-  class nmethod_patch;
+class nmethod_patch;
 
-  class AbstractBB;
-  class   BB;
-  class     BranchBB;
-  class     MergeBB;
-  class BBIterator;
-  
-  class Node;
-  class   LoopHeaderNode;
-  class   NonTrivialNode;
-  class	    BranchNode;
-  class	      TArithRRNode;
-  class	    LoadOffsetNode;
-  class     CallNode;
-  class       PrimNode;
-  class   TrivialNode;
-  class     MergeNode;
-  
-  class PReg;
-  class   BlockPReg;
-  class   ConstPReg;
-  class   NoPReg;
-  class   SAPReg;
-  class     SplitPReg;
+class AbstractBB;
+class BB;
+class BranchBB;
+class MergeBB;
+class BBIterator;
 
-  class IRGenerator;
+class Node;
+class LoopHeaderNode;
+class NonTrivialNode;
+class BranchNode;
+class TArithRRNode;
+class LoadOffsetNode;
+class CallNode;
+class PrimNode;
+class TrivialNode;
+class MergeNode;
 
-  class Compiler;
-  class Scope;
-  class   InlinedScope;
+class PReg;
+class BlockPReg;
+class ConstPReg;
+class NoPReg;
+class SAPReg;
+class SplitPReg;
 
-  class Expr;
-  class   KlassExpr;
-  class   ConstantExpr;
-  class   MergeExpr;
-  class   UnknownExpr;
-  class ExprStack;
-  
-  class DefUse;
-  class   Use;
-  class   Def;
-  class PRegBBIndex;
-  class DUInfo;
-  class BitVector;
-  class LongRegisterMask;
-  class CPInfo;
-  class RegCandidate;
-  class RegisterEqClass;
-  
-  class RUncommonBranch;
-  class RScope;
-  class   RDeltaScope;
-  class   RPICScope;
-  class     RUntakenScope;
-  class RDatabaseScope;
+class IRGenerator;
 
-  class Recompilee;
-  class   CompiledRecompilee;
-  class   InterpretedRecompilee;
-  class RFrame;
-  class   CompiledRFrame;
-  class   InterpretedRFrame;
-  class RecompilationPolicy;
+class Compiler;
+class Scope;
+class InlinedScope;
 
-  class SendInfo;
-  class HoistedTypeTest;
+class Expr;
+class KlassExpr;
+class ConstantExpr;
+class MergeExpr;
+class UnknownExpr;
+class ExprStack;
+
+class DefUse;
+class Use;
+class Def;
+class PRegBBIndex;
+class DUInfo;
+class BitVector;
+class LongRegisterMask;
+class CPInfo;
+class RegCandidate;
+class RegisterEqClass;
+
+class RUncommonBranch;
+class RScope;
+class RDeltaScope;
+class RPICScope;
+class RUntakenScope;
+class RDatabaseScope;
+
+class Recompilee;
+class CompiledRecompilee;
+class InterpretedRecompilee;
+class RFrame;
+class CompiledRFrame;
+class InterpretedRFrame;
+class RecompilationPolicy;
+
+class SendInfo;
+class HoistedTypeTest;
 
 class StackChunkBuilder;
 

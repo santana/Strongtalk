@@ -36,27 +36,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 RegisterAllocator* theAllocator;
 
-
 static int compare_pregBegs(PReg** a, PReg** b) {
   return (*a)->begBCI() - (*b)->begBCI();
 }
-
 
 static int compare_pregEnds(PReg** a, PReg** b) {
   return (*a)->endBCI() - (*b)->endBCI();
 }
 
-
 RegisterAllocator::RegisterAllocator() {
-  theAllocator = this; 
+  theAllocator = this;
   _stackLocs = new IntFreeList(2);
 }
-
 
 void RegisterAllocator::preAllocate(PReg* r) {
   r->allocateTo(Mapping::localTemporary(_stackLocs->allocate()));
 }
-
 
 void RegisterAllocator::allocate(GrowableArray<PReg*>* globals) {
   GrowableArray<PReg*>* regs = new GrowableArray<PReg*>(globals->length());
@@ -97,7 +92,9 @@ void RegisterAllocator::allocate(GrowableArray<PReg*>* globals) {
     theCompiler->topScope->allocatePRegs(_stackLocs);
 
     // result
-    if (CompilerDebug) cout(PrintRegAlloc)->print("%d (-2) stack locations allocated for %d PRegs\n", _stackLocs->length(), regs->length());
+    if (CompilerDebug)
+      cout(PrintRegAlloc)
+        ->print("%d (-2) stack locations allocated for %d PRegs\n", _stackLocs->length(), regs->length());
   }
 }
 

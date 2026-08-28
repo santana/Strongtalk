@@ -7,60 +7,53 @@
 using namespace easyunit;
 
 DECLARE(IntegerOpsTest)
-HeapResourceMark *rm;
+HeapResourceMark* rm;
 Integer *x, *y, *z;
 
-#define ASSERT_EQUALS_M2(expected, actual, prefix)\
-  ASSERT_EQUALS_M(expected, actual, report(prefix, expected, actual))
-#define ASSERT_EQUALS_MH(expected, actual, prefix)\
+#define ASSERT_EQUALS_M2(expected, actual, prefix) ASSERT_EQUALS_M(expected, actual, report(prefix, expected, actual))
+#define ASSERT_EQUALS_MH(expected, actual, prefix)                                                                     \
   ASSERT_EQUALS_M(expected, actual, reportHex(prefix, expected, actual))
-#define ASSERT_EQUALS_MS(expected, actual, prefix)\
+#define ASSERT_EQUALS_MS(expected, actual, prefix)                                                                     \
   ASSERT_TRUE_M(!strcmp(expected, actual), report(prefix, expected, actual))
-#define CHECK_SIZE(op, first, second, expected)\
-  IntegerOps::string_to_Integer(first, 16, *x);\
-  IntegerOps::string_to_Integer(second, 16, *y);\
+#define CHECK_SIZE(op, first, second, expected)                                                                        \
+  IntegerOps::string_to_Integer(first, 16, *x);                                                                        \
+  IntegerOps::string_to_Integer(second, 16, *y);                                                                       \
   ASSERT_EQUALS_M2(expected, IntegerOps::op(*x, *y), "Wrong size")
-#define CHECK_AND_SIZE(first, second, expected)\
-  CHECK_SIZE(and_result_size_in_bytes, first, second, expected)
-#define CHECK_OR_SIZE(first, second, expected)\
-  CHECK_SIZE(or_result_size_in_bytes, first, second, expected)
-#define CHECK_XOR_SIZE(first, second, expected)\
-  CHECK_SIZE(xor_result_size_in_bytes, first, second, expected)
-#define CHECK_OP(op, first, second, expected)\
-  IntegerOps::string_to_Integer(first, 16, *x);\
-  IntegerOps::string_to_Integer(second, 16, *y);\
-  IntegerOps::op(*x, *y, *z);\
-  char result[100];\
-  IntegerOps::Integer_to_string(*z, 16, result);\
-  ASSERT_TRUE_M(z->is_valid(), "Not a valid Integer");\
-  ASSERT_EQUALS_MS(expected, result , "Wrong result")
-#define CHECK_AND(first, second, expected)\
-  CHECK_OP(and, first, second, expected)
-#define CHECK_OR(first, second, expected)\
-  CHECK_OP(or, first, second, expected)
-#define CHECK_XOR(first, second, expected)\
-  CHECK_OP(xor, first, second, expected)
-#define CHECK_ASH_SIZE(first, second, expected)\
-  IntegerOps::string_to_Integer(first, 16, *x);\
-  ASSERT_EQUALS_M2(expected, IntegerOps::ash_result_size_in_bytes(*x, second) , "Wrong result")
-#define CHECK_ASH(first, second, expected)\
-  IntegerOps::string_to_Integer(first, 16, *x);\
-  IntegerOps::ash(*x, second, *z);\
-  char result[100];\
-  IntegerOps::Integer_to_string(*z, 16, result);\
-  ASSERT_TRUE_M(z->is_valid(), "Not a valid Integer");\
-  ASSERT_EQUALS_MS(expected, result , "Wrong result")
+#define CHECK_AND_SIZE(first, second, expected) CHECK_SIZE(and_result_size_in_bytes, first, second, expected)
+#define CHECK_OR_SIZE(first, second, expected) CHECK_SIZE(or_result_size_in_bytes, first, second, expected)
+#define CHECK_XOR_SIZE(first, second, expected) CHECK_SIZE(xor_result_size_in_bytes, first, second, expected)
+#define CHECK_OP(op, first, second, expected)                                                                          \
+  IntegerOps::string_to_Integer(first, 16, *x);                                                                        \
+  IntegerOps::string_to_Integer(second, 16, *y);                                                                       \
+  IntegerOps::op(*x, *y, *z);                                                                                          \
+  char result[100];                                                                                                    \
+  IntegerOps::Integer_to_string(*z, 16, result);                                                                       \
+  ASSERT_TRUE_M(z->is_valid(), "Not a valid Integer");                                                                 \
+  ASSERT_EQUALS_MS(expected, result, "Wrong result")
+#define CHECK_AND(first, second, expected) CHECK_OP(and, first, second, expected)
+#define CHECK_OR(first, second, expected) CHECK_OP(or, first, second, expected)
+#define CHECK_XOR(first, second, expected) CHECK_OP(xor, first, second, expected)
+#define CHECK_ASH_SIZE(first, second, expected)                                                                        \
+  IntegerOps::string_to_Integer(first, 16, *x);                                                                        \
+  ASSERT_EQUALS_M2(expected, IntegerOps::ash_result_size_in_bytes(*x, second), "Wrong result")
+#define CHECK_ASH(first, second, expected)                                                                             \
+  IntegerOps::string_to_Integer(first, 16, *x);                                                                        \
+  IntegerOps::ash(*x, second, *z);                                                                                     \
+  char result[100];                                                                                                    \
+  IntegerOps::Integer_to_string(*z, 16, result);                                                                       \
+  ASSERT_TRUE_M(z->is_valid(), "Not a valid Integer");                                                                 \
+  ASSERT_EQUALS_MS(expected, result, "Wrong result")
 
 char message[100];
-char* reportHex(char*prefix, int expected, int actual) {
+char* reportHex(char* prefix, int expected, int actual) {
   snprintf(message, sizeof(message), "%s. Expected: 0x%x, but was: 0x%x", prefix, expected, actual);
   return message;
 }
-char* report(char*prefix, int expected, int actual) {
+char* report(char* prefix, int expected, int actual) {
   snprintf(message, sizeof(message), "%s. Expected: %d, but was: %d", prefix, expected, actual);
   return message;
 }
-char* report(char*prefix, char* expected, char* actual) {
+char* report(char* prefix, char* expected, char* actual) {
   snprintf(message, sizeof(message), "%s. Expected: %s, but was: %s", prefix, expected, actual);
   return message;
 }
@@ -72,7 +65,7 @@ SETUP(IntegerOpsTest) {
   y = (Integer*)NEW_RESOURCE_ARRAY(Digit, 5);
   z = (Integer*)NEW_RESOURCE_ARRAY(Digit, 5);
 }
-TEARDOWN(IntegerOpsTest){
+TEARDOWN(IntegerOpsTest) {
   delete rm;
   rm = NULL;
 }
@@ -81,7 +74,7 @@ TESTF(IntegerOpsTest, largeIntegerDivShouldReturnZeroWhenYLargerThanX) {
   IntegerOps::int_to_Integer(1, *x);
   IntegerOps::int_to_Integer(2, *y);
   IntegerOps::div(*x, *y, *z);
-  
+
   bool ok;
   int result = z->as_int(ok);
   ASSERT_TRUE_M(ok, "invalid Integer");
@@ -91,7 +84,7 @@ TESTF(IntegerOpsTest, largeIntegerDivShouldReturnZeroWhenAbsYLargerThanX) {
   IntegerOps::int_to_Integer(1, *x);
   IntegerOps::int_to_Integer(-2, *y);
   IntegerOps::div(*x, *y, *z);
-  
+
   bool ok;
   int result = z->as_int(ok);
   ASSERT_TRUE_M(ok, "invalid Integer");
@@ -101,7 +94,7 @@ TESTF(IntegerOpsTest, largeIntegerDivShouldReturnMinus1WhenYLargerThanAbsX) {
   IntegerOps::int_to_Integer(-1, *x);
   IntegerOps::int_to_Integer(2, *y);
   IntegerOps::div(*x, *y, *z);
-  
+
   bool ok;
   int result = z->as_int(ok);
   ASSERT_TRUE_M(ok, "invalid Integer");
@@ -111,7 +104,7 @@ TESTF(IntegerOpsTest, largeIntegerDivShouldReturnZeroWhenAbsYLargerThanAbsX) {
   IntegerOps::int_to_Integer(-1, *x);
   IntegerOps::int_to_Integer(-2, *y);
   IntegerOps::div(*x, *y, *z);
-  
+
   bool ok;
   int result = z->as_int(ok);
   ASSERT_TRUE_M(ok, "invalid Integer");
@@ -121,7 +114,7 @@ TESTF(IntegerOpsTest, largeIntegerDivShouldReturnM1WhenAbsYEqualsX) {
   IntegerOps::int_to_Integer(2, *x);
   IntegerOps::int_to_Integer(-2, *y);
   IntegerOps::div(*x, *y, *z);
-  
+
   bool ok;
   int result = z->as_int(ok);
   ASSERT_TRUE_M(ok, "invalid Integer");
@@ -648,24 +641,16 @@ TESTF(IntegerOpsTest, andWithSecondZero) {
   CHECK_AND("-1", "0", "0");
 }
 TESTF(IntegerOpsTest, andResultSizeInBytesWithTwoPositive) {
-  CHECK_AND_SIZE("123456781234567812345678",
-                 "1234567812345678",
-                 sizeof(int) + (2 * sizeof(Digit)));
+  CHECK_AND_SIZE("123456781234567812345678", "1234567812345678", sizeof(int) + (2 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, andResultSizeInBytesWithSecondNegativeAndShorter) {
-  CHECK_AND_SIZE("123456781234567812345678",
-                 "-1234567812345678",
-                 sizeof(int) + (3 * sizeof(Digit)));
+  CHECK_AND_SIZE("123456781234567812345678", "-1234567812345678", sizeof(int) + (3 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, andResultSizeInBytesWithFirstLongerAndNegative) {
-  CHECK_AND_SIZE("-123456781234567812345678",
-                 "1234567812345678",
-                 sizeof(int) + (2 * sizeof(Digit)));
+  CHECK_AND_SIZE("-123456781234567812345678", "1234567812345678", sizeof(int) + (2 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, andResultSizeInBytesWithFirstShorterAndPositive) {
-  CHECK_AND_SIZE("1234567812345678",
-                 "-123456781234567812345678",
-                 sizeof(int) + (2 * sizeof(Digit)));
+  CHECK_AND_SIZE("1234567812345678", "-123456781234567812345678", sizeof(int) + (2 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, andResultSizeInBytesWithFirstZero) {
   CHECK_AND_SIZE("0", "-123456781234567812345678", sizeof(int) + (0 * sizeof(Digit)));
@@ -674,79 +659,49 @@ TESTF(IntegerOpsTest, andResultSizeInBytesWithSecondZero) {
   CHECK_AND_SIZE("-123456781234567812345678", "0", sizeof(int) + (0 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithFirstLongerAndNegative) {
-  CHECK_OR_SIZE("-123456781234567812345678",
-                 "1234567812345678",
-                 sizeof(int) + (3 * sizeof(Digit)));
+  CHECK_OR_SIZE("-123456781234567812345678", "1234567812345678", sizeof(int) + (3 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithFirstShorterAndNegative) {
-  CHECK_OR_SIZE("-12345678",
-                 "1234567812345678",
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_OR_SIZE("-12345678", "1234567812345678", sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithFirstShorterAndBothNegative) {
-  CHECK_OR_SIZE("-12345678",
-                 "-1234567812345678",
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_OR_SIZE("-12345678", "-1234567812345678", sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithSecondShorterAndBothNegative) {
-  CHECK_OR_SIZE("-1234567812345678",
-                 "-12345678",
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_OR_SIZE("-1234567812345678", "-12345678", sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithSecondShorterAndNegative) {
-  CHECK_OR_SIZE("1234567812345678",
-                 "-12345678",
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_OR_SIZE("1234567812345678", "-12345678", sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, xorResultSizeInBytesWithFirstLongerAndNegative) {
-  CHECK_XOR_SIZE("-123456781234567812345678",
-                 "1234567812345678",
-                 sizeof(int) + (4 * sizeof(Digit)));
+  CHECK_XOR_SIZE("-123456781234567812345678", "1234567812345678", sizeof(int) + (4 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, xorResultSizeInBytesWithBothPositive) {
-  CHECK_XOR_SIZE("123456781234567812345678",
-                 "1234567812345678",
-                 sizeof(int) + (3 * sizeof(Digit)));
+  CHECK_XOR_SIZE("123456781234567812345678", "1234567812345678", sizeof(int) + (3 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithSecondZero) {
-  CHECK_OR_SIZE("1234567812345678",
-                "0",
-                sizeof(int) + (2 * sizeof(Digit)));
+  CHECK_OR_SIZE("1234567812345678", "0", sizeof(int) + (2 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, orResultSizeInBytesWithFirstZero) {
-  CHECK_OR_SIZE("0",
-                "1234567812345678",
-                sizeof(int) + (2 * sizeof(Digit)));
+  CHECK_OR_SIZE("0", "1234567812345678", sizeof(int) + (2 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenNoShift) {
-  CHECK_ASH_SIZE("2",
-                 0,
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_ASH_SIZE("2", 0, sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenPositive) {
-  CHECK_ASH_SIZE("2",
-                 1,
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_ASH_SIZE("2", 1, sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenPositiveWithUnderflow) {
-  CHECK_ASH_SIZE("1",
-                 -1,
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_ASH_SIZE("1", -1, sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenNegativeWithUnderflow) {
-  CHECK_ASH_SIZE("-1",
-                 -1,
-                 sizeof(int) + (1 * sizeof(Digit)));
+  CHECK_ASH_SIZE("-1", -1, sizeof(int) + (1 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenPositiveWithOverflow) {
-  CHECK_ASH_SIZE("2",
-                 63,
-                 sizeof(int) + (3 * sizeof(Digit)));
+  CHECK_ASH_SIZE("2", 63, sizeof(int) + (3 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashResultSizeInBytesWhenZero) {
-  CHECK_ASH_SIZE("0",
-                 32,
-                 sizeof(int) + (0 * sizeof(Digit)));
+  CHECK_ASH_SIZE("0", 32, sizeof(int) + (0 * sizeof(Digit)));
 }
 TESTF(IntegerOpsTest, ashDigitShiftSimple) {
   CHECK_ASH("2", 1, "4");

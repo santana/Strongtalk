@@ -37,91 +37,98 @@ template <class E> class GrowableArray;
 
 class BB;
 
-  class DefUse : public PrintableResourceObj {		// abstract
-   public:
-    NonTrivialNode* node;
-    DefUse(NonTrivialNode* n) { node = n; }
+class DefUse : public PrintableResourceObj { // abstract
+public:
+  NonTrivialNode* node;
+  DefUse(NonTrivialNode* n) { node = n; }
+};
 
-  };
+class Def : public DefUse {
+public:
+  Def(NonTrivialNode* n) : DefUse(n) {}
 
-  class Def : public DefUse {
-   public:
-    Def(NonTrivialNode* n) : DefUse(n) { }
+  void print();
+};
 
-    void print();
-  };
+class Use : public DefUse {
+public:
+  Use(NonTrivialNode* n) : DefUse(n) {}
+  virtual bool isSoft() const { return false; }
+  void print();
+};
 
-  class Use : public DefUse {
-   public:
-    Use(NonTrivialNode* n) : DefUse(n) { }
-    virtual bool isSoft() const   	{ return false; }
-    void print();
-  };
+class PSoftUse : public Use {
+  // a debugger-related use; doesn't prevent block elimination
+public:
+  PSoftUse(NonTrivialNode* n) : Use(n) {}
+  bool isSoft() const { return true; }
+  void print();
+};
 
-  class PSoftUse : public Use {
-    // a debugger-related use; doesn't prevent block elimination
-   public:
-    PSoftUse(NonTrivialNode* n) : Use(n) { }
-    bool isSoft() const   	{ return true; }
-    void print();
-  };
+class DUInfo : public PrintableResourceObj { // represents PReg's defs/uses within BB
+public:
+  PReg* reg;
+  SList<Use*> uses; // uses (in order of nodes within BB)
+  SList<Def*> defs;
+  DUInfo(PReg* r) { reg = r; }
 
-  class DUInfo : public PrintableResourceObj {// represents PReg's defs/uses within BB
-   public:
-    PReg* reg;
-    SList<Use*> uses;  	// uses (in order of nodes within BB)
-    SList<Def*> defs;
-    DUInfo(PReg* r) { reg = r; }
+  void getLiveRange(int& firstNodeID, int& lastNodeId);
+  void propagateTo(BB* bb, const PReg* r, const Def* def, Use* use, const bool global);
+  void propagateTo(BB* useBB, Use* use, const NonTrivialNode* fromNode, PReg* src, NonTrivialNode* toNode,
+                   const bool global);
+  void print_short();
+  void print();
+};
 
-    void getLiveRange(int& firstNodeID, int& lastNodeId);
-    void propagateTo(BB* bb, const PReg* r, const Def* def, Use* use, const bool global);
-    void propagateTo(BB* useBB, Use* use, const NonTrivialNode* fromNode, PReg* src,
-		     NonTrivialNode* toNode, const bool global);
-    void print_short();
-    void print();
-  };
+class DUInfoList;
 
-  class DUInfoList;
+// a BBDUTable contains all defs and uses of a BB
+class BBDUTable : public PrintableResourceObj {
+public:
+  GrowableArray<DUInfo*>* info; // one element per PReg used/defd
+  BBDUTable() { info = NULL; }
 
-  // a BBDUTable contains all defs and uses of a BB
-  class BBDUTable : public PrintableResourceObj {	
-   public:
-    GrowableArray<DUInfo*>* info;		// one element per PReg used/defd
-    BBDUTable() { info = NULL; }
+  void print_short() { lprintf("BBDUTable %#lx", this); }
+  void print();
+};
 
-    void print_short() { lprintf("BBDUTable %#lx", this); }
-    void print();    
-  };
+// a PRegBBIndex is an index into a particular element of a BBDUTable
+class PRegBBIndex : public PrintableResourceObj {
+public:
+  BB* bb; // BB containing some of PReg's defs/uses
+  int index; // index into BB's BBDUTable
 
-  // a PRegBBIndex is an index into a particular element of a BBDUTable
-  class PRegBBIndex : public PrintableResourceObj {
-   public:
-    BB* bb;		// BB containing some of PReg's defs/uses
-    int index;		// index into BB's BBDUTable
+  PRegBBIndex(BB* b, int i, PReg* pr) {
+    Unused(pr);
+    bb = b;
+    index = i;
+  }
+  void print_short();
+  void print();
+};
 
-    PRegBBIndex(BB* b, int i, PReg* pr) { Unused(pr);  bb = b; index = i; }
-    void print_short();
-    void print();
-  };
+class CPInfo : public PrintableResourceObj {
+  // keeps track of effects of copy propagation
+public: // (for debugging info)
+  NonTrivialNode* def; // eliminated definition
+  PReg* r; // equivalent PReg
 
-  class CPInfo : public PrintableResourceObj {
-    // keeps track of effects of copy propagation
-   public:    	    	    	// (for debugging info)
-    NonTrivialNode* def;	// eliminated definition
-    PReg* r;	    	    	// equivalent PReg
+  CPInfo(NonTrivialNode* d, PReg* r1) {
+    def = d;
+    r = r1;
+  }
+  bool isConstant() const;
+  oop constant() const;
+  void print();
 
-    CPInfo(NonTrivialNode* d, PReg* r1) { def = d; r = r1; }
-    bool isConstant() const;
-    oop  constant() const;
-    void print();
-   protected:
-    CPInfo(NonTrivialNode* def);
-    friend CPInfo* new_CPInfo(NonTrivialNode* def);
-  };
+protected:
+  CPInfo(NonTrivialNode* def);
+  friend CPInfo* new_CPInfo(NonTrivialNode* def);
+};
 
-  CPInfo* new_CPInfo(NonTrivialNode* def); // may return NULL if def isn't suitable
-  void forAllDefsDo(const GrowableArray<PRegBBIndex*>* l, Closure<Def*>* f);
-  void forAllUsesDo(const GrowableArray<PRegBBIndex*>* l, Closure<Use*>* f);
-  void printDefsAndUses(const GrowableArray<PRegBBIndex*>* l);	// for debugging
+CPInfo* new_CPInfo(NonTrivialNode* def); // may return NULL if def isn't suitable
+void forAllDefsDo(const GrowableArray<PRegBBIndex*>* l, Closure<Def*>* f);
+void forAllUsesDo(const GrowableArray<PRegBBIndex*>* l, Closure<Use*>* f);
+void printDefsAndUses(const GrowableArray<PRegBBIndex*>* l); // for debugging
 #endif // DELTA_COMPILER
 #endif // _DEF_USE_HPP

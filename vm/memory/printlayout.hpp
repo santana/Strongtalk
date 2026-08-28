@@ -27,14 +27,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/iterator.hpp"
 
 class PrintObjectClosure : public ObjectLayoutClosure {
- private:
-   memOop obj;
-   outputStream* st;
- public:
+private:
+  memOop obj;
+  outputStream* st;
+
+public:
   PrintObjectClosure(outputStream* st = NULL);
 
   void do_object(memOop obj);
-  void do_mark(markOop *m);
+  void do_mark(markOop* m);
   void do_oop(char* title, oop* o);
   void do_byte(char* title, u_char* b);
   void do_long(char* title, void** p);

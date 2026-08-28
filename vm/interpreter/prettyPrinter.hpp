@@ -34,17 +34,18 @@ template <class E> class GrowableArray;
 
 // WARNING WARNING WARNING WARNING WARNING WARNING
 // The implementation is NOT production quality due
-// to time constraints but since it is only intended 
+// to time constraints but since it is only intended
 // for vm debugging I hope we can live  with it!!!!!
 // -- Lars 3/24-95
 
 class prettyPrintStream : public PrintableResourceObj {
- protected:
+protected:
   int indentation;
   int pos;
   bool in_hl;
   void set_highlight(bool value) { in_hl = value; }
- public:
+
+public:
   bool in_highlight() { return in_hl; }
 
   // Creation
@@ -57,25 +58,31 @@ class prettyPrintStream : public PrintableResourceObj {
   virtual void indent() = 0;
   void inc_indent() { indentation++; }
   void dec_indent() { indentation--; }
-  int position ()   { return pos; }
+  int position() { return pos; }
 
   // Printing
-  virtual void print(char* str)   = 0;
+  virtual void print(char* str) = 0;
   virtual void print_char(char c) = 0;
-  virtual void newline()          = 0;
-  void dec_newline() { dec_indent(); newline(); }
-  void inc_newline() { inc_indent(); newline(); }
-  virtual void space()            = 0;
-  virtual void begin_highlight()  = 0;
-  virtual void end_highlight()    = 0;
+  virtual void newline() = 0;
+  void dec_newline() {
+    dec_indent();
+    newline();
+  }
+  void inc_newline() {
+    inc_indent();
+    newline();
+  }
+  virtual void space() = 0;
+  virtual void begin_highlight() = 0;
+  virtual void end_highlight() = 0;
 
   // Layout
-  virtual int width()                    = 0;
-  virtual int remaining()                = 0;
+  virtual int width() = 0;
+  virtual int remaining() = 0;
   virtual int width_of_string(char* str) = 0;
-  virtual int width_of_char(char c)      = 0;
-  virtual int width_of_space()           = 0;
-  virtual int infinity()                 = 0;
+  virtual int width_of_char(char c) = 0;
+  virtual int width_of_space() = 0;
+  virtual int infinity() = 0;
 
   // VM printing
   void print();
@@ -83,7 +90,7 @@ class prettyPrintStream : public PrintableResourceObj {
 
 // Default pretty-printer stream
 class defaultPrettyPrintStream : public prettyPrintStream {
- public:
+public:
   defaultPrettyPrintStream() : prettyPrintStream() {}
   void indent();
   void print(char* str);
@@ -94,18 +101,18 @@ class defaultPrettyPrintStream : public prettyPrintStream {
   void begin_highlight();
   void end_highlight();
 
-  int width()               { return 100;           }
-  int remaining()           { return width() - pos; }
-  int width_of_char(char c) { return 1;             }
-  int width_of_space()      { return 1;             }
-  int infinity()            { return width();       }
+  int width() { return 100; }
+  int remaining() { return width() - pos; }
+  int width_of_char(char c) { return 1; }
+  int width_of_space() { return 1; }
+  int infinity() { return width(); }
 };
 
-class byteArrayPrettyPrintStream: public defaultPrettyPrintStream {
- private:
+class byteArrayPrettyPrintStream : public defaultPrettyPrintStream {
+private:
   GrowableArray<intptr_t>* _buffer;
 
- public:
+public:
   byteArrayPrettyPrintStream();
   void newline();
   void print_char(char c);
@@ -117,26 +124,17 @@ class byteArrayPrettyPrintStream: public defaultPrettyPrintStream {
 // A simple ad-hoc strategy is used for splitting!
 
 class prettyPrinter : AllStatic {
- public:
+public:
   // Pretty prints the method with the bci highlighted.
   // If output is NULL a default stream is used.
 
-  static void print(int index, 
-                    deltaVFrame* fr,
-                    prettyPrintStream* output = NULL);
+  static void print(int index, deltaVFrame* fr, prettyPrintStream* output = NULL);
 
-  static void print_body(
-                    deltaVFrame* fr,
-                    prettyPrintStream* output = NULL);
+  static void print_body(deltaVFrame* fr, prettyPrintStream* output = NULL);
 
-  static void print(methodOop          method, 
-                    klassOop           klass  = NULL,
-                    int                bci    = -1,
-                    prettyPrintStream* output = NULL);
+  static void print(methodOop method, klassOop klass = NULL, int bci = -1, prettyPrintStream* output = NULL);
 
   // Pretty prints the method with the bci highlighted into a byteArray.
-  static byteArrayOop print_in_byteArray(methodOop method,
-  					 klassOop  klass  = NULL,
-  					 int       bci    = -1);
+  static byteArrayOop print_in_byteArray(methodOop method, klassOop klass = NULL, int bci = -1);
 };
 #endif // _PRETTY_PRINTER_HPP

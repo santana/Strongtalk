@@ -24,5 +24,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/iterator.hpp"
 
 void ObjectFilterClosure::do_object(memOop obj) {
-  if (include_object(obj)) do_filtered_object(obj);
+  if (include_object(obj))
+    do_filtered_object(obj);
 }

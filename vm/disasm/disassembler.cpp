@@ -35,17 +35,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 //#include <inttypes.h>
 
-#define DISASM_LIBRARY  "libnasm"
+#define DISASM_LIBRARY "libnasm"
 #define DISASM_FUNCTION "disasm"
 
 #define MAX_HEXBUF_SIZE 256
 #define MAX_OUTBUF_SIZE 256
 
-typedef int32_t (*disasm_f) (uint8_t *, char *, int, int, int32_t, int, uint32_t);
+typedef int32_t (*disasm_f)(uint8_t*, char*, int, int, int32_t, int, uint32_t);
 
 static void initialize(void);
 static char tohex(unsigned char c);
-static char* bintohex(char *data, int bytes);
+static char* bintohex(char* data, int bytes);
 
 static void printRelocInfo(relocIterator* iter, outputStream* st);
 static void printRelocInfo(nmethod* nm, char* pc, int lendis, outputStream* st);
@@ -57,24 +57,23 @@ static disasm_f disassemble;
 static bool library_loaded = false;
 
 /* default parameters for the NASM disassembler */
-static int32_t   offset    = 0;
-static int       autosync  = 0;
-static uint32_t  prefer    = 0;    // select instruction set; 0 = Intel (default)  
-
+static int32_t offset = 0;
+static int autosync = 0;
+static uint32_t prefer = 0; // select instruction set; 0 = Intel (default)
 
 static void initialize(void) {
   DLL* library_handle;
   char libname[13];
   char* extension = os::dll_extension();
   strcpy(libname, DISASM_LIBRARY);
-  strcpy(libname+7, extension);
-  libname[7+strlen(extension)] = '\0';
-          
+  strcpy(libname + 7, extension);
+  libname[7 + strlen(extension)] = '\0';
+
   library_handle = os::dll_load(libname);
   if (library_handle == NULL) {
     return;
   }
-  disassemble = (disasm_f) os::dll_lookup(DISASM_FUNCTION, library_handle);
+  disassemble = (disasm_f)os::dll_lookup(DISASM_FUNCTION, library_handle);
   if (disassemble == NULL) {
     return;
   }
@@ -83,17 +82,18 @@ static void initialize(void) {
 
 static char tohex(unsigned char c) {
   char* digits = "0123456789ABCDEF";
-  if (c > 0xf) return '?';
+  if (c > 0xf)
+    return '?';
   return digits[c];
 }
 
-static char* bintohex(char *data, int bytes) {
+static char* bintohex(char* data, int bytes) {
   static char buf[MAX_HEXBUF_SIZE];
 
   char* p = buf;
   while (bytes--) {
     *p++ = tohex((*data & 0xF0) >> 4);
-    *p++ = tohex( *data & 0x0F);
+    *p++ = tohex(*data & 0x0F);
     data++;
   }
   *p = '\0';
@@ -104,14 +104,14 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
   primitive_desc* pd;
   char* target;
   int* addr;
-  
+
   st->print("[reloc @ ");
   addr = iter->word_addr();
   switch (iter->type()) {
     case relocInfo::none:
       st->print("none");
       break;
-      
+
     case relocInfo::oop_type:
       st->print("%p, embedded oop, ", addr);
       (*iter->oop_addr())->print_value();
@@ -120,30 +120,30 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
     case relocInfo::ic_type:
       st->print("%p, inline cache", addr);
       break;
-      
+
     case relocInfo::prim_type:
       st->print("%p, primitive call, ", addr);
-      target = (char*) (*addr + (intptr_t) addr + oopSize);
-      pd = primitives::lookup((fntype) target);
+      target = (char*)(*addr + (intptr_t)addr + oopSize);
+      pd = primitives::lookup((fntype)target);
       if (pd != NULL) {
         st->print("(%s)", pd->name());
       } else {
         st->print("runtime routine");
       }
       break;
-      
+
     case relocInfo::runtime_call_type:
       st->print("%p, runtime call", addr);
       break;
-      
+
     case relocInfo::external_word_type:
       st->print("%p, external word", addr);
       break;
-      
+
     case relocInfo::internal_word_type:
       st->print("%p, internal word", addr);
       break;
-      
+
     case relocInfo::uncommon_type:
       st->print("%p, uncommon trap ", addr);
       if (iter->wasUncommonTrapExecuted())
@@ -151,7 +151,7 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
       else
         st->print(" (not taken)");
       break;
-      
+
     case relocInfo::dll_type:
       st->print("%p, dll", addr);
       break;
@@ -165,10 +165,10 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
 
 static void printRelocInfo(nmethod* nm, char* pc, int lendis, outputStream* st) {
   relocIterator iter(nm);
-  char *addr;
-  
+  char* addr;
+
   while (iter.next()) {
-    addr = (char*) iter.word_addr();
+    addr = (char*)iter.word_addr();
     if (addr > pc && addr < (pc + lendis)) {
       printRelocInfo(&iter, st);
       break;
@@ -183,24 +183,23 @@ static void printPcDescInfo(nmethod* nm, char* pc, outputStream* st) {
   if (pcs) {
     st->print("bc = %03ld ", pcs->byteCode);
     if (pcs->is_prologue()) {
-      st->print("prologue "); 
+      st->print("prologue ");
     } else if (pcs->is_epilogue()) {
       st->print("epilogue ");
     }
   }
 }
 
-
 static void disasm(char* begin, char* end, nmethod* nm, outputStream* st) {
   static char buf[MAX_OUTBUF_SIZE];
-  int lendis;      
-  
+  int lendis;
+
   if (!library_loaded) {
     initialize();
   }
   if (disassemble) {
     for (char* pc = begin; pc < end; pc += lendis) {
-      lendis = disassemble((uint8_t*) pc, buf, sizeof(buf), 32, offset, autosync, prefer);
+      lendis = disassemble((uint8_t*)pc, buf, sizeof(buf), 32, offset, autosync, prefer);
       if (lendis) {
         st->print("%p %-20s    %-40s", pc, bintohex(pc, lendis), buf);
         if (nm) {
@@ -213,7 +212,7 @@ static void disasm(char* begin, char* end, nmethod* nm, outputStream* st) {
     }
   } else {
     st->print_cr("INFO: no disassemble() function available!");
-  }  
+  }
 }
 
 void Disassembler::decode(nmethod* nm, outputStream* st) {

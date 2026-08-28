@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(ContextKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(ContextKlassTests) {
@@ -20,7 +20,7 @@ SETUP(ContextKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(ContextKlassTests){
+TEARDOWN(ContextKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

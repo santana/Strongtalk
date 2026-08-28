@@ -60,9 +60,12 @@ oop vframe::callee_argument_at(int index) const {
 }
 
 vframe* vframe::new_vframe(frame* f) {
-  if (f->is_interpreted_frame()) return new interpretedVFrame(f);
-  if (f->is_entry_frame())       return new cChunk(f);
-  if (f->is_deoptimized_frame()) return new deoptimizedVFrame(f);
+  if (f->is_interpreted_frame())
+    return new interpretedVFrame(f);
+  if (f->is_entry_frame())
+    return new cChunk(f);
+  if (f->is_deoptimized_frame())
+    return new deoptimizedVFrame(f);
 #ifdef DELTA_COMPILER
   if (f->is_compiled_frame()) {
     nmethod* nm = f->code();
@@ -71,7 +74,7 @@ vframe* vframe::new_vframe(frame* f) {
     // NB: pc points *after* the current instruction (e.g., call), so must adjust it
     // to get the right bci; -1 will do portably    -Urs 2/96
     char* pc = f->pc() - 1;
-    PcDesc*    pd = nm->containingPcDesc(pc);
+    PcDesc* pd = nm->containingPcDesc(pc);
     assert(pd, "PcDesc not found");
 
     ScopeDesc* sd = nm->scopes()->at(pd->scope, pc);
@@ -85,23 +88,25 @@ vframe* vframe::new_vframe(frame* f) {
 vframe* vframe::sender() const {
   assert(is_top(), "just checking");
   frame s = _fr.sender();
-  if (s.is_first_frame()) return NULL;
+  if (s.is_first_frame())
+    return NULL;
   return vframe::new_vframe(&s);
 }
 
 vframe* vframe::top() const {
-  vframe* vf = (vframe*) this;
-  while (!vf->is_top()) vf = vf->sender();
+  vframe* vf = (vframe*)this;
+  while (!vf->is_top())
+    vf = vf->sender();
   return vf;
 }
 
 void vframe::print() {
-  if (WizardMode  || ActivationShowFrame) {
+  if (WizardMode || ActivationShowFrame) {
     _fr.print();
   }
 }
 
-void vframe::print_value() const { 
+void vframe::print_value() const {
   ((vframe*)this)->print();
 }
 
@@ -112,13 +117,13 @@ GrowableArray<oop>* deltaVFrame::arguments() const {
   GrowableArray<oop>* result = new GrowableArray<oop>(nargs);
   vframe* s = sender();
   for (int index = 0; index < nargs; index++) {
-   result->push(argument_at(index)); 
+    result->push(argument_at(index));
   }
   return result;
 }
 
 oop deltaVFrame::argument_at(int index) const {
-  return sender()->callee_argument_at(method()->number_of_arguments() - (index+1));
+  return sender()->callee_argument_at(method()->number_of_arguments() - (index + 1));
 }
 
 oop deltaVFrame::callee_argument_at(int index) const {
@@ -126,20 +131,20 @@ oop deltaVFrame::callee_argument_at(int index) const {
 }
 
 void deltaVFrame::print() {
-  lprintf("Delta frame: "); 
+  lprintf("Delta frame: ");
   vframe::print();
 }
 
 void deltaVFrame::print_activation(int index) const {
   ((vframe*)this)->vframe::print();
-  prettyPrinter::print(index, (deltaVFrame*) this);
+  prettyPrinter::print(index, (deltaVFrame*)this);
 }
-
 
 deltaVFrame* deltaVFrame::sender_delta_frame() const {
   vframe* f = sender();
   while (f != NULL) {
-    if (f->is_delta_frame()) return (deltaVFrame*) f;
+    if (f->is_delta_frame())
+      return (deltaVFrame*)f;
     f = f->sender();
   }
   return NULL;
@@ -166,8 +171,7 @@ bool interpretedVFrame::has_interpreter_context() const {
 }
 
 oop interpretedVFrame::temp_at(int offset) const {
-  assert(offset > 0 || !has_interpreter_context(),
-         "you cannot use temp(0) when a context is present");
+  assert(offset > 0 || !has_interpreter_context(), "you cannot use temp(0) when a context is present");
   assert(offset < method()->number_of_stack_temporaries(), "checking bounds");
   return _fr.temp(offset);
 }
@@ -178,26 +182,27 @@ oop interpretedVFrame::context_temp_at(int offset) const {
 }
 
 contextOop interpretedVFrame::interpreter_context() const {
-  if (!has_interpreter_context()) return NULL;
+  if (!has_interpreter_context())
+    return NULL;
   contextOop result = contextOop(_fr.temp(0));
   assert(method()->in_context_allocation(bci()) || result->is_context(), "context type check");
   return result;
 }
 
-contextOop interpretedVFrame::canonical_context() const { 
+contextOop interpretedVFrame::canonical_context() const {
   return interpreter_context();
 }
 
 oop interpretedVFrame::expression_at(int index) const {
- return *expression_addr(index);
+  return *expression_addr(index);
 }
 
 oop* interpretedVFrame::expression_addr(int offset) const {
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
   // delta stack slots are 16 bytes (slotSize = 2*oopSize) on AArch64
-  return (oop*) &((oop*) _fr.sp())[2*offset];
+  return (oop*)&((oop*)_fr.sp())[2 * offset];
 #else
-  return (oop*) &((oop*) _fr.sp())[offset];
+  return (oop*)&((oop*)_fr.sp())[offset];
 #endif
 }
 
@@ -215,21 +220,21 @@ GrowableArray<oop>* interpretedVFrame::expression_stack() const {
   int computed_size = method()->expression_stack_mapping(bci())->length();
   if (size != computed_size) {
     warning("Expression stack size  @%d is %d but computed to %d", bci(), size, computed_size);
-    mystd->print_cr("[expression stack:"); 
+    mystd->print_cr("[expression stack:");
     for (int index = 0; index < result->length(); index++) {
       mystd->print(" - ");
       result->at(index)->print_value_on(mystd);
       mystd->cr();
     }
-    mystd->print_cr("]"); 
+    mystd->print_cr("]");
     method()->pretty_print();
     method()->print_codes();
   }
 #endif
   return result;
 }
- 
-u_char* interpretedVFrame::hp() const { 
+
+u_char* interpretedVFrame::hp() const {
   return _fr.hp();
 }
 
@@ -250,7 +255,7 @@ void interpretedVFrame::set_receiver(oop obj) {
   _fr.set_receiver(obj);
 }
 
-void interpretedVFrame::temp_at_put(int offset, oop obj) { 
+void interpretedVFrame::temp_at_put(int offset, oop obj) {
   _fr.set_temp(offset, obj);
 }
 
@@ -260,7 +265,8 @@ void interpretedVFrame::expression_at_put(int offset, oop obj) {
 }
 
 bool interpretedVFrame::equal(const vframe* f) const {
-  if (!f->is_interpreted_frame()) return false;
+  if (!f->is_interpreted_frame())
+    return false;
   return vframe::equal(f);
 }
 
@@ -269,20 +275,22 @@ int interpretedVFrame::bci() const {
 }
 
 methodOop interpretedVFrame::method() const {
-  memOop m = as_memOop(Universe::object_start((oop*) (hp() - 1)));
+  memOop m = as_memOop(Universe::object_start((oop*)(hp() - 1)));
   assert(m->is_method(), "must be method");
   return methodOop(m);
 }
 
 deltaVFrame* interpretedVFrame::parent() const {
   methodOop m = method();
-  
+
   // Return NULL if method is outer.
-  if (!m->is_blockMethod()) return NULL;
+  if (!m->is_blockMethod())
+    return NULL;
 
   contextOop target = interpreter_context();
-  if (!target) return NULL; // Return NULL if no context is present.
-  
+  if (!target)
+    return NULL; // Return NULL if no context is present.
+
   // Walk the stack and find the vframe with outer as context.
   // NB: the parent may still be alive even though it cannot be
   //     found on this stack. It might reside on another stack.
@@ -290,7 +298,7 @@ deltaVFrame* interpretedVFrame::parent() const {
   for (vframe* p = sender(); p; p = p->sender()) {
     if (p->is_interpreted_frame())
       if (((interpretedVFrame*)p)->interpreter_context() == target)
-        return (deltaVFrame*) p;
+        return (deltaVFrame*)p;
   }
 
   warning("parent frame is not found on same stack");
@@ -301,19 +309,21 @@ deltaVFrame* interpretedVFrame::parent() const {
 void interpretedVFrame::verify() const {
   deltaVFrame::verify();
   methodOop m = method();
-  if(m->activation_has_context()) {
+  if (m->activation_has_context()) {
     if (!m->in_context_allocation(bci())) {
       contextOop con = interpreter_context();
-      if (!con->is_context()) warning("expecting context");
+      if (!con->is_context())
+        warning("expecting context");
       if (!m->is_blockMethod()) {
-        if(con->parent_fp() == NULL) warning("expecting frame in context");
+        if (con->parent_fp() == NULL)
+          warning("expecting frame in context");
       }
       m->verify_context(con);
     }
   }
 }
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 // ------------- compiledVFrame --------------
 
@@ -322,7 +332,7 @@ compiledVFrame* compiledVFrame::new_vframe(const frame* fr, ScopeDesc* sd, int b
     return new compiledMethodVFrame(fr, sd, bci);
   if (sd->isTopLevelBlockScope())
     return new compiledTopLevelBlockVFrame(fr, sd, bci);
-  if (sd->isBlockScope()) 
+  if (sd->isBlockScope())
     return new compiledBlockVFrame(fr, sd, bci);
   fatal("unknown scope desc");
   return NULL;
@@ -336,31 +346,33 @@ void compiledVFrame::rewind_bci() {
 }
 
 compiledVFrame::compiledVFrame(const frame* fr, ScopeDesc* sd, int bci) : deltaVFrame(fr) {
-  this->sd   = sd;
+  this->sd = sd;
   this->_bci = bci;
 }
 
 vframe* compiledVFrame::sender() const {
-  if (sd->isTop()) return vframe::sender();
+  if (sd->isTop())
+    return vframe::sender();
   return compiledVFrame::new_vframe(&_fr, sd->sender(), sd->senderBCI());
 }
 
 oop compiledVFrame::temp_at(int offset) const {
-  assert(offset > 0 || !method()->activation_has_context(),
-         "you cannot use temp(0) when a context is present");
+  assert(offset > 0 || !method()->activation_has_context(), "you cannot use temp(0) when a context is present");
   assert(offset < method()->number_of_stack_temporaries(), "checking bounds");
   return resolve_name(scope()->temporary(offset), this);
 }
 
 class ContextTempFindClosure : public NameDescClosure {
- public:
+public:
   NameDesc* result;
   int i;
   ContextTempFindClosure(int index) {
     i = index;
-    result = NULL; }
-  void context_temp (int no, NameDesc* a, char* pc) {
-    if (no == i) result = a;
+    result = NULL;
+  }
+  void context_temp(int no, NameDesc* a, char* pc) {
+    if (no == i)
+      result = a;
   }
 };
 
@@ -383,27 +395,25 @@ oop compiledVFrame::expression_at(int index) const {
 }
 
 class CollectContextInfoClosure : public NameDescClosure {
- public:
+public:
   GrowableArray<NameDesc*>* result;
-  CollectContextInfoClosure() {
-    result = new GrowableArray<NameDesc*>(10);
-  }
-  void context_temp(int no, NameDesc* a, char* pc) { 
-    result->append(a);
-  }
+  CollectContextInfoClosure() { result = new GrowableArray<NameDesc*>(10); }
+  void context_temp(int no, NameDesc* a, char* pc) { result->append(a); }
 };
 
 extern "C" contextOop allocateContext(smiOop nofVars);
 
 contextOop compiledVFrame::compiled_context() const {
-  if (!method()->activation_has_context()) return NULL;
-  
+  if (!method()->activation_has_context())
+    return NULL;
+
   // Hack suggested by Urs
   // if temp 0 contains nil the compiler has optimized away the
   // contextOop.
   // A better solution would be adding has_compiled_context to scopeDesc.
-  oop con = resolve_name(scope()->temporary(0), this); 
-  if (con == nilObj) return NULL;
+  oop con = resolve_name(scope()->temporary(0), this);
+  if (con == nilObj)
+    return NULL;
 
   assert(con->is_context(), "context type check");
   return contextOop(con);
@@ -413,7 +423,7 @@ GrowableArray<DeferredExpression*>* compiledVFrame::deferred_expression_stack() 
   GrowableArray<intptr_t>* mapping = method()->expression_stack_mapping(bci());
   GrowableArray<DeferredExpression*>* result = new GrowableArray<DeferredExpression*>(mapping->length());
   for (int index = 0; index < mapping->length(); index++) {
-    NameDesc* nd    = sd->exprStackElem(mapping->at(index));
+    NameDesc* nd = sd->exprStackElem(mapping->at(index));
     result->push(new DeferredExpression(this, nd));
   }
   return result;
@@ -423,21 +433,21 @@ GrowableArray<oop>* compiledVFrame::expression_stack() const {
   GrowableArray<intptr_t>* mapping = method()->expression_stack_mapping(bci());
   GrowableArray<oop>* result = new GrowableArray<oop>(mapping->length());
   for (int index = 0; index < mapping->length(); index++) {
-    NameDesc* nd    = sd->exprStackElem(mapping->at(index));
-    oop       value = resolve_name(nd, this);
+    NameDesc* nd = sd->exprStackElem(mapping->at(index));
+    oop value = resolve_name(nd, this);
     result->push(value);
   }
 #ifdef ASSERT
   int computed_size = method()->expression_stack_mapping(bci())->length();
   if (result->length() != computed_size) {
     warning("Expression stack size  @%d is %d but computed to %d", bci(), result->length(), computed_size);
-    mystd->print_cr("[expression stack:"); 
+    mystd->print_cr("[expression stack:");
     for (int index = 0; index < result->length(); index++) {
       mystd->print(" - ");
       result->at(index)->print_value_on(mystd);
       mystd->cr();
     }
-    mystd->print_cr("]"); 
+    mystd->print_cr("]");
     method()->pretty_print();
     method()->print_codes();
   }
@@ -446,9 +456,9 @@ GrowableArray<oop>* compiledVFrame::expression_stack() const {
 }
 
 bool compiledVFrame::equal(const vframe* f) const {
-  if (!f->is_compiled_frame()) return false;
-  return vframe::equal(f)
-      && scope()->is_equal(((compiledVFrame*)f)->scope());
+  if (!f->is_compiled_frame())
+    return false;
+  return vframe::equal(f) && scope()->is_equal(((compiledVFrame*)f)->scope());
 }
 
 int compiledVFrame::bci() const {
@@ -467,9 +477,7 @@ oop compiledVFrame::resolve_location(Location loc, const compiledVFrame* vf, con
 
   // Context location
   if (loc.isStackLocation()) {
-    return vf
-	 ? oop(vf->fr().at(loc.offset()))
-	 : filler_oop();
+    return vf ? oop(vf->fr().at(loc.offset())) : filler_oop();
   }
 
   // Context location
@@ -537,8 +545,7 @@ oop compiledVFrame::resolve_name(NameDesc* nd, const compiledVFrame* vf, context
       // nameDesc instead - gri 8-5-96
       return nilObj;
     }
-    warning("Compiler Bug: Illegal name desc found in nmethod 0x%lx @ %d",
-            vf->fr().code(), vf->scope()->offset());
+    warning("Compiler Bug: Illegal name desc found in nmethod 0x%lx @ %d", vf->fr().code(), vf->scope()->offset());
     return oopFactory::new_symbol("illegal nameDesc");
   }
 
@@ -554,7 +561,7 @@ oop compiledVFrame::filler_oop() {
 
 int compiledVFrame::bci_for(ScopeDesc* d) const {
   ScopeDesc* s = sd;
-  int        b = bci();
+  int b = bci();
   while (!s->is_equal(d)) {
     b = s->senderBCI();
     assert(s->sender(), "make sure we have a sender");
@@ -563,15 +570,17 @@ int compiledVFrame::bci_for(ScopeDesc* d) const {
   return b;
 }
 
-#define CHECK(n)  if (n->isIllegal()) ok = false
+#define CHECK(n)                                                                                                       \
+  if (n->isIllegal())                                                                                                  \
+  ok = false
 
 class VerifyNDClosure : public NameDescClosure {
- public:
+public:
   bool ok;
   VerifyNDClosure() { ok = true; }
-  void arg	    (int no, NameDesc* a, char* pc) { CHECK(a); }
-  void temp	    (int no, NameDesc* a, char* pc) { CHECK(a); }
-  void context_temp (int no, NameDesc* a, char* pc) { CHECK(a); }
+  void arg(int no, NameDesc* a, char* pc) { CHECK(a); }
+  void temp(int no, NameDesc* a, char* pc) { CHECK(a); }
+  void context_temp(int no, NameDesc* a, char* pc) { CHECK(a); }
 };
 
 void compiledVFrame::verify_debug_info() const {
@@ -591,34 +600,33 @@ void compiledVFrame::verify_debug_info() const {
 
 class Indenting : public ValueObj {
 public:
-  Indenting() {_mystd->inc();}
-  ~Indenting() {_mystd->dec();}
+  Indenting() { _mystd->inc(); }
+  ~Indenting() { _mystd->dec(); }
 };
 
 void traceFrame(const compiledVFrame* vf, contextOop con) {
-    if (TraceCanonicalContext) {
-      FlagSetting flag(TraceCanonicalContext, false);
-      _mystd->cr();
-      _mystd->indent();
-      _mystd->print_cr("context(0x%x), vframe(0x%x), block? %d", con, vf,
-        vf ? vf->method()->is_blockMethod() : false);
-      if (vf) {
-        vf->print_activation(0);
-        vf->method()->print_codes();
-      }
+  if (TraceCanonicalContext) {
+    FlagSetting flag(TraceCanonicalContext, false);
+    _mystd->cr();
+    _mystd->indent();
+    _mystd->print_cr("context(0x%x), vframe(0x%x), block? %d", con, vf, vf ? vf->method()->is_blockMethod() : false);
+    if (vf) {
+      vf->print_activation(0);
+      vf->method()->print_codes();
     }
+  }
 }
 
-contextOop compiledVFrame::compute_canonical_parent_context(ScopeDesc* scope, const compiledVFrame* vf, contextOop con) {
-  compiledVFrame* parent_vf = (!vf || !vf->parent() || !vf->parent()->is_compiled_frame())
-                                  ? NULL
-                                  : (compiledVFrame*) vf->parent();
-    return compute_canonical_context(scope->parent(true), parent_vf, con);
+contextOop compiledVFrame::compute_canonical_parent_context(ScopeDesc* scope, const compiledVFrame* vf,
+                                                            contextOop con) {
+  compiledVFrame* parent_vf =
+    (!vf || !vf->parent() || !vf->parent()->is_compiled_frame()) ? NULL : (compiledVFrame*)vf->parent();
+  return compute_canonical_context(scope->parent(true), parent_vf, con);
 }
 
 contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const compiledVFrame* vf, contextOop con) {
   // Computes the canonical contextOop for a scope desc.
-  // 
+  //
   // Recipe:
   // 1. Search the stack builder context cache (in case we're during deoptimizing)
   // 2. Check the forward reference in contextOop.
@@ -631,10 +639,10 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
 
   if (!scope->allocates_interpreted_context()) {
     // This scope does not allocate an interpreter contextOop
-    if (scope->isMethodScope()) return NULL;
+    if (scope->isMethodScope())
+      return NULL;
 
-    if (!scope->method()->expectsContext() && 
-         scope->method()->parent()->allocatesInterpretedContext()) {
+    if (!scope->method()->expectsContext() && scope->method()->parent()->allocatesInterpretedContext()) {
       warning("May be allocating context when unneeded");
     }
     return compute_canonical_parent_context(scope, vf, con);
@@ -659,7 +667,7 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
 
   contextOop comp_context = con;
   assert(comp_context == NULL || comp_context->is_context(), "must be context");
-  
+
   // step 3
   if (!MaterializeEliminatedBlocks && !StackChunkBuilder::is_deoptimizing()) {
     // don't create a context (for better compiler debugging)
@@ -669,7 +677,7 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
     stringStream st(50);
     st.print("eliminated context in ");
     scope->selector()->print_symbol_on(&st);
-    return (contextOop)oopFactory::new_symbol(st.as_string());	  // unsafe cast
+    return (contextOop)oopFactory::new_symbol(st.as_string()); // unsafe cast
   }
 
   // collect all NameDescs
@@ -680,7 +688,7 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
   result = contextKlass::allocate_context(blk.result->length());
 
   // fill in the meat
-  for(int index = 0; index < blk.result->length(); index++) {
+  for (int index = 0; index < blk.result->length(); index++) {
     NameDesc* nd = blk.result->at(index);
     result->obj_at_put(index, resolve_name(nd, vf, comp_context));
   }
@@ -713,7 +721,7 @@ contextOop compiledVFrame::compute_canonical_context(ScopeDesc* scope, const com
     result->print_value();
     mystd->cr();
   }
- 
+
   assert(result->unoptimized_context() == NULL, "cannot have deoptimized context");
   return result;
 }
@@ -722,15 +730,13 @@ void compiledVFrame::verify() const {
   deltaVFrame::verify();
   contextOop con = compiled_context();
   if (con) {
-    if(con->mark()->has_context_forward())
+    if (con->mark()->has_context_forward())
       warning("context has forwarder");
   }
 }
 // ------------- compiledMethodVFrame --------------
 
-compiledMethodVFrame::compiledMethodVFrame(const frame* fr, ScopeDesc* sd, int bci)
-: compiledVFrame(fr, sd, bci) {}
-
+compiledMethodVFrame::compiledMethodVFrame(const frame* fr, ScopeDesc* sd, int bci) : compiledVFrame(fr, sd, bci) {}
 
 bool compiledMethodVFrame::is_top() const {
   return sd->isTop();
@@ -745,15 +751,15 @@ contextOop compiledMethodVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut,
+                  method()->is_blockMethod());
   }
   return conOut;
 }
 
 // ------------- compiledBlockVFrame --------------
 
-compiledBlockVFrame::compiledBlockVFrame(const frame* fr, ScopeDesc* sd, int bci)
-: compiledVFrame(fr, sd, bci) {}
+compiledBlockVFrame::compiledBlockVFrame(const frame* fr, ScopeDesc* sd, int bci) : compiledVFrame(fr, sd, bci) {}
 
 bool compiledBlockVFrame::is_top() const {
   return sd->isTop();
@@ -764,7 +770,7 @@ oop compiledBlockVFrame::receiver() const {
   if (nd) {
     return resolve_name(nd, this);
   } else {
-    fatal("self is unknown");	// can't handle this yet -- fix this
+    fatal("self is unknown"); // can't handle this yet -- fix this
     return NULL;
   }
 }
@@ -780,7 +786,8 @@ contextOop compiledBlockVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut,
+                  method()->is_blockMethod());
   }
   return conOut;
 }
@@ -793,8 +800,8 @@ ScopeDesc* compiledBlockVFrame::parent_scope() const {
 
 // ------------- compiledTopLevelBlockVFrame --------------
 
-compiledTopLevelBlockVFrame::compiledTopLevelBlockVFrame(const frame* fr, ScopeDesc* sd, int bci)
-: compiledVFrame(fr, sd, bci) {}
+compiledTopLevelBlockVFrame::compiledTopLevelBlockVFrame(const frame* fr, ScopeDesc* sd, int bci) :
+  compiledVFrame(fr, sd, bci) {}
 
 oop compiledTopLevelBlockVFrame::receiver() const {
   return resolve_name(sd->self(), this);
@@ -802,14 +809,15 @@ oop compiledTopLevelBlockVFrame::receiver() const {
 
 deltaVFrame* compiledTopLevelBlockVFrame::parent() const {
   methodOop m = method();
-  if (!m->expectsContext()) return NULL;
-  
-  contextOop parent_context = m->allocatesInterpretedContext() 
-                          ? compiled_context()->outer_context()
-			  : compiled_context();
+  if (!m->expectsContext())
+    return NULL;
+
+  contextOop parent_context = m->allocatesInterpretedContext() ? compiled_context()->outer_context()
+                                                               : compiled_context();
 
   // If the context is killed return NULL
-  if (!parent_context || parent_context->is_dead()) return NULL;
+  if (!parent_context || parent_context->is_dead())
+    return NULL;
 
   // Now we have to search for the parent on the stack.
   ScopeDesc* ps = parent_scope();
@@ -819,15 +827,15 @@ deltaVFrame* compiledTopLevelBlockVFrame::parent() const {
   do {
     if (v.is_compiled_frame()) {
       if (v.code() == parent_nmethod) {
-	compiledVFrame* result = (compiledVFrame*) vframe::new_vframe(&v);
+        compiledVFrame* result = (compiledVFrame*)vframe::new_vframe(&v);
         // Run throuch the scopes and find a matching one
         while (result) {
-	  assert(result->is_compiled_frame(), "must be compiled frame");
+          assert(result->is_compiled_frame(), "must be compiled frame");
           if (result->scope()->is_equal(ps)) {
             if (result->compiled_context() == parent_context)
               return result;
           }
-          result = result->is_top() ? NULL : (compiledVFrame*) result->sender();
+          result = result->is_top() ? NULL : (compiledVFrame*)result->sender();
         }
       }
     }
@@ -841,7 +849,8 @@ contextOop compiledTopLevelBlockVFrame::canonical_context() const {
   contextOop conIn = compiled_context();
   contextOop conOut = compute_canonical_context(scope(), this, conIn);
   if (TraceCanonicalContext) {
-    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut, method()->is_blockMethod());
+    _mystd->print("context in(0x%x), vf(0x%x), context out(0x%x), block? %d", conIn, this, conOut,
+                  method()->is_blockMethod());
   }
   return conOut;
 }
@@ -857,7 +866,7 @@ ScopeDesc* compiledTopLevelBlockVFrame::parent_scope() const {
 objArrayOop deoptimizedVFrame::retrieve_frame_array() const {
   objArrayOop array = _fr.frame_array();
   assert(array->is_objArray(), "expecting objArray");
-  return array; 
+  return array;
 }
 
 oop deoptimizedVFrame::obj_at(int index) const {
@@ -874,16 +883,14 @@ int deoptimizedVFrame::end_of_expressions() const {
   return first_temp_offset + n->value();
 }
 
-deoptimizedVFrame::deoptimizedVFrame(const frame* fr) 
- : deltaVFrame(fr) {
+deoptimizedVFrame::deoptimizedVFrame(const frame* fr) : deltaVFrame(fr) {
   // the first frame in the array is located at position 3 (after #frames, #locals)
-  this->offset      = StackChunkBuilder::first_frame_index;
+  this->offset = StackChunkBuilder::first_frame_index;
   this->frame_array = retrieve_frame_array();
 }
 
-deoptimizedVFrame::deoptimizedVFrame(const frame* fr, int offset) 
- : deltaVFrame(fr) {
-  this->offset      = offset;
+deoptimizedVFrame::deoptimizedVFrame(const frame* fr, int offset) : deltaVFrame(fr) {
+  this->offset = offset;
   this->frame_array = retrieve_frame_array();
 }
 
@@ -904,14 +911,13 @@ int deoptimizedVFrame::bci() const {
 }
 
 vframe* deoptimizedVFrame::sender() const {
-  return is_top() ? vframe::sender()
-                  : new deoptimizedVFrame(&_fr, offset + end_of_expressions());
+  return is_top() ? vframe::sender() : new deoptimizedVFrame(&_fr, offset + end_of_expressions());
 }
 
 bool deoptimizedVFrame::equal(const vframe* f) const {
-  if (!f->is_deoptimized_frame()) return false;
-  return vframe::equal(f) 
-      && offset == ((deoptimizedVFrame*)f)->offset;
+  if (!f->is_deoptimized_frame())
+    return false;
+  return vframe::equal(f) && offset == ((deoptimizedVFrame*)f)->offset;
 }
 
 oop deoptimizedVFrame::temp_at(int offset) const {
@@ -928,7 +934,8 @@ oop deoptimizedVFrame::context_temp_at(int offset) const {
 }
 
 contextOop deoptimizedVFrame::deoptimized_context() const {
-  if (!method()->activation_has_context()) return NULL;
+  if (!method()->activation_has_context())
+    return NULL;
   contextOop result = contextOop(temp_at(0));
   assert(result->is_context(), "context type check");
   return result;
@@ -939,12 +946,12 @@ contextOop deoptimizedVFrame::canonical_context() const {
 }
 
 GrowableArray<oop>* deoptimizedVFrame::expression_stack() const {
-  int locals   = end_of_expressions() - first_temp_offset;
-  int temps    = method()->number_of_stack_temporaries();
+  int locals = end_of_expressions() - first_temp_offset;
+  int temps = method()->number_of_stack_temporaries();
   int exp_size = locals - temps;
 
   GrowableArray<oop>* array = new GrowableArray<oop>(exp_size);
-  for (int index = 0 ; index < exp_size; index++) {
+  for (int index = 0; index < exp_size; index++) {
     array->push(expression_at(index));
   }
 
@@ -975,8 +982,8 @@ void cVFrame::print_value() const {
 vframe* cChunk::sender() const {
   return cVFrame::sender();
 }
- 
-void cChunk::print_value() const { 
+
+void cChunk::print_value() const {
   ((cChunk*)this)->print();
 }
 
@@ -987,6 +994,5 @@ void cChunk::print() {
 }
 
 oop cChunk::callee_argument_at(int index) const {
-  return oop(_fr.sp()[index]); 
+  return oop(_fr.sp()[index]);
 }
-

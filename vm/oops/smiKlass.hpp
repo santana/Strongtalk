@@ -26,16 +26,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "oops/klass.hpp"
 
-class smiKlass: public Klass {
- public:
+class smiKlass : public Klass {
+public:
   friend void set_smiKlass_vtbl(Klass* k);
 
   bool oop_is_smi() const { return true; }
-  char* name()      const { return "smi"; }
+  char* name() const { return "smi"; }
 
   // Reflective properties
   bool can_have_instance_variables() const { return false; }
-  bool can_be_subclassed()           const { return false; }
+  bool can_be_subclassed() const { return false; }
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);

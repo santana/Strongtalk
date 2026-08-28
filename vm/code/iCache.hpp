@@ -32,27 +32,30 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // If the CPU supports line-by-line flushes, implement flushICacheWord,
 // otherwise flushICache.
 
-#define HAVE_LINE_FLUSH		/* x86: don't need any flushing */
-
+#define HAVE_LINE_FLUSH /* x86: don't need any flushing */
 
 // For processors with a small I-cache / without selective cache invalidation,
 // define flushICache to flush the entire I-cache.  Otherwise, make it a no-op.
-# ifdef HAVE_LINE_FLUSH
-  inline void flushICache() {}
-# else
-  void flushICache();
-# endif
+#ifdef HAVE_LINE_FLUSH
+inline void flushICache() {}
+#else
+void flushICache();
+#endif
 
 // For processors with selective cache invalidation, define the following two
 // routines:
-# ifdef HAVE_LINE_FLUSH
-  void flushICacheWord(void* addr);		// flush one word (instruction)
-  void flushICacheRange(void* start, void* end);// flush range [start, end)
-# else
-  inline void flushICacheWord(void* addr) { Unused(addr); }
-  inline void flushICacheRange(void* start, void* end) {
-    Unused(start); Unused(end); }
-# endif
+#ifdef HAVE_LINE_FLUSH
+void flushICacheWord(void* addr); // flush one word (instruction)
+void flushICacheRange(void* start, void* end); // flush range [start, end)
+#else
+inline void flushICacheWord(void* addr) {
+  Unused(addr);
+}
+inline void flushICacheRange(void* start, void* end) {
+  Unused(start);
+  Unused(end);
+}
+#endif
 
 #endif // DELTA_COMPILER
 #endif // _I_CACHE_HPP

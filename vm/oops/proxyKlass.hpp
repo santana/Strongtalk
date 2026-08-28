@@ -27,17 +27,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOopKlass.hpp"
 #include "oops/proxyOop.hpp"
 
-class proxyKlass: public memOopKlass {
- public:
+class proxyKlass : public memOopKlass {
+public:
   // testers
-  bool oop_is_proxy()          const { return true;  }
+  bool oop_is_proxy() const { return true; }
 
   // allocation properties
   bool can_inline_allocation() const { return false; }
 
   // allocation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
-  
+
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
 
@@ -47,8 +47,8 @@ class proxyKlass: public memOopKlass {
   Format format() { return proxy_klass; }
 
   // memory operations
-  int  oop_scavenge_contents(oop obj);
-  int  oop_scavenge_tenured_contents(oop obj);
+  int oop_scavenge_contents(oop obj);
+  int oop_scavenge_tenured_contents(oop obj);
   void oop_follow_contents(oop obj);
 
   // iterators

@@ -13,11 +13,11 @@
 
 namespace easyunit {
 
-  class CHeap {
-   public:
-    void* operator new(size_t size);
-    void  operator delete(void* p);
-  };
+class CHeap {
+public:
+  void* operator new(size_t size);
+  void operator delete(void* p);
+};
 
 }
 #endif

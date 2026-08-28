@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(ProxyKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(ProxyKlassTests) {
@@ -20,7 +20,7 @@ SETUP(ProxyKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(ProxyKlassTests){
+TEARDOWN(ProxyKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

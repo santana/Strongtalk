@@ -30,14 +30,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 const int max_tasks = 10;
-      int num_tasks = 0;
+int num_tasks = 0;
 
 PeriodicTask* tasks[max_tasks];
 
-
 bool pending_tasks(int delay_time) {
   bool result = false;
-  for(int index = 0; index < num_tasks; index++) {
+  for (int index = 0; index < num_tasks; index++) {
     result = tasks[index]->is_pending(delay_time) || result;
   }
   return result;
@@ -45,13 +44,15 @@ bool pending_tasks(int delay_time) {
 
 void real_time_tick(int delay_time) {
   // Do not perform any tasks before the bootstrapping is done
-  if (bootstrapping) return;
+  if (bootstrapping)
+    return;
 
   if (pending_tasks(delay_time)) {
     ThreadCritical tc;
-    if (!Process::external_suspend_current()) return;
+    if (!Process::external_suspend_current())
+      return;
 
-    for(int index = 0; index < num_tasks; index++) {
+    for (int index = 0; index < num_tasks; index++) {
       PeriodicTask* task = tasks[index];
       if (task->counter >= task->interval) {
         task->task();
@@ -63,7 +64,7 @@ void real_time_tick(int delay_time) {
 }
 
 PeriodicTask::PeriodicTask(int interval_time) {
-  counter  = 0;
+  counter = 0;
   interval = interval_time;
 }
 
@@ -73,8 +74,9 @@ PeriodicTask::~PeriodicTask() {
 }
 
 bool PeriodicTask::is_enrolled() const {
-  for(int index = 0; index < num_tasks; index++) 
-    if (tasks[index] == this) return true;
+  for (int index = 0; index < num_tasks; index++)
+    if (tasks[index] == this)
+      return true;
   return false;
 }
 
@@ -86,10 +88,12 @@ void PeriodicTask::enroll() {
 
 void PeriodicTask::deroll() {
   int index;
-  for(index = 0; index < num_tasks && tasks[index] != this; index++);
-  if (index == max_tasks) return;
+  for (index = 0; index < num_tasks && tasks[index] != this; index++)
+    ;
+  if (index == max_tasks)
+    return;
   num_tasks--;
   for (; index < num_tasks; index++) {
-    tasks[index] = tasks[index+1];
+    tasks[index] = tasks[index + 1];
   }
 }

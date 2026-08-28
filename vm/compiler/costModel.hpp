@@ -33,18 +33,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // CostModel holds the 'costs' for all bytecodes. These costs
 // are used to estimate the inline cost for a given methodOop.
 
-class CostModel: AllStatic {
- private:
+class CostModel : AllStatic {
+private:
   static int _cost[Bytecodes::number_of_codes];
 
- public:
-  static int  cost_for(Bytecodes::Code code)				{ return _cost[(int)code]; }
+public:
+  static int cost_for(Bytecodes::Code code) { return _cost[(int)code]; }
 
-  static void set_default_costs();					// sets default costs
-  static void set_cost_for_all(int cost);				// sets cost for all instructions
-  static void set_cost_for_code(Bytecodes::Code     code, int cost);	// sets cost for individual instruction
-  static void set_cost_for_type(Bytecodes::CodeType type, int cost);	// sets cost for all instructions of a certain type
-  static void set_cost_for_send(Bytecodes::SendType send, int cost);	// sets cost for all sends of a certain type
+  static void set_default_costs(); // sets default costs
+  static void set_cost_for_all(int cost); // sets cost for all instructions
+  static void set_cost_for_code(Bytecodes::Code code, int cost); // sets cost for individual instruction
+  static void set_cost_for_type(Bytecodes::CodeType type, int cost); // sets cost for all instructions of a certain type
+  static void set_cost_for_send(Bytecodes::SendType send, int cost); // sets cost for all sends of a certain type
 
   static void print();
 };

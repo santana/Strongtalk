@@ -30,7 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 symbolOop symbolOopDesc::scavenge() {
   ShouldNotCallThis(); // shouldn't be scavenging canonical symbols
-                       // (should be tenured);
+  // (should be tenured);
   return NULL;
 }
 
@@ -41,7 +41,7 @@ bool symbolOopDesc::verify() {
       error("symbolOop %#lx isn't tenured", this);
       flag = false;
     }
-    symbolOop s = Universe::symbol_table->lookup((char*) bytes(), length());
+    symbolOop s = Universe::symbol_table->lookup((char*)bytes(), length());
     if (s != this) {
       error("symbolOop %#lx isn't canonical", this);
       flag = false;

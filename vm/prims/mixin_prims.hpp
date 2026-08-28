@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for mixins
 
 class mixinOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   // METHODS
@@ -64,13 +65,12 @@ class mixinOopPrimitives : AllStatic {
 
   //%prim
   // <NoReceiver> primitiveMixin: mixin     <Mixin>
-  //              removeMethodAt: index     <SmallInteger> 
+  //              removeMethodAt: index     <SmallInteger>
   //                      ifFail: failBlock <PrimFailBlock> ^<Method> =
   //   Internal {  error = #(IsInstalled OutOfBounds)
   //               name  = 'mixinOopPrimitives::remove_method_at' }
   //%
   static PRIM_DECL_2(remove_method_at, oop mixin, oop index);
-
 
   //%prim
   // <NoReceiver> primitiveMixin: mixin     <Mixin>
@@ -78,7 +78,6 @@ class mixinOopPrimitives : AllStatic {
   //   Internal { name  = 'mixinOopPrimitives::methods' }
   //%
   static PRIM_DECL_1(methods, oop mixin);
-
 
   // INSTANCE VARIABLES
 
@@ -109,7 +108,7 @@ class mixinOopPrimitives : AllStatic {
 
   //%prim
   // <NoReceiver> primitiveMixin: mixin     <Mixin>
-  //    removeInstanceVariableAt: index     <SmallInteger> 
+  //    removeInstanceVariableAt: index     <SmallInteger>
   //                      ifFail: failBlock <PrimFailBlock> ^<Symbol> =
   //   Internal { error = #(IsInstalled OutOfBounds)
   //              name  = 'mixinOopPrimitives::remove_instance_variable_at' }
@@ -152,7 +151,7 @@ class mixinOopPrimitives : AllStatic {
 
   //%prim
   // <NoReceiver> primitiveMixin: mixin     <Mixin>
-  //       removeClassVariableAt: index     <SmallInteger> 
+  //       removeClassVariableAt: index     <SmallInteger>
   //                      ifFail: failBlock <PrimFailBlock> ^<Symbol> =
   //   Internal { error = #(IsInstalled OutOfBounds)
   //              name  = 'mixinOopPrimitives::remove_class_variable_at' }
@@ -165,7 +164,6 @@ class mixinOopPrimitives : AllStatic {
   //   Internal { name  = 'mixinOopPrimitives::class_variables' }
   //%
   static PRIM_DECL_1(class_variables, oop mixin);
-
 
   // PRIMARY INVOCATION
 
@@ -217,12 +215,11 @@ class mixinOopPrimitives : AllStatic {
   //%
   static PRIM_DECL_1(set_installed, oop mixin);
 
-    //%prim
+  //%prim
   // <NoReceiver> primitiveMixinSetUnInstalled: mixin <Mixin>
   //                                    ifFail: failBlock <PrimFailBlock> ^<Boolean> =
   //   Internal { name = 'mixinOopPrimitives::set_uninstalled' }
   //%
   static PRIM_DECL_1(set_uninstalled, oop mixin);
-
 };
 #endif // _MIXIN_PRIMS_HPP

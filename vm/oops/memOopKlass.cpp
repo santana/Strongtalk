@@ -97,9 +97,12 @@ void memOopKlass::oop_print_on(oop obj, outputStream* st) {
 }
 
 void memOopKlass::oop_print_value_on(oop obj, outputStream* st) {
-  if (obj == nilObj)   st->print("nil");
-  else if (obj == trueObj)  st->print("true");
-  else if (obj == falseObj) st->print("false");
+  if (obj == nilObj)
+    st->print("nil");
+  else if (obj == trueObj)
+    st->print("true");
+  else if (obj == falseObj)
+    st->print("false");
   else {
     if (PrintObjectID) {
       memOop(obj)->print_id_on(st);
@@ -107,15 +110,16 @@ void memOopKlass::oop_print_value_on(oop obj, outputStream* st) {
     }
     print_name_on(st);
   }
-  if (PrintOopAddress) st->print(" (%#x)", this);
+  if (PrintOopAddress)
+    st->print(" (%#x)", this);
 }
 
 oop memOopKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
 
   oop* result = basicAllocate(size, &k, permit_scavenge, tenured);
-  if (!result) 
+  if (!result)
     return NULL;
   // allocate
   memOop obj = as_memOop(result);
@@ -136,21 +140,29 @@ klassOop memOopKlass::create_subclass(mixinOop mixin, klassOop instSuper, klassO
 }
 klassOop memOopKlass::create_subclass(mixinOop mixin, Format format) {
   assert(can_be_subclassed(), "must be able to subclass this");
-  if (format == mem_klass)             return memOopKlass::create_class(as_klassOop(), mixin);
+  if (format == mem_klass)
+    return memOopKlass::create_class(as_klassOop(), mixin);
 
-  if (format == objArray_klass)        return objArrayKlass::create_class(as_klassOop(), mixin);
-  if (format == byteArray_klass)       return byteArrayKlass::create_class(as_klassOop(), mixin);
-  if (format == doubleByteArray_klass) return doubleByteArrayKlass::create_class(as_klassOop(), mixin);
-  if (format == weakArray_klass)       return weakArrayKlass::create_class(as_klassOop(), mixin);
+  if (format == objArray_klass)
+    return objArrayKlass::create_class(as_klassOop(), mixin);
+  if (format == byteArray_klass)
+    return byteArrayKlass::create_class(as_klassOop(), mixin);
+  if (format == doubleByteArray_klass)
+    return doubleByteArrayKlass::create_class(as_klassOop(), mixin);
+  if (format == weakArray_klass)
+    return weakArrayKlass::create_class(as_klassOop(), mixin);
 
   if (number_of_instance_variables() > 0) {
     warning("super class has instance variables when mixing in special mixin");
     return NULL;
   }
 
-  if (format == mixin_klass)           return mixinKlass::create_class(as_klassOop(), mixin);
-  if (format == proxy_klass)           return proxyKlass::create_class(as_klassOop(), mixin);
-  if (format == process_klass)         return processKlass::create_class(as_klassOop(), mixin);
+  if (format == mixin_klass)
+    return mixinKlass::create_class(as_klassOop(), mixin);
+  if (format == proxy_klass)
+    return proxyKlass::create_class(as_klassOop(), mixin);
+  if (format == process_klass)
+    return processKlass::create_class(as_klassOop(), mixin);
   return NULL;
 }
 
@@ -160,17 +172,21 @@ klassOop memOopKlass::create_class(klassOop super_class, mixinOop mixin) {
 }
 oop memOopKlass::oop_shallow_copy(oop obj, bool tenured) {
   // Do not copy oddballs (nil, true, false)
-  if (obj == nilObj)   return obj;
-  if (obj == trueObj)  return obj;
-  if (obj == falseObj) return obj;
+  if (obj == nilObj)
+    return obj;
+  if (obj == trueObj)
+    return obj;
+  if (obj == falseObj)
+    return obj;
 
-  int  len   = memOop(obj)->size();
+  int len = memOop(obj)->size();
   // Important to preserve obj (in case of scavenge).
   oop* clone = tenured ? Universe::allocate_tenured(len) : Universe::allocate(len, (memOop*)&obj);
-  oop* to    = clone;
-  oop* from  = (oop*) memOop(obj)->addr();
-  oop* end   = to + len;
-  while (to < end) *to++ = *from++;
+  oop* to = clone;
+  oop* from = (oop*)memOop(obj)->addr();
+  oop* end = to + len;
+  while (to < end)
+    *to++ = *from++;
 
   if (!as_memOop(clone)->is_new()) {
     // Remember to update the remembered set if the clone is in old space.

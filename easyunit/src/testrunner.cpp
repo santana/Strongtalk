@@ -24,22 +24,13 @@ barthelemy@prologique.com
 
 using namespace easyunit;
 
-TestRunner::TestRunner()
-{
+TestRunner::TestRunner() {}
+
+TestRunner::~TestRunner() {}
+
+void TestRunner::run(TestCase* testCase, int size) {
+  for (int i = 0; i < size; i++) {
+    testCase->run();
+    testCase = testCase->getNext();
+  }
 }
-
-
-TestRunner::~TestRunner()
-{
-}
-
-void TestRunner::run(TestCase *testCase, int size)
-{
-	for (int i=0; i<size; i++) {
-		testCase->run();
-		testCase = testCase->getNext();
-	}
-}
-
-
-

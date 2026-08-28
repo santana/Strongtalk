@@ -37,9 +37,9 @@ oop doubleValueArrayKlass::allocateObject(bool permit_scavenge, bool tenured) {
 }
 
 oop doubleValueArrayKlass::allocateObjectSize(int size, bool permit_scavenge, bool permit_tenured) {
-  klassOop k        = as_klassOop();
-  int      ni_size  = non_indexable_size();
-  int      obj_size = ni_size + 1 + roundTo(size * sizeof(double), image_oop_size) / image_oop_size;
+  klassOop k = as_klassOop();
+  int ni_size = non_indexable_size();
+  int obj_size = ni_size + 1 + roundTo(size * sizeof(double), image_oop_size) / image_oop_size;
   // allocate
   doubleValueArrayOop obj = as_doubleValueArrayOop(Universe::allocate(obj_size, (memOop*)&k));
   // header
@@ -72,22 +72,22 @@ void set_doubleValueArrayKlass_vtbl(Klass* k) {
 }
 
 bool doubleValueArrayKlass::oop_verify(oop obj) {
-  assert_doubleValueArray(obj,"Argument must be doubleValueArray");
+  assert_doubleValueArray(obj, "Argument must be doubleValueArray");
   return doubleValueArrayOop(obj)->verify();
 }
 
 void doubleValueArrayKlass::oop_print_value_on(oop obj, outputStream* st) {
-  assert_doubleValueArray(obj,"Argument must be doubleValueArray");
+  assert_doubleValueArray(obj, "Argument must be doubleValueArray");
   doubleValueArrayOop array = doubleValueArrayOop(obj);
   int len = array->length();
-  int n   = min(MaxElementPrintSize, len);
+  int n = min(MaxElementPrintSize, len);
   Unimplemented();
 }
 
 void doubleValueArrayKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
-  double* p       = doubleValueArrayOop(obj)->double_start();
-  oop*        l   = doubleValueArrayOop(obj)->length_addr();
-  int         len = doubleValueArrayOop(obj)->length();
+  double* p = doubleValueArrayOop(obj)->double_start();
+  oop* l = doubleValueArrayOop(obj)->length_addr();
+  int len = doubleValueArrayOop(obj)->length();
   memOopKlass::oop_layout_iterate(obj, blk);
   blk->do_oop("length", l);
   blk->begin_indexables();
@@ -103,11 +103,10 @@ void doubleValueArrayKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
 
 int doubleValueArrayKlass::oop_scavenge_contents(oop obj) {
   memOopKlass::oop_scavenge_contents(obj);
-  return object_size(doubleValueArrayOop(obj)->length());  
+  return object_size(doubleValueArrayOop(obj)->length());
 }
 
 int doubleValueArrayKlass::oop_scavenge_tenured_contents(oop obj) {
   memOopKlass::oop_scavenge_tenured_contents(obj);
-  return object_size(doubleValueArrayOop(obj)->length());  
+  return object_size(doubleValueArrayOop(obj)->length());
 }
-

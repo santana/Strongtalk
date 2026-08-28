@@ -38,36 +38,39 @@ class RegisterAllocator;
 extern RegisterAllocator* theAllocator;
 
 class RegisterAllocator : public ResourceObj {
- private:
-  IntFreeList*		_stackLocs;
+private:
+  IntFreeList* _stackLocs;
 
- public:
+public:
   RegisterAllocator();
 
   void preAllocate(PReg* r);
   void allocate(GrowableArray<PReg*>* globals);
   bool allocateConst(ConstPReg* r, Location preferred = unAllocated);
-  int  nofStackTemps()	{ return _stackLocs->length(); }
+  int nofStackTemps() { return _stackLocs->length(); }
 };
 
-  
 // helper structure for local register allocation
-class RegCandidate : public ResourceObj{
- public:
-  PReg* r;	    	// preg to be allocated
-  Location loc;   	// possible location for it
-  int ndefs;	    	// required # defs of loc
+class RegCandidate : public ResourceObj {
+public:
+  PReg* r; // preg to be allocated
+  Location loc; // possible location for it
+  int ndefs; // required # defs of loc
 
-  RegCandidate(PReg* reg, Location l, int n) { r = reg; loc = l; ndefs = n; }
+  RegCandidate(PReg* reg, Location l, int n) {
+    r = reg;
+    loc = l;
+    ndefs = n;
+  }
 };
 
 class RegisterEqClass : public ResourceObj {
- public:
+public:
   // holds pregs belonging to equivalence class
   // PRegs are linked through regClassLink
   PReg* first;
   PReg* last;
-   
+
   RegisterEqClass(PReg* f);
   void append(PReg* other);
 };

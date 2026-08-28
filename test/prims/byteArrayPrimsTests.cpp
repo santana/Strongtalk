@@ -16,40 +16,41 @@ using namespace easyunit;
 
 extern "C" int expansion_count;
 DECLARE(ByteArrayPrimsTests)
-  klassOop byteArrayClass;
-  byteArrayOop alien;
-  u_char alien_byte_region[16];
+klassOop byteArrayClass;
+byteArrayOop alien;
+u_char alien_byte_region[16];
 
-  void checkAlienContents(byteArrayOop alien) {
-    ASSERT_TRUE_M(255 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(1), alien))->value(), "Wrong byte at index 1");
-    ASSERT_TRUE_M(2 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(2), alien))->value(), "Wrong byte at index 2");
-    ASSERT_TRUE_M(3 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(3), alien))->value(), "Wrong byte at index 3");
-    ASSERT_TRUE_M(4 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(4), alien))->value(), "Wrong byte at index 4");
-  }
+void checkAlienContents(byteArrayOop alien) {
+  ASSERT_TRUE_M(255 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(1), alien))->value(),
+                "Wrong byte at index 1");
+  ASSERT_TRUE_M(2 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(2), alien))->value(),
+                "Wrong byte at index 2");
+  ASSERT_TRUE_M(3 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(3), alien))->value(),
+                "Wrong byte at index 3");
+  ASSERT_TRUE_M(4 == smiOop(byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(4), alien))->value(),
+                "Wrong byte at index 4");
+}
 
-  void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
-    ResourceMark rm;
-    char text[200];
-    ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    snprintf(text, sizeof(text),
-            "%s. Should be: %s, was: %s",
-            message,
-            expected->as_string(),
-            unmarkSymbol(result)->as_string());
-    ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
-  }
+void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
+  ResourceMark rm;
+  char text[200];
+  ASSERT_TRUE_M(result->is_mark(), "Should be marked");
+  snprintf(text, sizeof(text), "%s. Should be: %s, was: %s", message, expected->as_string(),
+           unmarkSymbol(result)->as_string());
+  ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
+}
 
-  void setUnsignedContents(u_char* contents) {
-    contents[0] = 255;
-    contents[1] = 2;
-    contents[2] = 3;
-    contents[3] = 4;
-  }
+void setUnsignedContents(u_char* contents) {
+  contents[0] = 255;
+  contents[1] = 2;
+  contents[2] = 3;
+  contents[3] = 4;
+}
 
-  int asInteger(oop largeInteger, bool& ok) {
-    Integer* number = &byteArrayOop(largeInteger)->number();
-    return number->as_int(ok);
-  }
+int asInteger(oop largeInteger, bool& ok) {
+  Integer* number = &byteArrayOop(largeInteger)->number();
+  return number->as_int(ok);
+}
 END_DECLARE
 
 SETUP(ByteArrayPrimsTests) {
@@ -59,8 +60,7 @@ SETUP(ByteArrayPrimsTests) {
   memset(alien_byte_region, 0, 16);
 }
 
-TEARDOWN(ByteArrayPrimsTests){
-}
+TEARDOWN(ByteArrayPrimsTests) {}
 
 TESTF(ByteArrayPrimsTests, allocateSize2ShouldAllocateByteArrayOfCorrectSize) {
   HandleMark handles;
@@ -77,9 +77,7 @@ TESTF(ByteArrayPrimsTests, allocateSize2ShouldAllocateTenuredWhenRequested) {
   HandleMark handles;
   Handle byteArrayClassHandle(byteArrayClass);
   int size = Universe::new_gen.eden()->free() + 1;
-  oop result = byteArrayPrimitives::allocateSize2(trueObj,
-                                                  as_smiOop(size),
-                                                  byteArrayClass);
+  oop result = byteArrayPrimitives::allocateSize2(trueObj, as_smiOop(size), byteArrayClass);
   ASSERT_TRUE(result->is_byteArray());
   ASSERT_TRUE(Universe::old_gen.contains(result));
   ASSERT_EQUALS(size, byteArrayOop(result)->length());
@@ -131,7 +129,8 @@ TESTF(ByteArrayPrimsTests, alienAddressShouldReturnCorrectAddress) {
 
   ((int*)bytes)[0] = -16;
   ((u_char**)bytes)[1] = alien_byte_region;
-  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "wrong address");
+  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(),
+                  "wrong address");
 }
 
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldAssignCorrectAddress) {
@@ -146,18 +145,19 @@ TESTF(ByteArrayPrimsTests, alienSetAddressShouldAssignCorrectAddress) {
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldAssignCorrectAddressFromLargeInteger) {
   PersistentHandle address(as_large_integer((intptr_t)alien_byte_region));
   byteArrayPrimitives::alienSetSize(as_smiOop(-16), alien);
-  
+
   ASSERT_TRUE_M(alien == byteArrayPrimitives::alienSetAddress(address.as_oop(), alien), "Should return alien");
-  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(), "Address should match");
+  ASSERT_EQUALS_M((intptr_t)alien_byte_region, smiOop(byteArrayPrimitives::alienGetAddress(alien))->value(),
+                  "Address should match");
 }
 
 TESTF(ByteArrayPrimsTests, alienSetAddressShouldReturnMarkedSymbolForAddressOutOfRange) {
   BlockScavenge bs;
   byteArrayPrimitives::alienSetSize(as_smiOop(0), alien);
-  oop largeInteger = as_large_integer(256*256*256);
+  oop largeInteger = as_large_integer(256 * 256 * 256);
   oop tooBig = byteArrayPrimitives::largeIntegerMultiply(largeInteger, largeInteger);
   oop result = byteArrayPrimitives::alienSetAddress(tooBig, alien);
-  
+
   checkMarkedSymbol("invalid argument", result, vmSymbols::argument_is_invalid());
 }
 
@@ -325,7 +325,7 @@ TESTF(ByteArrayPrimsTests, alienUnsignedByteAtShouldReturnMarkedSymbolWhenIndexN
 
   oop result = byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(5), alien);
   checkMarkedSymbol("invalid argument", result, vmSymbols::index_not_valid());
-  
+
   result = byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(0), alien);
   checkMarkedSymbol("invalid argument", result, vmSymbols::index_not_valid());
 }

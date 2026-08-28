@@ -37,14 +37,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "asm/abstractAssembler.hpp"
 
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  #include "asm/assembler_aarch64.hpp"
-  typedef AArch64Assembler Assembler;
-  typedef AArch64MacroAssembler MacroAssembler;
+#include "asm/assembler_aarch64.hpp"
+typedef AArch64Assembler Assembler;
+typedef AArch64MacroAssembler MacroAssembler;
 #else
-  // default backend: x86
-  #include "asm/assembler_x86.hpp"
-  typedef X86Assembler Assembler;
-  typedef X86MacroAssembler MacroAssembler;
+// default backend: x86
+#include "asm/assembler_x86.hpp"
+typedef X86Assembler Assembler;
+typedef X86MacroAssembler MacroAssembler;
 #endif
 
 extern MacroAssembler* theMacroAssm;

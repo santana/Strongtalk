@@ -58,31 +58,31 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // The tricky part is to restore the original return address of the primitive before
 // the delta call. This is necessary for a consistent stack during the delta call.
-extern "C" char*  C_frame_return_addr;
+extern "C" char* C_frame_return_addr;
 extern "C" bool have_nlr_through_C;
-extern "C" int  nlr_home;
-extern "C" int  nlr_home_id;
-extern "C" oop  nlr_result;
+extern "C" int nlr_home;
+extern "C" int nlr_home_id;
+extern "C" oop nlr_result;
 
 unwindInfo::unwindInfo() {
-   assert(have_nlr_through_C, "you must have have_nlr_through_C before using unwindInfo");
+  assert(have_nlr_through_C, "you must have have_nlr_through_C before using unwindInfo");
 
-   // Save NLR state
-   _nlr_home    = ::nlr_home;
-   _nlr_home_id = ::nlr_home_id;
-   _nlr_result  = ::nlr_result;
+  // Save NLR state
+  _nlr_home = ::nlr_home;
+  _nlr_home_id = ::nlr_home_id;
+  _nlr_result = ::nlr_result;
 
-   // Save patch information
-   assert(last_Delta_fp, "last_Delta_fp must be set");
-   saved_C_frame_return_addr          = C_frame_return_addr;
-   saved_C_frame_return_addr_location = (char**) (last_Delta_sp - 1);
-   saved_patch_return_address         = *saved_C_frame_return_addr_location;
+  // Save patch information
+  assert(last_Delta_fp, "last_Delta_fp must be set");
+  saved_C_frame_return_addr = C_frame_return_addr;
+  saved_C_frame_return_addr_location = (char**)(last_Delta_sp - 1);
+  saved_patch_return_address = *saved_C_frame_return_addr_location;
 
-   // Restore original return address
-   *saved_C_frame_return_addr_location = saved_C_frame_return_addr;
+  // Restore original return address
+  *saved_C_frame_return_addr_location = saved_C_frame_return_addr;
 
-   _is_compiled = _nlr_home_id >= 0;
-   DeltaProcess::active()->push_unwind(this);
+  _is_compiled = _nlr_home_id >= 0;
+  DeltaProcess::active()->push_unwind(this);
 }
 
 unwindInfo::~unwindInfo() {
@@ -90,13 +90,13 @@ unwindInfo::~unwindInfo() {
   // and not the original NLR.
   if (::nlr_home != 0) {
     // Restore NLR state
-    ::nlr_home    = _nlr_home;
+    ::nlr_home = _nlr_home;
     ::nlr_home_id = _nlr_home_id;
-    ::nlr_result  = _nlr_result;
+    ::nlr_result = _nlr_result;
   }
   // Restore patch information
   *saved_C_frame_return_addr_location = saved_patch_return_address;
-  C_frame_return_addr                 = saved_C_frame_return_addr;
+  C_frame_return_addr = saved_C_frame_return_addr;
 
   DeltaProcess::active()->pop_unwind();
 }
@@ -105,7 +105,8 @@ void unwindInfo::update_nlr_targets(compiledVFrame* f, contextOop con) {
   // Convert the nlr information if:
   //    nlr_home     is the frame pointer of f
   // && nlr_home_id  is the offset of f's scope
-  if (static_cast<void*>(f->fr().fp()) == reinterpret_cast<void*>(nlr_home()) && f->scope()->offset() == nlr_home_id()) {
+  if (static_cast<void*>(f->fr().fp()) == reinterpret_cast<void*>(nlr_home()) &&
+      f->scope()->offset() == nlr_home_id()) {
     _nlr_home_context = con;
   }
 }
@@ -160,7 +161,8 @@ void DeltaProcess::set_last_Delta_pc(char* pc) {
 int CurrentHash = 23;
 
 bool Process::external_suspend_current() {
-  if (current() == NULL) return false;
+  if (current() == NULL)
+    return false;
   os::suspend_thread(current()->_thread);
   return true;
 }
@@ -171,8 +173,10 @@ void Process::external_resume_current() {
 
 void Process::basic_transfer(Process* target) {
   if (TraceProcessEvents) {
-    mystd->print("Process: "); print();
-    mystd->print(" -> "); target->print();
+    mystd->print("Process: ");
+    print();
+    mystd->print(" -> ");
+    target->print();
     mystd->cr();
   }
   // Entering the target process may start executing generated code, which
@@ -188,11 +192,11 @@ void Process::basic_transfer(Process* target) {
 VMProcess::VMProcess() {
   assert(vm_process() == NULL, "we can only allocate one VMProcess");
 
-  _vm_process   = this;
+  _vm_process = this;
   _vm_operation = NULL;
 
-  _thread    = os::starting_thread(&_thread_id);
-  _event     = os::create_event(true);
+  _thread = os::starting_thread(&_thread_id);
+  _event = os::create_event(true);
 }
 
 void VMProcess::transfer_to(DeltaProcess* target) {
@@ -200,7 +204,7 @@ void VMProcess::transfer_to(DeltaProcess* target) {
     ThreadCritical tc;
 
     // restore state
-    ::last_Delta_fp = target->_last_Delta_fp;	// *don't* use accessors!
+    ::last_Delta_fp = target->_last_Delta_fp; // *don't* use accessors!
     ::last_Delta_sp = target->_last_Delta_sp;
     DeltaProcess::set_active(target);
     DeltaProcess::set_current(target);
@@ -209,17 +213,16 @@ void VMProcess::transfer_to(DeltaProcess* target) {
   basic_transfer(target);
 }
 
-
 void VMProcess::terminate(DeltaProcess* proc) {
   assert(Process::current()->is_vmProcess(), "can only be called from vm process");
-  assert(proc->is_deltaProcess(),            "must be deltaProcess");
-  assert(proc->_thread,                      "thread must be present");
-  assert(proc->_event,                       "event must be present");
+  assert(proc->is_deltaProcess(), "must be deltaProcess");
+  assert(proc->_thread, "thread must be present");
+  assert(proc->_event, "event must be present");
 
   os::terminate_thread(proc->_thread);
   proc->_thread = NULL;
   os::delete_event(proc->_event);
-  proc->_event  = NULL;
+  proc->_event = NULL;
 
   DeltaProcess::set_terminating_process(proc->state());
 }
@@ -255,9 +258,8 @@ void VMProcess::loop() {
     // if the process's thread is dead then the stack may already be released
     // in which case the vm_operation is no longer valid, so check for a
     // terminated process first. Can't use accessor as it resets the flag!
-    DeltaProcess* p = DeltaProcess::_process_has_terminated
-      ? DeltaProcess::scheduler() 
-      : vm_operation()->calling_process();
+    DeltaProcess* p = DeltaProcess::_process_has_terminated ? DeltaProcess::scheduler()
+                                                            : vm_operation()->calling_process();
     _vm_operation = NULL;
     transfer_to(p);
   }
@@ -294,8 +296,8 @@ extern "C" void returnToDebugger() {
 
 void DeltaProcess::returnToDebugger() {
   resetStepping(); // reset dispatch table
-  resetStep();     // disable stepping
-  suspend(stopped);// stop!
+  resetStep(); // disable stepping
+  suspend(stopped); // stop!
 }
 
 void DebugInfo::interceptForStep() {
@@ -312,7 +314,7 @@ void DebugInfo::interceptForReturn(void** fr) {
   interceptorEntryPoint = &dispatchTable::intercept_for_return;
   frameBreakpoint = fr;
 }
-void DebugInfo::apply() { 
+void DebugInfo::apply() {
   if (interceptorEntryPoint) {
     StubRoutines::setSingleStepHandler(&returnToDebugger);
     interceptorEntryPoint(frameBreakpoint);
@@ -328,29 +330,29 @@ void DebugInfo::reset() {
   }
 }
 
-bool DeltaProcess::stepping   = false;
+bool DeltaProcess::stepping = false;
 
-VMProcess*    VMProcess::_vm_process   = NULL;
+VMProcess* VMProcess::_vm_process = NULL;
 VM_Operation* VMProcess::_vm_operation = NULL;
 
 // ======= DeltaProcess ========
 
 extern "C" char* active_stack_limit() {
-  return (char*) &DeltaProcess::_active_stack_limit;
+  return (char*)&DeltaProcess::_active_stack_limit;
 }
 
-Process*            Process::_current_process             = NULL;
-DeltaProcess*  DeltaProcess::_active_delta_process        = NULL;
-DeltaProcess*  DeltaProcess::_main_process                = NULL;
-volatile char* DeltaProcess::_active_stack_limit          = NULL;
-DeltaProcess*  DeltaProcess::_scheduler_process           = NULL;
-bool           DeltaProcess::_is_idle                     = false;
-volatile bool  DeltaProcess::_interrupt = false;
+Process* Process::_current_process = NULL;
+DeltaProcess* DeltaProcess::_active_delta_process = NULL;
+DeltaProcess* DeltaProcess::_main_process = NULL;
+volatile char* DeltaProcess::_active_stack_limit = NULL;
+DeltaProcess* DeltaProcess::_scheduler_process = NULL;
+bool DeltaProcess::_is_idle = false;
+volatile bool DeltaProcess::_interrupt = false;
 
-volatile bool  DeltaProcess::_process_has_terminated      = false;
-ProcessState   DeltaProcess::_state_of_terminated_process = initialized;
+volatile bool DeltaProcess::_process_has_terminated = false;
+ProcessState DeltaProcess::_state_of_terminated_process = initialized;
 
-Event*         DeltaProcess::_async_dll_completion_event  = NULL;
+Event* DeltaProcess::_async_dll_completion_event = NULL;
 
 void DeltaProcess::transfer(ProcessState reason, DeltaProcess* target) {
   // change time_stamp for target
@@ -362,12 +364,12 @@ void DeltaProcess::transfer(ProcessState reason, DeltaProcess* target) {
     assert(this == active(), "receiver must be the active process");
 
     // save state
-    _last_Delta_fp = ::last_Delta_fp;	// *don't* use accessors! (check their implementation to see why)
+    _last_Delta_fp = ::last_Delta_fp; // *don't* use accessors! (check their implementation to see why)
     _last_Delta_sp = ::last_Delta_sp;
     set_state(reason);
 
     // restore state
-    ::last_Delta_fp = target->_last_Delta_fp;	// *don't* use accessors!
+    ::last_Delta_fp = target->_last_Delta_fp; // *don't* use accessors!
     ::last_Delta_sp = target->_last_Delta_sp;
     set_current(target);
     set_active(target);
@@ -408,7 +410,7 @@ void DeltaProcess::transfer_to_vm() {
     assert(this == active(), "receiver must be the active process");
 
     // save state
-    _last_Delta_fp = ::last_Delta_fp;	// *don't* use accessors! (check their implementation to see why)
+    _last_Delta_fp = ::last_Delta_fp; // *don't* use accessors! (check their implementation to see why)
     _last_Delta_sp = ::last_Delta_sp;
     set_current(VMProcess::vm_process());
     resetStepping();
@@ -430,22 +432,22 @@ void DeltaProcess::transfer_and_continue() {
     assert(!in_vm_operation(), "must not be in VM operation");
     assert(this == active(), "receiver must be the active process");
 
-
     // save state
-    _last_Delta_fp = ::last_Delta_fp;	// *don't* use accessors! (check their implementation to see why)
+    _last_Delta_fp = ::last_Delta_fp; // *don't* use accessors! (check their implementation to see why)
     _last_Delta_sp = ::last_Delta_sp;
     set_state(in_async_dll);
 
-
     // restore state
-    ::last_Delta_fp = scheduler()->_last_Delta_fp;	// *don't* use accessors!
+    ::last_Delta_fp = scheduler()->_last_Delta_fp; // *don't* use accessors!
     ::last_Delta_sp = scheduler()->_last_Delta_sp;
     set_current(scheduler());
     set_active(scheduler());
 
     if (TraceProcessEvents) {
-      mystd->print("Async call: "); print();
-      mystd->print("        to: "); scheduler()->print();
+      mystd->print("Async call: ");
+      print();
+      mystd->print("        to: ");
+      scheduler()->print();
       mystd->cr();
     }
   }
@@ -458,7 +460,8 @@ bool DeltaProcess::wait_for_async_dll(int timeout_in_ms) {
     return false;
   }
 
-  if (Processes::has_completed_async_call()) return true;
+  if (Processes::has_completed_async_call())
+    return true;
 
   if (TraceProcessEvents) {
     mystd->print("Waiting for async %d ms", timeout_in_ms);
@@ -519,10 +522,10 @@ int DeltaProcess::launch_delta(DeltaProcess* process) {
   process->suspend_at_creation();
 
   // We have the torch
-  assert(process == DeltaProcess::active(),  "process consistency check");
+  assert(process == DeltaProcess::active(), "process consistency check");
   assert(process->is_deltaProcess(), "this should be a deltaProcess");
 
-  DeltaProcess* p = (DeltaProcess*) process;
+  DeltaProcess* p = (DeltaProcess*)process;
   oop result = Delta::call(p->receiver(), p->selector());
 
   if (have_nlr_through_C) {
@@ -534,7 +537,7 @@ int DeltaProcess::launch_delta(DeltaProcess* process) {
   } else {
     p->set_state(completed);
   }
-  assert(process == DeltaProcess::active(),  "process consistency check");
+  assert(process == DeltaProcess::active(), "process consistency check");
 
   VM_TerminateProcess op(process);
   VMProcess::execute(&op);
@@ -542,24 +545,23 @@ int DeltaProcess::launch_delta(DeltaProcess* process) {
 }
 
 DeltaProcess::DeltaProcess(oop receiver, symbolOop selector, bool createThread) {
-  _receiver    = receiver;
-  _selector    = selector;
+  _receiver = receiver;
+  _selector = selector;
 
-  _state       = initialized;
+  _state = initialized;
 
   _is_terminating = false;
 
-  _event       = os::create_event(false);
+  _event = os::create_event(false);
 
-  _thread = createThread
-    ? os::create_thread((int (*)(void*)) &launch_delta, (void*) this, &_thread_id)
-    : os::starting_thread(&_thread_id);
+  _thread = createThread ? os::create_thread((int (*)(void*))&launch_delta, (void*)this, &_thread_id)
+                         : os::starting_thread(&_thread_id);
   _stack_limit = (char*)os::stack_limit(_thread);
 
   _unwind_head = NULL;
   _firstHandle = NULL;
-  _time_stamp  = 0;
-  _isCallback  = false;
+  _time_stamp = 0;
+  _isCallback = false;
 
   LOG_EVENT1("creating process %#lx", this);
 
@@ -575,14 +577,14 @@ extern "C" void popStackHandles(char* nextFrame) {
     active = Processes::find_from_thread_id(os::current_thread_id());
   }
   BaseHandle* current = active->firstHandle();
-  while (current && (char*) current < nextFrame) {
+  while (current && (char*)current < nextFrame) {
     current->pop();
     current = active->firstHandle();
   }
 }
 frame DeltaProcess::profile_top_frame() {
-  int*  sp;
-  int*  fp;
+  int* sp;
+  int* fp;
   char* pc;
   os::fetch_top_frame(_thread, &sp, &fp, &pc);
   frame result((oop*)sp, fp, pc);
@@ -629,20 +631,48 @@ void DeltaProcess::print() {
   processObj()->print_value();
   mystd->print(" ");
   switch (state()) {
-    case initialized:             mystd->print_cr("initialized");            break;
-    case running:                 mystd->print_cr("running");                break;
-    case yielded:                 mystd->print_cr("yielded");                break;
-    case in_async_dll:            mystd->print_cr("in asynchronous dll all");break;
-    case yielded_after_async_dll: mystd->print_cr("yielded after asynchronous dll"); break;
-    case preempted:               mystd->print_cr("preempted");              break;
-    case completed:               mystd->print_cr("completed");              break;
-    case boolean_error:           mystd->print_cr("boolean error");          break;
-    case lookup_error:            mystd->print_cr("lookup error");           break;
-    case primitive_lookup_error:  mystd->print_cr("primitive lookup error"); break;
-    case DLL_lookup_error:        mystd->print_cr("DLL lookup error");       break;
-    case NLR_error:               mystd->print_cr("NLR error");              break;
-    case stack_overflow:          mystd->print_cr("stack overflow");         break;
-    default:                      mystd->print_cr("(unknown)");              break;
+    case initialized:
+      mystd->print_cr("initialized");
+      break;
+    case running:
+      mystd->print_cr("running");
+      break;
+    case yielded:
+      mystd->print_cr("yielded");
+      break;
+    case in_async_dll:
+      mystd->print_cr("in asynchronous dll all");
+      break;
+    case yielded_after_async_dll:
+      mystd->print_cr("yielded after asynchronous dll");
+      break;
+    case preempted:
+      mystd->print_cr("preempted");
+      break;
+    case completed:
+      mystd->print_cr("completed");
+      break;
+    case boolean_error:
+      mystd->print_cr("boolean error");
+      break;
+    case lookup_error:
+      mystd->print_cr("lookup error");
+      break;
+    case primitive_lookup_error:
+      mystd->print_cr("primitive lookup error");
+      break;
+    case DLL_lookup_error:
+      mystd->print_cr("DLL lookup error");
+      break;
+    case NLR_error:
+      mystd->print_cr("NLR error");
+      break;
+    case stack_overflow:
+      mystd->print_cr("stack overflow");
+      break;
+    default:
+      mystd->print_cr("(unknown)");
+      break;
   }
 }
 
@@ -661,12 +691,12 @@ void DeltaProcess::frame_iterate(FrameClosure* blk) {
 }
 
 void DeltaProcess::oop_iterate(OopClosure* blk) {
-  blk->do_oop((oop*) &_receiver);
-  blk->do_oop((oop*) &_selector);
-  blk->do_oop((oop*) &_processObj);
+  blk->do_oop((oop*)&_receiver);
+  blk->do_oop((oop*)&_selector);
+  blk->do_oop((oop*)&_processObj);
 
   for (unwindInfo* p = _unwind_head; p; p = p->next())
-    blk->do_oop((oop*) &p->_nlr_result);
+    blk->do_oop((oop*)&p->_nlr_result);
 
   if (has_stack()) {
     frame v = last_frame();
@@ -678,38 +708,56 @@ void DeltaProcess::oop_iterate(OopClosure* blk) {
 }
 
 symbolOop DeltaProcess::symbol_from_state(ProcessState state) {
-  switch(state) {
-    case initialized:             return vmSymbols::initialized();
-    case yielded:                 return vmSymbols::yielded();
-    case running:                 return vmSymbols::running();
-    case stopped:                 return vmSymbols::stopped();
-    case preempted:               return vmSymbols::preempted();
-    case aborted:                 return vmSymbols::aborted();
-    case in_async_dll:            return vmSymbols::in_async_dll();
-    case yielded_after_async_dll: return vmSymbols::yielded();
-    case completed:               return vmSymbols::completed();
-    case boolean_error:           return vmSymbols::boolean_error();
-    case lookup_error:            return vmSymbols::lookup_error();
-    case primitive_lookup_error:  return vmSymbols::primitive_lookup_error();
-    case DLL_lookup_error:        return vmSymbols::DLL_lookup_error();
-    case float_error:             return vmSymbols::float_error();
-    case NLR_error:               return vmSymbols::NLR_error();
-    case stack_overflow:          return vmSymbols::stack_overflow();
-    default:                      return vmSymbols::not_found();
+  switch (state) {
+    case initialized:
+      return vmSymbols::initialized();
+    case yielded:
+      return vmSymbols::yielded();
+    case running:
+      return vmSymbols::running();
+    case stopped:
+      return vmSymbols::stopped();
+    case preempted:
+      return vmSymbols::preempted();
+    case aborted:
+      return vmSymbols::aborted();
+    case in_async_dll:
+      return vmSymbols::in_async_dll();
+    case yielded_after_async_dll:
+      return vmSymbols::yielded();
+    case completed:
+      return vmSymbols::completed();
+    case boolean_error:
+      return vmSymbols::boolean_error();
+    case lookup_error:
+      return vmSymbols::lookup_error();
+    case primitive_lookup_error:
+      return vmSymbols::primitive_lookup_error();
+    case DLL_lookup_error:
+      return vmSymbols::DLL_lookup_error();
+    case float_error:
+      return vmSymbols::float_error();
+    case NLR_error:
+      return vmSymbols::NLR_error();
+    case stack_overflow:
+      return vmSymbols::stack_overflow();
+    default:
+      return vmSymbols::not_found();
   }
 }
 
 bool DeltaProcess::has_stack() const {
-  if (state() == initialized) return false;
-  if (state() == completed)   return false;
+  if (state() == initialized)
+    return false;
+  if (state() == completed)
+    return false;
   return true;
 }
 
-
 void DeltaProcess::follow_roots() {
-  MarkSweep::follow_root((oop*) &_receiver);
-  MarkSweep::follow_root((oop*) &_selector);
-  MarkSweep::follow_root((oop*) &_processObj);
+  MarkSweep::follow_root((oop*)&_receiver);
+  MarkSweep::follow_root((oop*)&_selector);
+  MarkSweep::follow_root((oop*)&_processObj);
 
   if (has_stack()) {
     frame v = last_frame();
@@ -725,7 +773,8 @@ void DeltaProcess::verify() {
   BlockScavenge bs;
 
   vframe* f = last_delta_vframe();
-  if (f == NULL) return;
+  if (f == NULL)
+    return;
 
   // Do not verify the first vframe
   // It will fail if scavenging in allocateContext (Lars)
@@ -733,7 +782,6 @@ void DeltaProcess::verify() {
     f->verify();
   }
 }
-
 
 void DeltaProcess::enter_uncommon() {
   assert(_state == running, "must be running");
@@ -754,32 +802,31 @@ void DeltaProcess::exit_uncommon() {
 //  ...
 //  [              ] <--   old_fp
 
-static oop*        old_sp;
-static oop*        new_sp;
-static void**      old_fp;
-static void**      cur_fp;
+static oop* old_sp;
+static oop* new_sp;
+static void** old_fp;
+static void** cur_fp;
 static objArrayOop frame_array;
 
-extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_fp, objArrayOop frame_array, void** current_frame) {
+extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_fp, objArrayOop frame_array,
+                                                       void** current_frame) {
   ResourceMark rm;
 
   // Save all parameters for later use (check unpack_frame_array)
-  ::old_sp      = old_sp;
-  ::old_fp      = old_fp;
+  ::old_sp = old_sp;
+  ::old_fp = old_fp;
   ::frame_array = frame_array;
-  ::cur_fp      = current_frame;
+  ::cur_fp = current_frame;
 
   smiOop number_of_vframes = smiOop(frame_array->obj_at(StackChunkBuilder::number_of_vframes_index));
-  smiOop number_of_locals  = smiOop(frame_array->obj_at(StackChunkBuilder::number_of_locals_index));
+  smiOop number_of_locals = smiOop(frame_array->obj_at(StackChunkBuilder::number_of_locals_index));
 
   assert(number_of_vframes->is_smi(), "must be smi");
   assert(number_of_locals->is_smi(), "must be smi");
 
-  new_sp = old_sp - frame::interpreter_stack_size(number_of_vframes->value(),
-	                                          number_of_locals->value());
+  new_sp = old_sp - frame::interpreter_stack_size(number_of_vframes->value(), number_of_locals->value());
   return new_sp;
 }
-
 
 // Used to transfer information from deoptimize_stretch to unpack_frame_array.
 static bool redo_the_send;
@@ -797,10 +844,10 @@ void DeltaProcess::deoptimize_redo_last_send() {
 //extern "C" char redo_bytecode_after_deoptimization;
 
 extern "C" {
-bool       nlr_through_unpacking = false;
-oop        result_through_unpacking = NULL;
-int        number_of_arguments_through_unpacking = 0;
-char*      C_frame_return_addr = NULL;
+bool nlr_through_unpacking = false;
+oop result_through_unpacking = NULL;
+int number_of_arguments_through_unpacking = 0;
+char* C_frame_return_addr = NULL;
 }
 extern "C" contextOop nlr_home_context;
 
@@ -808,7 +855,7 @@ inline void trace_deoptimization_start() {
   if (TraceDeoptimization) {
     mystd->print("[Unpacking]");
     if (nlr_through_unpacking) {
-      mystd->print(" NLR %s", (nlr_home == (intptr_t) cur_fp) ? "inside" : "outside");
+      mystd->print(" NLR %s", (nlr_home == (intptr_t)cur_fp) ? "inside" : "outside");
     }
     mystd->cr();
     mystd->print(" - array ");
@@ -816,27 +863,27 @@ inline void trace_deoptimization_start() {
     mystd->print_cr(" @ 0x%lx", old_fp);
   }
 }
-inline void trace_deoptimization_frame(frame &current, oop* current_sp, char* current_pc) {
+inline void trace_deoptimization_frame(frame& current, oop* current_sp, char* current_pc) {
   if (TraceDeoptimization) {
     frame v(current_sp, current.fp(), current_pc);
     v.print_for_deoptimization(mystd);
   }
 }
 
-inline void unpack_first_frame(char* &current_pc, frame &current, CodeIterator &c) {
+inline void unpack_first_frame(char*& current_pc, frame& current, CodeIterator& c) {
   // first vframe in the array
   if (nlr_through_unpacking) {
     // NLR is comming through unpacked vframes
     current_pc = c.interpreter_return_point();
     // current_pc points to a normal return point in the interpreter.
-	// To find the nlr return point we first compute the nlr offset.
+    // To find the nlr return point we first compute the nlr offset.
     current_pc = ic_info_at(current_pc)->NLR_target();
     current.set_hp(c.next_hp());
   } else if (redo_the_send) {
     // Deoptimizing uncommon trap
     current_pc = Interpreter::redo_bytecode_after_deoptimization();
     current.set_hp(c.next_hp());
-	redo_send_offset = c.next_hp() - c.hp();
+    redo_send_offset = c.next_hp() - c.hp();
     redo_the_send = false;
   } else {
     // Normal case
@@ -844,7 +891,7 @@ inline void unpack_first_frame(char* &current_pc, frame &current, CodeIterator &
     current.set_hp(c.next_hp());
 
     if (c.is_message_send()) {
-	  number_of_arguments_through_unpacking = c.ic()->nof_arguments();
+      number_of_arguments_through_unpacking = c.ic()->nof_arguments();
     } else if (c.is_primitive_call()) {
       number_of_arguments_through_unpacking = c.prim_cache()->number_of_parameters();
     } else if (c.is_dll_call()) {
@@ -862,37 +909,37 @@ extern "C" void unpack_frame_array() {
   BlockScavenge bs;
   ResourceMark rm;
 
-  int* pc_addr = (int*) new_sp - 1;
+  int* pc_addr = (int*)new_sp - 1;
   assert(*pc_addr = -1, "just checking");
 
   trace_deoptimization_start();
 
-  bool must_find_nlr_target = nlr_through_unpacking && nlr_home == (intptr_t) cur_fp;
-  bool nlr_target_found     = false; // For verification
+  bool must_find_nlr_target = nlr_through_unpacking && nlr_home == (intptr_t)cur_fp;
+  bool nlr_target_found = false; // For verification
 
   // link for the current frame
-  int* link_addr = (int*) new_sp - 2;
+  int* link_addr = (int*)new_sp - 2;
 
   oop* current_sp = new_sp;
-  int  pos        = 3;
-  int  length     = frame_array->length();
+  int pos = 3;
+  int length = frame_array->length();
   bool first = true;
   frame current;
   // unpack one frame at at time from most recent to least recent
   do {
-    oop receiver     = frame_array->obj_at(pos++);
+    oop receiver = frame_array->obj_at(pos++);
     methodOop method = methodOop(frame_array->obj_at(pos++));
     assert(method->is_method(), "expecting method");
 
     smiOop bci_obj = smiOop(frame_array->obj_at(pos++));
     assert(bci_obj->is_smi(), "expecting smi");
-    int bci        = bci_obj->value();
+    int bci = bci_obj->value();
 
     smiOop locals_obj = smiOop(frame_array->obj_at(pos++));
     assert(locals_obj->is_smi(), "expecting smi");
-    int locals   = locals_obj->value();
+    int locals = locals_obj->value();
 
-    current = frame(current_sp, (int*) current_sp + locals + 2);
+    current = frame(current_sp, (int*)current_sp + locals + 2);
 
     // fill in the locals
     for (int index = 0; index < locals; index++) {
@@ -921,15 +968,15 @@ extern "C" void unpack_frame_array() {
       oop frame_oop = oop(current.fp());
       con->set_parent(frame_oop);
 
-      if (nlr_through_unpacking && nlr_home == (intptr_t) cur_fp) {
+      if (nlr_through_unpacking && nlr_home == (intptr_t)cur_fp) {
         if (nlr_home_context == con) {
-	  // This frame is the target of the NLR
-	  // set nlr_home to frame pointer of current frame
-	  nlr_home = (intptr_t) current.fp();
-	  // compute number of arguments to pop
+          // This frame is the target of the NLR
+          // set nlr_home to frame pointer of current frame
+          nlr_home = (intptr_t)current.fp();
+          // compute number of arguments to pop
           nlr_home_id = ~method->number_of_arguments();
           nlr_target_found = true;
-	  // mystd->print("target frame for NLR (%d, 0x%lx):",method->number_of_arguments(), nlr_home_id);
+          // mystd->print("target frame for NLR (%d, 0x%lx):",method->number_of_arguments(), nlr_home_id);
         }
       }
     }
@@ -946,7 +993,7 @@ extern "C" void unpack_frame_array() {
     fatal("Target for NLR not found when unpacking frame");
   }
 
-  assert (current_sp == old_sp, "We have not reached the end");
+  assert(current_sp == old_sp, "We have not reached the end");
   current.set_link(old_fp);
 }
 
@@ -976,9 +1023,8 @@ void DeltaProcess::deoptimize_stretch(frame* first_frame, frame* last_frame) {
   vframe* vf = vframe::new_vframe(first_frame);
   assert(vf->is_compiled_frame(), "must be Delta frame");
 
-  for (deltaVFrame* current = (deltaVFrame*) vf;
-       current && (current->fr().fp() <= last_frame->fp());
-       current = (deltaVFrame*) current->sender()) {
+  for (deltaVFrame* current = (deltaVFrame*)vf; current && (current->fr().fp() <= last_frame->fp());
+       current = (deltaVFrame*)current->sender()) {
     packer.append(current);
   }
 
@@ -993,7 +1039,8 @@ void DeltaProcess::deoptimize_stretch(frame* first_frame, frame* last_frame) {
 
 void DeltaProcess::deoptimized_wrt_marked_nmethods() {
   // chop the stack into stretches of frames in need for deoptimization
-  if (!has_stack()) return;
+  if (!has_stack())
+    return;
 
   frame v = last_frame();
   do {
@@ -1006,7 +1053,7 @@ void DeltaProcess::deoptimized_wrt_marked_nmethods() {
 frame DeltaProcess::last_frame() {
   assert(last_Delta_fp(), "must have last_Delta_fp() when suspended");
   if (last_Delta_fp() == NULL) {
-	  trace_stack();
+    trace_stack();
   }
   if (last_Delta_pc() == NULL) {
     frame c(last_Delta_sp(), last_Delta_fp());
@@ -1019,19 +1066,21 @@ frame DeltaProcess::last_frame() {
 
 deltaVFrame* DeltaProcess::last_delta_vframe() {
   // If no stack is present return NULL
-  if (!has_stack()) return NULL;
+  if (!has_stack())
+    return NULL;
 
   frame f = last_frame();
-  for (vframe* vf = vframe::new_vframe(&f); vf; vf = vf->sender() ) {
-    if (vf->is_delta_frame()) return (deltaVFrame*) vf;
+  for (vframe* vf = vframe::new_vframe(&f); vf; vf = vf->sender()) {
+    if (vf->is_delta_frame())
+      return (deltaVFrame*)vf;
   }
   return NULL;
 }
 
-
 int DeltaProcess::depth() {
   int d = 0;
-  for(frame v = last_frame(); v.link(); v = v.sender()) d++;
+  for (frame v = last_frame(); v.link(); v = v.sender())
+    d++;
   return d;
 }
 
@@ -1046,10 +1095,10 @@ void DeltaProcess::trace_stack() {
 
 void DeltaProcess::trace_stack_from(vframe* start_frame) {
   mystd->print_cr("- Stack trace");
-  int  vframe_no   = 1;
-  for (vframe* f = start_frame; f; f = f->sender() ) {
+  int vframe_no = 1;
+  for (vframe* f = start_frame; f; f = f->sender()) {
     if (f->is_delta_frame()) {
-      ((deltaVFrame*) f)->print_activation(vframe_no++);
+      ((deltaVFrame*)f)->print_activation(vframe_no++);
     } else {
       f->print();
     }
@@ -1062,7 +1111,7 @@ void DeltaProcess::trace_stack_from(vframe* start_frame) {
 
 void DeltaProcess::trace_stack_for_deoptimization(frame* f) {
   if (has_stack()) {
-    int  vframe_no   = 1;
+    int vframe_no = 1;
     frame v = f ? *f : last_frame();
     do {
       v.print_for_deoptimization(mystd);
@@ -1080,14 +1129,16 @@ void DeltaProcess::trace_top(int start_frame, int number_of_frames) {
   FlagSetting fs(ActivationShowCode, true);
 
   mystd->print_cr("- Stack trace (%d, %d)", start_frame, number_of_frames);
-  int  vframe_no = 1;
+  int vframe_no = 1;
 
-  for (vframe* f = last_delta_vframe(); f; f = f->sender() ) {
+  for (vframe* f = last_delta_vframe(); f; f = f->sender()) {
     if (vframe_no >= start_frame) {
       if (f->is_delta_frame()) {
-        ((deltaVFrame*) f)->print_activation(vframe_no);
-      } else f->print();
-      if (vframe_no - start_frame + 1 >= number_of_frames) return;
+        ((deltaVFrame*)f)->print_activation(vframe_no);
+      } else
+        f->print();
+      if (vframe_no - start_frame + 1 >= number_of_frames)
+        return;
     }
     vframe_no++;
   }
@@ -1100,15 +1151,11 @@ void DeltaProcess::update_nlr_targets(compiledVFrame* f, contextOop con) {
 }
 
 double DeltaProcess::user_time() {
-  return _thread
-       ? os:: user_time_for(_thread)
-       : 0.0;
+  return _thread ? os::user_time_for(_thread) : 0.0;
 }
 
 double DeltaProcess::system_time() {
-  return _thread
-       ? os:: system_time_for(_thread)
-       : 0.0;
+  return _thread ? os::system_time_for(_thread) : 0.0;
 }
 
 // ======= Processes ========
@@ -1130,8 +1177,8 @@ void Processes::add(DeltaProcess* p) {
 
 DeltaProcess* Processes::find_from_thread_id(int id) {
   ALL_PROCESSES(p)
-    if (p->thread_id() == id)
-      return p;
+  if (p->thread_id() == id)
+    return p;
   return NULL;
 }
 
@@ -1171,10 +1218,10 @@ void Processes::print() {
 void Processes::remove(DeltaProcess* p) {
   assert(includes(p), "p must be present");
   DeltaProcess* current = processList;
-  DeltaProcess* prev    = NULL;
+  DeltaProcess* prev = NULL;
 
   while (current != p) {
-    prev    = current;
+    prev = current;
     current = current->next();
   }
 
@@ -1187,10 +1234,10 @@ void Processes::remove(DeltaProcess* p) {
 
 bool Processes::includes(DeltaProcess* p) {
   ALL_PROCESSES(q)
-    if (q == p ) return true;
+  if (q == p)
+    return true;
   return false;
 }
-
 
 DeltaProcess* Processes::last() {
   DeltaProcess* last = NULL;
@@ -1291,7 +1338,7 @@ void Processes::deoptimize_wrt(GrowableArray<nmethod*>* list) {
 }
 
 void Processes::update_nlr_targets(compiledVFrame* f, contextOop con) {
- ALL_PROCESSES(p) p->update_nlr_targets(f, con);
+  ALL_PROCESSES(p) p->update_nlr_targets(f, con);
 }
 
 void Processes::deoptimize_all() {
@@ -1299,7 +1346,6 @@ void Processes::deoptimize_all() {
   deoptimized_wrt_marked_nmethods();
   Universe::code->unmark_all_for_deoptimization();
 }
-
 
 void handle_error(ProcessState error) {
   DeltaProcess* proc = DeltaProcess::active();
@@ -1321,31 +1367,45 @@ void handle_interpreter_error(char* message) {
   handle_error(stopped);
 }
 
-
 extern "C" void suspend_on_error(InterpreterErrorConstants error_code) {
   // Called from the the interpreter
 
   // Real errors
   switch (error_code) {
-    case primitive_lookup_failed: handle_error(primitive_lookup_error);
-    case boolean_expected	: handle_error(boolean_error);
-    case nonlocal_return_error	: handle_error(NLR_error);
-    case float_expected		: handle_error(float_error);
-    default: break;
+    case primitive_lookup_failed:
+      handle_error(primitive_lookup_error);
+    case boolean_expected:
+      handle_error(boolean_error);
+    case nonlocal_return_error:
+      handle_error(NLR_error);
+    case float_expected:
+      handle_error(float_error);
+    default:
+      break;
   }
 
   // Interpreter errors
   switch (error_code) {
-    case halted			: handle_interpreter_error("executed halt bytecode");
-    case illegal_code		: handle_interpreter_error("illegal code");
-    case not_implemented	: handle_interpreter_error("not implemented");
-    case stack_missaligned	: handle_interpreter_error("stack misaligned");
-    case ebx_wrong		: handle_interpreter_error("ebx wrong");
-    case obj_wrong		: handle_interpreter_error("obj wrong");
-    case nlr_offset_wrong	: handle_interpreter_error("NLR offset wrong");
-    case last_Delta_fp_wrong	: handle_interpreter_error("last Delta frame wrong");
-    case primitive_result_wrong	: handle_interpreter_error("ilast C entry frame wrong");
-    default: break;
+    case halted:
+      handle_interpreter_error("executed halt bytecode");
+    case illegal_code:
+      handle_interpreter_error("illegal code");
+    case not_implemented:
+      handle_interpreter_error("not implemented");
+    case stack_missaligned:
+      handle_interpreter_error("stack misaligned");
+    case ebx_wrong:
+      handle_interpreter_error("ebx wrong");
+    case obj_wrong:
+      handle_interpreter_error("obj wrong");
+    case nlr_offset_wrong:
+      handle_interpreter_error("NLR offset wrong");
+    case last_Delta_fp_wrong:
+      handle_interpreter_error("last Delta frame wrong");
+    case primitive_result_wrong:
+      handle_interpreter_error("ilast C entry frame wrong");
+    default:
+      break;
   }
   ShouldNotReachHere();
 }
@@ -1354,7 +1414,6 @@ extern "C" void suspend_on_NLR_error() {
   // Called from compiled code
   DeltaProcess::active()->suspend(NLR_error);
 }
-
 
 void trace_stack_at_exception(int* sp, int* fp, char* pc) {
   ResourceMark rm;
@@ -1366,18 +1425,18 @@ void trace_stack_at_exception(int* sp, int* fp, char* pc) {
     frame c(last_Delta_sp, last_Delta_fp);
     vf = vframe::new_vframe(&c);
   } else {
-    frame c((oop*) sp, fp, pc);
+    frame c((oop*)sp, fp, pc);
     vf = vframe::new_vframe(&c);
   }
   DeltaProcess::trace_stack_from(vf);
 }
 
-void suspend_process_at_stack_overflow(int *sp, void** fp, char* pc) {
+void suspend_process_at_stack_overflow(int* sp, void** fp, char* pc) {
   DeltaProcess* proc = DeltaProcess::active();
 
   proc->set_last_Delta_pc(pc);
   last_Delta_fp = fp;
-  last_Delta_sp = (oop*) sp;
+  last_Delta_sp = (oop*)sp;
 
   if (proc->is_scheduler()) {
     mystd->print_cr("Stack overflow happened in scheduler");
@@ -1388,8 +1447,8 @@ void suspend_process_at_stack_overflow(int *sp, void** fp, char* pc) {
 }
 
 void trace_stack(int thread_id) {
-	ResourceMark rm;
-	Process* process = Processes::find_from_thread_id(thread_id);
-	if (process->is_deltaProcess())
-		((DeltaProcess*)process)->trace_stack();
+  ResourceMark rm;
+  Process* process = Processes::find_from_thread_id(thread_id);
+  if (process->is_deltaProcess())
+    ((DeltaProcess*)process)->trace_stack();
 }

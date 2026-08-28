@@ -46,21 +46,22 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Delta process is in a well-defined state (see SweeperTask).
 // We might change the sweeper to sweep at preempt time like in the Self system.
 
-Sweeper*  Sweeper::_head           = NULL;
-int       Sweeper::sweep_seconds   = 0;
-bool      Sweeper::_is_running     = false;
-methodOop Sweeper::_active_method  = NULL;
-nmethod*  Sweeper::_active_nmethod = NULL;
+Sweeper* Sweeper::_head = NULL;
+int Sweeper::sweep_seconds = 0;
+bool Sweeper::_is_running = false;
+methodOop Sweeper::_active_method = NULL;
+nmethod* Sweeper::_active_nmethod = NULL;
 
 void Sweeper::print_all() {
-  for (Sweeper* n = head(); n; n = n->next()) 
+  for (Sweeper* n = head(); n; n = n->next())
     n->print();
 }
 
 bool Sweeper::register_active_frame(frame fr) {
   if (fr.is_interpreted_frame()) {
     _active_method = fr.method();
-    if (_active_method == NULL) return false;
+    if (_active_method == NULL)
+      return false;
     return true;
   } else if (fr.is_compiled_frame()) {
     _active_nmethod = findNMethod(fr.pc());
@@ -70,37 +71,39 @@ bool Sweeper::register_active_frame(frame fr) {
 }
 
 void Sweeper::clear_active_frame() {
-  _active_method  = NULL;
+  _active_method = NULL;
   _active_nmethod = NULL;
 }
 
 void Sweeper::step_all() {
   _is_running = true;
   ResourceMark rm;
-  for (Sweeper* n = head(); n; n = n->next()) 
+  for (Sweeper* n = head(); n; n = n->next())
     n->step();
   sweep_seconds++;
   _is_running = false;
 }
 
 Sweeper::Sweeper() {
-  _is_active   = false;
+  _is_active = false;
   _sweep_start = sweep_seconds;
 }
 
 void Sweeper::add(Sweeper* sweeper) {
   sweeper->_next = head();
-  _head          = sweeper;
+  _head = sweeper;
 }
 
 void Sweeper::step() {
-  if (interval() == 0) return;
- 
+  if (interval() == 0)
+    return;
+
   if (!is_active() && (sweep_seconds - _sweep_start) >= interval()) {
     _sweep_start = sweep_seconds;
-     activate();
+    activate();
   }
-  if (is_active()) task();
+  if (is_active())
+    task();
 }
 
 void Sweeper::print() const {
@@ -131,14 +134,14 @@ void HeapSweeper::task() {}
 inline void CodeSweeper::updateInterval() {
   if (oldHalfLifeTime != CounterHalfLifeTime) {
     oldHalfLifeTime = CounterHalfLifeTime;
-    CodeSweeperInterval = 4;		    // for now, use fixed value; could adjust if necessary
+    CodeSweeperInterval = 4; // for now, use fixed value; could adjust if necessary
     fractionPerTask = 8;
-    const double log2 = 0.69314718055995;   // log(2)
+    const double log2 = 0.69314718055995; // log(2)
     decayFactor = exp(log2 * CodeSweeperInterval * fractionPerTask / CounterHalfLifeTime);
-    if (PrintCodeSweep) mystd->print("*method sweep: decay factor %f\n", decayFactor);
+    if (PrintCodeSweep)
+      mystd->print("*method sweep: decay factor %f\n", decayFactor);
   }
 }
-
 
 int CodeSweeper::interval() const {
   ((CodeSweeper*)this)->updateInterval();
@@ -146,7 +149,6 @@ int CodeSweeper::interval() const {
 }
 
 // ---------------- MethodSweeper -----------------
-
 
 void MethodSweeper::method_task(methodOop method) {
   if (method != Sweeper::active_method()) {
@@ -173,7 +175,7 @@ int MethodSweeper::method_dict_task(objArrayOop methods) {
 int MethodSweeper::klass_task(klassOop klass) {
   int result = 0;
   Klass* k = klass->klass_part();
-  // Fix the customized methods 
+  // Fix the customized methods
   result += method_dict_task(k->methods());
   result += method_dict_task(klass->klass()->klass_part()->methods());
   if (k->is_named_class()) {
@@ -182,9 +184,11 @@ int MethodSweeper::klass_task(klassOop klass) {
     result += method_dict_task(klass->klass()->klass_part()->mixin()->methods());
   }
 
-  if (!k->has_superKlass()) return result;
-  if (k->superKlass()->klass_part()->is_named_class()) return result;
-  
+  if (!k->has_superKlass())
+    return result;
+  if (k->superKlass()->klass_part()->is_named_class())
+    return result;
+
   // super class is an unnamed class so we have to handle it
   result += klass_task(k->superKlass());
   return result;
@@ -198,10 +202,11 @@ void MethodSweeper::task() {
     method_task(m);
   }
 
-  objArrayOop array     = Universe::systemDictionaryObj();
-  int          length   = array->length();
+  objArrayOop array = Universe::systemDictionaryObj();
+  int length = array->length();
   int number_of_entries = length / fractionPerTask;
-  if (PrintCodeSweep) mystd->print("*method sweep: %d entries...", number_of_entries);
+  if (PrintCodeSweep)
+    mystd->print("*method sweep: %d entries...", number_of_entries);
   TraceTime t("MethodSweep ", PrintCodeSweep);
 
   int end = (index + number_of_entries);
@@ -212,15 +217,16 @@ void MethodSweeper::task() {
   int result = 0;
 
   for (; index <= end; index++) {
-     associationOop assoc =  associationOop(array->obj_at(index));
-     assert(assoc->is_association(), "just checking");
-     if (assoc->is_constant() && assoc->value()->is_klass()) {
-       int result = klass_task(klassOop(assoc->value()));
-     }
+    associationOop assoc = associationOop(array->obj_at(index));
+    assert(assoc->is_association(), "just checking");
+    if (assoc->is_constant() && assoc->value()->is_klass()) {
+      int result = klass_task(klassOop(assoc->value()));
+    }
   }
   LOG_EVENT3("MethodSweeper task [%d, %d] #%d", (intptr_t)begin, (intptr_t)end, (intptr_t)result);
 
-  if (index > length) deactivate();
+  if (index > length)
+    deactivate();
 }
 
 void MethodSweeper::activate() {
@@ -251,12 +257,13 @@ void ZoneSweeper::task() {
   //    we need to validate next
   int total = Universe::code->numberOfNMethods();
   int todo = total / fractionPerTask;
-  if (PrintCodeSweep) mystd->print("*zone sweep: %d of %d entries...", todo, total);
+  if (PrintCodeSweep)
+    mystd->print("*zone sweep: %d of %d entries...", todo, total);
   TraceTime t("ZoneSweep ", PrintCodeSweep);
-  
+
   for (int index = 0; index < todo; index++) {
     if (next == NULL) {
-      deactivate(); 
+      deactivate();
       break;
     }
     nmethod_task(next);
@@ -282,19 +289,21 @@ void ZoneSweeper::activate() {
 
 // The sweeper task is activated every second (1000 milliseconds).
 class SweeperTask : public PeriodicTask {
- private:
-   int counter;
- public:
-  SweeperTask() : PeriodicTask(100) {
-    counter = 0;
-  }
+private:
+  int counter;
+
+public:
+  SweeperTask() : PeriodicTask(100) { counter = 0; }
 
   void task() {
     // If we're idle forget about the tick.
-    if (DeltaProcess::is_idle()) return;
+    if (DeltaProcess::is_idle())
+      return;
     if (++counter > 10) {
-      if (processSemaphore) return;
-      if (last_Delta_fp)    return;
+      if (processSemaphore)
+        return;
+      if (last_Delta_fp)
+        return;
 
       if (Sweeper::register_active_frame(DeltaProcess::active()->profile_top_frame())) {
         Sweeper::step_all();

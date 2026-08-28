@@ -27,20 +27,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/dValueArrayOop.hpp"
 #include "oops/memOopKlass.hpp"
 
-class doubleValueArrayKlass: public memOopKlass {
- public:
+class doubleValueArrayKlass : public memOopKlass {
+public:
   // allocation properties
   bool can_inline_allocation() const { return false; }
 
   // Return the oop size for a doubleValueArrayOop
   int object_size(int number_of_doubleValues) const {
-    return   non_indexable_size() + 1
-           + roundTo(number_of_doubleValues * sizeof(double), image_oop_size) / image_oop_size;
+    return non_indexable_size() + 1 + roundTo(number_of_doubleValues * sizeof(double), image_oop_size) / image_oop_size;
   }
- 
+
   // creation operations
   oop allocateObject(bool permit_scavenge = true, bool tenured = false);
-  oop allocateObjectSize(int size, bool permit_scavenge=true, bool tenured = false);
+  oop allocateObjectSize(int size, bool permit_scavenge = true, bool tenured = false);
 
   // creates invocation
   klassOop create_subclass(mixinOop mixin, Format format);
@@ -54,11 +53,11 @@ class doubleValueArrayKlass: public memOopKlass {
 
   char* name() const { return "doubleValueArray"; }
 
- // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP 
- public:
+  // ALL FUNCTIONS BELOW THIS POINT ARE DISPATCHED FROM AN OOP
+public:
   // accessors
   int oop_scavenge_contents(oop obj);
-  int oop_scavenge_tenured_contents(oop obj); 
+  int oop_scavenge_tenured_contents(oop obj);
 
   bool oop_verify(oop obj);
   void oop_print_value_on(oop obj, outputStream* st);
@@ -73,7 +72,7 @@ class doubleValueArrayKlass: public memOopKlass {
 
   // testers
   bool oop_is_doubleValueArray() const { return true; }
-  bool oop_is_indexable() const        { return true; }
+  bool oop_is_indexable() const { return true; }
 };
 void set_doubleValueArrayKlass_vtbl(Klass* k);
 #endif // _DVALUE_ARRAY_KLASS_HPP

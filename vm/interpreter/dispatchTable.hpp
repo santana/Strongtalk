@@ -28,19 +28,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // The dispatchTable controls the dispatch of byte codes
 
-class dispatchTable: AllStatic {
- private:
+class dispatchTable : AllStatic {
+private:
   enum Mode {
     normal_mode = 0,
-    step_mode   = 1,
-    next_mode   = 2,
+    step_mode = 1,
+    next_mode = 2,
     return_mode = 3
   };
 
   static Mode mode;
   static void patch_with_sst_stub();
 
- public:
+public:
   // the dispatch table
   static u_char** table();
 
@@ -53,9 +53,9 @@ class dispatchTable: AllStatic {
   static void intercept_for_return(void** fr);
 
   // answers whether the dispatch table is in single step mode.
-  static bool in_normal_mode()  { return mode == normal_mode; }
-  static bool in_step_mode()    { return mode == step_mode; }
-  static bool in_next_mode()    { return mode == next_mode; }
-  static bool in_return_mode()  { return mode == return_mode; }
+  static bool in_normal_mode() { return mode == normal_mode; }
+  static bool in_step_mode() { return mode == step_mode; }
+  static bool in_next_mode() { return mode == next_mode; }
+  static bool in_return_mode() { return mode == return_mode; }
 };
 #endif // _DISPATCH_TABLE_HPP

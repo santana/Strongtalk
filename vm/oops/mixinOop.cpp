@@ -32,8 +32,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 int mixinOopDesc::inst_var_offset(symbolOop name, int non_indexable_size) const {
-  objArrayOop array  = instVars();
-  int         length = array->length(); 
+  objArrayOop array = instVars();
+  int length = array->length();
   for (int index = 1; index <= length; index++) {
     if (array->obj_at(index) == reinterpret_cast<oop>(name)) {
       return non_indexable_size - (length - index + 1);
@@ -89,7 +89,8 @@ bool mixinOopDesc::includes_method(methodOop method) {
   objArrayOop array = methods();
   for (int index = 1; index <= array->length(); index++) {
     methodOop m = methodOop(array->obj_at(index));
-    if (m == method) return true;
+    if (m == method)
+      return true;
   }
   return false;
 }
@@ -105,9 +106,10 @@ symbolOop mixinOopDesc::instVar_at(int index) const {
 void mixinOopDesc::add_instVar(symbolOop name) {
   objArrayOop old_array = instVars();
   // Find out if it already exists.
-  for (int index = 1; index <= old_array->length(); index ++) {
+  for (int index = 1; index <= old_array->length(); index++) {
     assert(old_array->obj_at(index)->is_symbol(), "must be symbol");
-    if (old_array->obj_at(index) == reinterpret_cast<oop>(name)) return;
+    if (old_array->obj_at(index) == reinterpret_cast<oop>(name))
+      return;
   }
   // Extend the array
   set_instVars(old_array->copy_add(reinterpret_cast<oop>(name)));
@@ -123,7 +125,8 @@ bool mixinOopDesc::includes_instVar(symbolOop name) {
   objArrayOop array = instVars();
   for (int index = 1; index <= array->length(); index++) {
     symbolOop elem = symbolOop(array->obj_at(index));
-    if (elem == name) return true;
+    if (elem == name)
+      return true;
   }
   return false;
 }
@@ -141,7 +144,8 @@ void mixinOopDesc::add_classVar(symbolOop name) {
   // Find out if it already exists.
   for (int index = 1; index <= old_array->length(); index++) {
     symbolOop elem = symbolOop(old_array->obj_at(index));
-    if (elem == name) return;
+    if (elem == name)
+      return;
   }
   // Extend the array
   set_classVars(old_array->copy_add(reinterpret_cast<oop>(name)));
@@ -153,18 +157,19 @@ symbolOop mixinOopDesc::remove_classVar_at(int index) {
   return name;
 }
 
-
 bool mixinOopDesc::includes_classVar(symbolOop name) {
   objArrayOop array = classVars();
   for (int index = 1; index <= array->length(); index++) {
     symbolOop elem = symbolOop(array->obj_at(index));
-    if (elem == name) return true;
+    if (elem == name)
+      return true;
   }
   return false;
 }
 
 bool mixinOopDesc::is_installed() const {
-  if (installed() == trueObj) return true;
+  if (installed() == trueObj)
+    return true;
   assert(installed() == falseObj, "verify installed");
   return false;
 }

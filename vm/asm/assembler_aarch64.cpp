@@ -23,12 +23,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include "asm/assembler_aarch64.hpp"
 #include "asm/codeBuffer.hpp"
-#include "memory/rSet.hpp"			// card_shift (store_check)
-#include "memory/universe.hpp"		// Universe (inspector, store_check)
+#include "memory/rSet.hpp" // card_shift (store_check)
+#include "memory/universe.hpp" // Universe (inspector, store_check)
 #include "oops/oop.hpp"
 #include "oops/smiOop.hpp"
-#include "runtime/process.hpp"		// last_Delta_fp/last_Delta_sp
-#include "runtime/runtime.hpp"		// byte_map_base (store_check)
+#include "runtime/process.hpp" // last_Delta_fp/last_Delta_sp
+#include "runtime/runtime.hpp" // byte_map_base (store_check)
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
 
@@ -39,23 +39,43 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 static const uint64_t MASK64 = ~0ull;
 
-
 // ---------------------------------------------------------------------------
 // logical immediate encoding (LLVM processLogicalImmediate port)
 // ---------------------------------------------------------------------------
 
-static int countr_zero(uint64_t x)		{ return x ? __builtin_ctzll(x) : 64; }
-static int countr_one(uint64_t x)		{ int n = 0; while (x & 1) { n++; x >>= 1; } return n; }
-static int countl_one(uint64_t x)		{ int n = 0; for (int bit = 63; bit >= 0 && ((x >> bit) & 1); bit--) n++; return n; }
-static bool isShiftedMask(uint64_t x)		{ if (x == 0) return false; uint64_t y = x >> countr_zero(x); return (y & (y + 1)) == 0; }
+static int countr_zero(uint64_t x) {
+  return x ? __builtin_ctzll(x) : 64;
+}
+static int countr_one(uint64_t x) {
+  int n = 0;
+  while (x & 1) {
+    n++;
+    x >>= 1;
+  }
+  return n;
+}
+static int countl_one(uint64_t x) {
+  int n = 0;
+  for (int bit = 63; bit >= 0 && ((x >> bit) & 1); bit--)
+    n++;
+  return n;
+}
+static bool isShiftedMask(uint64_t x) {
+  if (x == 0)
+    return false;
+  uint64_t y = x >> countr_zero(x);
+  return (y & (y + 1)) == 0;
+}
 
 // Computes the (N, immr, imms) fields for a logical-immediate operand, or
 // returns false if the value is not encodable. Validated against clang:
 // 5334/5334 values byte-identical, 2M random roundtrips clean.
 static bool encodeLogicalImmediate(uint64_t imm, int regsize, int& N, int& immr, int& imms) {
-  if (imm == 0 || imm == MASK64) return false;
+  if (imm == 0 || imm == MASK64)
+    return false;
   if (regsize != 64) {
-    if ((imm >> regsize) != 0 || imm == (~0ull >> (64 - regsize))) return false;
+    if ((imm >> regsize) != 0 || imm == (~0ull >> (64 - regsize)))
+      return false;
   }
   int size = regsize;
   for (;;) {
@@ -65,7 +85,8 @@ static bool encodeLogicalImmediate(uint64_t imm, int regsize, int& N, int& immr,
       size *= 2;
       break;
     }
-    if (size <= 2) break;
+    if (size <= 2)
+      break;
   }
   uint64_t m = MASK64 >> (64 - size);
   imm &= m;
@@ -75,12 +96,14 @@ static bool encodeLogicalImmediate(uint64_t imm, int regsize, int& N, int& immr,
     cto = countr_one(imm >> i);
   } else {
     imm |= ~m & MASK64;
-    if (!isShiftedMask(~imm & MASK64)) return false;
+    if (!isShiftedMask(~imm & MASK64))
+      return false;
     int clo = countl_one(imm);
     i = 64 - clo;
     cto = clo + countr_one(imm) - (64 - size);
   }
-  if (!(size > i)) return false;
+  if (!(size > i))
+    return false;
   immr = (size - i) & (size - 1);
   uint64_t nimms = (~((uint64_t)(size - 1)) & MASK64) << 1;
   nimms |= (cto - 1);
@@ -89,105 +112,91 @@ static bool encodeLogicalImmediate(uint64_t imm, int regsize, int& N, int& immr,
   return true;
 }
 
-
 // ---------------------------------------------------------------------------
 // register names
 // ---------------------------------------------------------------------------
 
 static const char* registerNames[nofRegisters] = {
-  "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
-  "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
-  "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
-  "x24", "x25", "x26", "x27", "x28", "x29", "x30", "xzr/sp"
-};
+  "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",  "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+  "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30", "xzr/sp"};
 
 char* Register::name() const {
-  return (char*) (isValid() ? registerNames[_number] : "noreg");
+  return (char*)(isValid() ? registerNames[_number] : "noreg");
 }
-
 
 static const char* floatRegisterNames[32] = {
-  "d0",  "d1",  "d2",  "d3",  "d4",  "d5",  "d6",  "d7",
-  "d8",  "d9",  "d10", "d11", "d12", "d13", "d14", "d15",
-  "d16", "d17", "d18", "d19", "d20", "d21", "d22", "d23",
-  "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31"
-};
+  "d0",  "d1",  "d2",  "d3",  "d4",  "d5",  "d6",  "d7",  "d8",  "d9",  "d10", "d11", "d12", "d13", "d14", "d15",
+  "d16", "d17", "d18", "d19", "d20", "d21", "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31"};
 
 char* FloatRegister::name() const {
-  return (char*) (isValid() ? floatRegisterNames[_number] : "nofreg");
+  return (char*)(isValid() ? floatRegisterNames[_number] : "nofreg");
 }
-
 
 // ---------------------------------------------------------------------------
 // Address
 // ---------------------------------------------------------------------------
 
 Address::Address() {
-  _mode  = base_plus_disp;
-  _base  = noreg;
+  _mode = base_plus_disp;
+  _base = noreg;
   _index = noreg;
   _scale = no_scale;
-  _disp  = 0;
+  _disp = 0;
   _rtype = relocInfo::none;
 }
 
-
 Address::Address(intptr_t disp, relocInfo::relocType rtype) {
-  _mode  = absolute;
-  _base  = noreg;
+  _mode = absolute;
+  _base = noreg;
   _index = noreg;
   _scale = no_scale;
-  _disp  = disp;
+  _disp = disp;
   _rtype = rtype;
 }
-
 
 Address::Address(Register base, intptr_t disp, relocInfo::relocType rtype) {
-  _mode  = base_plus_disp;
-  _base  = base;
+  _mode = base_plus_disp;
+  _base = base;
   _index = noreg;
   _scale = no_scale;
-  _disp  = disp;
+  _disp = disp;
   _rtype = rtype;
 }
-
 
 Address::Address(Register base, Register index, ScaleFactor scale, relocInfo::relocType rtype) {
   assert(index != noreg, "inconsistent address");
-  _mode  = base_plus_reg;
-  _base  = base;
+  _mode = base_plus_reg;
+  _base = base;
   _index = index;
   _scale = scale;
-  _disp  = 0;
+  _disp = 0;
   _rtype = rtype;
 }
 
-
 Address::Address(Register base, Register index, ScaleFactor scale, intptr_t disp, relocInfo::relocType rtype) {
   if (base != noreg && index != noreg) {
-    _mode  = base_plus_reg_disp;
-    _base  = base;
+    _mode = base_plus_reg_disp;
+    _base = base;
     _index = index;
     _scale = scale;
-    _disp  = disp;
+    _disp = disp;
     _rtype = rtype;
   } else if (base != noreg) {
-    _mode  = base_plus_disp;
-    _base  = base;
+    _mode = base_plus_disp;
+    _base = base;
     _index = noreg;
     _scale = no_scale;
-    _disp  = disp;
+    _disp = disp;
     _rtype = rtype;
   } else {
-    _mode  = absolute;
-    _base  = noreg;
+    _mode = absolute;
+    _base = noreg;
     _index = noreg;
     _scale = no_scale;
-    _disp  = disp;
+    _disp = disp;
     _rtype = rtype;
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // label fixup
@@ -207,43 +216,43 @@ Address::Address(Register base, Register index, ScaleFactor scale, intptr_t disp
 // applies (a branch at position 0 can't be chained).
 
 class AArch64Displacement : public ValueObj {
- private:
+private:
   int _data;
 
   enum Layout {
-    info_size	= 11,
-    type_size	=  4,
-    next_size	= 32 - (info_size + type_size),
+    info_size = 11,
+    type_size = 4,
+    next_size = 32 - (info_size + type_size),
 
-    info_pos	= 0,
-    type_pos	= info_size,
-    next_pos	= info_size + type_size,
+    info_pos = 0,
+    type_pos = info_size,
+    next_pos = info_size + type_size,
 
-    info_mask	= (1 << info_size) - 1,
-    type_mask	= (1 << type_size) - 1,
-    next_mask	= (1 << next_size) - 1,
+    info_mask = (1 << info_size) - 1,
+    type_mask = (1 << type_size) - 1,
+    next_mask = (1 << next_size) - 1,
   };
 
   enum Type {
-    b_branch,		// B            (info unused)
-    bl_branch,		// BL           (info unused)
-    cond_branch,	// B.cond       (info = condition)
-    cbz_branch,		// CBZ          (info = rt)
-    cbnz_branch,	// CBNZ         (info = rt)
-    tbz_branch,		// TBZ          (info = (bit << 5) | rt)
-    tbnz_branch,	// TBNZ         (info = (bit << 5) | rt)
-    adr_label,		// ADR          (info = rd)
-    ldr_lit_x,		// LDR X literal (info = rt)
-    ldr_lit_w,		// LDR W literal (info = rt)
-    ldr_lit_d,		// LDR D literal (info = rt)
-    ldr_lit_s,		// LDR S literal (info = rt)
+    b_branch, // B            (info unused)
+    bl_branch, // BL           (info unused)
+    cond_branch, // B.cond       (info = condition)
+    cbz_branch, // CBZ          (info = rt)
+    cbnz_branch, // CBNZ         (info = rt)
+    tbz_branch, // TBZ          (info = (bit << 5) | rt)
+    tbnz_branch, // TBNZ         (info = (bit << 5) | rt)
+    adr_label, // ADR          (info = rd)
+    ldr_lit_x, // LDR X literal (info = rt)
+    ldr_lit_w, // LDR W literal (info = rt)
+    ldr_lit_d, // LDR D literal (info = rt)
+    ldr_lit_s, // LDR S literal (info = rt)
   };
 
   void init(Label& L, Type type, int info) {
     assert(!L.is_bound(), "label is bound");
     int next = 0;
     if (L.is_unbound()) {
-      next = L.pos() / 4 + 1;	// +1 so a fixup at offset 0 is representable (0 is the end-of-chain marker)
+      next = L.pos() / 4 + 1; // +1 so a fixup at offset 0 is representable (0 is the end-of-chain marker)
     }
     assert((next & ~next_mask) == 0, "next field too small");
     assert((type & ~type_mask) == 0, "type field too small");
@@ -251,31 +260,32 @@ class AArch64Displacement : public ValueObj {
     _data = (next << next_pos) | (type << type_pos) | (info << info_pos);
   }
 
-  int  data() const		{ return _data; }
-  int  info() const		{ return ((_data >> info_pos) & info_mask); }
-  Type type() const		{ return Type((_data >> type_pos) & type_mask); }
-  void next(Label& L) const	{ int n = ((_data >> next_pos) & next_mask); n > 0 ? L.link_to((n - 1) * 4) : L.unuse(); }
-  void link_to(Label& L)	{ init(L, type(), info()); }
-
-  AArch64Displacement(int data)	{ _data = data; }
-
-  AArch64Displacement(Label& L, Type type, int info) {
-    init(L, type, info);
+  int data() const { return _data; }
+  int info() const { return ((_data >> info_pos) & info_mask); }
+  Type type() const { return Type((_data >> type_pos) & type_mask); }
+  void next(Label& L) const {
+    int n = ((_data >> next_pos) & next_mask);
+    n > 0 ? L.link_to((n - 1) * 4) : L.unuse();
   }
+  void link_to(Label& L) { init(L, type(), info()); }
+
+  AArch64Displacement(int data) { _data = data; }
+
+  AArch64Displacement(Label& L, Type type, int info) { init(L, type, info); }
 
   friend class AArch64Assembler;
   friend class AArch64MacroAssembler;
 };
 
-
 // Use macros (otherwise must also declare AArch64Displacement class in .hpp file)
-#define disp_at(L)		AArch64Displacement(long_at((L).pos()))
-#define disp_at_put(L,disp)	long_at_put((L).pos(), (disp).data())
-#define emit_disp(L,type,info)	{ AArch64Displacement disp((L), (type), (info)); \
-				  L.link_to(offset());				  \
-				  emit_long((int)disp.data());			  \
-				}
-
+#define disp_at(L) AArch64Displacement(long_at((L).pos()))
+#define disp_at_put(L, disp) long_at_put((L).pos(), (disp).data())
+#define emit_disp(L, type, info)                                                                                       \
+  {                                                                                                                    \
+    AArch64Displacement disp((L), (type), (info));                                                                     \
+    L.link_to(offset());                                                                                               \
+    emit_long((int)disp.data());                                                                                       \
+  }
 
 void AArch64Assembler::print(Label& L) {
   if (L.is_unused()) {
@@ -295,7 +305,6 @@ void AArch64Assembler::print(Label& L) {
     mystd->print_cr("label in inconsistent state (pos = %d)", L._pos);
   }
 }
-
 
 void AArch64Assembler::bind_to(Label& L, int pos) {
   assert(0 <= pos && pos <= offset(), "must have a valid binding position");
@@ -357,13 +366,15 @@ void AArch64Assembler::bind_to(Label& L, int pos) {
   L.bind_to(pos);
 }
 
-
 void AArch64Assembler::link_to(Label& L, Label& appendix) {
   if (appendix.is_unbound()) {
     if (L.is_unbound()) {
       // append appendix to L's list
       Label p, q = L;
-      do { p = q; disp_at(q).next(q); } while (q.is_unbound());
+      do {
+        p = q;
+        disp_at(q).next(q);
+      } while (q.is_unbound());
       AArch64Displacement disp = disp_at(p);
       disp.link_to(appendix);
       disp_at_put(p, disp);
@@ -376,71 +387,117 @@ void AArch64Assembler::link_to(Label& L, Label& appendix) {
   appendix.unuse(); // appendix should not be used anymore
 }
 
-
 // ---------------------------------------------------------------------------
 // AArch64Assembler
 // ---------------------------------------------------------------------------
 
 AArch64Assembler::AArch64Assembler(CodeBuffer* code) : AbstractAssembler(code) {}
 
-
 void AArch64Assembler::emit_quad_data(intptr_t data, relocInfo::relocType rtype) {
-  if (rtype != relocInfo::none) code()->relocate(_code_pos, rtype);
+  if (rtype != relocInfo::none)
+    code()->relocate(_code_pos, rtype);
   emit_long((int)(data & 0xFFFFFFFF));
   emit_long((int)((data >> 32) & 0xFFFFFFFF));
 }
 
-
 // Logical (shifted register)
-void AArch64Assembler::logical_shifted(Register rd, Register rn, Register rm, int opc, bool N, ShiftType shift, int amt, RegisterSize size) {
+void AArch64Assembler::logical_shifted(Register rd, Register rn, Register rm, int opc, bool N, ShiftType shift, int amt,
+                                       RegisterSize size) {
   assert(rd.isValid() && rn.isValid() && rm.isValid(), "illegal register");
   assert(0 <= amt && amt < (size == sz_64 ? 64 : 32), "shift amount out of range");
-  emit_long(0x0A000000 | (size << 31) | (opc << 29) | (shift << 22) | (N << 21) | (rm.number() << 16) | (amt << 10) | (rn.number() << 5) | rd.number());
+  emit_long(0x0A000000 | (size << 31) | (opc << 29) | (shift << 22) | (N << 21) | (rm.number() << 16) | (amt << 10) |
+            (rn.number() << 5) | rd.number());
 }
 
-void AArch64Assembler::and_ (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 0, false, shift, amt, size); }
-void AArch64Assembler::orr  (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 1, false, shift, amt, size); }
-void AArch64Assembler::eor  (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 2, false, shift, amt, size); }
-void AArch64Assembler::ands (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 3, false, shift, amt, size); }
-void AArch64Assembler::bic  (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 0, true,  shift, amt, size); }
-void AArch64Assembler::orn  (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 1, true,  shift, amt, size); }
-void AArch64Assembler::eon  (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 2, true,  shift, amt, size); }
-void AArch64Assembler::bics (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { logical_shifted(rd, rn, rm, 3, true,  shift, amt, size); }
-void AArch64Assembler::tst  (Register rn, Register rm, ShiftType shift, int amt, RegisterSize size)              { logical_shifted(xzr, rn, rm, 3, false, shift, amt, size); }
-
+void AArch64Assembler::and_(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 0, false, shift, amt, size);
+}
+void AArch64Assembler::orr(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 1, false, shift, amt, size);
+}
+void AArch64Assembler::eor(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 2, false, shift, amt, size);
+}
+void AArch64Assembler::ands(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 3, false, shift, amt, size);
+}
+void AArch64Assembler::bic(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 0, true, shift, amt, size);
+}
+void AArch64Assembler::orn(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 1, true, shift, amt, size);
+}
+void AArch64Assembler::eon(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 2, true, shift, amt, size);
+}
+void AArch64Assembler::bics(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(rd, rn, rm, 3, true, shift, amt, size);
+}
+void AArch64Assembler::tst(Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  logical_shifted(xzr, rn, rm, 3, false, shift, amt, size);
+}
 
 // Add/sub (shifted register)
-void AArch64Assembler::addsub_shifted(Register rd, Register rn, Register rm, bool op, bool S, ShiftType shift, int amt, RegisterSize size) {
+void AArch64Assembler::addsub_shifted(Register rd, Register rn, Register rm, bool op, bool S, ShiftType shift, int amt,
+                                      RegisterSize size) {
   assert(rd.isValid() && rn.isValid() && rm.isValid(), "illegal register");
   assert(0 <= amt && amt < (size == sz_64 ? 64 : 32), "shift amount out of range");
-  emit_long(0x0B000000 | (size << 31) | (op << 30) | (S << 29) | (shift << 22) | (rm.number() << 16) | (amt << 10) | (rn.number() << 5) | rd.number());
+  emit_long(0x0B000000 | (size << 31) | (op << 30) | (S << 29) | (shift << 22) | (rm.number() << 16) | (amt << 10) |
+            (rn.number() << 5) | rd.number());
 }
 
-void AArch64Assembler::add (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { addsub_shifted(rd, rn, rm, false, false, shift, amt, size); }
-void AArch64Assembler::sub (Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { addsub_shifted(rd, rn, rm, true,  false, shift, amt, size); }
-void AArch64Assembler::adds(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { addsub_shifted(rd, rn, rm, false, true,  shift, amt, size); }
-void AArch64Assembler::subs(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) { addsub_shifted(rd, rn, rm, true,  true,  shift, amt, size); }
-void AArch64Assembler::neg (Register rd, Register rm, ShiftType shift, int amt, RegisterSize size)              { addsub_shifted(rd, xzr, rm, true,  false, shift, amt, size); }
-void AArch64Assembler::negs(Register rd, Register rm, ShiftType shift, int amt, RegisterSize size)              { addsub_shifted(rd, xzr, rm, true,  true,  shift, amt, size); }
-void AArch64Assembler::cmp (Register rn, Register rm, ShiftType shift, int amt, RegisterSize size)              { addsub_shifted(xzr, rn, rm, true,  true,  shift, amt, size); }
-void AArch64Assembler::cmn (Register rn, Register rm, ShiftType shift, int amt, RegisterSize size)              { addsub_shifted(xzr, rn, rm, false, true,  shift, amt, size); }
-
+void AArch64Assembler::add(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, rn, rm, false, false, shift, amt, size);
+}
+void AArch64Assembler::sub(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, rn, rm, true, false, shift, amt, size);
+}
+void AArch64Assembler::adds(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, rn, rm, false, true, shift, amt, size);
+}
+void AArch64Assembler::subs(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, rn, rm, true, true, shift, amt, size);
+}
+void AArch64Assembler::neg(Register rd, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, xzr, rm, true, false, shift, amt, size);
+}
+void AArch64Assembler::negs(Register rd, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(rd, xzr, rm, true, true, shift, amt, size);
+}
+void AArch64Assembler::cmp(Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(xzr, rn, rm, true, true, shift, amt, size);
+}
+void AArch64Assembler::cmn(Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
+  addsub_shifted(xzr, rn, rm, false, true, shift, amt, size);
+}
 
 // Add/sub (immediate)
 void AArch64Assembler::addsub_imm(Register rd, Register rn, int imm12, bool op, bool S, int sh, RegisterSize size) {
   assert(rd.isValid() && rn.isValid(), "illegal register");
   assert(0 <= imm12 && imm12 < 0x1000, "imm12 out of range");
   assert(sh == 0 || sh == 1, "illegal shift");
-  emit_long(0x11000000 | (size << 31) | (op << 30) | (S << 29) | (sh << 22) | (imm12 << 10) | (rn.number() << 5) | rd.number());
+  emit_long(0x11000000 | (size << 31) | (op << 30) | (S << 29) | (sh << 22) | (imm12 << 10) | (rn.number() << 5) |
+            rd.number());
 }
 
-void AArch64Assembler::add (Register rd, Register rn, int imm12, int sh, RegisterSize size) { addsub_imm(rd, rn, imm12, false, false, sh, size); }
-void AArch64Assembler::sub (Register rd, Register rn, int imm12, int sh, RegisterSize size) { addsub_imm(rd, rn, imm12, true,  false, sh, size); }
-void AArch64Assembler::adds(Register rd, Register rn, int imm12, int sh, RegisterSize size) { addsub_imm(rd, rn, imm12, false, true,  sh, size); }
-void AArch64Assembler::subs(Register rd, Register rn, int imm12, int sh, RegisterSize size) { addsub_imm(rd, rn, imm12, true,  true,  sh, size); }
-void AArch64Assembler::cmp (Register rn, int imm12, int sh, RegisterSize size)             { addsub_imm(xzr, rn, imm12, true,  true,  sh, size); }
-void AArch64Assembler::cmn (Register rn, int imm12, int sh, RegisterSize size)             { addsub_imm(xzr, rn, imm12, false, true,  sh, size); }
-
+void AArch64Assembler::add(Register rd, Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(rd, rn, imm12, false, false, sh, size);
+}
+void AArch64Assembler::sub(Register rd, Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(rd, rn, imm12, true, false, sh, size);
+}
+void AArch64Assembler::adds(Register rd, Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(rd, rn, imm12, false, true, sh, size);
+}
+void AArch64Assembler::subs(Register rd, Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(rd, rn, imm12, true, true, sh, size);
+}
+void AArch64Assembler::cmp(Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(xzr, rn, imm12, true, true, sh, size);
+}
+void AArch64Assembler::cmn(Register rn, int imm12, int sh, RegisterSize size) {
+  addsub_imm(xzr, rn, imm12, false, true, sh, size);
+}
 
 // Logical (immediate)
 void AArch64Assembler::logical_imm(Register rd, Register rn, uint64_t imm, int opc, RegisterSize size) {
@@ -449,15 +506,25 @@ void AArch64Assembler::logical_imm(Register rd, Register rn, uint64_t imm, int o
   if (!encodeLogicalImmediate(imm, size == sz_64 ? 64 : 32, N, immr, imms)) {
     fatal("not a valid logical immediate");
   }
-  emit_long(0x12000000 | (size << 31) | (opc << 29) | (N << 22) | (immr << 16) | (imms << 10) | (rn.number() << 5) | rd.number());
+  emit_long(0x12000000 | (size << 31) | (opc << 29) | (N << 22) | (immr << 16) | (imms << 10) | (rn.number() << 5) |
+            rd.number());
 }
 
-void AArch64Assembler::and_(Register rd, Register rn, uint64_t imm, RegisterSize size) { logical_imm(rd, rn, imm, 0, size); }
-void AArch64Assembler::orr (Register rd, Register rn, uint64_t imm, RegisterSize size) { logical_imm(rd, rn, imm, 1, size); }
-void AArch64Assembler::eor (Register rd, Register rn, uint64_t imm, RegisterSize size) { logical_imm(rd, rn, imm, 2, size); }
-void AArch64Assembler::ands(Register rd, Register rn, uint64_t imm, RegisterSize size) { logical_imm(rd, rn, imm, 3, size); }
-void AArch64Assembler::tst (Register rn, uint64_t imm, RegisterSize size)             { logical_imm(xzr, rn, imm, 3, size); }
-
+void AArch64Assembler::and_(Register rd, Register rn, uint64_t imm, RegisterSize size) {
+  logical_imm(rd, rn, imm, 0, size);
+}
+void AArch64Assembler::orr(Register rd, Register rn, uint64_t imm, RegisterSize size) {
+  logical_imm(rd, rn, imm, 1, size);
+}
+void AArch64Assembler::eor(Register rd, Register rn, uint64_t imm, RegisterSize size) {
+  logical_imm(rd, rn, imm, 2, size);
+}
+void AArch64Assembler::ands(Register rd, Register rn, uint64_t imm, RegisterSize size) {
+  logical_imm(rd, rn, imm, 3, size);
+}
+void AArch64Assembler::tst(Register rn, uint64_t imm, RegisterSize size) {
+  logical_imm(xzr, rn, imm, 3, size);
+}
 
 // Bitfield
 void AArch64Assembler::bitfield_op(Register rd, Register rn, int opc, int immr, int imms, RegisterSize size) {
@@ -467,30 +534,31 @@ void AArch64Assembler::bitfield_op(Register rd, Register rn, int opc, int immr, 
   assert(0 <= imms && imms < w, "imms out of range");
   // bitfield ops: 0x13000000 | sf<<31 | opc<<29 | N<<22 | immr<<16 | imms<<10 | Rn<<5 | Rd
   // where opc is 0b00 (SBFM), 0b01 (BFM), 0b10 (UBFM) and the N field = sf.
-  emit_long(0x13000000 | (size << 31) | (opc << 29) | (size << 22) | (immr << 16) | (imms << 10) | (rn.number() << 5) | rd.number());
+  emit_long(0x13000000 | (size << 31) | (opc << 29) | (size << 22) | (immr << 16) | (imms << 10) | (rn.number() << 5) |
+            rd.number());
 }
 
-void AArch64Assembler::lsl  (Register rd, Register rn, int shift, RegisterSize size) {
+void AArch64Assembler::lsl(Register rd, Register rn, int shift, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 <= shift && shift < w, "shift out of range");
   bitfield_op(rd, rn, 0b10, (w - shift) & (w - 1), w - 1 - shift, size);
 }
-void AArch64Assembler::lsr  (Register rd, Register rn, int shift, RegisterSize size) {
+void AArch64Assembler::lsr(Register rd, Register rn, int shift, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 <= shift && shift < w, "shift out of range");
   bitfield_op(rd, rn, 0b10, shift, w - 1, size);
 }
-void AArch64Assembler::asr  (Register rd, Register rn, int shift, RegisterSize size) {
+void AArch64Assembler::asr(Register rd, Register rn, int shift, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 <= shift && shift < w, "shift out of range");
   bitfield_op(rd, rn, 0b00, shift, w - 1, size);
 }
-void AArch64Assembler::ubfx (Register rd, Register rn, int lsb, int width, RegisterSize size) {
+void AArch64Assembler::ubfx(Register rd, Register rn, int lsb, int width, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 < width && width <= w - lsb, "width out of range");
   bitfield_op(rd, rn, 0b10, lsb, lsb + width - 1, size);
 }
-void AArch64Assembler::sbfx (Register rd, Register rn, int lsb, int width, RegisterSize size) {
+void AArch64Assembler::sbfx(Register rd, Register rn, int lsb, int width, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 < width && width <= w - lsb, "width out of range");
   bitfield_op(rd, rn, 0b00, lsb, lsb + width - 1, size);
@@ -505,7 +573,7 @@ void AArch64Assembler::sbfiz(Register rd, Register rn, int lsb, int width, Regis
   assert(0 < width && width <= w - lsb, "width out of range");
   bitfield_op(rd, rn, 0b00, (w - lsb) & (w - 1), width - 1, size);
 }
-void AArch64Assembler::bfi  (Register rd, Register rn, int lsb, int width, RegisterSize size) {
+void AArch64Assembler::bfi(Register rd, Register rn, int lsb, int width, RegisterSize size) {
   int w = (size == sz_64) ? 64 : 32;
   assert(0 < width && width <= w - lsb, "width out of range");
   bitfield_op(rd, rn, 0b01, (w - lsb) & (w - 1), width - 1, size);
@@ -515,22 +583,44 @@ void AArch64Assembler::bfxil(Register rd, Register rn, int lsb, int width, Regis
   assert(0 < width && width <= w - lsb, "width out of range");
   bitfield_op(rd, rn, 0b01, lsb, lsb + width - 1, size);
 }
-void AArch64Assembler::uxtb (Register rd, Register rn, RegisterSize size) { bitfield_op(rd, rn, 0b10, 0, 7,  size); }
-void AArch64Assembler::uxth (Register rd, Register rn, RegisterSize size) { bitfield_op(rd, rn, 0b10, 0, 15, size); }
-void AArch64Assembler::uxtw (Register rd, Register rn)                   { bitfield_op(rd, rn, 0b10, 0, 31, sz_64); }
-void AArch64Assembler::sxtb (Register rd, Register rn, RegisterSize size) { bitfield_op(rd, rn, 0b00, 0, 7,  size); }
-void AArch64Assembler::sxth (Register rd, Register rn, RegisterSize size) { bitfield_op(rd, rn, 0b00, 0, 15, size); }
-void AArch64Assembler::sxtw (Register rd, Register rn)                   { bitfield_op(rd, rn, 0b00, 0, 31, sz_64); }
-
+void AArch64Assembler::uxtb(Register rd, Register rn, RegisterSize size) {
+  bitfield_op(rd, rn, 0b10, 0, 7, size);
+}
+void AArch64Assembler::uxth(Register rd, Register rn, RegisterSize size) {
+  bitfield_op(rd, rn, 0b10, 0, 15, size);
+}
+void AArch64Assembler::uxtw(Register rd, Register rn) {
+  bitfield_op(rd, rn, 0b10, 0, 31, sz_64);
+}
+void AArch64Assembler::sxtb(Register rd, Register rn, RegisterSize size) {
+  bitfield_op(rd, rn, 0b00, 0, 7, size);
+}
+void AArch64Assembler::sxth(Register rd, Register rn, RegisterSize size) {
+  bitfield_op(rd, rn, 0b00, 0, 15, size);
+}
+void AArch64Assembler::sxtw(Register rd, Register rn) {
+  bitfield_op(rd, rn, 0b00, 0, 31, sz_64);
+}
 
 // Data-processing (2 source)
-void AArch64Assembler::lslv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC02000 : 0x1AC02000) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-void AArch64Assembler::lsrv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC02400 : 0x1AC02400) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-void AArch64Assembler::asrv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC02800 : 0x1AC02800) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-void AArch64Assembler::rorv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC02C00 : 0x1AC02C00) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-void AArch64Assembler::udiv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC00800 : 0x1AC00800) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-void AArch64Assembler::sdiv(Register rd, Register rn, Register rm, RegisterSize size) { emit_long((size == sz_64 ? 0x9AC00C00 : 0x1AC00C00) | (rm.number() << 16) | (rn.number() << 5) | rd.number()); }
-
+void AArch64Assembler::lslv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC02000 : 0x1AC02000) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
+void AArch64Assembler::lsrv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC02400 : 0x1AC02400) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
+void AArch64Assembler::asrv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC02800 : 0x1AC02800) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
+void AArch64Assembler::rorv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC02C00 : 0x1AC02C00) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
+void AArch64Assembler::udiv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC00800 : 0x1AC00800) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
+void AArch64Assembler::sdiv(Register rd, Register rn, Register rm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x9AC00C00 : 0x1AC00C00) | (rm.number() << 16) | (rn.number() << 5) | rd.number());
+}
 
 // Multiply
 void AArch64Assembler::madd(Register rd, Register rn, Register rm, Register ra, RegisterSize size) {
@@ -542,12 +632,10 @@ void AArch64Assembler::mul(Register rd, Register rn, Register rm, RegisterSize s
   madd(rd, rn, rm, xzr, size);
 }
 
-
 void AArch64Assembler::smulh(Register rd, Register rn, Register rm) {
   assert(rd.isValid() && rn.isValid() && rm.isValid(), "illegal register");
   emit_long(0x9B400000 | (rm.number() << 16) | (0x1F << 10) | (rn.number() << 5) | rd.number());
 }
-
 
 void AArch64Assembler::msub(Register rd, Register rn, Register rm, Register ra, RegisterSize size) {
   assert(rd.isValid() && rn.isValid() && rm.isValid() && ra.isValid(), "illegal register");
@@ -555,13 +643,11 @@ void AArch64Assembler::msub(Register rd, Register rn, Register rm, Register ra, 
   emit_long(0x9B008000 | (size << 31) | (rm.number() << 16) | (ra.number() << 10) | (rn.number() << 5) | rd.number());
 }
 
-
 void AArch64Assembler::cset(Register rd, Condition cc) {
   assert(rd.isValid(), "illegal register");
   // csinc rd, xzr, xzr, invert(cc): rd = cc ? 1 : 0
   emit_long(0x9A9F07E0 | (((int)cc ^ 1) << 12) | rd.number());
 }
-
 
 // Move wide
 void AArch64Assembler::movz(Register rd, int imm16, int hw, RegisterSize size) {
@@ -589,7 +675,6 @@ void AArch64Assembler::mov(Register rd, Register rm, RegisterSize size) {
   orr(rd, xzr, rm, LSL, 0, size);
 }
 
-
 // Memory (base + disp / register offset)
 void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoad) {
   assert(rt.isValid(), "illegal register");
@@ -600,10 +685,12 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
       int scale = 1 << size;
       if (disp >= 0 && (disp & (scale - 1)) == 0 && (disp >> size) <= 0xFFF) {
         // unsigned imm12 form (disp >> size must fit in 12 bits)
-        emit_long(0x39000000 | (size << 30) | (isLoad << 22) | ((disp >> size) << 10) | (rn.number() << 5) | rt.number());
+        emit_long(0x39000000 | (size << 30) | (isLoad << 22) | ((disp >> size) << 10) | (rn.number() << 5) |
+                  rt.number());
       } else if (-256 <= disp && disp <= 255) {
         // unscaled imm9 form (ldur/stur)
-        emit_long(0x38000000 | (size << 30) | (isLoad << 22) | (0 << 10) | ((disp & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
+        emit_long(0x38000000 | (size << 30) | (isLoad << 22) | (0 << 10) | ((disp & 0x1FF) << 12) | (rn.number() << 5) |
+                  rt.number());
       } else {
         // Displacement too large for a single load/store (x86 allows 32-bit
         // displacements; AArch64 does not). Materialize rn + disp in the
@@ -617,7 +704,8 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
         movz(scratch, (int)((value >> (16 * hw)) & 0xFFFF), hw);
         for (int i = hw - 1; i >= 0; i--) {
           int chunk = (int)((value >> (16 * i)) & 0xFFFF);
-          if (chunk != 0) movk(scratch, chunk, i);
+          if (chunk != 0)
+            movk(scratch, chunk, i);
         }
         add(scratch, rn, scratch);
         load_store(rt, Address(scratch), size, isLoad);
@@ -640,15 +728,17 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
         break;
       }
       bool scaled = adr._scale == size;
-      emit_long(0x38200000 | (size << 30) | (isLoad << 22) | (adr._index.number() << 16) | (0b011 << 13) | (scaled << 12) | (2 << 10) | (adr._base.number() << 5) | rt.number());
+      emit_long(0x38200000 | (size << 30) | (isLoad << 22) | (adr._index.number() << 16) | (0b011 << 13) |
+                (scaled << 12) | (2 << 10) | (adr._base.number() << 5) | rt.number());
       break;
     }
     case Address::base_plus_reg_disp: {
       // x86-style base + index*2^scale + disp: materialize the register part
       // in x16 (the reserved scratch) and use the base_plus_disp form.
       assert(adr._base.isValid() && adr._index.isValid(), "illegal address");
-      int sh = (int)adr._scale;		// times_1..times_8 = 0..3; no_scale = -1 -> 0
-      if (sh < 0) sh = 0;
+      int sh = (int)adr._scale; // times_1..times_8 = 0..3; no_scale = -1 -> 0
+      if (sh < 0)
+        sh = 0;
       add(x16, adr._base, adr._index, LSL, sh);
       load_store(rt, Address(x16, adr._disp, adr._rtype), size, isLoad);
       break;
@@ -662,21 +752,38 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
   }
 }
 
-void AArch64Assembler::ldr (Register rt, Address adr) { load_store(rt, adr, 3, true);  }
-void AArch64Assembler::str (Register rt, Address adr) { load_store(rt, adr, 3, false); }
-void AArch64Assembler::ldr_w(Register rt, Address adr) { load_store(rt, adr, 2, true);  }
-void AArch64Assembler::str_w(Register rt, Address adr) { load_store(rt, adr, 2, false); }
-void AArch64Assembler::ldr_b(Register rt, Address adr) { load_store(rt, adr, 0, true);  }
-void AArch64Assembler::str_b(Register rt, Address adr) { load_store(rt, adr, 0, false); }
-void AArch64Assembler::ldr_h(Register rt, Address adr) { load_store(rt, adr, 1, true);  }
-void AArch64Assembler::str_h(Register rt, Address adr) { load_store(rt, adr, 1, false); }
+void AArch64Assembler::ldr(Register rt, Address adr) {
+  load_store(rt, adr, 3, true);
+}
+void AArch64Assembler::str(Register rt, Address adr) {
+  load_store(rt, adr, 3, false);
+}
+void AArch64Assembler::ldr_w(Register rt, Address adr) {
+  load_store(rt, adr, 2, true);
+}
+void AArch64Assembler::str_w(Register rt, Address adr) {
+  load_store(rt, adr, 2, false);
+}
+void AArch64Assembler::ldr_b(Register rt, Address adr) {
+  load_store(rt, adr, 0, true);
+}
+void AArch64Assembler::str_b(Register rt, Address adr) {
+  load_store(rt, adr, 0, false);
+}
+void AArch64Assembler::ldr_h(Register rt, Address adr) {
+  load_store(rt, adr, 1, true);
+}
+void AArch64Assembler::str_h(Register rt, Address adr) {
+  load_store(rt, adr, 1, false);
+}
 
 void AArch64Assembler::ldur(Register rt, Address adr, RegisterSize size) {
   assert(rt.isValid(), "illegal register");
   assert(adr._mode == Address::base_plus_disp, "ldur requires base + displacement");
   intptr_t disp = adr._disp;
   assert(-256 <= disp && disp <= 255, "imm9 out of range");
-  emit_long(0x38000000 | ((2 + size) << 30) | (1 << 22) | (0 << 10) | ((disp & 0x1FF) << 12) | (adr._base.number() << 5) | rt.number());
+  emit_long(0x38000000 | ((2 + size) << 30) | (1 << 22) | (0 << 10) | ((disp & 0x1FF) << 12) |
+            (adr._base.number() << 5) | rt.number());
 }
 
 void AArch64Assembler::stur(Register rt, Address adr, RegisterSize size) {
@@ -684,7 +791,8 @@ void AArch64Assembler::stur(Register rt, Address adr, RegisterSize size) {
   assert(adr._mode == Address::base_plus_disp, "stur requires base + displacement");
   intptr_t disp = adr._disp;
   assert(-256 <= disp && disp <= 255, "imm9 out of range");
-  emit_long(0x38000000 | ((2 + size) << 30) | (0 << 22) | (0 << 10) | ((disp & 0x1FF) << 12) | (adr._base.number() << 5) | rt.number());
+  emit_long(0x38000000 | ((2 + size) << 30) | (0 << 22) | (0 << 10) | ((disp & 0x1FF) << 12) |
+            (adr._base.number() << 5) | rt.number());
 }
 
 void AArch64Assembler::ldur(FloatRegister ft, Address adr, RegisterSize size) {
@@ -705,11 +813,26 @@ void AArch64Assembler::stur(FloatRegister ft, Address adr, RegisterSize size) {
   emit_long((doubleSize ? 0xFC000000 : 0xBC000000) | ((disp & 0x1FF) << 12) | (adr._base.number() << 5) | ft.number());
 }
 
-void AArch64Assembler::ldr_pre (Register rt, Register rn, int imm9) { assert(rt.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0x38000000 | (3 << 30) | (1 << 22) | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number()); }
-void AArch64Assembler::str_pre (Register rt, Register rn, int imm9) { assert(rt.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0x38000000 | (3 << 30) | (0 << 22) | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number()); }
-void AArch64Assembler::ldr_post(Register rt, Register rn, int imm9) { assert(rt.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0x38000000 | (3 << 30) | (1 << 22) | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number()); }
-void AArch64Assembler::str_post(Register rt, Register rn, int imm9) { assert(rt.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0x38000000 | (3 << 30) | (0 << 22) | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number()); }
-
+void AArch64Assembler::ldr_pre(Register rt, Register rn, int imm9) {
+  assert(rt.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0x38000000 | (3 << 30) | (1 << 22) | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
+}
+void AArch64Assembler::str_pre(Register rt, Register rn, int imm9) {
+  assert(rt.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0x38000000 | (3 << 30) | (0 << 22) | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
+}
+void AArch64Assembler::ldr_post(Register rt, Register rn, int imm9) {
+  assert(rt.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0x38000000 | (3 << 30) | (1 << 22) | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
+}
+void AArch64Assembler::str_post(Register rt, Register rn, int imm9) {
+  assert(rt.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0x38000000 | (3 << 30) | (0 << 22) | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
+}
 
 // Load/store pair
 void AArch64Assembler::ldp(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
@@ -717,44 +840,49 @@ void AArch64Assembler::ldp(Register rt1, Register rt2, Register rn, int offset, 
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (1 << 24) | (0 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (1 << 24) | (0 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
 void AArch64Assembler::stp(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
   int scale = (size == sz_64) ? 3 : 2;
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (1 << 24) | (0 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (1 << 24) | (0 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
 void AArch64Assembler::ldp_pre(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
   int scale = (size == sz_64) ? 3 : 2;
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (1 << 24) | (1 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (1 << 24) | (1 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
 void AArch64Assembler::stp_pre(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
   int scale = (size == sz_64) ? 3 : 2;
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (1 << 24) | (1 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (1 << 24) | (1 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
 void AArch64Assembler::ldp_post(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
   int scale = (size == sz_64) ? 3 : 2;
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (0 << 24) | (1 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (0 << 24) | (1 << 23) | (1 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
 void AArch64Assembler::stp_post(Register rt1, Register rt2, Register rn, int offset, RegisterSize size) {
   int scale = (size == sz_64) ? 3 : 2;
   assert((offset & ((1 << scale) - 1)) == 0, "offset not aligned to element size");
   int scaled = offset >> scale;
   assert(-64 <= scaled && scaled < 64, "offset out of range for load/store pair");
-  emit_long(0x28000000 | (size << 31) | (0 << 24) | (1 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) | (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
+  emit_long(0x28000000 | (size << 31) | (0 << 24) | (1 << 23) | (0 << 22) | ((scaled & 0x7F) << 15) |
+            (rt2.number() << 10) | (rn.number() << 5) | rt1.number());
 }
-
 
 // Load literal (PC-relative)
 void AArch64Assembler::ldr(Register rt, Label& L) {
@@ -804,7 +932,6 @@ void AArch64Assembler::ldr_s(FloatRegister ft, Label& L) {
     emit_disp(L, AArch64Displacement::ldr_lit_s, ft.number());
   }
 }
-
 
 // Branches
 void AArch64Assembler::b(Label& L) {
@@ -898,12 +1025,19 @@ void AArch64Assembler::adr(Register rd, Label& L) {
   }
 }
 
-
 // Calls / jumps
-void AArch64Assembler::call(Label& L)         { bl(L); }
-void AArch64Assembler::call(Register reg)      { blr(reg); }
-void AArch64Assembler::jmp(Label& L)           { b(L); }
-void AArch64Assembler::jmp(Register reg)       { br(reg); }
+void AArch64Assembler::call(Label& L) {
+  bl(L);
+}
+void AArch64Assembler::call(Register reg) {
+  blr(reg);
+}
+void AArch64Assembler::jmp(Label& L) {
+  b(L);
+}
+void AArch64Assembler::jmp(Register reg) {
+  br(reg);
+}
 
 void AArch64Assembler::call(char* entry, relocInfo::relocType rtype) {
   // ldr x16, [pc, #8]; b .+12; .quad entry; blr x16
@@ -911,53 +1045,86 @@ void AArch64Assembler::call(char* entry, relocInfo::relocType rtype) {
   // (pc+20) points at the continuation code. A bare "ldr; blr; .quad" would
   // leave the return address on the literal slot and crash when the callee
   // rets into the data. The b must land on the blr (pc+16), not past it.
-  emit_long(0x58000000 | (2 << 5) | 16);	// ldr x16, [pc, #8]
-  emit_long(0x14000003);			// b .+12 (skip the literal, land on blr)
-  emit_quad_data((intptr_t)entry, rtype);	// .quad entry
-  emit_long(0xD63F0000 | (16 << 5));		// blr x16
+  emit_long(0x58000000 | (2 << 5) | 16); // ldr x16, [pc, #8]
+  emit_long(0x14000003); // b .+12 (skip the literal, land on blr)
+  emit_quad_data((intptr_t)entry, rtype); // .quad entry
+  emit_long(0xD63F0000 | (16 << 5)); // blr x16
 }
 
 void AArch64Assembler::jmp(char* entry, relocInfo::relocType rtype) {
   // ldr x16, [pc, #8]; br x16; .quad entry
-  emit_long(0x58000000 | (2 << 5) | 16);	// ldr x16, [pc, #8]
-  emit_long(0xD61F0000 | (16 << 5));		// br x16
-  emit_quad_data((intptr_t)entry, rtype);	// .quad entry
+  emit_long(0x58000000 | (2 << 5) | 16); // ldr x16, [pc, #8]
+  emit_long(0xD61F0000 | (16 << 5)); // br x16
+  emit_quad_data((intptr_t)entry, rtype); // .quad entry
 }
 
-void AArch64Assembler::b(char* entry, relocInfo::relocType rtype)  { jmp(entry, rtype); }
-void AArch64Assembler::bl(char* entry, relocInfo::relocType rtype) { call(entry, rtype); }
-
+void AArch64Assembler::b(char* entry, relocInfo::relocType rtype) {
+  jmp(entry, rtype);
+}
+void AArch64Assembler::bl(char* entry, relocInfo::relocType rtype) {
+  call(entry, rtype);
+}
 
 // System / miscellaneous
-void AArch64Assembler::br (Register rn) { emit_long(0xD61F0000 | (rn.number() << 5)); }
-void AArch64Assembler::blr(Register rn) { emit_long(0xD63F0000 | (rn.number() << 5)); }
-void AArch64Assembler::ret(Register rn) { emit_long(0xD65F0000 | (rn.number() << 5)); }
-void AArch64Assembler::nop()            { emit_long(0xD503201F); }
-
+void AArch64Assembler::br(Register rn) {
+  emit_long(0xD61F0000 | (rn.number() << 5));
+}
+void AArch64Assembler::blr(Register rn) {
+  emit_long(0xD63F0000 | (rn.number() << 5));
+}
+void AArch64Assembler::ret(Register rn) {
+  emit_long(0xD65F0000 | (rn.number() << 5));
+}
+void AArch64Assembler::nop() {
+  emit_long(0xD503201F);
+}
 
 // Floating-point arithmetic
-void AArch64Assembler::fadd(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) { emit_long((size == sz_64 ? 0x1E602800 : 0x1E202800) | (fm.number() << 16) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fsub(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) { emit_long((size == sz_64 ? 0x1E603800 : 0x1E203800) | (fm.number() << 16) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fmul(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) { emit_long((size == sz_64 ? 0x1E600800 : 0x1E200800) | (fm.number() << 16) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fdiv(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) { emit_long((size == sz_64 ? 0x1E601800 : 0x1E201800) | (fm.number() << 16) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fcmp(FloatRegister fn, FloatRegister fm, RegisterSize size)                  { emit_long((size == sz_64 ? 0x1E602000 : 0x1E202000) | (fm.number() << 16) | (fn.number() << 5)); }
-void AArch64Assembler::fcmp0(FloatRegister fn, RegisterSize size)                                  { emit_long((size == sz_64 ? 0x1E602000 : 0x1E202000) | (fn.number() << 5) | 8); }
-void AArch64Assembler::fmov(FloatRegister fd, FloatRegister fn, RegisterSize size)                 { emit_long((size == sz_64 ? 0x1E604000 : 0x1E204000) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fabs(FloatRegister fd, FloatRegister fn, RegisterSize size)                 { emit_long((size == sz_64 ? 0x1E60C000 : 0x1E20C000) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fneg(FloatRegister fd, FloatRegister fn, RegisterSize size)                 { emit_long((size == sz_64 ? 0x1E614000 : 0x1E214000) | (fn.number() << 5) | fd.number()); }
-void AArch64Assembler::fsqrt(FloatRegister fd, FloatRegister fn, RegisterSize size)                { emit_long((size == sz_64 ? 0x1E61C000 : 0x1E21C000) | (fn.number() << 5) | fd.number()); }
+void AArch64Assembler::fadd(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E602800 : 0x1E202800) | (fm.number() << 16) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fsub(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E603800 : 0x1E203800) | (fm.number() << 16) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fmul(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E600800 : 0x1E200800) | (fm.number() << 16) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fdiv(FloatRegister fd, FloatRegister fn, FloatRegister fm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E601800 : 0x1E201800) | (fm.number() << 16) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fcmp(FloatRegister fn, FloatRegister fm, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E602000 : 0x1E202000) | (fm.number() << 16) | (fn.number() << 5));
+}
+void AArch64Assembler::fcmp0(FloatRegister fn, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E602000 : 0x1E202000) | (fn.number() << 5) | 8);
+}
+void AArch64Assembler::fmov(FloatRegister fd, FloatRegister fn, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E604000 : 0x1E204000) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fabs(FloatRegister fd, FloatRegister fn, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E60C000 : 0x1E20C000) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fneg(FloatRegister fd, FloatRegister fn, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E614000 : 0x1E214000) | (fn.number() << 5) | fd.number());
+}
+void AArch64Assembler::fsqrt(FloatRegister fd, FloatRegister fn, RegisterSize size) {
+  emit_long((size == sz_64 ? 0x1E61C000 : 0x1E21C000) | (fn.number() << 5) | fd.number());
+}
 
 void AArch64Assembler::fcvtzs(Register rd, FloatRegister fn, RegisterSize size, RegisterSize dstSize) {
   uint32_t base = (size == sz_64) ? 0x9E780000 : 0x9E380000;
-  if (dstSize == sz_32) base &= ~0x80000000;	// clear sf for a 32-bit integer destination
+  if (dstSize == sz_32)
+    base &= ~0x80000000; // clear sf for a 32-bit integer destination
   emit_long(base | (fn.number() << 5) | rd.number());
 }
 
 void AArch64Assembler::scvtf(FloatRegister fd, Register rn, RegisterSize size, RegisterSize srcSize) {
   // SCVTF Dd,Xn = 0x9E620000, Dd,Wn = 0x1E620000, Sd,Xn = 0x9E220000, Sd,Wn = 0x1E220000
   uint32_t base;
-  if (size == sz_64)      base = (srcSize == sz_64) ? 0x9E620000 : 0x1E620000;
-  else                    base = (srcSize == sz_64) ? 0x9E220000 : 0x1E220000;
+  if (size == sz_64)
+    base = (srcSize == sz_64) ? 0x9E620000 : 0x1E620000;
+  else
+    base = (srcSize == sz_64) ? 0x9E220000 : 0x1E220000;
   emit_long(base | (rn.number() << 5) | fd.number());
 }
 
@@ -969,9 +1136,9 @@ void AArch64Assembler::fmov(FloatRegister fd, Register rn, RegisterSize size) {
 
 void AArch64Assembler::csel(Register rd, Register rn, Register rm, Condition cc, RegisterSize size) {
   assert(cc != AL && (int)cc != 15, "csel requires a real condition");
-  emit_long((size == sz_64 ? 0x9A800000 : 0x1A800000) | (rm.number() << 16) | ((int)cc << 12) | (rn.number() << 5) | rd.number());
+  emit_long((size == sz_64 ? 0x9A800000 : 0x1A800000) | (rm.number() << 16) | ((int)cc << 12) | (rn.number() << 5) |
+            rd.number());
 }
-
 
 // Floating-point load/store
 void AArch64Assembler::load_store_float(FloatRegister rt, Address adr, bool doubleSize, bool isLoad) {
@@ -984,11 +1151,13 @@ void AArch64Assembler::load_store_float(FloatRegister rt, Address adr, bool doub
       int scale = 1 << size;
       if (disp >= 0 && (disp & (scale - 1)) == 0 && (disp >> size) <= 0xFFF) {
         uint32_t base = doubleSize ? 0xFD400000 : 0xBD400000;
-        if (!isLoad) base -= 0x400000;
+        if (!isLoad)
+          base -= 0x400000;
         emit_long(base | ((disp >> size) << 10) | (rn.number() << 5) | rt.number());
       } else if (-256 <= disp && disp <= 255) {
         uint32_t base = doubleSize ? 0xFC400000 : 0xBC400000;
-        if (!isLoad) base -= 0x400000;
+        if (!isLoad)
+          base -= 0x400000;
         emit_long(base | ((disp & 0x1FF) << 12) | (rn.number() << 5) | rt.number());
       } else {
         // Displacement too large for a single float load/store (x86 allows
@@ -1001,7 +1170,8 @@ void AArch64Assembler::load_store_float(FloatRegister rt, Address adr, bool doub
         movz(scratch, (int)((value >> (16 * hw)) & 0xFFFF), hw);
         for (int i = hw - 1; i >= 0; i--) {
           int chunk = (int)((value >> (16 * i)) & 0xFFFF);
-          if (chunk != 0) movk(scratch, chunk, i);
+          if (chunk != 0)
+            movk(scratch, chunk, i);
         }
         add(scratch, rn, scratch);
         load_store_float(rt, Address(scratch), doubleSize, isLoad);
@@ -1012,8 +1182,9 @@ void AArch64Assembler::load_store_float(FloatRegister rt, Address adr, bool doub
       // x86-style base + index*2^scale + disp: materialize the register part
       // in x16 (the reserved scratch) and use the base_plus_disp form.
       assert(adr._base.isValid() && adr._index.isValid(), "illegal address");
-      int sh = (int)adr._scale;		// times_1..times_8 = 0..3; no_scale = -1 -> 0
-      if (sh < 0) sh = 0;
+      int sh = (int)adr._scale; // times_1..times_8 = 0..3; no_scale = -1 -> 0
+      if (sh < 0)
+        sh = 0;
       add(x16, adr._base, adr._index, LSL, sh);
       load_store_float(rt, Address(x16, adr._disp), doubleSize, isLoad);
       break;
@@ -1025,16 +1196,39 @@ void AArch64Assembler::load_store_float(FloatRegister rt, Address adr, bool doub
   }
 }
 
-void AArch64Assembler::ldr(FloatRegister ft, Address adr) { load_store_float(ft, adr, true,  true); }
-void AArch64Assembler::str(FloatRegister ft, Address adr) { load_store_float(ft, adr, true,  false); }
-void AArch64Assembler::ldr_s(FloatRegister ft, Address adr) { load_store_float(ft, adr, false, true); }
-void AArch64Assembler::str_s(FloatRegister ft, Address adr) { load_store_float(ft, adr, false, false); }
+void AArch64Assembler::ldr(FloatRegister ft, Address adr) {
+  load_store_float(ft, adr, true, true);
+}
+void AArch64Assembler::str(FloatRegister ft, Address adr) {
+  load_store_float(ft, adr, true, false);
+}
+void AArch64Assembler::ldr_s(FloatRegister ft, Address adr) {
+  load_store_float(ft, adr, false, true);
+}
+void AArch64Assembler::str_s(FloatRegister ft, Address adr) {
+  load_store_float(ft, adr, false, false);
+}
 
-void AArch64Assembler::ldr_pre (FloatRegister ft, Register rn, int imm9) { assert(ft.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0xFC400000 | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number()); }
-void AArch64Assembler::str_pre (FloatRegister ft, Register rn, int imm9) { assert(ft.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0xFC000000 | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number()); }
-void AArch64Assembler::ldr_post(FloatRegister ft, Register rn, int imm9) { assert(ft.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0xFC400000 | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number()); }
-void AArch64Assembler::str_post(FloatRegister ft, Register rn, int imm9) { assert(ft.isValid(), "illegal register"); assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range"); emit_long(0xFC000000 | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number()); }
-
+void AArch64Assembler::ldr_pre(FloatRegister ft, Register rn, int imm9) {
+  assert(ft.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0xFC400000 | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number());
+}
+void AArch64Assembler::str_pre(FloatRegister ft, Register rn, int imm9) {
+  assert(ft.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0xFC000000 | (3 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number());
+}
+void AArch64Assembler::ldr_post(FloatRegister ft, Register rn, int imm9) {
+  assert(ft.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0xFC400000 | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number());
+}
+void AArch64Assembler::str_post(FloatRegister ft, Register rn, int imm9) {
+  assert(ft.isValid(), "illegal register");
+  assert(-256 <= imm9 && imm9 <= 255, "imm9 out of range");
+  emit_long(0xFC000000 | (1 << 10) | ((imm9 & 0x1FF) << 12) | (rn.number() << 5) | ft.number());
+}
 
 // ---------------------------------------------------------------------------
 // AArch64MacroAssembler
@@ -1060,10 +1254,10 @@ void AArch64MacroAssembler::mov(Register rd, intptr_t imm) {
   movz(rd, (int)((value >> (16 * hw)) & 0xFFFF), hw);
   for (int i = hw - 1; i >= 0; i--) {
     int chunk = (int)((value >> (16 * i)) & 0xFFFF);
-    if (chunk != 0) movk(rd, chunk, i);
+    if (chunk != 0)
+      movk(rd, chunk, i);
   }
 }
-
 
 void AArch64MacroAssembler::mov(Register rd, Register rm) {
   // orr rd, xzr, rm is the canonical register move, but logical instructions
@@ -1076,20 +1270,18 @@ void AArch64MacroAssembler::mov(Register rd, Register rm) {
   orr(rd, xzr, rm);
 }
 
-
 void AArch64MacroAssembler::align(int modulus) {
-  while (offset() % modulus != 0) nop();
+  while (offset() % modulus != 0)
+    nop();
 }
 
-
 void AArch64MacroAssembler::push(Register src) {
-  str_pre(src, sp, -16);	// str src, [sp, #-16]!
+  str_pre(src, sp, -16); // str src, [sp, #-16]!
 }
 
 void AArch64MacroAssembler::pop(Register dst) {
-  ldr_post(dst, sp, 16);	// ldr dst, [sp], #16
+  ldr_post(dst, sp, 16); // ldr dst, [sp], #16
 }
-
 
 // ---------------------------------------------------------------------------
 // x86-compatibility instruction set (used by the interpreter generator)
@@ -1097,28 +1289,24 @@ void AArch64MacroAssembler::pop(Register dst) {
 
 void AArch64Assembler::load_absolute_address(Register scratch, Address src) {
   assert(src._mode == Address::absolute, "absolute addressing only");
-  assert(scratch.number() != 16 || true, "");	// x16/x17 are fine as scratch here
-  emit_long(0x58000000 | (2 << 5) | scratch.number());	// ldr scratch, [pc, #8]
-  emit_long(0x14000003);					// b .+12 (skip the 8-byte literal)
-  emit_quad_data(src._disp, src._rtype);			// .quad <absolute address>
+  assert(scratch.number() != 16 || true, ""); // x16/x17 are fine as scratch here
+  emit_long(0x58000000 | (2 << 5) | scratch.number()); // ldr scratch, [pc, #8]
+  emit_long(0x14000003); // b .+12 (skip the 8-byte literal)
+  emit_quad_data(src._disp, src._rtype); // .quad <absolute address>
 }
-
 
 void AArch64Assembler::load_absolute_value(Register scratch, Address src) {
   load_absolute_address(scratch, src);
-  ldr(scratch, Address(scratch));				// scratch = *scratch
+  ldr(scratch, Address(scratch)); // scratch = *scratch
 }
-
 
 void AArch64Assembler::pushl(Register src) {
-  str_pre(src, sp, -8);		// 8-byte oop slot
+  str_pre(src, sp, -8); // 8-byte oop slot
 }
-
 
 void AArch64Assembler::popl(Register dst) {
   ldr_post(dst, sp, 8);
 }
-
 
 void AArch64MacroAssembler::movl(Register dst, int imm32) {
   // x86 mov ecx, imm32 is a 32-bit move: the 64-bit register gets the
@@ -1126,11 +1314,10 @@ void AArch64MacroAssembler::movl(Register dst, int imm32) {
   mov(dst, (uint32_t)imm32);
 }
 
-
 void AArch64MacroAssembler::movl(Register dst, Address src) {
   switch (src._mode) {
     case Address::absolute:
-      load_absolute_value(x16, src);		// x16 = *<abs>
+      load_absolute_value(x16, src); // x16 = *<abs>
       mov(dst, x16);
       break;
     default:
@@ -1138,7 +1325,6 @@ void AArch64MacroAssembler::movl(Register dst, Address src) {
       break;
   }
 }
-
 
 void AArch64MacroAssembler::movl(Address dst, Register src) {
   switch (dst._mode) {
@@ -1151,7 +1337,6 @@ void AArch64MacroAssembler::movl(Address dst, Register src) {
       break;
   }
 }
-
 
 void AArch64MacroAssembler::movl(Address dst, int imm32) {
   switch (dst._mode) {
@@ -1167,11 +1352,9 @@ void AArch64MacroAssembler::movl(Address dst, int imm32) {
   }
 }
 
-
 void AArch64MacroAssembler::movl(Register dst, oop obj) {
   mov(dst, (intptr_t)obj);
 }
-
 
 void AArch64MacroAssembler::movl(Address dst, oop obj) {
   mov(x16, (intptr_t)obj);
@@ -1186,7 +1369,6 @@ void AArch64MacroAssembler::movl(Address dst, oop obj) {
   }
 }
 
-
 void AArch64MacroAssembler::movb(Register dst, Address src) {
   switch (src._mode) {
     case Address::absolute:
@@ -1199,7 +1381,6 @@ void AArch64MacroAssembler::movb(Register dst, Address src) {
   }
 }
 
-
 void AArch64MacroAssembler::movb(Address dst, Register src) {
   switch (dst._mode) {
     case Address::absolute:
@@ -1211,7 +1392,6 @@ void AArch64MacroAssembler::movb(Address dst, Register src) {
       break;
   }
 }
-
 
 void AArch64MacroAssembler::movb(Address dst, int imm8) {
   switch (dst._mode) {
@@ -1227,34 +1407,28 @@ void AArch64MacroAssembler::movb(Address dst, int imm8) {
   }
 }
 
-
 void AArch64MacroAssembler::pushl(Register src) {
-  str_pre(src, sp, -slotSize);		// one 16-byte slot keeps sp 16-byte aligned
+  str_pre(src, sp, -slotSize); // one 16-byte slot keeps sp 16-byte aligned
 }
-
 
 void AArch64MacroAssembler::pushl(Address src) {
   movl(x16, src);
   str_pre(x16, sp, -slotSize);
 }
 
-
 void AArch64MacroAssembler::pushl(int imm32) {
-  mov(x16, (uint32_t)imm32);	// zero-extended 32-bit value (x86 push imm32)
+  mov(x16, (uint32_t)imm32); // zero-extended 32-bit value (x86 push imm32)
   str_pre(x16, sp, -slotSize);
 }
-
 
 void AArch64MacroAssembler::pushl(oop obj) {
   mov(x16, (intptr_t)obj);
   str_pre(x16, sp, -slotSize);
 }
 
-
 void AArch64MacroAssembler::popl(Register dst) {
   ldr_post(dst, sp, slotSize);
 }
-
 
 void AArch64MacroAssembler::pushad() {
   // save the six interpreter registers (48 bytes, keeps sp 16-byte aligned)
@@ -1263,50 +1437,57 @@ void AArch64MacroAssembler::pushad() {
   stp_pre(edi, esi, sp, -16);
 }
 
-
 void AArch64MacroAssembler::popad() {
   ldp_post(edi, esi, sp, 16);
   ldp_post(ecx, edx, sp, 16);
   ldp_post(eax, ebx, sp, 16);
 }
 
-
 void AArch64MacroAssembler::addl(Register dst, int imm) {
   if (imm >= 0) {
-    if (imm <= 0xFFF) { add(dst, dst, imm); return; }
+    if (imm <= 0xFFF) {
+      add(dst, dst, imm);
+      return;
+    }
   } else {
-    if (-imm <= 0xFFF) { sub(dst, dst, -imm); return; }
+    if (-imm <= 0xFFF) {
+      sub(dst, dst, -imm);
+      return;
+    }
   }
   mov(x16, (uint32_t)imm);
   addsub_with_sp(dst, dst, x16, false, LSL, 0);
 }
 
-
 // x16/x17 are the reserved scratch registers. Pick one that won't clobber a
 // destination operand that lives in x16 (the generator never uses these, but
 // the macro layer must be robust regardless).
-static Register scratch_for(Register dst) { return dst == x16 ? x17 : x16; }
-
+static Register scratch_for(Register dst) {
+  return dst == x16 ? x17 : x16;
+}
 
 // sp (x31) is not a valid source operand in the shifted-register add/sub and
 // logical encodings (register 31 reads as xzr there); only addsub_imm aliases
 // it to sp. Materialize sp in a scratch GPR before emitting such an operation.
 Register AArch64MacroAssembler::sp_source(Register reg, Register avoid) {
-  if (reg != esp) return reg;
+  if (reg != esp)
+    return reg;
   Register scratch = (avoid == x16) ? x17 : x16;
-  add(scratch, sp, 0);		// addsub_imm: rn = 31 reads as sp
+  add(scratch, sp, 0); // addsub_imm: rn = 31 reads as sp
   return scratch;
 }
 
-
-void AArch64MacroAssembler::addsub_with_sp(Register rd, Register rn, Register rm, bool isSub, ShiftType shift, int amt) {
+void AArch64MacroAssembler::addsub_with_sp(Register rd, Register rn, Register rm, bool isSub, ShiftType shift,
+                                           int amt) {
   // rd may be sp (valid as Rd in the shifted form); only sp sources need
   // routing. sp_source picks a scratch avoiding the register already moved.
   rn = sp_source(rn, rm);
   rm = sp_source(rm, rn);
-  if (isSub) sub(rd, rn, rm, shift, amt); else add(rd, rn, rm, shift, amt);
+  if (isSub)
+    sub(rd, rn, rm, shift, amt);
+  else
+    add(rd, rn, rm, shift, amt);
 }
-
 
 void AArch64MacroAssembler::cmp_with_sp(Register rn, Register rm) {
   rn = sp_source(rn, rm);
@@ -1314,11 +1495,9 @@ void AArch64MacroAssembler::cmp_with_sp(Register rn, Register rm) {
   cmp(rn, rm);
 }
 
-
 void AArch64MacroAssembler::addl(Register dst, Register src) {
   addsub_with_sp(dst, dst, src, false, LSL, 0);
 }
-
 
 void AArch64MacroAssembler::addl(Register dst, Address src) {
   Register scratch = scratch_for(dst);
@@ -1326,13 +1505,11 @@ void AArch64MacroAssembler::addl(Register dst, Address src) {
   addsub_with_sp(dst, dst, scratch, false, LSL, 0);
 }
 
-
 void AArch64MacroAssembler::addl(Address dst, int imm) {
   movl(x16, dst);
   addl(x16, imm);
   movl(dst, x16);
 }
-
 
 void AArch64MacroAssembler::incl(Address dst) {
   movl(x16, dst);
@@ -1340,20 +1517,17 @@ void AArch64MacroAssembler::incl(Address dst) {
   movl(dst, x16);
 }
 
-
 void AArch64MacroAssembler::decl(Address dst) {
   movl(x16, dst);
   sub(x16, x16, 1);
   movl(dst, x16);
 }
 
-
 void AArch64MacroAssembler::orl(Register dst, Address src) {
   Register scratch = scratch_for(dst);
   movl(scratch, src);
   orr(dst, dst, scratch);
 }
-
 
 // x86 `and ecx, imm32` / `or ecx, imm32` / `xor ecx, imm32` are 32-bit
 // operations: only the low 32 bits of the destination are combined with the
@@ -1375,7 +1549,6 @@ void AArch64MacroAssembler::andl(Register dst, int imm) {
   and_(dst, dst, scratch);
 }
 
-
 void AArch64MacroAssembler::orl(Register dst, int imm) {
   uint64_t value = (uint64_t)(intptr_t)imm;
   int N, immr, imms;
@@ -1387,7 +1560,6 @@ void AArch64MacroAssembler::orl(Register dst, int imm) {
   mov(scratch, value);
   orr(dst, dst, scratch);
 }
-
 
 void AArch64MacroAssembler::xorl(Register dst, int imm) {
   uint64_t value = (uint64_t)(intptr_t)imm;
@@ -1401,28 +1573,30 @@ void AArch64MacroAssembler::xorl(Register dst, int imm) {
   eor(dst, dst, scratch);
 }
 
-
 void AArch64MacroAssembler::popl(Address dst) {
   ldr_post(x16, sp, slotSize);
   movl(dst, x16);
 }
 
-
 void AArch64MacroAssembler::subl(Register dst, int imm) {
   if (imm >= 0) {
-    if (imm <= 0xFFF) { sub(dst, dst, imm); return; }
+    if (imm <= 0xFFF) {
+      sub(dst, dst, imm);
+      return;
+    }
   } else {
-    if (-imm <= 0xFFF) { add(dst, dst, -imm); return; }
+    if (-imm <= 0xFFF) {
+      add(dst, dst, -imm);
+      return;
+    }
   }
   mov(x16, (uint32_t)imm);
   sub(dst, dst, x16);
 }
 
-
 void AArch64MacroAssembler::subl(Register dst, Register src) {
   addsub_with_sp(dst, dst, src, true, LSL, 0);
 }
-
 
 void AArch64MacroAssembler::subl(Register dst, Address src) {
   Register scratch = scratch_for(dst);
@@ -1430,83 +1604,80 @@ void AArch64MacroAssembler::subl(Register dst, Address src) {
   addsub_with_sp(dst, dst, scratch, true, LSL, 0);
 }
 
-
 void AArch64MacroAssembler::notl(Register reg) {
-  orn(reg, xzr, reg);		// mvn
+  orn(reg, xzr, reg); // mvn
 }
-
 
 void AArch64MacroAssembler::imull(Register dst, Register src) {
   mul(dst, dst, src);
 }
-
 
 void AArch64MacroAssembler::imull(Register dst, int imm) {
   mov(x16, (uint32_t)imm);
   mul(dst, dst, x16);
 }
 
-
 void AArch64MacroAssembler::imull(Register dst, Register src, int value) {
   mov(x16, (uint32_t)value);
   mul(dst, src, x16);
 }
 
-
 // eax := eax * src, with the flags left so that the following conditional
 // branch sees EQ when the 64-bit product did NOT overflow (aarch64 muls do
 // not set flags; the caller tests overflow with jcc(notEqual)).
 void AArch64MacroAssembler::imull(Register src) {
-  mov(x16, eax);			// save dividend
-  smulh(x17, x16, src);			// high 64 bits of eax * src
-  mul(x16, x16, src);			// low 64 bits (result)
+  mov(x16, eax); // save dividend
+  smulh(x17, x16, src); // high 64 bits of eax * src
+  mul(x16, x16, src); // low 64 bits (result)
   mov(eax, x16);
-  asr(x16, eax, 63);			// sign extension of the result
-  cmp(x17, x16);			// EQ iff no overflow
+  asr(x16, eax, 63); // sign extension of the result
+  cmp(x17, x16); // EQ iff no overflow
 }
-
 
 void AArch64MacroAssembler::imull(int imm) {
-  mov(x16, eax);			// dividend
-  mov(x17, (uint32_t)imm);		// multiplier
-  smulh(x12, x16, x17);			// high 64 bits of eax * imm
-  mul(x16, x16, x17);			// low 64 bits (result)
+  mov(x16, eax); // dividend
+  mov(x17, (uint32_t)imm); // multiplier
+  smulh(x12, x16, x17); // high 64 bits of eax * imm
+  mul(x16, x16, x17); // low 64 bits (result)
   mov(eax, x16);
-  asr(x16, eax, 63);			// sign extension of the result
-  cmp(x12, x16);			// EQ iff no overflow
+  asr(x16, eax, 63); // sign extension of the result
+  cmp(x12, x16); // EQ iff no overflow
 }
-
 
 // edx := sign extension of eax (x86 cdq)
 void AArch64MacroAssembler::cdq() {
   asr(edx, eax, 63);
 }
 
-
 // eax := edx:eax / src (signed), edx := remainder. The flags are left so the
 // caller can test for overflow (EQ = no overflow; only INT64_MIN / -1 can
 // overflow a 64-bit signed divide).
 void AArch64MacroAssembler::idivl(Register src) {
-  mov(x16, eax);			// dividend (low 64 bits; edx holds the sign extension)
-  sdiv(x17, x16, src);			// quotient
-  msub(x12, x17, src, x16);		// edx := dividend - quotient * divisor (remainder)
-  mov(eax, x17);			// quotient
+  mov(x16, eax); // dividend (low 64 bits; edx holds the sign extension)
+  sdiv(x17, x16, src); // quotient
+  msub(x12, x17, src, x16); // edx := dividend - quotient * divisor (remainder)
+  mov(eax, x17); // quotient
   mov(x16, INT64_C(0x8000000000000000));
-  cmp(x17, x16);			// Z iff quotient == INT64_MIN
+  cmp(x17, x16); // Z iff quotient == INT64_MIN
   cset(x16, EQ);
-  cmn(src, 1);				// Z iff divisor == -1
+  cmn(src, 1); // Z iff divisor == -1
   cset(x17, EQ);
   and_(x16, x16, x17);
-  cmp(x16, 0);				// EQ iff no overflow
+  cmp(x16, 0); // EQ iff no overflow
 }
-
 
 void AArch64MacroAssembler::leal(Register dst, Address src) {
   switch (src._mode) {
     case Address::base_plus_disp: {
       intptr_t disp = src._disp;
-      if (disp >= 0 && disp <= 0xFFF) { add(dst, src._base, (int)disp); return; }
-      if (disp < 0 && -disp <= 0xFFF) { sub(dst, src._base, (int)-disp); return; }
+      if (disp >= 0 && disp <= 0xFFF) {
+        add(dst, src._base, (int)disp);
+        return;
+      }
+      if (disp < 0 && -disp <= 0xFFF) {
+        sub(dst, src._base, (int)-disp);
+        return;
+      }
       mov(x16, disp);
       add(dst, src._base, x16);
       break;
@@ -1536,26 +1707,29 @@ void AArch64MacroAssembler::leal(Register dst, Address src) {
       break;
     }
     case Address::absolute:
-      emit_long(0x58000000 | (2 << 5) | dst.number());	// ldr dst, [pc, #8]
-      emit_long(0x14000003);				// b .+12 (skip the 8-byte literal)
-      emit_quad_data(src._disp, src._rtype);		// .quad <abs>
+      emit_long(0x58000000 | (2 << 5) | dst.number()); // ldr dst, [pc, #8]
+      emit_long(0x14000003); // b .+12 (skip the 8-byte literal)
+      emit_quad_data(src._disp, src._rtype); // .quad <abs>
       break;
   }
 }
 
-
 void AArch64MacroAssembler::cmpl(Register dst, int imm) {
-  if (imm >= 0 && imm <= 0xFFF) { cmp(dst, imm); return; }
-  if (imm < 0 && -imm <= 0xFFF) { cmn(dst, -imm); return; }
+  if (imm >= 0 && imm <= 0xFFF) {
+    cmp(dst, imm);
+    return;
+  }
+  if (imm < 0 && -imm <= 0xFFF) {
+    cmn(dst, -imm);
+    return;
+  }
   mov(x16, (uint32_t)imm);
   cmp_with_sp(dst, x16);
 }
 
-
 void AArch64MacroAssembler::cmpl(Register dst, Register src) {
   cmp_with_sp(dst, src);
 }
-
 
 void AArch64MacroAssembler::cmpl(Register dst, Address src) {
   Register scratch = scratch_for(dst);
@@ -1563,31 +1737,26 @@ void AArch64MacroAssembler::cmpl(Register dst, Address src) {
   cmp_with_sp(dst, scratch);
 }
 
-
 void AArch64MacroAssembler::cmpl(Address dst, int imm) {
   movl(x16, dst);
   cmpl(x16, imm);
 }
-
 
 void AArch64MacroAssembler::cmpl(Register dst, oop obj) {
   mov(x16, (intptr_t)obj);
   cmp_with_sp(dst, x16);
 }
 
-
 void AArch64MacroAssembler::cmpl(Address dst, Register src) {
   movl(x16, dst);
   cmp_with_sp(x16, src);
 }
-
 
 void AArch64MacroAssembler::cmpl(Address dst, oop obj) {
   movl(x16, dst);
   mov(x17, (intptr_t)obj);
   cmp(x16, x17);
 }
-
 
 void AArch64MacroAssembler::testl(Register reg, int imm) {
   uint64_t value = (uint64_t)(uint32_t)imm;
@@ -1600,7 +1769,6 @@ void AArch64MacroAssembler::testl(Register reg, int imm) {
   tst(reg, x16);
 }
 
-
 void AArch64MacroAssembler::testb(Register reg, int imm) {
   uint64_t value = (uint64_t)(uint32_t)imm;
   int N, immr, imms;
@@ -1612,22 +1780,20 @@ void AArch64MacroAssembler::testb(Register reg, int imm) {
   tst(reg, x16);
 }
 
-
 void AArch64MacroAssembler::jmp(Address dst) {
   switch (dst._mode) {
     case Address::base_plus_reg:
     case Address::base_plus_reg_disp:
     case Address::base_plus_disp:
-      ldr(x16, dst);			// load target
+      ldr(x16, dst); // load target
       br(x16);
       break;
     case Address::absolute:
-      load_absolute_value(x16, dst);	// x16 = *<abs>
+      load_absolute_value(x16, dst); // x16 = *<abs>
       br(x16);
       break;
   }
 }
-
 
 void AArch64MacroAssembler::jcc(Condition cc, char* entry) {
   // Conditional branch to an absolute address: B.cond is PC-relative only,
@@ -1635,20 +1801,18 @@ void AArch64MacroAssembler::jcc(Condition cc, char* entry) {
   // is the reserved scratch; the flags survive since ldr/br do not alter them).
   Label fallthrough;
   load_absolute_address(x16, Address((intptr_t)entry, relocInfo::none));
-  b((Condition)((int)cc ^ 1), fallthrough);	// if !cc, fall through
-  br(x16);					// else jump to the target
+  b((Condition)((int)cc ^ 1), fallthrough); // if !cc, fall through
+  br(x16); // else jump to the target
   bind(fallthrough);
 }
-
 
 void AArch64MacroAssembler::jcc(Condition cc, char* entry, relocInfo::relocType rtype) {
   Label fallthrough;
   load_absolute_address(x16, Address((intptr_t)entry, rtype));
-  b((Condition)((int)cc ^ 1), fallthrough);	// if !cc, fall through
-  br(x16);					// else jump to the target
+  b((Condition)((int)cc ^ 1), fallthrough); // if !cc, fall through
+  br(x16); // else jump to the target
   bind(fallthrough);
 }
-
 
 void AArch64MacroAssembler::call(Address dst) {
   switch (dst._mode) {
@@ -1665,24 +1829,20 @@ void AArch64MacroAssembler::call(Address dst) {
   }
 }
 
-
 void AArch64MacroAssembler::enter() {
   // frame setup: fp[0] = link (old x29), fp[1] = return address (x30)
   stp_pre(x29, x30, sp, -16);
   mov(x29, sp);
 }
 
-
 void AArch64MacroAssembler::leave() {
   mov(sp, x29);
   ldp_post(x29, x30, sp, 16);
 }
 
-
 void AArch64MacroAssembler::hlt() {
-  emit_long(0xD4200000);		// brk #0
+  emit_long(0xD4200000); // brk #0
 }
-
 
 void AArch64MacroAssembler::ret(int imm) {
   // x86's ret imm pops the return address then removes imm bytes of
@@ -1702,7 +1862,6 @@ void AArch64MacroAssembler::ret(int imm) {
   AArch64Assembler::ret();
 }
 
-
 // Store the current interpreter frame (fp/sp) into the last_Delta_frame
 // globals so that non-local returns can unwind through C frames.
 void AArch64MacroAssembler::set_last_Delta_frame_before_call() {
@@ -1711,7 +1870,7 @@ void AArch64MacroAssembler::set_last_Delta_frame_before_call() {
   str(ebp, Address(x17));
   // last_Delta_sp = sp
   load_absolute_address(x17, Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type));
-  add(x16, sp, 0);			// mov x16, sp (addsub form reads sp)
+  add(x16, sp, 0); // mov x16, sp (addsub form reads sp)
   str(x16, Address(x17));
   // last_Delta_pc
   // On x86 the call in the C-call glue pushes a return address below the
@@ -1730,13 +1889,11 @@ void AArch64MacroAssembler::set_last_Delta_frame_before_call() {
   str(x17, Address(x16));
 }
 
-
 // After a call the return address lives in x30 and sp has not moved (blr does
 // not push), so the after-call view is identical to the before-call one.
 void AArch64MacroAssembler::set_last_Delta_frame_after_call() {
   set_last_Delta_frame_before_call();
 }
-
 
 void AArch64MacroAssembler::reset_last_Delta_frame() {
   load_absolute_address(x17, Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
@@ -1744,7 +1901,6 @@ void AArch64MacroAssembler::reset_last_Delta_frame() {
   load_absolute_address(x17, Address((intptr_t)&last_Delta_pc, relocInfo::external_word_type));
   str(xzr, Address(x17));
 }
-
 
 // ---------------------------------------------------------------------------
 // C-call glue. AAPCS64 (and Apple Silicon's SP-alignment fault) require sp to
@@ -1759,26 +1915,25 @@ static const int64_t stack_pad_marker = INT64_C(0x414C474E41444400); // 'ALGNADD
 
 static void align_stack_before_call(AArch64MacroAssembler& a) {
   Label aligned;
-  a.add(x16, sp, 0);			// mov x16, sp (logical tst cannot read sp)
+  a.add(x16, sp, 0); // mov x16, sp (logical tst cannot read sp)
   a.tst(x16, 8);
   a.b(EQ, aligned);
   a.sub(x17, sp, 16);
   a.mov(x16, stack_pad_marker);
-  a.str(x16, Address(x17));		// pad slot (sp now 16-byte aligned)
+  a.str(x16, Address(x17)); // pad slot (sp now 16-byte aligned)
   a.sub(sp, sp, 16);
   a.bind(aligned);
 }
 
 static void restore_stack_after_call(AArch64MacroAssembler& a) {
   Label restored;
-  a.ldr(x16, Address(sp));			// peek top of stack (sp is 16-byte aligned here)
+  a.ldr(x16, Address(sp)); // peek top of stack (sp is 16-byte aligned here)
   a.mov(x17, stack_pad_marker);
   a.cmp(x16, x17);
   a.b(NE, restored);
-  a.add(sp, sp, 16);				// remove pad slot
+  a.add(sp, sp, 16); // remove pad slot
   a.bind(restored);
 }
-
 
 // ---------------------------------------------------------------------------
 // Float stack (x87 model, register-based).
@@ -1793,7 +1948,7 @@ static void restore_stack_after_call(AArch64MacroAssembler& a) {
 // available as caller-saved scratch.
 // ---------------------------------------------------------------------------
 
-static const int float_stack_base = 8;	// st(0) at depth d is d(8 + d - 1)
+static const int float_stack_base = 8; // st(0) at depth d is d(8 + d - 1)
 
 FloatRegister AArch64MacroAssembler::st_reg(int i) const {
   assert(0 <= i && i < _float_depth, "float stack underflow");
@@ -1816,14 +1971,26 @@ void AArch64MacroAssembler::fstp_d(Address dst) {
 // Memory-operand floating-point ops: st(0) := st(0) op double [src]. The
 // memory value is staged in the caller-saved d16, which never holds a live
 // float-stack value (those live in d8..d15).
-void AArch64MacroAssembler::fadd_d(Address src) { ldr(FloatRegister(16, ' '), src); AArch64Assembler::fadd(st_reg(0), st_reg(0), FloatRegister(16, ' ')); }
-void AArch64MacroAssembler::fsub_d(Address src) { ldr(FloatRegister(16, ' '), src); AArch64Assembler::fsub(st_reg(0), st_reg(0), FloatRegister(16, ' ')); }
-void AArch64MacroAssembler::fmul_d(Address src) { ldr(FloatRegister(16, ' '), src); AArch64Assembler::fmul(st_reg(0), st_reg(0), FloatRegister(16, ' ')); }
-void AArch64MacroAssembler::fdiv_d(Address src) { ldr(FloatRegister(16, ' '), src); AArch64Assembler::fdiv(st_reg(0), st_reg(0), FloatRegister(16, ' ')); }
+void AArch64MacroAssembler::fadd_d(Address src) {
+  ldr(FloatRegister(16, ' '), src);
+  AArch64Assembler::fadd(st_reg(0), st_reg(0), FloatRegister(16, ' '));
+}
+void AArch64MacroAssembler::fsub_d(Address src) {
+  ldr(FloatRegister(16, ' '), src);
+  AArch64Assembler::fsub(st_reg(0), st_reg(0), FloatRegister(16, ' '));
+}
+void AArch64MacroAssembler::fmul_d(Address src) {
+  ldr(FloatRegister(16, ' '), src);
+  AArch64Assembler::fmul(st_reg(0), st_reg(0), FloatRegister(16, ' '));
+}
+void AArch64MacroAssembler::fdiv_d(Address src) {
+  ldr(FloatRegister(16, ' '), src);
+  AArch64Assembler::fdiv(st_reg(0), st_reg(0), FloatRegister(16, ' '));
+}
 
 void AArch64MacroAssembler::fild_s(Address src) {
   assert(_float_depth < 8, "float stack overflow");
-  ldr_w(x16, src);			// 32-bit signed integer
+  ldr_w(x16, src); // 32-bit signed integer
   scvtf(FloatRegister(float_stack_base + _float_depth, ' '), x16, sz_64, sz_32);
   _float_depth++;
 }
@@ -1845,7 +2012,7 @@ void AArch64MacroAssembler::pop_float() {
 
 void AArch64MacroAssembler::fldz() {
   assert(_float_depth < 8, "float stack overflow");
-  fmov(FloatRegister(float_stack_base + _float_depth, ' '), xzr);	// +0.0
+  fmov(FloatRegister(float_stack_base + _float_depth, ' '), xzr); // +0.0
   _float_depth++;
 }
 
@@ -1856,36 +2023,42 @@ void AArch64MacroAssembler::fld1() {
   _float_depth++;
 }
 
-void AArch64MacroAssembler::fabs() { AArch64Assembler::fabs(st_reg(0), st_reg(0)); }
-void AArch64MacroAssembler::fchs() { fneg(st_reg(0), st_reg(0)); }
-void AArch64MacroAssembler::fsqrt() { AArch64Assembler::fsqrt(st_reg(0), st_reg(0)); }
+void AArch64MacroAssembler::fabs() {
+  AArch64Assembler::fabs(st_reg(0), st_reg(0));
+}
+void AArch64MacroAssembler::fchs() {
+  fneg(st_reg(0), st_reg(0));
+}
+void AArch64MacroAssembler::fsqrt() {
+  AArch64Assembler::fsqrt(st_reg(0), st_reg(0));
+}
 
 void AArch64MacroAssembler::fmul(int i) {
   assert(0 <= i && i < _float_depth, "float stack index out of range");
-  AArch64Assembler::fmul(st_reg(0), st_reg(0), st_reg(i));	// st0 = st0 * sti
+  AArch64Assembler::fmul(st_reg(0), st_reg(0), st_reg(i)); // st0 = st0 * sti
 }
 
 void AArch64MacroAssembler::faddp(int i) {
   assert(0 < i && i < _float_depth, "float stack index out of range");
-  fadd(st_reg(i), st_reg(i), st_reg(0));	// sti = sti + st0
+  fadd(st_reg(i), st_reg(i), st_reg(0)); // sti = sti + st0
   fpop();
 }
 
 void AArch64MacroAssembler::fsubp(int i) {
   assert(0 < i && i < _float_depth, "float stack index out of range");
-  fsub(st_reg(i), st_reg(i), st_reg(0));	// sti = sti - st0
+  fsub(st_reg(i), st_reg(i), st_reg(0)); // sti = sti - st0
   fpop();
 }
 
 void AArch64MacroAssembler::fmulp(int i) {
   assert(0 < i && i < _float_depth, "float stack index out of range");
-  AArch64Assembler::fmul(st_reg(i), st_reg(i), st_reg(0));	// sti = sti * st0
+  AArch64Assembler::fmul(st_reg(i), st_reg(i), st_reg(0)); // sti = sti * st0
   fpop();
 }
 
 void AArch64MacroAssembler::fdivp(int i) {
   assert(0 < i && i < _float_depth, "float stack index out of range");
-  fdiv(st_reg(i), st_reg(i), st_reg(0));	// sti = sti / st0
+  fdiv(st_reg(i), st_reg(i), st_reg(0)); // sti = sti / st0
   fpop();
 }
 
@@ -1905,13 +2078,13 @@ void AArch64MacroAssembler::fprem() {
   // Emulate x87 fprem (st0 := st0 mod st1) and then drop the modulus, so the
   // emulated float stack stays self-contained at bytecode boundaries (the
   // caller's fstp_d stores the remainder in st0).
-  fmov(d0, st_reg(0));		// dividend
-  fmov(d1, st_reg(1));		// divisor
+  fmov(d0, st_reg(0)); // dividend
+  fmov(d1, st_reg(1)); // divisor
   align_stack_before_call(*this);
   call((char*)&fmod, relocInfo::external_word_type);
   restore_stack_after_call(*this);
   _float_depth--;
-  fmov(st_reg(0), d0);		// result into the new st0
+  fmov(st_reg(0), d0); // result into the new st0
 }
 
 void AArch64MacroAssembler::ftst() {
@@ -1921,7 +2094,7 @@ void AArch64MacroAssembler::ftst() {
 
 void AArch64MacroAssembler::fcompp() {
   assert(_float_depth >= 2, "fcompp needs two operands");
-  fcmp(st_reg(1), st_reg(0));	// compare st1 with st0, set flags like x87
+  fcmp(st_reg(1), st_reg(0)); // compare st1 with st0, set flags like x87
   _float_depth -= 2;
 }
 
@@ -1932,11 +2105,11 @@ void AArch64MacroAssembler::fnstsw_ax() {
   // greater = 0x0000, less = 0x0100, equal = 0x4000, unordered = 0x4500.
   //   eax = VS ? 0x4500 : (EQ ? 0x4000 : (MI ? 0x0100 : 0x0000))
   mov(x17, 0x0100);
-  csel(eax, x17, xzr, MI);	// less ? 0x0100 : 0x0000
+  csel(eax, x17, xzr, MI); // less ? 0x0100 : 0x0000
   mov(x17, 0x4000);
-  csel(eax, x17, eax, EQ);	// equal ? 0x4000 : prev
+  csel(eax, x17, eax, EQ); // equal ? 0x4000 : prev
   mov(x17, 0x4500);
-  csel(eax, x17, eax, VS);	// unordered ? 0x4500 : prev
+  csel(eax, x17, eax, VS); // unordered ? 0x4500 : prev
 }
 // x87 flag model: mask/cond pairs as used by Floats::generate_tst/generate_cmp.
 // The C-bits compare ST with ST(1); greater = 000, less = 001, equal = 100,
@@ -1945,13 +2118,32 @@ void AArch64MacroAssembler::fnstsw_ax() {
 // testl(eax, mask), so a non-zero result jumps when cond is true).
 void AArch64MacroAssembler::fpu_mask_and_cond_for(Condition cc, int& mask, Condition& cond) {
   switch (cc) {
-    case equal:		mask = 0x4000; cond = notZero;	break;
-    case notEqual:	mask = 0x4000; cond = zero;	break;
-    case less:		mask = 0x0100; cond = notZero;	break;
-    case lessEqual:	mask = 0x4500; cond = notZero;	break;
-    case greater:	mask = 0x4500; cond = zero;	break;
-    case greaterEqual:	mask = 0x0100; cond = zero;	break;
-    default:		ShouldNotReachHere();
+    case equal:
+      mask = 0x4000;
+      cond = notZero;
+      break;
+    case notEqual:
+      mask = 0x4000;
+      cond = zero;
+      break;
+    case less:
+      mask = 0x0100;
+      cond = notZero;
+      break;
+    case lessEqual:
+      mask = 0x4500;
+      cond = notZero;
+      break;
+    case greater:
+      mask = 0x4500;
+      cond = zero;
+      break;
+    case greaterEqual:
+      mask = 0x0100;
+      cond = zero;
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
@@ -1959,7 +2151,6 @@ void AArch64MacroAssembler::fwait() {
   // The AArch64 FPU flags are read directly by fnstsw_ax; there is no
   // x87-style pending-exception wait required between fcmp and fnstsw_ax.
 }
-
 
 // Runtime-call interface: the C function is entered via blr. Arguments in
 // x0-x7 (AAPCS64); the interpreter's C-call sites that pass args on the
@@ -1977,10 +2168,14 @@ void AArch64MacroAssembler::fwait() {
 // with a non-16-byte-aligned sp (EXC_ARM_SP_ALIGN), so an 8-byte SP push from
 // an aligned sp -- or any SP op from an 8-misaligned sp -- is illegal. With
 // 16-byte slots sp stays 16-byte aligned throughout the call.
-#define PRESERVE_LR_BEFORE_CALL() \
-  sub(x16, sp, 16); str(x30, Address(x16)); sub(sp, sp, 16)
-#define RESTORE_LR_AFTER_CALL() \
-  mov(x16, sp); ldr(x30, Address(x16)); add(sp, sp, 16)
+#define PRESERVE_LR_BEFORE_CALL()                                                                                      \
+  sub(x16, sp, 16);                                                                                                    \
+  str(x30, Address(x16));                                                                                              \
+  sub(sp, sp, 16)
+#define RESTORE_LR_AFTER_CALL()                                                                                        \
+  mov(x16, sp);                                                                                                        \
+  ldr(x30, Address(x16));                                                                                              \
+  add(sp, sp, 16)
 
 void AArch64MacroAssembler::call_C(Label& L) {
   set_last_Delta_frame_before_call();
@@ -2085,14 +2280,13 @@ void AArch64MacroAssembler::store_check(Register obj, Register tmp) {
   Label no_store;
   // boundary between new and old generation is fixed at generation time
   mov(tmp, (intptr_t)Universe::new_gen.boundary());
-  cmp(obj, tmp);				// avoid marking if target is a new object
+  cmp(obj, tmp); // avoid marking if target is a new object
   jcc(less, no_store);
   movl(tmp, Address((intptr_t)&byte_map_base, relocInfo::external_word_type));
   shrl(obj, card_shift);
   movb(Address(tmp, obj, Address::times_1), 0);
   bind(no_store);
 }
-
 
 // Debugging (mirrors the x86 inspector; debugging only)
 
@@ -2117,8 +2311,8 @@ static void aarch64_print_reg(char* name, oop obj) {
   }
 }
 
-
-void AArch64MacroAssembler::inspector(oop edi, oop esi, oop ebp, oop esp, oop ebx, oop edx, oop ecx, oop eax, char* eip) {
+void AArch64MacroAssembler::inspector(oop edi, oop esi, oop ebp, oop esp, oop ebx, oop edx, oop ecx, oop eax,
+                                      char* eip) {
   mystd->print_cr("inspector at 0x%08x", eip);
   aarch64_print_reg("eax", eax);
   aarch64_print_reg("ebx", ebx);
@@ -2131,7 +2325,6 @@ void AArch64MacroAssembler::inspector(oop edi, oop esi, oop ebp, oop esp, oop eb
   mystd->cr();
 }
 
-
 // Embed an oop in the code stream. x86 uses `testl eax, imm32` (a 5-byte
 // instruction) so that the oop also acts as the "native test" marker scanned
 // by nativeTest_at; aarch64 uses a literal pool entry (ldr x16, [pc,#8];
@@ -2141,4 +2334,3 @@ void AArch64MacroAssembler::inline_oop(oop o) {
 }
 
 #endif // DELTA_ASSEMBLER_BACKEND_AARCH64
-

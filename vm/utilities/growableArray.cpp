@@ -32,7 +32,7 @@ GenericGrowableArray::GenericGrowableArray(int initial_size, bool c_heap) {
   if (c_heap) {
     data = (void**)AllocateHeap(max * sizeof(void*), "bounded list");
   } else {
-    data = NEW_RESOURCE_ARRAY( void*, max);
+    data = NEW_RESOURCE_ARRAY(void*, max);
   }
 }
 
@@ -44,28 +44,33 @@ GenericGrowableArray::GenericGrowableArray(int initial_size, int initial_len, vo
   if (c_heap) {
     data = (void**)AllocateHeap(max * sizeof(void*), "bounded list");
   } else {
-    data = NEW_RESOURCE_ARRAY( void*, max);
+    data = NEW_RESOURCE_ARRAY(void*, max);
   }
-  for (int i = 0; i < len; i++) data[i] = filler;
+  for (int i = 0; i < len; i++)
+    data[i] = filler;
 }
 
 void GenericGrowableArray::grow(int j) {
   void** newData;
-  if (max == 0) fatal("cannot grow array with max = 0"); // for debugging - should create such arrays with max > 0
-  while (j >= max) max = max*2;
+  if (max == 0)
+    fatal("cannot grow array with max = 0"); // for debugging - should create such arrays with max > 0
+  while (j >= max)
+    max = max * 2;
   // j < max
   if (on_C_heap) {
     newData = (void**)AllocateHeap(max * sizeof(void*), "bounded list");
   } else {
-    newData = NEW_RESOURCE_ARRAY( void*, max);
+    newData = NEW_RESOURCE_ARRAY(void*, max);
   }
-  for (int i = 0; i < len; i++) newData[i] = data[i];
+  for (int i = 0; i < len; i++)
+    newData[i] = data[i];
   data = newData;
 }
 
 bool GenericGrowableArray::raw_contains(const void* elem) const {
   for (int i = 0; i < len; i++) {
-    if (data[i] == elem) return true;
+    if (data[i] == elem)
+      return true;
   }
   return false;
 }
@@ -86,14 +91,16 @@ void GenericGrowableArray::raw_appendAll(GenericGrowableArray* l) {
 
 int GenericGrowableArray::raw_find(const void* elem) const {
   for (int i = 0; i < len; i++) {
-    if (data[i] == elem) return i;
+    if (data[i] == elem)
+      return i;
   }
   return -1;
 }
 
-int GenericGrowableArray::raw_find(void* token, growableArrayFindFn f) const  {
+int GenericGrowableArray::raw_find(void* token, growableArrayFindFn f) const {
   for (int i = 0; i < len; i++) {
-    if (f(token, data[i])) return i;
+    if (f(token, data[i]))
+      return i;
   }
   return -1;
 }
@@ -101,7 +108,8 @@ int GenericGrowableArray::raw_find(void* token, growableArrayFindFn f) const  {
 void GenericGrowableArray::raw_remove(const void* elem) {
   for (int i = 0; i < len; i++) {
     if (data[i] == elem) {
-      for (int j = i + 1; j < len; j++) data[j-1] = data[j];
+      for (int j = i + 1; j < len; j++)
+        data[j - 1] = data[j];
       len--;
       return;
     }
@@ -110,23 +118,28 @@ void GenericGrowableArray::raw_remove(const void* elem) {
 }
 
 void GenericGrowableArray::raw_apply(voidDoFn f) const {
-  for (int i = 0; i < len; i++) f(data[i]);
+  for (int i = 0; i < len; i++)
+    f(data[i]);
 }
 
 void* GenericGrowableArray::raw_at_grow(int i, const void* fill) {
   if (i >= len) {
-    if (i >= max) grow(i);
-    for (int j = len; j <= i; j++) data[j] = (void*)fill;
-    len = i+1;
+    if (i >= max)
+      grow(i);
+    for (int j = len; j <= i; j++)
+      data[j] = (void*)fill;
+    len = i + 1;
   }
   return data[i];
 }
 
 void GenericGrowableArray::raw_at_put_grow(int i, const void* p, const void* fill) {
   if (i >= len) {
-    if (i >= max) grow(i);
-    for (int j = len; j < i; j++) data[j] = (void*)fill;
-    len = i+1;
+    if (i >= max)
+      grow(i);
+    for (int j = len; j < i; j++)
+      data[j] = (void*)fill;
+    len = i + 1;
   }
   data[i] = (void*)p;
 }
@@ -134,13 +147,15 @@ void GenericGrowableArray::raw_at_put_grow(int i, const void* p, const void* fil
 void GenericGrowableArray::print() {
   print_short();
   lprintf(": length %ld (max %ld) { ", len, max);
-  for (int i = 0; i < len; i++) lprintf("%#lx ", (long)data[i]);
+  for (int i = 0; i < len; i++)
+    lprintf("%#lx ", (long)data[i]);
   lprintf("}\n");
 }
 
-
-void GenericGrowableArray::raw_sort(int f(const void *, const void *)) {
+void GenericGrowableArray::raw_sort(int f(const void*, const void*)) {
   qsort(data, length(), sizeof(void*), f);
 }
 
-void GenericGrowableArray::print_short() { mystd->print("Growable Array %#lx", this); }
+void GenericGrowableArray::print_short() {
+  mystd->print("Growable Array %#lx", this);
+}

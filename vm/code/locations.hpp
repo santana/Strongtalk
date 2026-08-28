@@ -37,70 +37,70 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Note: Do not confuse Locations with the (old) class Location, which should disappear
 //       as soon as the new backend is up and running.
 
-class Locations: public PrintableResourceObj {
- private:
-  int			_nofArguments;		// the number of arguments
-  int			_nofRegisters;		// the maximum number of available registers
-  GrowableArray<intptr_t>*	_freeList;	// the list of free locations
-  int			_firstFreeRegister;	// the index of the first free register in _freeList
-  int			_firstFreeStackTmp;	// the index of the first free stack temporary in _freeList
+class Locations : public PrintableResourceObj {
+private:
+  int _nofArguments; // the number of arguments
+  int _nofRegisters; // the maximum number of available registers
+  GrowableArray<intptr_t>* _freeList; // the list of free locations
+  int _firstFreeRegister; // the index of the first free register in _freeList
+  int _firstFreeStackTmp; // the index of the first free stack temporary in _freeList
 
-  int  argumentsBeg() const			{ return 0; }
-  int  argumentsEnd() const			{ return _nofArguments; }
-  int  registersBeg() const			{ return _nofArguments; }
-  int  registersEnd() const			{ return _nofArguments + _nofRegisters; }
-  int  stackTmpsBeg() const			{ return _nofArguments + _nofRegisters; }
-  int  stackTmpsEnd() const			{ return _freeList->length(); }
-  int  locationsBeg() const			{ return 0; }
-  int  locationsEnd() const			{ return _freeList->length(); }
+  int argumentsBeg() const { return 0; }
+  int argumentsEnd() const { return _nofArguments; }
+  int registersBeg() const { return _nofArguments; }
+  int registersEnd() const { return _nofArguments + _nofRegisters; }
+  int stackTmpsBeg() const { return _nofArguments + _nofRegisters; }
+  int stackTmpsEnd() const { return _freeList->length(); }
+  int locationsBeg() const { return 0; }
+  int locationsEnd() const { return _freeList->length(); }
 
- public:
+public:
   enum {
-    noLocation			= -1,		// isLocation(noLocation) return false
-    maxNofUsableRegisters	= 6,		// the maximum number of usable registers (<= nofRegisters)
-    sentinel			= 999999999	// simply much bigger than _freeList can ever get
+    noLocation = -1, // isLocation(noLocation) return false
+    maxNofUsableRegisters = 6, // the maximum number of usable registers (<= nofRegisters)
+    sentinel = 999999999 // simply much bigger than _freeList can ever get
   };
 
-  Locations(int nofArgs, int nofRegs, int nofInitialStackTmps);	// nofRegisters <= maxNofUsableRegisters
-  Locations(Locations* l);			// to copy locations
+  Locations(int nofArgs, int nofRegs, int nofInitialStackTmps); // nofRegisters <= maxNofUsableRegisters
+  Locations(Locations* l); // to copy locations
 
   void extendTo(int nofStackTmps);
 
   // Location management
-  int  allocateRegister();			// allocates a new register (fatal if !freeRegisters())
-  int  allocateStackTmp();			// allocates a new stack location
-  void allocate(int i);				// allocates location i, i must have been unallocated
-  void use(int i);				// uses location i once again, i must be allocated already
-  void release(int i);				// releases a register or stack location
+  int allocateRegister(); // allocates a new register (fatal if !freeRegisters())
+  int allocateStackTmp(); // allocates a new stack location
+  void allocate(int i); // allocates location i, i must have been unallocated
+  void use(int i); // uses location i once again, i must be allocated already
+  void release(int i); // releases a register or stack location
 
   // Testers
-  int  nofUses(int i) const;			// the number of times the location has been use'd (including allocation)
-  int  nofTotalUses() const;			// the number of total uses of all locations (for verification purposes)
-  int  nofArguments() const			{ return _nofArguments; }
-  int  nofRegisters() const			{ return _nofRegisters; }
-  int  nofStackTmps() const			{ return stackTmpsEnd() - stackTmpsBeg(); }
-  int  nofFreeRegisters() const;		// the number of available registers
+  int nofUses(int i) const; // the number of times the location has been use'd (including allocation)
+  int nofTotalUses() const; // the number of total uses of all locations (for verification purposes)
+  int nofArguments() const { return _nofArguments; }
+  int nofRegisters() const { return _nofRegisters; }
+  int nofStackTmps() const { return stackTmpsEnd() - stackTmpsBeg(); }
+  int nofFreeRegisters() const; // the number of available registers
 
-  bool freeRegisters() const			{ return _firstFreeRegister != sentinel; }
-  bool isLocation(int i) const			{ return locationsBeg() <= i && i < locationsEnd(); }
-  bool isArgument(int i) const			{ return argumentsBeg() <= i && i < argumentsEnd(); }
-  bool isRegister(int i) const			{ return registersBeg() <= i && i < registersEnd(); }
-  bool isStackTmp(int i) const			{ return stackTmpsBeg() <= i && i < stackTmpsEnd(); }
-  bool isStackLoc(int i) const			{ return isArgument(i) || isStackTmp(i); }
+  bool freeRegisters() const { return _firstFreeRegister != sentinel; }
+  bool isLocation(int i) const { return locationsBeg() <= i && i < locationsEnd(); }
+  bool isArgument(int i) const { return argumentsBeg() <= i && i < argumentsEnd(); }
+  bool isRegister(int i) const { return registersBeg() <= i && i < registersEnd(); }
+  bool isStackTmp(int i) const { return stackTmpsBeg() <= i && i < stackTmpsEnd(); }
+  bool isStackLoc(int i) const { return isArgument(i) || isStackTmp(i); }
 
   // Machine-dependent mapping of Registers/locations
-  int  freeRegisterMask() const;		// bit i corresponds to register i; bit set <==> register is free
-  int  usedRegisterMask() const;		// bit i corresponds to register i; bit set <==> register is used
+  int freeRegisterMask() const; // bit i corresponds to register i; bit set <==> register is free
+  int usedRegisterMask() const; // bit i corresponds to register i; bit set <==> register is used
 
-  int  argumentAsLocation(int argNo) const;	// the location encoding for argument argNo
-  int  registerAsLocation(Register reg) const;	// the location encoding for register reg
-  int  temporaryAsLocation(int tempNo) const;	// the location encoding for temporary tempNo
+  int argumentAsLocation(int argNo) const; // the location encoding for argument argNo
+  int registerAsLocation(Register reg) const; // the location encoding for register reg
+  int temporaryAsLocation(int tempNo) const; // the location encoding for temporary tempNo
 
-  Register locationAsRegister  (int loc) const;	// the register corresponding to loc
-  int      locationAsRegisterNo(int loc) const  { return locationAsRegister(loc).number(); }
-  int      locationAsWordOffset(int loc) const;	// the (ebp) word offset corresponding to loc
-  int      locationAsByteOffset(int loc) const	{ return locationAsWordOffset(loc) * oopSize; }
-  Address  locationAsAddress   (int loc) const	{ return Address(ebp, locationAsByteOffset(loc)); }
+  Register locationAsRegister(int loc) const; // the register corresponding to loc
+  int locationAsRegisterNo(int loc) const { return locationAsRegister(loc).number(); }
+  int locationAsWordOffset(int loc) const; // the (ebp) word offset corresponding to loc
+  int locationAsByteOffset(int loc) const { return locationAsWordOffset(loc) * oopSize; }
+  Address locationAsAddress(int loc) const { return Address(ebp, locationAsByteOffset(loc)); }
 
   // Debugging
   void print();

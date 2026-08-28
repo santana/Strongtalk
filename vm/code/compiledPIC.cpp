@@ -38,7 +38,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-
 // A PIC implements a Polymorphic Inline Cache for compiled code.
 // The layout comes in 3 variants: a) PICs that contain only m methodOop
 // entries, b) PICs that contain both, n nmethod and m methodOop entries
@@ -101,53 +100,64 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // can be stored. It is used for fast lookup (usually the selector is recomputed
 // via debug-info from the corresponding interpreted method).
 
-
 // Opcodes for code pattern generation/parsing
-static const char   test_opcode = '\xa8';
-static const char   call_opcode = '\xe8';
-static const char   jmp_opcode  = '\xe9';
-static const uint16 jz_opcode   = 0x840f;
-static const uint16 mov_opcode  = 0x508b;
-static const uint16 cmp_opcode  = 0xfa81;	static const int cmp_opcode_size = sizeof(uint16);
-
+static const char test_opcode = '\xa8';
+static const char call_opcode = '\xe8';
+static const char jmp_opcode = '\xe9';
+static const uint16 jz_opcode = 0x840f;
+static const uint16 mov_opcode = 0x508b;
+static const uint16 cmp_opcode = 0xfa81;
+static const int cmp_opcode_size = sizeof(uint16);
 
 // Helper routines for code pattern generation/parsing
-static inline void  put_byte(char*& p, u_char b){ *p++ = b; }
-static inline void  put_shrt(char*& p, uint16 s){ *(uint16*)p = s; p += sizeof(uint16); }
-static inline void  put_word(char*& p, intptr_t w)	{ *(int*)p = w; p += sizeof(int); }
-static inline void  put_disp(char*& p, char* d)	{ put_word(p, (int)(d - p - sizeof(int))); }
+static inline void put_byte(char*& p, u_char b) {
+  *p++ = b;
+}
+static inline void put_shrt(char*& p, uint16 s) {
+  *(uint16*)p = s;
+  p += sizeof(uint16);
+}
+static inline void put_word(char*& p, intptr_t w) {
+  *(int*)p = w;
+  p += sizeof(int);
+}
+static inline void put_disp(char*& p, char* d) {
+  put_word(p, (int)(d - p - sizeof(int)));
+}
 
-static inline int   get_shrt(char* p)		{ return *(uint16*)p; }
-static inline char* get_disp(char* p)		{ return *(int*)p + p + sizeof(int); }
-
+static inline int get_shrt(char* p) {
+  return *(uint16*)p;
+}
+static inline char* get_disp(char* p) {
+  return *(int*)p + p + sizeof(int);
+}
 
 // Structure for storing the entries of a PIC
 class PIC_contents {
 public:
   // smi case
-  char*		smi_nmethod;
-  methodOop	smi_methodOop;
+  char* smi_nmethod;
+  methodOop smi_methodOop;
 
   // nmethod entries
-  klassOop	nmethod_klasses[PIC::max_nof_entries];
-  char*		nmethods[PIC::max_nof_entries];
-  int n;	// nmethods index
+  klassOop nmethod_klasses[PIC::max_nof_entries];
+  char* nmethods[PIC::max_nof_entries];
+  int n; // nmethods index
 
   // methodOop entries
-  klassOop	methodOop_klasses[PIC::max_nof_entries];
-  methodOop	methodOops[PIC::max_nof_entries];
-  int m;	// methodOops index
+  klassOop methodOop_klasses[PIC::max_nof_entries];
+  methodOop methodOops[PIC::max_nof_entries];
+  int m; // methodOops index
 
   void append_nmethod_entry(klassOop klass, char* entry);
   void append_method(klassOop klass, methodOop method);
 
-  int number_of_compiled_targets() const	{ return (smi_nmethod   ? 1 : 0) + n; }
-  int number_of_interpreted_targets() const	{ return (smi_methodOop ? 1 : 0) + m; }
-  int number_of_targets() const			{ return number_of_compiled_targets() + number_of_interpreted_targets(); }
+  int number_of_compiled_targets() const { return (smi_nmethod ? 1 : 0) + n; }
+  int number_of_interpreted_targets() const { return (smi_methodOop ? 1 : 0) + m; }
+  int number_of_targets() const { return number_of_compiled_targets() + number_of_interpreted_targets(); }
 
-  bool has_smi_case() const			{ return (smi_methodOop != NULL) || (smi_nmethod != NULL); }
-  bool has_nmethods() const			{ return (n > 0) || (smi_nmethod != NULL); }
-
+  bool has_smi_case() const { return (smi_methodOop != NULL) || (smi_nmethod != NULL); }
+  bool has_nmethods() const { return (n > 0) || (smi_nmethod != NULL); }
 
   int code_size() const {
     int methodOop_size = number_of_interpreted_targets() * PIC::PIC_methodOop_entry_size;
@@ -158,15 +168,13 @@ public:
     }
   }
 
-
   PIC_contents() {
-    smi_nmethod   = NULL;
+    smi_nmethod = NULL;
     smi_methodOop = NULL;
     n = 0;
     m = 0;
   }
 };
-
 
 void PIC_contents::append_nmethod_entry(klassOop klass, char* entry) {
   // add new entry
@@ -179,7 +187,6 @@ void PIC_contents::append_nmethod_entry(klassOop klass, char* entry) {
     n++;
   }
 }
-
 
 void PIC_contents::append_method(klassOop klass, methodOop method) {
   // add new entry
@@ -194,12 +201,11 @@ void PIC_contents::append_method(klassOop klass, methodOop method) {
   }
 }
 
-
 // Implementation of PIC_Iterators
 
 PIC_Iterator::PIC_Iterator(PIC* pic) {
-  _pic   = pic;
-  _pos   = pic->entry();
+  _pic = pic;
+  _pos = pic->entry();
   // determine initial state
   if (pic->is_megamorphic()) {
     // MIC -> do not use cached information
@@ -224,7 +230,6 @@ PIC_Iterator::PIC_Iterator(PIC* pic) {
   }
 }
 
-
 void PIC_Iterator::computeNextState() {
   if (get_shrt(_pos) == cmp_opcode) {
     // same state
@@ -237,7 +242,6 @@ void PIC_Iterator::computeNextState() {
     _state = at_the_end;
   }
 }
-
 
 void PIC_Iterator::advance() {
   switch (_state) {
@@ -265,57 +269,71 @@ void PIC_Iterator::advance() {
   }
 }
 
-
 klassOop* PIC_Iterator::klass_addr() const {
   int offs;
   switch (state()) {
-    case at_smi_nmethod: ShouldNotCallThis();			// no klass stored -> no klass address available
-    case at_nmethod    : offs = PIC::PIC_nmethod_klass_offset;	break;
-    case at_methodOop  : offs = PIC::PIC_methodOop_klass_offset;break;
-    case at_the_end    : ShouldNotCallThis();			// no klass stored -> no klass address available
-    default            : ShouldNotReachHere();
+    case at_smi_nmethod:
+      ShouldNotCallThis(); // no klass stored -> no klass address available
+    case at_nmethod:
+      offs = PIC::PIC_nmethod_klass_offset;
+      break;
+    case at_methodOop:
+      offs = PIC::PIC_methodOop_klass_offset;
+      break;
+    case at_the_end:
+      ShouldNotCallThis(); // no klass stored -> no klass address available
+    default:
+      ShouldNotReachHere();
   }
   return (klassOop*)(_pos + offs);
 }
 
-
 int* PIC_Iterator::nmethod_disp_addr() const {
   int offs;
   switch (state()) {
-    case at_smi_nmethod: offs = PIC::PIC_smi_nmethod_offset;	break;
-    case at_nmethod    : offs = PIC::PIC_nmethod_offset;	break;
-    case at_methodOop  : ShouldNotCallThis();			// no nmethod stored -> no nmethod address available
-    case at_the_end    : ShouldNotCallThis();			// no nmethod stored -> no nmethod address available
-    default            : ShouldNotReachHere();
+    case at_smi_nmethod:
+      offs = PIC::PIC_smi_nmethod_offset;
+      break;
+    case at_nmethod:
+      offs = PIC::PIC_nmethod_offset;
+      break;
+    case at_methodOop:
+      ShouldNotCallThis(); // no nmethod stored -> no nmethod address available
+    case at_the_end:
+      ShouldNotCallThis(); // no nmethod stored -> no nmethod address available
+    default:
+      ShouldNotReachHere();
   }
   return (int*)(_pos + offs);
 }
 
-
 methodOop* PIC_Iterator::methodOop_addr() const {
   int offs;
   switch (state()) {
-    case at_smi_nmethod: ShouldNotCallThis();			// no methodOop stored -> no methodOop address available
-    case at_nmethod    : ShouldNotCallThis();			// no methodOop stored -> no methodOop address available
-    case at_methodOop  : offs = PIC::PIC_methodOop_offset;	break;
-    case at_the_end    : ShouldNotCallThis();
-    default            : ShouldNotReachHere();
+    case at_smi_nmethod:
+      ShouldNotCallThis(); // no methodOop stored -> no methodOop address available
+    case at_nmethod:
+      ShouldNotCallThis(); // no methodOop stored -> no methodOop address available
+    case at_methodOop:
+      offs = PIC::PIC_methodOop_offset;
+      break;
+    case at_the_end:
+      ShouldNotCallThis();
+    default:
+      ShouldNotReachHere();
   }
   return (methodOop*)(_pos + offs);
 }
 
-
 void PIC_Iterator::print() {
   lprintf("a PIC_Iterator\n");
 }
-
 
 // Implementation of PICs
 
 bool PIC::in_heap(char* addr) {
   return Universe::code->picHeap->contains(addr);
 }
-
 
 PIC* PIC::find(char* addr) {
   if (Universe::code->picHeap->contains(addr)) {
@@ -325,85 +343,82 @@ PIC* PIC::find(char* addr) {
   return NULL;
 }
 
-
 // Accessing PIC entries
-klassOop PIC_Iterator::get_klass() const { 
-  return state() == at_smi_nmethod ? smiKlassObj : *klass_addr(); 
+klassOop PIC_Iterator::get_klass() const {
+  return state() == at_smi_nmethod ? smiKlassObj : *klass_addr();
 }
 
-
-char* PIC_Iterator::get_call_addr() const { 
-  int* a = nmethod_disp_addr(); 
-  return (char*)a + sizeof(int) + *a; 
+char* PIC_Iterator::get_call_addr() const {
+  int* a = nmethod_disp_addr();
+  return (char*)a + sizeof(int) + *a;
 }
-
 
 bool PIC_Iterator::is_compiled() const {
   switch (state()) {
-    case at_smi_nmethod: return true;
-    case at_nmethod    : return true;
-    case at_methodOop  : return false;
-    case at_the_end    : ShouldNotCallThis();
-    default            : ShouldNotReachHere();
+    case at_smi_nmethod:
+      return true;
+    case at_nmethod:
+      return true;
+    case at_methodOop:
+      return false;
+    case at_the_end:
+      ShouldNotCallThis();
+    default:
+      ShouldNotReachHere();
   }
   return false;
 }
 
-
-bool PIC_Iterator::is_interpreted() const { 
+bool PIC_Iterator::is_interpreted() const {
   return !is_compiled();
 }
 
-
-nmethod* PIC_Iterator::compiled_method() const { 
-  if (!is_compiled()) return NULL;  
-  return findNMethod(get_call_addr() - sizeof(nmethod)); 
+nmethod* PIC_Iterator::compiled_method() const {
+  if (!is_compiled())
+    return NULL;
+  return findNMethod(get_call_addr() - sizeof(nmethod));
 }
 
-
-methodOop PIC_Iterator::interpreted_method() const { 
+methodOop PIC_Iterator::interpreted_method() const {
   if (is_interpreted()) {
-    return *methodOop_addr(); 
+    return *methodOop_addr();
   } else {
     return compiled_method()->method();
   }
 }
 
-
 // Modifying PIC entries
-void PIC_Iterator::set_klass(klassOop klass) { 
-  assert(state() != at_smi_nmethod, "cannot be set"); 
-  *klass_addr() = klass; 
+void PIC_Iterator::set_klass(klassOop klass) {
+  assert(state() != at_smi_nmethod, "cannot be set");
+  *klass_addr() = klass;
 }
 
-
-void PIC_Iterator::set_nmethod(nmethod* nm) { 
+void PIC_Iterator::set_nmethod(nmethod* nm) {
   assert(get_klass() == nm->key.klass(), "mismatched receiver klass");
-  int* a = nmethod_disp_addr(); 
-  *a = nm->verifiedEntryPoint() - (char*)a - sizeof(int); 
+  int* a = nmethod_disp_addr();
+  *a = nm->verifiedEntryPoint() - (char*)a - sizeof(int);
 }
 
-
-void PIC_Iterator::set_methodOop(methodOop method) { 
-  *methodOop_addr() = method; 
+void PIC_Iterator::set_methodOop(methodOop method) {
+  *methodOop_addr() = method;
 }
-
 
 symbolOop* PIC::MIC_selector_address() const {
   assert(is_megamorphic(), "not a MIC");
   return (symbolOop*)(entry() + MIC_selector_offset);
 }
 
-
 PIC* PIC::replace(nmethod* nm) {
   // nothing to do in megamorphic case
-  if (is_megamorphic()) return this;
+  if (is_megamorphic())
+    return this;
 
   LOG_EVENT3("compiled PIC at 0x%x: new nmethod 0x%x for klass 0x%x replaces old entry", this, nm, nm->key.klass());
 
   { // do the replace without creating a new PIC if possible
     PIC_Iterator it(this);
-    while (it.get_klass() != nm->key.klass()) it.advance();
+    while (it.get_klass() != nm->key.klass())
+      it.advance();
     assert(!it.at_end(), "unexpected end during replace");
     if (it.is_compiled()) {
       it.set_nmethod(nm);
@@ -411,7 +426,7 @@ PIC* PIC::replace(nmethod* nm) {
     }
   }
 
-  { // Create a new PIC 
+  { // Create a new PIC
     PIC_contents contents;
     PIC_Iterator it(this);
     while (!it.at_end()) {
@@ -432,10 +447,10 @@ PIC* PIC::replace(nmethod* nm) {
   }
 }
 
-
 PIC* PIC::cleanup(nmethod** nm) {
   // nothing to do in megamorphic case
-  if (is_megamorphic()) return this;
+  if (is_megamorphic())
+    return this;
 
   bool pic_layout_has_changed = false;
 
@@ -450,7 +465,7 @@ PIC* PIC::cleanup(nmethod** nm) {
     klassOop receiver_klass = it.get_klass();
     if (it.is_interpreted()) {
       // Interpreted methodOop
-      if(compiled_ic()->isSuperSend()) {
+      if (compiled_ic()->isSuperSend()) {
         contents.append_method(it.get_klass(), it.interpreted_method());
       } else {
         LookupKey key(it.get_klass(), it.interpreted_method()->selector());
@@ -513,17 +528,16 @@ PIC* PIC::cleanup(nmethod** nm) {
   return this;
 }
 
-
 int PIC::nof_entries(char* pic_stub) {
   int i = 1;
   while (true) {
-    if (pic_stub == StubRoutines::PIC_stub_entry(i)) return i;
+    if (pic_stub == StubRoutines::PIC_stub_entry(i))
+      return i;
     i++;
   }
   ShouldNotReachHere();
   return 0;
 }
-
 
 int PIC::code_for_methodOops_only(char* entry, PIC_contents* c) {
   char* p = entry;
@@ -537,7 +551,8 @@ int PIC::code_for_methodOops_only(char* entry, PIC_contents* c) {
     put_disp(p, StubRoutines::PIC_stub_entry(1 + c->m));
     put_word(p, intptr_t(smiKlassObj));
     put_word(p, intptr_t(c->smi_methodOop));
-    assert(entry + PIC_methodOop_only_offset + PIC_methodOop_entry_size == p, "constant value inconsistent with code pattern");
+    assert(entry + PIC_methodOop_only_offset + PIC_methodOop_entry_size == p,
+           "constant value inconsistent with code pattern");
   }
   char* p1 = p;
   for (int i = 0; i < c->m; i++) {
@@ -549,12 +564,11 @@ int PIC::code_for_methodOops_only(char* entry, PIC_contents* c) {
   return p - entry;
 }
 
-
 int PIC::code_for_polymorphic_case(char* entry, PIC_contents* c) {
   if (c->has_nmethods()) {
     // nmethods & methodOops
     // test al, Mem_Tag
-    char* p     = entry;
+    char* p = entry;
     char* fixup = NULL;
     put_byte(p, test_opcode);
     put_byte(p, Mem_Tag);
@@ -581,17 +595,21 @@ int PIC::code_for_polymorphic_case(char* entry, PIC_contents* c) {
       // cmp edx, klass(i)
       assert(c->nmethod_klasses[i] != smiKlassObj, "should not be smiKlassObj");
       put_shrt(p, cmp_opcode);
-      assert(entry + PIC_nmethod_entry_offset + i*PIC_nmethod_entry_size + PIC_nmethod_klass_offset == p, "constant value inconsistent with code pattern");
+      assert(entry + PIC_nmethod_entry_offset + i * PIC_nmethod_entry_size + PIC_nmethod_klass_offset == p,
+             "constant value inconsistent with code pattern");
       put_word(p, intptr_t(c->nmethod_klasses[i]));
       // je nmethod(j)
       put_shrt(p, jz_opcode);
-      assert(entry + PIC_nmethod_entry_offset + i*PIC_nmethod_entry_size + PIC_nmethod_offset == p, "constant value inconsistent with code pattern");
+      assert(entry + PIC_nmethod_entry_offset + i * PIC_nmethod_entry_size + PIC_nmethod_offset == p,
+             "constant value inconsistent with code pattern");
       put_disp(p, c->nmethods[i]);
     }
-    assert(entry + PIC_nmethod_entry_offset + c->n*PIC_nmethod_entry_size == p, "constant value inconsistent with code pattern");
+    assert(entry + PIC_nmethod_entry_offset + c->n * PIC_nmethod_entry_size == p,
+           "constant value inconsistent with code pattern");
     if (c->smi_methodOop != NULL || c->m > 0) {
       // handle methodOops
-      if (fixup != NULL) put_disp(fixup, p);
+      if (fixup != NULL)
+        put_disp(fixup, p);
       p += code_for_methodOops_only(p, c);
     } else {
       // jmp cache_miss
@@ -605,32 +623,27 @@ int PIC::code_for_polymorphic_case(char* entry, PIC_contents* c) {
   }
 }
 
-
 int PIC::code_for_megamorphic_case(char* entry) {
   char* p = entry;
   put_byte(p, call_opcode);
   put_disp(p, StubRoutines::megamorphic_ic_entry());
   assert(entry + MIC_selector_offset == p, "layout constant inconsistent with code pattern");
-  put_word(p, intptr_t(selector()));	// used for fast lookup
+  put_word(p, intptr_t(selector())); // used for fast lookup
   assert(entry + MIC_code_size == p, "layout constant inconsistent with code pattern");
   return p - entry;
 }
-
 
 void PIC::shrink_and_generate(PIC* pic, klassOop klass, void* method) {
   Unimplemented();
 }
 
-
-void* PIC::operator new(size_t size, int code_size){
+void* PIC::operator new(size_t size, int code_size) {
   return Universe::code->picHeap->allocate(size + code_size);
 }
-
 
 void PIC::operator delete(void* p) {
   Universe::code->picHeap->deallocate(p, 0);
 }
-
 
 PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
   assert(!result.is_empty(), "lookup result cannot be empty");
@@ -644,9 +657,9 @@ PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
     contents.append_method(klass, result.method());
   }
 
-  PIC*     old_pic       = ic->pic();
-  nmethod* old_nmethod   = ic->target();
-  bool     switch_to_MIC = false;
+  PIC* old_pic = ic->pic();
+  nmethod* old_nmethod = ic->target();
+  bool switch_to_MIC = false;
 
   // 3 possible cases:
   //
@@ -663,7 +676,7 @@ PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
         // switch to MIC, keep only no lookup result
         switch_to_MIC = true;
       } else {
-        ic->resetOptimized();	// make sure it doesn't force the creation of nmethods
+        ic->resetOptimized(); // make sure it doesn't force the creation of nmethods
         return NULL;
       }
     } else {
@@ -686,10 +699,8 @@ PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
     assert(ic->is_empty(), "just checking");
   }
 
-  assert(switch_to_MIC ||
-    contents.number_of_interpreted_targets() > 0 ||
-    contents.number_of_compiled_targets() > 1,
-    "no PIC required for only 1 compiled target");
+  assert(switch_to_MIC || contents.number_of_interpreted_targets() > 0 || contents.number_of_compiled_targets() > 1,
+         "no PIC required for only 1 compiled target");
 
   PIC* new_pic = NULL;
   if (switch_to_MIC) {
@@ -706,35 +717,30 @@ PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
   return new_pic;
 }
 
-
-
 PIC::PIC(CompiledIC* ic, PIC_contents* contents, int allocated_code_size) {
   assert(contents->number_of_targets() >= 1, "at least one entry needed for non-megamorphic case");
-  _ic			= ic;
-  _number_of_targets	= contents->number_of_targets();
-  _code_size		= code_for_polymorphic_case(entry(), contents);
+  _ic = ic;
+  _number_of_targets = contents->number_of_targets();
+  _code_size = code_for_polymorphic_case(entry(), contents);
   assert(code_size() == allocated_code_size, "Please adjust PIC_contents::code_size()");
 }
 
-
 PIC::PIC(CompiledIC* ic) {
-  _ic			= ic;
-  _number_of_targets	= 0; // indicates megamorphic case
-  _code_size		= code_for_megamorphic_case(entry());
+  _ic = ic;
+  _number_of_targets = 0; // indicates megamorphic case
+  _code_size = code_for_megamorphic_case(entry());
   assert(code_size() == MIC_code_size, "Please adjust PIC_contents::code_size()");
 }
-
 
 GrowableArray<klassOop>* PIC::klasses() const {
   GrowableArray<klassOop>* k = new GrowableArray<klassOop>(2);
   PIC_Iterator it((PIC*)this);
-  while(!it.at_end()) {
+  while (!it.at_end()) {
     k->append(it.get_klass());
     it.advance();
   }
   return k;
 }
-
 
 void PIC::oops_do(void f(oop*)) {
   if (is_megamorphic()) {
@@ -742,17 +748,20 @@ void PIC::oops_do(void f(oop*)) {
     f((oop*)MIC_selector_address());
   } else {
     PIC_Iterator it(this);
-    while(!it.at_end()) {
-      switch(it.state()) {
-        case PIC_Iterator::at_methodOop: f((oop*) it.methodOop_addr());  // fall through
-        case PIC_Iterator::at_nmethod  : f((oop*) it.klass_addr());      break;
-        default: break;   // at_smi_nmethod, at_the_end: nothing to scan
+    while (!it.at_end()) {
+      switch (it.state()) {
+        case PIC_Iterator::at_methodOop:
+          f((oop*)it.methodOop_addr()); // fall through
+        case PIC_Iterator::at_nmethod:
+          f((oop*)it.klass_addr());
+          break;
+        default:
+          break; // at_smi_nmethod, at_the_end: nothing to scan
       }
       it.advance();
     }
   }
 }
-
 
 void PIC::print() {
   lprintf("\tPIC with %d entr%s\n", number_of_targets(), number_of_targets() == 1 ? "y" : "ies");
@@ -770,16 +779,19 @@ void PIC::print() {
     lprintf("\n");
     switch (it.state()) {
       case PIC_Iterator::at_smi_nmethod: // fall through
-      case PIC_Iterator::at_nmethod    : printf("\t-    nmethod  : %#lx (entry %#lx)\n", 
-                                           (intptr_t)it.compiled_method(), (intptr_t)it.get_call_addr()); break;
-      case PIC_Iterator::at_methodOop  : printf("\t-    methodOop: %s\n", it.interpreted_method()->print_value_string()); break;
-      default: ShouldNotReachHere();
+      case PIC_Iterator::at_nmethod:
+        printf("\t-    nmethod  : %#lx (entry %#lx)\n", (intptr_t)it.compiled_method(), (intptr_t)it.get_call_addr());
+        break;
+      case PIC_Iterator::at_methodOop:
+        printf("\t-    methodOop: %s\n", it.interpreted_method()->print_value_string());
+        break;
+      default:
+        ShouldNotReachHere();
     }
     i++;
     it.advance();
   }
 }
-
 
 void PIC::verify() {
   // check for multiple entries for same class
@@ -797,14 +809,12 @@ void PIC::verify() {
   }
 }
 
-
 // Implementation of CompiledIC_Iterator
 
 CompiledIC_Iterator::CompiledIC_Iterator(CompiledIC* ic) {
   _ic = ic;
   init_iteration();
 }
-
 
 void CompiledIC_Iterator::init_iteration() {
   _picit = NULL;
@@ -816,7 +826,8 @@ void CompiledIC_Iterator::init_iteration() {
     _number_of_targets = 1;
     _shape = monomorphic;
     PIC* pic = _ic->pic();
-    if (pic) _picit = new PIC_Iterator(pic);  // calls an interpreted method
+    if (pic)
+      _picit = new PIC_Iterator(pic); // calls an interpreted method
   } else if (_ic->is_polymorphic()) {
     PIC* pic = _ic->pic();
     _number_of_targets = pic->number_of_targets();
@@ -830,7 +841,6 @@ void CompiledIC_Iterator::init_iteration() {
   }
 }
 
-
 void CompiledIC_Iterator::advance() {
   assert(!at_end(), "iterated over the end");
   if (_picit != NULL) {
@@ -838,7 +848,6 @@ void CompiledIC_Iterator::advance() {
   }
   _index++;
 }
-
 
 klassOop CompiledIC_Iterator::klass() const {
   assert(!at_end(), "iterated over the end");
@@ -849,7 +858,6 @@ klassOop CompiledIC_Iterator::klass() const {
   }
 }
 
-
 bool CompiledIC_Iterator::is_interpreted() const {
   assert(!at_end(), "iterated over the end");
   if (_picit != NULL) {
@@ -858,7 +866,6 @@ bool CompiledIC_Iterator::is_interpreted() const {
     return false;
   }
 }
-
 
 bool CompiledIC_Iterator::is_compiled() const {
   assert(!at_end(), "iterated over the end");
@@ -869,13 +876,11 @@ bool CompiledIC_Iterator::is_compiled() const {
   }
 }
 
-
 bool CompiledIC_Iterator::is_super_send() const {
   extern bool SuperSendsAreAlwaysInlined;
   assert(SuperSendsAreAlwaysInlined, "fix this");
-  return false;		// for now, super sends are always inlined
+  return false; // for now, super sends are always inlined
 }
-
 
 methodOop CompiledIC_Iterator::interpreted_method() const {
   assert(!at_end(), "iterated over the end");
@@ -886,7 +891,6 @@ methodOop CompiledIC_Iterator::interpreted_method() const {
   }
 }
 
-
 nmethod* CompiledIC_Iterator::compiled_method() const {
   assert(!at_end(), "iterated over the end");
   if (_picit != NULL) {
@@ -896,7 +900,6 @@ nmethod* CompiledIC_Iterator::compiled_method() const {
     return _ic->target();
   }
 }
-
 
 void CompiledIC_Iterator::print() {
   lprintf("CompiledIC_Iterator for ((CompiledIC*)%#x) (%s)\n", _ic, selector()->as_string());

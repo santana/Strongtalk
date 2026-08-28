@@ -29,18 +29,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // A processOop is the Delta level process.
 // It is a proxy for a vm c-heap allocate Process (see process.hpp).
 
-class processOopDesc: public memOopDesc {
- protected:
-  DeltaProcess*  _process;
-  processOopDesc* addr() { return (processOopDesc*)memOopDesc::addr();}
-    
- public:
-	friend processOop as_processOop(void* p);
+class processOopDesc : public memOopDesc {
+protected:
+  DeltaProcess* _process;
+  processOopDesc* addr() { return (processOopDesc*)memOopDesc::addr(); }
+
+public:
+  friend processOop as_processOop(void* p);
 
   DeltaProcess* process() { return addr()->_process; }
-  void set_process(DeltaProcess* p)  { 
+  void set_process(DeltaProcess* p) {
     assert(oop(p)->is_smi(), "not a smi");
-    addr()->_process = p; }
+    addr()->_process = p;
+  }
 
   // Returns whether the process is alive.
   bool is_live() { return process() != NULL; }
@@ -51,17 +52,19 @@ class processOopDesc: public memOopDesc {
   // Returns the status of the process as symbol
   symbolOop status_symbol();
 
-  // Timing 
+  // Timing
   double user_time();
   double system_time();
 
   // sizing
-  static int header_size() { return sizeof(processOopDesc)/oopSize; }
+  static int header_size() { return sizeof(processOopDesc) / oopSize; }
 
   // bootstrapping
   void bootstrap_object(bootstrap* st);
 
   friend class processKlass;
 };
-inline processOop as_processOop(void* p) { return processOop(as_memOop(p)); }
+inline processOop as_processOop(void* p) {
+  return processOop(as_memOop(p));
+}
 #endif // _PROCESS_OOP_HPP

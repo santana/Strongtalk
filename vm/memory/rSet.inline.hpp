@@ -27,7 +27,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.hpp"
 
 inline char* rSet::byte_map_end() const {
-  return byte_for(Universe::old_gen.high_boundary); }
+  return byte_for(Universe::old_gen.high_boundary);
+}
 
-inline void rSet::clear() { clear(byte_map, byte_map_end()); }
+inline void rSet::clear() {
+  clear(byte_map, byte_map_end());
+}
 #endif // _RSET_INLINE_HPP

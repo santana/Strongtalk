@@ -30,8 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 symbolOop vm_symbols[terminating_enum];
 
-#define VMSYMBOL_INIT(name, string) \
-  vm_symbols[VMSYMBOL_ENUM_NAME(name)] = oopFactory::new_symbol(string);
+#define VMSYMBOL_INIT(name, string) vm_symbols[VMSYMBOL_ENUM_NAME(name)] = oopFactory::new_symbol(string);
 
 void vmSymbols::initialize() {
   VMSYMBOLS(VMSYMBOL_INIT)
@@ -39,24 +38,22 @@ void vmSymbols::initialize() {
 
 void vmSymbols::switch_pointers(oop from, oop to) {
   for (int index = 0; index < terminating_enum; index++) {
-    oop* p = (oop*) &vm_symbols[index];
+    oop* p = (oop*)&vm_symbols[index];
     SWITCH_POINTERS_TEMPLATE(p)
   }
 }
 
 void vmSymbols::follow_contents() {
   for (int index = 0; index < terminating_enum; index++) {
-    MarkSweep::follow_root((oop*) &vm_symbols[index]);
+    MarkSweep::follow_root((oop*)&vm_symbols[index]);
   }
 }
 
 void vmSymbols::relocate() {
   for (int index = 0; index < terminating_enum; index++) {
-    oop* p = (oop*) &vm_symbols[index];
+    oop* p = (oop*)&vm_symbols[index];
     RELOCATE_TEMPLATE(p);
   }
 }
 
-void vmSymbols::verify() {
-
-}
+void vmSymbols::verify() {}

@@ -29,8 +29,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The ErrorHandler takes care of error recovery
 
 class ErrorHandler : AllStatic {
- public:
-  // Aborts the current compilation and continues the process execution 
+public:
+  // Aborts the current compilation and continues the process execution
   static void abort_compilation();
 
   // Aborts the current process and terminates it
@@ -44,6 +44,5 @@ class ErrorHandler : AllStatic {
 
   // Returns the value used during an abort
   static int aborting_nlr_home_id() { return 0xcafebabe; }
-
 };
 #endif // _ABORT_HPP

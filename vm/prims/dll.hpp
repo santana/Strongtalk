@@ -32,27 +32,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-class InterpretedDLL_Cache: public ValueObj {
- private:
+class InterpretedDLL_Cache : public ValueObj {
+private:
   symbolOop _dll_name;
   symbolOop _funct_name;
-  dll_func  _entry_point;
-  char      _number_of_arguments;
+  dll_func _entry_point;
+  char _number_of_arguments;
   // Do not add more instance variables! Layout must correspond to DLL call in bytecodes!
 
- public:
-  symbolOop dll_name() const			{ return _dll_name;    }
-  symbolOop funct_name() const			{ return _funct_name;  }
-  dll_func  entry_point() const			{ return _entry_point; }
-  int       number_of_arguments() const		{ return _number_of_arguments; }
-  bool      async() const;
-  void	    set_entry_point(dll_func f)		{ _entry_point = f; }
+public:
+  symbolOop dll_name() const { return _dll_name; }
+  symbolOop funct_name() const { return _funct_name; }
+  dll_func entry_point() const { return _entry_point; }
+  int number_of_arguments() const { return _number_of_arguments; }
+  bool async() const;
+  void set_entry_point(dll_func f) { _entry_point = f; }
 
   // Debugging
-  void      verify();
-  void      print();
+  void verify();
+  void print();
 };
-
 
 // Layout of CompiledDLL_Caches
 //
@@ -62,53 +61,51 @@ class InterpretedDLL_Cache: public ValueObj {
 // call sync_DLL/async_DLL	<- call
 // ...				<- this
 
-class CompiledDLL_Cache: public NativeCall {
- private:
+class CompiledDLL_Cache : public NativeCall {
+private:
   enum Layout_constants {
-    test_2_instruction_offset	= -NativeCall::instruction_size - NativeTest::instruction_size,
-    test_1_instruction_offset	= test_2_instruction_offset - NativeTest::instruction_size,
-    mov_edx_instruction_offset	= test_1_instruction_offset - NativeMov::instruction_size,
+    test_2_instruction_offset = -NativeCall::instruction_size - NativeTest::instruction_size,
+    test_1_instruction_offset = test_2_instruction_offset - NativeTest::instruction_size,
+    mov_edx_instruction_offset = test_1_instruction_offset - NativeMov::instruction_size,
   };
 
-  NativeMov*  mov_at(int offset)		{ return nativeMov_at(addr_at(offset)); }
-  NativeTest* test_at(int offset)		{ return nativeTest_at(addr_at(offset)); }
+  NativeMov* mov_at(int offset) { return nativeMov_at(addr_at(offset)); }
+  NativeTest* test_at(int offset) { return nativeTest_at(addr_at(offset)); }
 
- public:
-  symbolOop dll_name()				{ return symbolOop(test_at(test_1_instruction_offset)->data()); }
-  symbolOop function_name()			{ return symbolOop(test_at(test_2_instruction_offset)->data()); }
-  dll_func  entry_point()			{ return (dll_func)mov_at(mov_edx_instruction_offset)->data(); }
-  bool      async() const;
-  void	    set_entry_point(dll_func f)		{ mov_at(mov_edx_instruction_offset)->set_data(intptr_t(f)); }
+public:
+  symbolOop dll_name() { return symbolOop(test_at(test_1_instruction_offset)->data()); }
+  symbolOop function_name() { return symbolOop(test_at(test_2_instruction_offset)->data()); }
+  dll_func entry_point() { return (dll_func)mov_at(mov_edx_instruction_offset)->data(); }
+  bool async() const;
+  void set_entry_point(dll_func f) { mov_at(mov_edx_instruction_offset)->set_data(intptr_t(f)); }
 
   // Debugging
-  void      verify();
-  void      print();
+  void verify();
+  void print();
 
   // Creation
   friend CompiledDLL_Cache* compiledDLL_Cache_from_return_address(char* return_address);
   friend CompiledDLL_Cache* compiledDLL_Cache_from_relocInfo(char* displacement_address);
 };
 
-inline CompiledDLL_Cache* compiledDLL_Cache_from_return_address(char* return_address)
-{
-    CompiledDLL_Cache* cache = (CompiledDLL_Cache*)(nativeCall_from_return_address(return_address));
-    #ifdef ASSERT
-      cache->verify();
-    #endif
-    return cache;
+inline CompiledDLL_Cache* compiledDLL_Cache_from_return_address(char* return_address) {
+  CompiledDLL_Cache* cache = (CompiledDLL_Cache*)(nativeCall_from_return_address(return_address));
+#ifdef ASSERT
+  cache->verify();
+#endif
+  return cache;
 }
 
-inline CompiledDLL_Cache* compiledDLL_Cache_from_relocInfo(char* displacement_address)
-{
-    return (CompiledDLL_Cache*)nativeCall_from_relocInfo(displacement_address);
+inline CompiledDLL_Cache* compiledDLL_Cache_from_relocInfo(char* displacement_address) {
+  return (CompiledDLL_Cache*)nativeCall_from_relocInfo(displacement_address);
 }
 
-class DLLs: AllStatic {
- public:
+class DLLs : AllStatic {
+public:
   // Lookup
   static dll_func lookup(symbolOop name, DLL* library);
-  static DLL*     load(symbolOop name);
-  static bool     unload(DLL* library);
+  static DLL* load(symbolOop name);
+  static bool unload(DLL* library);
 
   static dll_func lookup_fail(symbolOop dll_name, symbolOop function_name);
   static dll_func lookup(symbolOop dll_name, symbolOop function_name);
@@ -116,8 +113,8 @@ class DLLs: AllStatic {
   static dll_func lookup_and_patch_CompiledDLL_Cache();
 
   // Support for asynchronous DLL calls
-  static void enter_async_call(DeltaProcess** addr);	// called before each asynchronous DLL call
-  static void exit_async_call(DeltaProcess** addr);	// called after each asynchronous DLL call
-  static void exit_sync_call(DeltaProcess** addr);	// called after each synchronous DLL call
+  static void enter_async_call(DeltaProcess** addr); // called before each asynchronous DLL call
+  static void exit_async_call(DeltaProcess** addr); // called after each asynchronous DLL call
+  static void exit_sync_call(DeltaProcess** addr); // called after each synchronous DLL call
 };
 #endif // DLL_HPP

@@ -20,7 +20,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "asm/codeBuffer.hpp"
 #include "memory/vmSymbols.hpp"
 #include "prims/generatedPrimitives.hpp"
@@ -34,27 +33,27 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 // entry points
-char* GeneratedPrimitives::_allocateContext_var			= NULL;
+char* GeneratedPrimitives::_allocateContext_var = NULL;
 
-char* GeneratedPrimitives::_smiOopPrimitives_add		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_subtract		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_multiply		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_mod		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_div		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_quo		= NULL;
-char* GeneratedPrimitives::_smiOopPrimitives_remainder		= NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_add = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_subtract = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_multiply = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_mod = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_div = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_quo = NULL;
+char* GeneratedPrimitives::_smiOopPrimitives_remainder = NULL;
 
-char* GeneratedPrimitives::_double_add				= NULL;
-char* GeneratedPrimitives::_double_subtract			= NULL;
-char* GeneratedPrimitives::_double_multiply			= NULL;
-char* GeneratedPrimitives::_double_divide			= NULL;
-char* GeneratedPrimitives::_double_from_smi			= NULL;
+char* GeneratedPrimitives::_double_add = NULL;
+char* GeneratedPrimitives::_double_subtract = NULL;
+char* GeneratedPrimitives::_double_multiply = NULL;
+char* GeneratedPrimitives::_double_divide = NULL;
+char* GeneratedPrimitives::_double_from_smi = NULL;
 
 char* GeneratedPrimitives::_primitiveValue[10];
 char* GeneratedPrimitives::_primitiveNew[10];
 char* GeneratedPrimitives::_allocateBlock[10];
 char* GeneratedPrimitives::_allocateContext[3];
-char* GeneratedPrimitives::_primitiveInlineAllocations          = NULL;
+char* GeneratedPrimitives::_primitiveInlineAllocations = NULL;
 
 extern "C" void scavenge_and_allocate(int size);
 
@@ -63,11 +62,11 @@ extern "C" void scavenge_and_allocate(int size);
 void PrimitivesGenerator::scavenge(int size) {
   masm->set_last_Delta_frame_after_call();
 #if DELTA_X86_64
-  masm->movl(edi, size);				// x86-64 SysV: first argument in rdi
+  masm->movl(edi, size); // x86-64 SysV: first argument in rdi
   masm->call_C((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
 #elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->movl(edx, size);			// pass argument in x0 (AAPCS64)
-  masm->call_C((char*)&scavenge_and_allocate, edx);	// result copied back to eax
+  masm->movl(edx, size); // pass argument in x0 (AAPCS64)
+  masm->call_C((char*)&scavenge_and_allocate, edx); // result copied back to eax
 #else
   masm->pushl(size);
   masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
@@ -86,26 +85,37 @@ void PrimitivesGenerator::test_for_scavenge(Register dst, int size, Label& need_
 }
 
 void PrimitivesGenerator::error_jumps() {
-  
-#define VMSYMBOL_POSTFIX  _enum
+
+#define VMSYMBOL_POSTFIX _enum
 #define VMSYMBOL_ENUM_NAME(name) name##VMSYMBOL_POSTFIX
-  
-  Address _smi_overflow				= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(smi_overflow)],			relocInfo::external_word_type);
-  Address _division_by_zero			= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(division_by_zero)],		relocInfo::external_word_type);
-  Address _receiver_has_wrong_type		= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(receiver_has_wrong_type)],	relocInfo::external_word_type);
-  Address _division_not_exact			= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(division_not_exact)],		relocInfo::external_word_type);
-  Address _first_argument_has_wrong_type	= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(first_argument_has_wrong_type)],	relocInfo::external_word_type);
-  Address _allocation_failure           	= Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(failed_allocation)],  	        relocInfo::external_word_type);
-  
-#undef  VMSYMBOL_POSTFIX
-#undef  VMSYMBOL_ENUM_NAME
+
+  Address _smi_overflow =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(smi_overflow)], relocInfo::external_word_type);
+  Address _division_by_zero =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(division_by_zero)], relocInfo::external_word_type);
+  Address _receiver_has_wrong_type =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(receiver_has_wrong_type)], relocInfo::external_word_type);
+  Address _division_not_exact =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(division_not_exact)], relocInfo::external_word_type);
+  Address _first_argument_has_wrong_type =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(first_argument_has_wrong_type)], relocInfo::external_word_type);
+  Address _allocation_failure =
+    Address((intptr_t)&vm_symbols[VMSYMBOL_ENUM_NAME(failed_allocation)], relocInfo::external_word_type);
+
+#undef VMSYMBOL_POSTFIX
+#undef VMSYMBOL_ENUM_NAME
 
   // The failure marker is a marked symbol oop (bit 2 set) in eax; on AArch64
   // the result must be left in x0 since call_C copies x0 -> eax afterwards.
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-#  define ERROR_RETURN()  { masm->mov(x0, eax); masm->ret(0); }
+#define ERROR_RETURN()                                                                                                 \
+  {                                                                                                                    \
+    masm->mov(x0, eax);                                                                                                \
+    masm->ret(0);                                                                                                      \
+  }
 #else
-#  define ERROR_RETURN()  { masm->ret(2 * oopSize); }
+#define ERROR_RETURN()                                                                                                 \
+  { masm->ret(2 * oopSize); }
 #endif
 
   masm->bind(error_receiver_has_wrong_type);
@@ -135,19 +145,15 @@ void PrimitivesGenerator::error_jumps() {
 // generators are in xxx_prims_gen.cpp files
 
 void GeneratedPrimitives::set_primitiveValue(int n, char* entry_point) {
-  assert(0 <= n && n <= 9, "index out of range")
-  _primitiveValue[n] = entry_point;
+  assert(0 <= n && n <= 9, "index out of range") _primitiveValue[n] = entry_point;
 }
 
 // Parametrized accessors
 
-
 char* GeneratedPrimitives::primitiveValue(int n) {
-  assert(0 <= n && n <= 9, "index out of range")
-  assert(_primitiveValue[n], "primitiveValues not initialized yet");
+  assert(0 <= n && n <= 9, "index out of range") assert(_primitiveValue[n], "primitiveValues not initialized yet");
   return _primitiveValue[n];
 }
-
 
 extern "C" oop primitiveNew0(oop);
 extern "C" oop primitiveNew1(oop);
@@ -162,21 +168,31 @@ extern "C" oop primitiveNew9(oop);
 
 char* GeneratedPrimitives::primitiveNew(int n) {
   assert(_is_initialized, "GeneratedPrimitives not initialized yet");
-  assert(0 <= n && n <= 9, "index out of range")
-    return _primitiveNew[n];
-  
-  switch(n) {
-  case 0: return (char*)::primitiveNew0;
-  case 1: return (char*)::primitiveNew1;
-  case 2: return (char*)::primitiveNew2;
-  case 3: return (char*)::primitiveNew3;
-  case 4: return (char*)::primitiveNew4;
-  case 5: return (char*)::primitiveNew5;
-  case 6: return (char*)::primitiveNew6;
-  case 7: return (char*)::primitiveNew7;
-  case 8: return (char*)::primitiveNew8;
-  case 9: return (char*)::primitiveNew9;
-  default: ShouldNotReachHere();
+  assert(0 <= n && n <= 9, "index out of range") return _primitiveNew[n];
+
+  switch (n) {
+    case 0:
+      return (char*)::primitiveNew0;
+    case 1:
+      return (char*)::primitiveNew1;
+    case 2:
+      return (char*)::primitiveNew2;
+    case 3:
+      return (char*)::primitiveNew3;
+    case 4:
+      return (char*)::primitiveNew4;
+    case 5:
+      return (char*)::primitiveNew5;
+    case 6:
+      return (char*)::primitiveNew6;
+    case 7:
+      return (char*)::primitiveNew7;
+    case 8:
+      return (char*)::primitiveNew8;
+    case 9:
+      return (char*)::primitiveNew9;
+    default:
+      ShouldNotReachHere();
   }
   ShouldNotReachHere();
 }
@@ -195,22 +211,33 @@ extern "C" blockClosureOop allocateBlock9();
 
 char* GeneratedPrimitives::allocateBlock(int n) {
   assert(_is_initialized, "GeneratedPrimitives not initialized yet");
-  if (n == -1) return (char*)::allocateBlock;		// convenience
-  assert(0 <= n && n <= 9, "index out of range")
-    return _allocateBlock[n];
-    
-    switch(n) {
-    case 0: return (char*)::allocateBlock0;
-    case 1: return (char*)::allocateBlock1;
-    case 2: return (char*)::allocateBlock2;
-    case 3: return (char*)::allocateBlock3;
-    case 4: return (char*)::allocateBlock4;
-    case 5: return (char*)::allocateBlock5;
-    case 6: return (char*)::allocateBlock6;
-    case 7: return (char*)::allocateBlock7;
-    case 8: return (char*)::allocateBlock8;
-    case 9: return (char*)::allocateBlock9;
-    default: ShouldNotReachHere();
+  if (n == -1)
+    return (char*)::allocateBlock; // convenience
+  assert(0 <= n && n <= 9, "index out of range") return _allocateBlock[n];
+
+  switch (n) {
+    case 0:
+      return (char*)::allocateBlock0;
+    case 1:
+      return (char*)::allocateBlock1;
+    case 2:
+      return (char*)::allocateBlock2;
+    case 3:
+      return (char*)::allocateBlock3;
+    case 4:
+      return (char*)::allocateBlock4;
+    case 5:
+      return (char*)::allocateBlock5;
+    case 6:
+      return (char*)::allocateBlock6;
+    case 7:
+      return (char*)::allocateBlock7;
+    case 8:
+      return (char*)::allocateBlock8;
+    case 9:
+      return (char*)::allocateBlock9;
+    default:
+      ShouldNotReachHere();
   }
   ShouldNotReachHere();
 }
@@ -222,16 +249,21 @@ extern "C" contextOop allocateContext2();
 
 char* GeneratedPrimitives::allocateContext(int n) {
   assert(_is_initialized, "GeneratedPrimitives not initialized yet");
-    if (n == -1) return _allocateContext_var;		// convenience
-  if (n == -1) return (char*)::allocateContext;		// convenience
-  assert(0 <= n && n <= 2, "index out of range")
-    return _allocateContext[n];
-  
-  switch(n) {
-  case 0: return (char*)::allocateContext0;
-  case 1: return (char*)::allocateContext1;
-  case 2: return (char*)::allocateContext2;
-  default: ShouldNotReachHere();
+  if (n == -1)
+    return _allocateContext_var; // convenience
+  if (n == -1)
+    return (char*)::allocateContext; // convenience
+  assert(0 <= n && n <= 2, "index out of range") return _allocateContext[n];
+
+  switch (n) {
+    case 0:
+      return (char*)::allocateContext0;
+    case 1:
+      return (char*)::allocateContext1;
+    case 2:
+      return (char*)::allocateContext2;
+    default:
+      ShouldNotReachHere();
   }
   ShouldNotReachHere();
 }
@@ -255,14 +287,14 @@ char* GeneratedPrimitives::patch(char* name, char* entry_point, int argument) {
   return entry_point;
 }
 
-
 void GeneratedPrimitives::init() {
-  if (_is_initialized) return;
+  if (_is_initialized)
+    return;
 
   int n;
   ResourceMark rm;
   _code = os::exec_memory(_code_size);
-  
+
   CodeBuffer* code = new CodeBuffer(_code, _code_size);
   MacroAssembler* masm = new MacroAssembler(code);
   PrimitivesGenerator gen(masm);
@@ -270,23 +302,23 @@ void GeneratedPrimitives::init() {
   // add generators here
 
   gen.error_jumps();
-  _smiOopPrimitives_add 	= patch("primitiveAdd:ifFail:", 		gen.smiOopPrimitives_add());
-  _smiOopPrimitives_subtract 	= patch("primitiveSubtract:ifFail:", 		gen.smiOopPrimitives_subtract());
-  _smiOopPrimitives_multiply 	= patch("primitiveMultiply:ifFail:", 		gen.smiOopPrimitives_multiply());
-  _smiOopPrimitives_mod 	= patch("primitiveMod:ifFail:", 		gen.smiOopPrimitives_mod());
-  _smiOopPrimitives_div 	= patch("primitiveDiv:ifFail:", 		gen.smiOopPrimitives_div());
-  _smiOopPrimitives_quo 	= patch("primitiveQuo:ifFail:", 		gen.smiOopPrimitives_quo());
-  _smiOopPrimitives_remainder 	= patch("primitiveRemainder:ifFail:", 		gen.smiOopPrimitives_remainder());
-  
+  _smiOopPrimitives_add = patch("primitiveAdd:ifFail:", gen.smiOopPrimitives_add());
+  _smiOopPrimitives_subtract = patch("primitiveSubtract:ifFail:", gen.smiOopPrimitives_subtract());
+  _smiOopPrimitives_multiply = patch("primitiveMultiply:ifFail:", gen.smiOopPrimitives_multiply());
+  _smiOopPrimitives_mod = patch("primitiveMod:ifFail:", gen.smiOopPrimitives_mod());
+  _smiOopPrimitives_div = patch("primitiveDiv:ifFail:", gen.smiOopPrimitives_div());
+  _smiOopPrimitives_quo = patch("primitiveQuo:ifFail:", gen.smiOopPrimitives_quo());
+  _smiOopPrimitives_remainder = patch("primitiveRemainder:ifFail:", gen.smiOopPrimitives_remainder());
+
   PrimitivesGenerator::arith_op op_add = PrimitivesGenerator::op_add;
   PrimitivesGenerator::arith_op op_sub = PrimitivesGenerator::op_sub;
   PrimitivesGenerator::arith_op op_mul = PrimitivesGenerator::op_mul;
   PrimitivesGenerator::arith_op op_div = PrimitivesGenerator::op_div;
-  _double_add 			= patch("primitiveFloatAdd:ifFail:", 		gen.double_op(op_add), op_add);
-  _double_subtract 		= patch("primitiveFloatSubtract:ifFail:", 	gen.double_op(op_sub), op_sub);
-  _double_multiply 		= patch("primitiveFloatMultiply:ifFail:", 	gen.double_op(op_mul), op_mul);
-  _double_divide 		= patch("primitiveFloatDivide:ifFail:", 	gen.double_op(op_div), op_div);
-  _double_from_smi 		= patch("primitiveAsFloat", 			gen.double_from_smi());
+  _double_add = patch("primitiveFloatAdd:ifFail:", gen.double_op(op_add), op_add);
+  _double_subtract = patch("primitiveFloatSubtract:ifFail:", gen.double_op(op_sub), op_sub);
+  _double_multiply = patch("primitiveFloatMultiply:ifFail:", gen.double_op(op_mul), op_mul);
+  _double_divide = patch("primitiveFloatDivide:ifFail:", gen.double_op(op_div), op_div);
+  _double_from_smi = patch("primitiveAsFloat", gen.double_from_smi());
 
   for (n = 0; n <= 9; n++) {
     _primitiveNew[n] = patch("primitiveNew%1d:ifFail:", gen.primitiveNew(n), n);
@@ -301,36 +333,33 @@ void GeneratedPrimitives::init() {
   for (n = 0; n <= 2; n++) {
     _allocateContext[n] = patch("primitiveCompiledContextAllocate%1d", gen.allocateContext(n), n);
   }
-  
+
   _primitiveInlineAllocations = patch("primitiveInlineAllocations:count:", gen.inline_allocation());
-  
+
   masm->finalize();
   _is_initialized = true;
-
 };
-
 
 // patch some primitives defined in the interpreter
 
 void GeneratedPrimitives::patch_primitiveValue() {
 
-  primitives::patch("primitiveValue", 							primitiveValue(0));
-  primitives::patch("primitiveValue:", 							primitiveValue(1));
-  primitives::patch("primitiveValue:value:", 						primitiveValue(2));
-  primitives::patch("primitiveValue:value:value:", 					primitiveValue(3));
-  primitives::patch("primitiveValue:value:value:value:", 				primitiveValue(4));
-  primitives::patch("primitiveValue:value:value:value:value:", 				primitiveValue(5));
-  primitives::patch("primitiveValue:value:value:value:value:value:",			primitiveValue(6));
-  primitives::patch("primitiveValue:value:value:value:value:value:value:",		primitiveValue(7));
-  primitives::patch("primitiveValue:value:value:value:value:value:value:value:",	primitiveValue(8));
-  primitives::patch("primitiveValue:value:value:value:value:value:value:value:value:",	primitiveValue(9));  
-  
+  primitives::patch("primitiveValue", primitiveValue(0));
+  primitives::patch("primitiveValue:", primitiveValue(1));
+  primitives::patch("primitiveValue:value:", primitiveValue(2));
+  primitives::patch("primitiveValue:value:value:", primitiveValue(3));
+  primitives::patch("primitiveValue:value:value:value:", primitiveValue(4));
+  primitives::patch("primitiveValue:value:value:value:value:", primitiveValue(5));
+  primitives::patch("primitiveValue:value:value:value:value:value:", primitiveValue(6));
+  primitives::patch("primitiveValue:value:value:value:value:value:value:", primitiveValue(7));
+  primitives::patch("primitiveValue:value:value:value:value:value:value:value:", primitiveValue(8));
+  primitives::patch("primitiveValue:value:value:value:value:value:value:value:value:", primitiveValue(9));
 }
 
-typedef oop (__stdcall *smiOp)(oop,oop);
+typedef oop(__stdcall* smiOp)(oop, oop);
 oop GeneratedPrimitives::invoke(char* op, oop receiver, oop argument) {
   assert(_is_initialized, "Generated primitives have not been initialized");
-  return ((smiOp) op)(argument, receiver);
+  return ((smiOp)op)(argument, receiver);
 }
 oop GeneratedPrimitives::smiOopPrimitives_add(oop receiver, oop argument) {
   return invoke(_smiOopPrimitives_add, receiver, argument);

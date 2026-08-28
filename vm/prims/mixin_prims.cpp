@@ -52,8 +52,8 @@ PRIM_DECL_2(mixinOopPrimitives::method_at, oop mixin, oop index) {
   if (!index->is_smi())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
-  int i = smiOop(index)->value();  
-  if (i > 0 && i <= mixinOop(mixin)->number_of_methods()) 
+  int i = smiOop(index)->value();
+  if (i > 0 && i <= mixinOop(mixin)->number_of_methods())
     return reinterpret_cast<oop>(mixinOop(mixin)->method_at(i));
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -69,7 +69,6 @@ PRIM_DECL_2(mixinOopPrimitives::add_method, oop mixin, oop method) {
   // Check the mixin is not installed
   if (mixinOop(mixin)->is_installed())
     return markSymbol(vmSymbols::is_installed());
-
 
   BlockScavenge bs;
   mixinOop(mixin)->add_method(methodOop(method));
@@ -89,8 +88,8 @@ PRIM_DECL_2(mixinOopPrimitives::remove_method_at, oop mixin, oop index) {
     return markSymbol(vmSymbols::is_installed());
 
   BlockScavenge bs;
-  int i = smiOop(index)->value(); 
-  if (i > 0 && i <= mixinOop(mixin)->number_of_methods()) 
+  int i = smiOop(index)->value();
+  if (i > 0 && i <= mixinOop(mixin)->number_of_methods())
     return reinterpret_cast<oop>(mixinOop(mixin)->remove_method_at(i));
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -121,7 +120,7 @@ PRIM_DECL_2(mixinOopPrimitives::instance_variable_at, oop mixin, oop index) {
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
   int i = smiOop(index)->value();
-  if (i > 0 && i <= mixinOop(mixin)->number_of_instVars()) 
+  if (i > 0 && i <= mixinOop(mixin)->number_of_instVars())
     return mixinOop(mixin)->instVar_at(i);
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -155,10 +154,9 @@ PRIM_DECL_2(mixinOopPrimitives::remove_instance_variable_at, oop mixin, oop inde
   if (mixinOop(mixin)->is_installed())
     return markSymbol(vmSymbols::is_installed());
 
-
   BlockScavenge bs;
   int i = smiOop(index)->value();
-  if (i > 0 && i <= mixinOop(mixin)->number_of_instVars()) 
+  if (i > 0 && i <= mixinOop(mixin)->number_of_instVars())
     return mixinOop(mixin)->remove_instVar_at(i);
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -189,7 +187,7 @@ PRIM_DECL_2(mixinOopPrimitives::class_variable_at, oop mixin, oop index) {
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
   int i = smiOop(index)->value();
-  if (i > 0 && i <= mixinOop(mixin)->number_of_classVars()) 
+  if (i > 0 && i <= mixinOop(mixin)->number_of_classVars())
     return mixinOop(mixin)->classVar_at(i);
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -225,7 +223,7 @@ PRIM_DECL_2(mixinOopPrimitives::remove_class_variable_at, oop mixin, oop index) 
 
   BlockScavenge bs;
   int i = smiOop(index)->value();
-  if (i > 0 && i <= mixinOop(mixin)->number_of_classVars()) 
+  if (i > 0 && i <= mixinOop(mixin)->number_of_classVars())
     return mixinOop(mixin)->remove_classVar_at(i);
   return markSymbol(vmSymbols::out_of_bounds());
 }
@@ -304,7 +302,7 @@ PRIM_DECL_1(mixinOopPrimitives::set_installed, oop mixin) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   mixinOop instance_mixin = mixinOop(mixin);
-  mixinOop class_mixin    = instance_mixin->class_mixin();
+  mixinOop class_mixin = instance_mixin->class_mixin();
 
   instance_mixin->set_installed(trueObj);
   if (class_mixin->is_mixin()) {

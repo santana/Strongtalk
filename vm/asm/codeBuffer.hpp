@@ -30,42 +30,41 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/relocInfo.hpp"
 #include "memory/allocation.hpp"
 
+class CodeBuffer : public PrintableResourceObj {
+private:
+  char* instsStart;
+  char* instsEnd;
+  char* instsOverflow;
 
-class CodeBuffer: public PrintableResourceObj {
- private:
-  char*		instsStart;
-  char*		instsEnd;
-  char*		instsOverflow;
-  
-  relocInfo*	locsStart;
-  relocInfo*	locsEnd;
-  relocInfo*	locsOverflow;
-  int		last_reloc_offset;
+  relocInfo* locsStart;
+  relocInfo* locsEnd;
+  relocInfo* locsOverflow;
+  int last_reloc_offset;
 
-  char*		_decode_begin;
+  char* _decode_begin;
 
-  char*		decode_begin();
+  char* decode_begin();
 
- public:
+public:
   CodeBuffer(char* code_start, int code_size);
   CodeBuffer(int instsSize, int locsSize);
-  
-  char* code_begin() const		{ return instsStart; };
-  char* code_end()   const		{ return instsEnd; }
-  char* code_limit() const		{ return instsOverflow; };
 
-  int   code_size()  const		{ return instsEnd - instsStart; }
-  int   reloc_size() const		{ return (locsEnd - locsStart) * sizeof(relocInfo); }
+  char* code_begin() const { return instsStart; };
+  char* code_end() const { return instsEnd; }
+  char* code_limit() const { return instsOverflow; };
 
-  void  set_code_end(char* end);
-  void  relocate(char* at, relocInfo::relocType rtype);
+  int code_size() const { return instsEnd - instsStart; }
+  int reloc_size() const { return (locsEnd - locsStart) * sizeof(relocInfo); }
 
-  void  decode();
-  void  decode_all();
+  void set_code_end(char* end);
+  void relocate(char* at, relocInfo::relocType rtype);
 
-  void  copyTo(nmethod* nm);
+  void decode();
+  void decode_all();
 
-  void  print();
+  void copyTo(nmethod* nm);
+
+  void print();
 };
 
 #endif // DELTA_COMPILER

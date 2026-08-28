@@ -36,28 +36,23 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [length      ]
 //    [elements    ]* = objs(1) .. objs(length)
 
-class objArrayOopDesc: public memOopDesc {
- public:
+class objArrayOopDesc : public memOopDesc {
+public:
   // constructor
-	friend objArrayOop as_objArrayOop(void* p);
+  friend objArrayOop as_objArrayOop(void* p);
 
   void bootstrap_object(bootstrap* st);
 
   // accessors
-  objArrayOopDesc* addr() const {
-    return (objArrayOopDesc*) memOopDesc::addr(); }
+  objArrayOopDesc* addr() const { return (objArrayOopDesc*)memOopDesc::addr(); }
 
   bool is_within_bounds(int index) const { return 1 <= index && index <= length(); }
 
-  oop* addr_as_oops() const { return (oop*) addr(); }
+  oop* addr_as_oops() const { return (oop*)addr(); }
 
-  oop* objs(int which) const {
-    return &length_addr()[which];
-  }
+  oop* objs(int which) const { return &length_addr()[which]; }
 
-  oop* length_addr() const  {
-    return &addr_as_oops()[blueprint()->non_indexable_size()];
-  }
+  oop* length_addr() const { return &addr_as_oops()[blueprint()->non_indexable_size()]; }
 
   smi length() const {
     oop len = *length_addr();
@@ -65,9 +60,7 @@ class objArrayOopDesc: public memOopDesc {
     return smiOop(len)->value();
   }
 
-  void set_length(smi len) {
-    *length_addr() = as_smiOop(len);
-  }
+  void set_length(smi len) { *length_addr() = as_smiOop(len); }
 
   oop obj_at(int which) const {
     assert(which > 0 && which <= length(), "index out of bounds");
@@ -101,22 +94,22 @@ class objArrayOopDesc: public memOopDesc {
   void replace_and_fill(int from, int start, objArrayOop source);
 
   friend class objArrayKlass;
- private:
+
+private:
   // define the interval [begin .. end[ where the indexables are.
   oop* begin_indexables() const { return objs(1); }
-  oop* end_indexables()   const { return begin_indexables() + length(); }
+  oop* end_indexables() const { return begin_indexables() + length(); }
 };
 inline objArrayOop as_objArrayOop(void* p) {
-    return objArrayOop(as_memOop(p)); }
+  return objArrayOop(as_memOop(p));
+}
 
-class weakArrayOopDesc: public objArrayOopDesc {
- public:
-  friend weakArrayOop as_weakArrayOop(void* p) {
-    return weakArrayOop(as_memOop(p)); }
+class weakArrayOopDesc : public objArrayOopDesc {
+public:
+  friend weakArrayOop as_weakArrayOop(void* p) { return weakArrayOop(as_memOop(p)); }
 
   // accessors
-  weakArrayOopDesc* addr() const {
-    return (weakArrayOopDesc*) memOopDesc::addr(); }
+  weakArrayOopDesc* addr() const { return (weakArrayOopDesc*)memOopDesc::addr(); }
 
   void scavenge_contents_after_registration();
   void follow_contents_after_registration();

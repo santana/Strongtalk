@@ -31,45 +31,51 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <cstdio>
 
 class outputStream : public ResourceObj {
- protected:
-   int  _indentation;	    // current indentation
-   int  _width;		    // width of the page
-   int  _position;	    // position on the current line
+protected:
+  int _indentation; // current indentation
+  int _width; // width of the page
+  int _position; // position on the current line
 
-   void basic_print(const char* str);
+  void basic_print(const char* str);
 
- public:
-   // creation
-   outputStream(int width = 80);
+public:
+  // creation
+  outputStream(int width = 80);
 
-   // indentation
-   void indent();
-   void inc() { _indentation++; };
-   void dec() { _indentation--; };
-   int  indentation() const    { return _indentation; }
-   void set_indentation(int i) { _indentation = i;    }
-   void fill_to(int col);
+  // indentation
+  void indent();
+  void inc() { _indentation++; };
+  void dec() { _indentation--; };
+  int indentation() const { return _indentation; }
+  void set_indentation(int i) { _indentation = i; }
+  void fill_to(int col);
 
-   // sizing
-   int width()    const { return _width;    }
-   int position() const { return _position; }
+  // sizing
+  int width() const { return _width; }
+  int position() const { return _position; }
 
-   // printing
-   void print(const char* format, ...);
-   void print_cr(const char* format, ...);
+  // printing
+  void print(const char* format, ...);
+  void print_cr(const char* format, ...);
 
-   void vprint(const char *format, va_list argptr);
-   void vprint_cr(const char* format, va_list argptr);
+  void vprint(const char* format, va_list argptr);
+  void vprint_cr(const char* format, va_list argptr);
 
-   void print_raw(const char* str) { basic_print(str); }
-   void out_hex(int addr);
+  void print_raw(const char* str) { basic_print(str); }
+  void out_hex(int addr);
 
-   virtual void put(char c);
-   virtual void sp();
-   virtual void cr();
+  virtual void put(char c);
+  virtual void sp();
+  virtual void cr();
 
-   void dec_cr() { dec(); cr(); }
-   void inc_cr() { inc(); cr(); }
+  void dec_cr() {
+    dec();
+    cr();
+  }
+  void inc_cr() {
+    inc();
+    cr();
+  }
 };
 
 // Standard output
@@ -84,11 +90,12 @@ outputStream* getStd();
 extern outputStream* _err;
 
 class stringStream : public outputStream {
- protected:
+protected:
   char* buffer;
-  int   buffer_pos;
-  int   buffer_length;
- public:
+  int buffer_pos;
+  int buffer_length;
+
+public:
   stringStream(int initial_size = 1 * K);
   void put(char c);
   char* as_string();
@@ -98,9 +105,10 @@ class stringStream : public outputStream {
 };
 
 class fileStream : public outputStream {
- protected:
+protected:
   FILE* _file;
- public:
+
+public:
   fileStream(char* file_name);
   ~fileStream();
   int is_open() const { return _file != NULL; }

@@ -33,44 +33,45 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // the PrimInliner inlines primitives (if possible) or generates a non-inlined call
 // there's one PrimInliner for each primitive call encountered
-class PrimInliner: public PrintableResourceObj {
- private:
-  NodeBuilder*		_gen;				// the active node generator
-  int			_bci;				// bci of primitive call
-  primitive_desc*	_pdesc;				// the primitive
-  MethodInterval*	_failure_block;			// code in primitive failure block
+class PrimInliner : public PrintableResourceObj {
+private:
+  NodeBuilder* _gen; // the active node generator
+  int _bci; // bci of primitive call
+  primitive_desc* _pdesc; // the primitive
+  MethodInterval* _failure_block; // code in primitive failure block
 
-  InlinedScope*		_scope;				// the current scope
-  ExprStack*		_exprStack;			// the current expression stack
-  GrowableArray<Expr*>*	_params;			// the copy of the top number_of_parameters() elements of _exprStack
-							// NB: don't use _params->at(...) -- use parameter() below
-  bool  _usingUncommonTrap;				// using uncommon trap for prim. failure?
-  bool  _cannotFail;		    			// true if primitive can't fail
-  int	number_of_parameters()	const			{ return _pdesc->number_of_parameters(); }
-  Expr*	parameter(int index)	const 			{ return _params->at(index); }		// parameter of primitive call
-  bool	is_power_of_2(int x) const			{ return x > 0 && (x & (x-1)) == 0; }	// true if there's an n with 2^n = x
-  int	log2(int x) const;				// if is_power_of_2(x) then 2^(log2(x)) = x
+  InlinedScope* _scope; // the current scope
+  ExprStack* _exprStack; // the current expression stack
+  GrowableArray<Expr*>* _params; // the copy of the top number_of_parameters() elements of _exprStack
+  // NB: don't use _params->at(...) -- use parameter() below
+  bool _usingUncommonTrap; // using uncommon trap for prim. failure?
+  bool _cannotFail; // true if primitive can't fail
+  int number_of_parameters() const { return _pdesc->number_of_parameters(); }
+  Expr* parameter(int index) const { return _params->at(index); } // parameter of primitive call
+  bool is_power_of_2(int x) const { return x > 0 && (x & (x - 1)) == 0; } // true if there's an n with 2^n = x
+  int log2(int x) const; // if is_power_of_2(x) then 2^(log2(x)) = x
 
-  inline void assert_failure_block();			// debugging: asserts that there's a failure block
-  inline void assert_no_failure_block();		// debugging: asserts that there's no failure block
-  inline void assert_receiver();			// debugging: asserts that the first parameter is self
+  inline void assert_failure_block(); // debugging: asserts that there's a failure block
+  inline void assert_no_failure_block(); // debugging: asserts that there's no failure block
+  inline void assert_receiver(); // debugging: asserts that the first parameter is self
 
-  Expr*	tryConstantFold();				// try constant-folding the primitive
-  Expr*	tryTypeCheck();					// try constant-folding primitive failures
-  Expr*	tryInline();					// try inlining or special-casing the primitive
-  Expr* genCall(bool canFail);				// generate non-inlined primitive call
-  Expr* primitiveFailure(symbolOop failureCode);	// handle primitive that always fail
-  Expr* merge_failure_block(Node* ok_exit, Expr* ok_result, Node* failure_exit, Expr* failure_code, bool ok_result_is_read_only = true);
-  symbolOop failureSymbolForArg(int i);			// error string for "n.th arg has wrong type"
-  bool  shouldUseUncommonTrap();			// use uncommon trap for primitive failure?
+  Expr* tryConstantFold(); // try constant-folding the primitive
+  Expr* tryTypeCheck(); // try constant-folding primitive failures
+  Expr* tryInline(); // try inlining or special-casing the primitive
+  Expr* genCall(bool canFail); // generate non-inlined primitive call
+  Expr* primitiveFailure(symbolOop failureCode); // handle primitive that always fail
+  Expr* merge_failure_block(Node* ok_exit, Expr* ok_result, Node* failure_exit, Expr* failure_code,
+                            bool ok_result_is_read_only = true);
+  symbolOop failureSymbolForArg(int i); // error string for "n.th arg has wrong type"
+  bool shouldUseUncommonTrap(); // use uncommon trap for primitive failure?
   inline bool basic_shouldUseUncommonTrap() const;
-  
-  Expr* smi_ArithmeticOp(ArithOpCode  op  , Expr* x, Expr* y);
-  Expr* smi_Comparison  (BranchOpCode cond, Expr* x, Expr* y);
-  Expr* smi_BitOp       (ArithOpCode  op  , Expr* x, Expr* y);
-  Expr* smi_Div         (Expr* x, Expr* y);
-  Expr* smi_Mod         (Expr* x, Expr* y);
-  Expr* smi_Shift       (Expr* x, Expr* y);
+
+  Expr* smi_ArithmeticOp(ArithOpCode op, Expr* x, Expr* y);
+  Expr* smi_Comparison(BranchOpCode cond, Expr* x, Expr* y);
+  Expr* smi_BitOp(ArithOpCode op, Expr* x, Expr* y);
+  Expr* smi_Div(Expr* x, Expr* y);
+  Expr* smi_Mod(Expr* x, Expr* y);
+  Expr* smi_Shift(Expr* x, Expr* y);
 
   Expr* array_size();
   Expr* array_at_ifFail(ArrayAtNode::AccessType access_type);
@@ -81,18 +82,18 @@ class PrimInliner: public PrintableResourceObj {
   Expr* obj_equal();
   Expr* obj_class(bool has_receiver);
   Expr* obj_hash(bool has_receiver);
-  
+
   Expr* proxy_byte_at();
   Expr* proxy_byte_at_put();
 
   Expr* block_primitiveValue();
 
- public:
+public:
   PrimInliner(NodeBuilder* gen, primitive_desc* pdesc, MethodInterval* failure_block);
   void generate();
 
-  static Expr* generate_cond(BranchOpCode cond, NodeBuilder* gen, PReg* resPReg); 
-      // generates cond. branch and code to assign true/false to resPReg
+  static Expr* generate_cond(BranchOpCode cond, NodeBuilder* gen, PReg* resPReg);
+  // generates cond. branch and code to assign true/false to resPReg
 
   void print();
 };

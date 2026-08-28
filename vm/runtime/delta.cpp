@@ -30,7 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/objArrayOop.hpp"
 #include "oops/symbolOop.hpp"
 #include "runtime/delta.hpp"
-#include "runtime/os.hpp"		// os::jit_write_protect (Apple Silicon)
+#include "runtime/os.hpp" // os::jit_write_protect (Apple Silicon)
 #include "runtime/process.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "memory/generation.inline.hpp"
@@ -38,8 +38,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Implementation of DeltaCallCache
 
-DeltaCallCache* DeltaCallCache::_root = NULL;	// anchor of all DeltaCallCaches
-
+DeltaCallCache* DeltaCallCache::_root = NULL; // anchor of all DeltaCallCaches
 
 DeltaCallCache::DeltaCallCache() {
   _link = _root;
@@ -47,12 +46,10 @@ DeltaCallCache::DeltaCallCache() {
   clear();
 }
 
-
 void DeltaCallCache::clear() {
   _key.clear();
   _result.clear();
 }
-
 
 void DeltaCallCache::clearAll() {
   DeltaCallCache* p = _root;
@@ -64,7 +61,7 @@ void DeltaCallCache::clearAll() {
 
 // Implementation of Delta
 
-typedef oop (call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
+typedef oop(call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
 
 oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofArgs, oop* args) {
   // On Apple Silicon the MAP_JIT code regions must be executable (not just
@@ -80,7 +77,8 @@ oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofA
     if (entry != NULL && entry->method()->isZombie()) {
       // is a zombie nmethod => do a new lookup
       LookupResult result = ic->lookup(receiver->klass(), symbolOop(selector));
-      if (result.is_empty()) fatal("lookup failure - not treated");
+      if (result.is_empty())
+        fatal("lookup failure - not treated");
       return _call_delta(result.value(), receiver, nofArgs, args);
     }
     return _call_delta(ic->result().value(), receiver, nofArgs, args);
@@ -128,9 +126,11 @@ oop Delta::does_not_understand(oop receiver, symbolOop selector, int nofArgs, oo
     sel = oopFactory::new_symbol("doesNotUnderstand:");
     if (interpreter_normal_lookup(receiver->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
-      { ResourceMark rm;
+      {
+        ResourceMark rm;
         mystd->print("LOOKUP ERROR\n");
-        sel->print_value(); mystd->print(" not found\n");
+        sel->print_value();
+        mystd->print(" not found\n");
       }
       if (DeltaProcess::active()->is_scheduler()) {
         DeltaProcess::active()->trace_stack();

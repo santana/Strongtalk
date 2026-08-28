@@ -35,10 +35,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //       (user) register are saved and their value is not destroyed.
 
 class SavedRegisters : AllStatic {
- public:
-  static oop  fetch(int register_number, void** frame_pointer);
+public:
+  static oop fetch(int register_number, void** frame_pointer);
   static void clear();
-//  static void save_registers();
+  //  static void save_registers();
   static void generate_save_registers(MacroAssembler* masm);
 };
 #endif // _SAVED_REGISTERS_HPP

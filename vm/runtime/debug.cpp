@@ -24,56 +24,47 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/debug.hpp"
 #include "utilities/ostream.hpp"
 
-
 // definition of boolean flags
 
-#define MATERIALIZE_BOOLEAN_FLAG(name,value,doc) \
-  bool name = value; 
+#define MATERIALIZE_BOOLEAN_FLAG(name, value, doc) bool name = value;
 
-APPLY_TO_BOOLEAN_FLAGS(MATERIALIZE_BOOLEAN_FLAG,MATERIALIZE_BOOLEAN_FLAG)
-
+APPLY_TO_BOOLEAN_FLAGS(MATERIALIZE_BOOLEAN_FLAG, MATERIALIZE_BOOLEAN_FLAG)
 
 // definition of integer flags
 
-#define MATERIALIZE_INTEGER_FLAG(name,value,doc) \
-  int name = value; 
+#define MATERIALIZE_INTEGER_FLAG(name, value, doc) int name = value;
 
-APPLY_TO_INTEGER_FLAGS(MATERIALIZE_INTEGER_FLAG,MATERIALIZE_INTEGER_FLAG)
-
+APPLY_TO_INTEGER_FLAGS(MATERIALIZE_INTEGER_FLAG, MATERIALIZE_INTEGER_FLAG)
 
 // boolean flag table
 
 struct boolFlag {
   char* name;
   bool* value_ptr;
-  bool  default_value;
+  bool default_value;
   char* doc;
 };
 
-
 #ifdef PRODUCT
-#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP(name,value,doc) \
-  // do nothing - flag doesn't show up in table in product version
+#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP(name, value, doc)
+// do nothing - flag doesn't show up in table in product version
 #else
-#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP(name,value,doc) \
-  { XSTR(name), &name, value, doc },
+#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP(name, value, doc) {XSTR(name), &name, value, doc},
 #endif
 
-#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_PRODUCT(name,value,doc) \
-  { XSTR(name), &name, value, doc },
+#define MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_PRODUCT(name, value, doc) {XSTR(name), &name, value, doc},
 
 static boolFlag boolTable[] = {
-  APPLY_TO_BOOLEAN_FLAGS(MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP,MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_PRODUCT) 
-  {0, NULL, false, NULL } // indicates end of table
+  APPLY_TO_BOOLEAN_FLAGS(MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_DEVELOP,
+                         MATERIALIZE_BOOLEAN_FLAG_STRUCT_FOR_PRODUCT){0, NULL, false, NULL} // indicates end of table
 };
-
 
 inline bool str_equal(char* s, char* q, int len) {
   // s is null terminated, q is not!
-  if (strlen(s) != (unsigned int) len) return false;
+  if (strlen(s) != (unsigned int)len)
+    return false;
   return strncmp(s, q, len) == 0;
 }
-
 
 bool debugFlags::boolAt(char* name, int len, bool* value) {
   for (boolFlag* current = &boolTable[0]; current->name; current++) {
@@ -85,31 +76,30 @@ bool debugFlags::boolAt(char* name, int len, bool* value) {
   return false;
 }
 
-
 bool debugFlags::boolAtPut(char* name, int len, bool* value) {
   if (str_equal("TracePrims", name, len)) {
-    TraceOopPrims             = *value;
-    TraceDoublePrims          = *value;
-    TraceByteArrayPrims       = *value;
+    TraceOopPrims = *value;
+    TraceDoublePrims = *value;
+    TraceByteArrayPrims = *value;
     TraceDoubleByteArrayPrims = *value;
-    TraceObjArrayPrims        = *value;
-    TraceSmiPrims             = *value;
-    TraceProxyPrims           = *value;
-    TraceBehaviorPrims        = *value;
-    TraceBlockPrims           = *value;
-    TraceDebugPrims           = *value;
-    TraceSystemPrims          = *value;
-    TraceProcessPrims         = *value;
-    TraceCallBackPrims        = *value;
-    TraceMethodPrims          = *value;
-    TraceMixinPrims           = *value;
+    TraceObjArrayPrims = *value;
+    TraceSmiPrims = *value;
+    TraceProxyPrims = *value;
+    TraceBehaviorPrims = *value;
+    TraceBlockPrims = *value;
+    TraceDebugPrims = *value;
+    TraceSystemPrims = *value;
+    TraceProcessPrims = *value;
+    TraceCallBackPrims = *value;
+    TraceMethodPrims = *value;
+    TraceMixinPrims = *value;
     *value = !*value;
     return true;
   }
   for (boolFlag* current = &boolTable[0]; current->name; current++) {
     if (str_equal(current->name, name, len)) {
       bool old_value = *current->value_ptr;
-      *current->value_ptr = *value; 
+      *current->value_ptr = *value;
       *value = old_value;
       return true;
     }
@@ -117,33 +107,28 @@ bool debugFlags::boolAtPut(char* name, int len, bool* value) {
   return false;
 }
 
-
 // integer flag table
 
 struct intFlag {
   char* name;
-  int*  value_ptr;
-  int   default_value;
+  int* value_ptr;
+  int default_value;
   char* doc;
 };
 
-
 #ifdef PRODUCT
-#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP(name,value,doc) \
-  // do nothing - flag doesn't show up in table in product version
+#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP(name, value, doc)
+// do nothing - flag doesn't show up in table in product version
 #else
-#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP(name,value,doc) \
-  { XSTR(name), &name, value, doc },
+#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP(name, value, doc) {XSTR(name), &name, value, doc},
 #endif
 
-#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_PRODUCT(name,value,doc) \
-  { XSTR(name), &name, value, doc },
+#define MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_PRODUCT(name, value, doc) {XSTR(name), &name, value, doc},
 
 static intFlag intTable[] = {
-  APPLY_TO_INTEGER_FLAGS(MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP,MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_PRODUCT) 
-  {0, NULL, 0, NULL } // indicates end of table
+  APPLY_TO_INTEGER_FLAGS(MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_DEVELOP,
+                         MATERIALIZE_INTEGER_FLAG_STRUCT_FOR_PRODUCT){0, NULL, 0, NULL} // indicates end of table
 };
-
 
 bool debugFlags::intAt(char* name, int len, int* value) {
   for (intFlag* current = &intTable[0]; current->name; current++) {
@@ -155,19 +140,17 @@ bool debugFlags::intAt(char* name, int len, int* value) {
   return false;
 }
 
-
 bool debugFlags::intAtPut(char* name, int len, int* value) {
   for (intFlag* current = &intTable[0]; current->name; current++) {
     if (str_equal(current->name, name, len)) {
       int old_value = *current->value_ptr;
-      *current->value_ptr = *value; 
+      *current->value_ptr = *value;
       *value = old_value;
       return true;
     }
   }
-  return false;  
+  return false;
 }
-
 
 // printing
 
@@ -178,33 +161,30 @@ void debugFlags::printFlags() {
     lprintf("%30s = %d\n", i->name, *i->value_ptr);
 }
 
-
 void debugFlags::print_on(outputStream* st) {
   // Boolean flags
   boolFlag* b;
   for (b = &boolTable[0]; b->name; b++)
-    st->print_cr("%s%s",  *b->value_ptr ? "+" : "-");
+    st->print_cr("%s%s", *b->value_ptr ? "+" : "-");
 
   // Integer flags
   for (intFlag* i = &intTable[0]; i->name; i++)
-    st->print_cr("%s=%d",  i->name, *b->value_ptr);
+    st->print_cr("%s=%d", i->name, *b->value_ptr);
 }
-
 
 void print_diff_on(outputStream* st) {
   // Boolean flags
   boolFlag* b;
   for (b = &boolTable[0]; b->name; b++) {
     if (*b->value_ptr != b->default_value)
-      st->print_cr("%s%s",  *b->value_ptr ? "+" : "-");
+      st->print_cr("%s%s", *b->value_ptr ? "+" : "-");
   }
 
   // Integer flags
   for (intFlag* i = &intTable[0]; i->name; i++) {
     if (*b->value_ptr != b->default_value)
-      st->print_cr("%s=%d",  i->name, *b->value_ptr);
+      st->print_cr("%s=%d", i->name, *b->value_ptr);
   }
 }
-
 
 bool BeingDebugged = false;

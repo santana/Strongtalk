@@ -33,33 +33,45 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 int Indent = 0;
 
 void printIndent() {
-  for (int i = 0; i < Indent; i++) lprintf("  ");
+  for (int i = 0; i < Indent; i++)
+    lprintf("  ");
 }
 
+#define LOOP_UNROLL(count, body)                                                                                       \
+  {                                                                                                                    \
+    assert(count >= 0, "cannot have negative count in loop unroll");                                                   \
+    int __c1__ = count;                                                                                                \
+    for (int __c__ = __c1__ >> 3; __c__; __c__--) {                                                                    \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+      body;                                                                                                            \
+    }                                                                                                                  \
+    switch (maskBits(__c1__, nthMask(3))) {                                                                            \
+      case 7:                                                                                                          \
+        body;                                                                                                          \
+      case 6:                                                                                                          \
+        body;                                                                                                          \
+      case 5:                                                                                                          \
+        body;                                                                                                          \
+      case 4:                                                                                                          \
+        body;                                                                                                          \
+      case 3:                                                                                                          \
+        body;                                                                                                          \
+      case 2:                                                                                                          \
+        body;                                                                                                          \
+      case 1:                                                                                                          \
+        body;                                                                                                          \
+      case 0:;                                                                                                         \
+    }                                                                                                                  \
+  }
 
-# define LOOP_UNROLL(count, body)                                             \
-    {                                                                         \
-    assert(count >= 0, "cannot have negative count in loop unroll");          \
-    int __c1__ = count;                                                      \
-    for (int __c__ = __c1__ >> 3; __c__; __c__ --) {                         \
-    body;       body;                                                         \
-    body;       body;                                                         \
-    body;       body;                                                         \
-    body;       body;                                                         \
-  }                                                                           \
-    switch (maskBits(__c1__, nthMask(3))) {                                   \
-   case 7:      body;                                                         \
-   case 6:      body;                                                         \
-   case 5:      body;                                                         \
-   case 4:      body;                                                         \
-   case 3:      body;                                                         \
-   case 2:      body;                                                         \
-   case 1:      body;                                                         \
-   case 0:      ;                                                             \
-  } }
-
-# define DO_UP(from) LOOP_UNROLL(count, *to++ = from)
-# define DO_DOWN(from) LOOP_UNROLL(count, *--to = from)
+#define DO_UP(from) LOOP_UNROLL(count, *to++ = from)
+#define DO_DOWN(from) LOOP_UNROLL(count, *--to = from)
 
 void copy_oops_up(oop* from, oop* to, int count) {
   assert(maskBits(intptr_t(from), Tag_Size) == 0, "not word aligned");
@@ -69,23 +81,23 @@ void copy_oops_up(oop* from, oop* to, int count) {
   // block_step was determined by profiling the scavenger.
   //  11/14-95 (Robert and Lars)
   const int block_step = 4;
-  
+
   while (count >= block_step) {
-    *(to+0) = *(from+0);
-    *(to+1) = *(from+1);
-    *(to+2) = *(from+2);
-    *(to+3) = *(from+3);
-    to    += block_step;
-    from  += block_step;
+    *(to + 0) = *(from + 0);
+    *(to + 1) = *(from + 1);
+    *(to + 2) = *(from + 2);
+    *(to + 3) = *(from + 3);
+    to += block_step;
+    from += block_step;
     count -= block_step;
   }
 
   if (count > 0) {
-    *(to+0) = *(from+0);
+    *(to + 0) = *(from + 0);
     if (count > 1) {
-      *(to+1) = *(from+1);
+      *(to + 1) = *(from + 1);
       if (count > 2) {
-        *(to+2) = *(from+2);
+        *(to + 2) = *(from + 2);
       }
     }
   }
@@ -96,30 +108,29 @@ void copy_oops_down(oop* from, oop* to, int count) {
   assert(maskBits(intptr_t(to), Tag_Size) == 0, "not word aligned");
   assert(count >= 0, "negative count");
   DO_DOWN(*--from)
-  }
-
+}
 
 void set_oops(oop* to, int count, oop value) {
   assert(maskBits(intptr_t(to), Tag_Size) == 0, "not word aligned");
   assert(count >= 0, "negative count");
 
   const int block_step = 4;
-  
+
   while (count >= block_step) {
-    *(to+0) = value;
-    *(to+1) = value;
-    *(to+2) = value;
-    *(to+3) = value;
-    to    += block_step;
+    *(to + 0) = value;
+    *(to + 1) = value;
+    *(to + 2) = value;
+    *(to + 3) = value;
+    to += block_step;
     count -= block_step;
   }
 
   if (count > 0) {
-    *(to+0) = value;
+    *(to + 0) = value;
     if (count > 1) {
-      *(to+1) = value;
+      *(to + 1) = value;
       if (count > 2) {
-        *(to+2) = value;
+        *(to + 2) = value;
       }
     }
   }
@@ -127,21 +138,21 @@ void set_oops(oop* to, int count, oop value) {
 
 char* copy_string(char* s) {
   int len = strlen(s) + 1;
-  char* str = NEW_RESOURCE_ARRAY( char, len);
+  char* str = NEW_RESOURCE_ARRAY(char, len);
   strcpy(str, s);
   return str;
 }
 
 char* copy_c_heap_string(char* s) {
   int len = strlen(s) + 1;
-  char* str = NEW_C_HEAP_ARRAY( char, len);
+  char* str = NEW_C_HEAP_ARRAY(char, len);
   strcpy(str, s);
   return str;
 }
 
 char* copy_string(char* s, smi len) {
-  char* str = NEW_RESOURCE_ARRAY( char, len+1);
-  memcpy(str, s, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
+  memcpy(str, s, len + 1);
   str[len] = '\0';
   return str;
 }
@@ -149,7 +160,8 @@ char* copy_string(char* s, smi len) {
 oop catchThisOne;
 
 void breakpoint() {
-  if (BreakAtWarning) error_breakpoint();
+  if (BreakAtWarning)
+    error_breakpoint();
 }
 
 void error_breakpoint() {

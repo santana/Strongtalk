@@ -25,6 +25,5 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/ostream.hpp"
 
 void smiOopDesc::print_on(outputStream* st) {
-  st->print("%ld", (long) value());
+  st->print("%ld", (long)value());
 }
-

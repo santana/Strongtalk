@@ -17,20 +17,19 @@ class HeapResourceMark;
 using namespace easyunit;
 
 DECLARE(missingMethodBuilderTests)
-  HeapResourceMark *rm;
-  char msg[200];
+HeapResourceMark* rm;
+char msg[200];
 
-#define CHECK_OOPS(expectedOops, oops, index)\
-    oop expected = expectedOops[index];\
-    oop actual = oops->obj_at(index + 1);\
-    snprintf(msg, sizeof(msg), "Incorrect oop at %d. Expected: %p, but was: %p",\
-      index, (void*)expected, (void*)actual);\
-    ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
+#define CHECK_OOPS(expectedOops, oops, index)                                                                          \
+  oop expected = expectedOops[index];                                                                                  \
+  oop actual = oops->obj_at(index + 1);                                                                                \
+  snprintf(msg, sizeof(msg), "Incorrect oop at %d. Expected: %p, but was: %p", index, (void*)expected, (void*)actual); \
+  ASSERT_EQUALS_M(reinterpret_cast<intptr_t>(expected), reinterpret_cast<intptr_t>(actual), msg)
 
-  int instVarIndex(klassOop targetClass, char* instVarName) {
-    symbolOop varNameSymbol = oopFactory::new_symbol(instVarName);
-    return targetClass->klass_part()->lookup_inst_var(varNameSymbol);
-  }
+int instVarIndex(klassOop targetClass, char* instVarName) {
+  symbolOop varNameSymbol = oopFactory::new_symbol(instVarName);
+  return targetClass->klass_part()->lookup_inst_var(varNameSymbol);
+}
 END_DECLARE
 
 SETUP(missingMethodBuilderTests) {
@@ -47,22 +46,58 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectBytes) 
   char msg[200];
   symbolOop selector = oopFactory::new_symbol("value");
 
-  unsigned char expectedBytes[52] = {
-    Bytecodes::push_global, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_self,
-    Bytecodes::push_literal, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_literal, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::interpreted_send_n, 3, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::interpreted_send_self, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::return_tos_pop_0, 0xFF, 0xFF, 0xFF
-  };
+  unsigned char expectedBytes[52] = {Bytecodes::push_global,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_self,
+                                     Bytecodes::push_literal,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_literal,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::interpreted_send_n,
+                                     3,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::interpreted_send_self,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::return_tos_pop_0,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF};
 
   MissingMethodBuilder builder(selector);
   builder.build();
@@ -74,8 +109,7 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectBytes) 
   for (int index = 0; index < 52; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
-      index, expected, actual);
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d", index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
 }
@@ -87,21 +121,19 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectOops) {
   MissingMethodBuilder builder(selector);
   builder.build();
   objArrayOop oops = builder.oops();
-  oop expectedOops[13] = {
-    as_smiOop(0),
-    reinterpret_cast<oop>(Universe::find_global_association("Message")),
-    as_smiOop(0),
-    selector,
-    as_smiOop(0),
-    as_smiOop(0),
-    as_smiOop(0),
-    oopFactory::new_symbol("receiver:selector:arguments:"),
-    as_smiOop(0),
-    as_smiOop(0),
-    oopFactory::new_symbol("doesNotUnderstand:"),
-    as_smiOop(0),
-    as_smiOop(0)
-  };
+  oop expectedOops[13] = {as_smiOop(0),
+                          reinterpret_cast<oop>(Universe::find_global_association("Message")),
+                          as_smiOop(0),
+                          selector,
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("receiver:selector:arguments:"),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("doesNotUnderstand:"),
+                          as_smiOop(0),
+                          as_smiOop(0)};
   for (int index = 0; index < 5; index++) {
     CHECK_OOPS(expectedOops, oops, index);
   }
@@ -114,7 +146,7 @@ TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectOops) {
   }
 }
 
-typedef oop (call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
+typedef oop(call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
 
 TESTF(missingMethodBuilderTests, buildWithNoArgSelectorShouldBuildCorrectMethod) {
   call_delta_func* _call_delta = (call_delta_func*)StubRoutines::call_delta();
@@ -157,7 +189,7 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectMethod
   klassOop messageClass = klassOop(Universe::find_global("Message"));
 
   oop fixture = objectClass->klass_part()->allocateObject();
-  oop arg1in =  as_smiOop(53);
+  oop arg1in = as_smiOop(53);
   memOop result = memOop(_call_delta(method, fixture, 1, &arg1in));
 
   ASSERT_TRUE_M(result->is_mem(), "Wrong type");
@@ -189,7 +221,7 @@ TESTF(missingMethodBuilderTests, buildWithTwoArgSelectorShouldBuildCorrectMethod
   klassOop messageClass = klassOop(Universe::find_global("Message"));
 
   oop fixture = objectClass->klass_part()->allocateObject();
-  oop args[] = { as_smiOop(42), as_smiOop(53) };
+  oop args[] = {as_smiOop(42), as_smiOop(53)};
   memOop result = memOop(_call_delta(method, fixture, 2, args));
 
   ASSERT_TRUE_M(result->is_mem(), "Wrong type");
@@ -226,7 +258,7 @@ TESTF(missingMethodBuilderTests, buildWithThreeArgSelectorShouldBuildCorrectMeth
   klassOop messageClass = klassOop(Universe::find_global("Message"));
 
   oop fixture = objectClass->klass_part()->allocateObject();
-  oop args[] = { as_smiOop(11), as_smiOop(42), as_smiOop(53) };
+  oop args[] = {as_smiOop(11), as_smiOop(42), as_smiOop(53)};
   memOop result = memOop(_call_delta(method, fixture, 3, args));
 
   ASSERT_TRUE_M(result->is_mem(), "Wrong type");
@@ -259,34 +291,86 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectBytes)
   char msg[200];
   symbolOop selector = oopFactory::new_symbol("value:");
 
-  unsigned char expectedBytes[80] = {
-    Bytecodes::allocate_temp_1,
-    Bytecodes::push_global, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_self,
-    Bytecodes::push_literal, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_global, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_succ_n, 0,
-    Bytecodes::interpreted_send_1, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::store_temp_n, 0xFF,
-    Bytecodes::push_succ_n, 0,
-    Bytecodes::push_arg_n, 0,
-    Bytecodes::interpreted_send_2_pop, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::interpreted_send_n, 3, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::interpreted_send_self, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::return_tos_pop_1, 0xff, 0xff, 0xff
-  };
+  unsigned char expectedBytes[80] = {Bytecodes::allocate_temp_1,
+                                     Bytecodes::push_global,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_self,
+                                     Bytecodes::push_literal,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_global,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_succ_n,
+                                     0,
+                                     Bytecodes::interpreted_send_1,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::store_temp_n,
+                                     0xFF,
+                                     Bytecodes::push_succ_n,
+                                     0,
+                                     Bytecodes::push_arg_n,
+                                     0,
+                                     Bytecodes::interpreted_send_2_pop,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_temp_0,
+                                     Bytecodes::interpreted_send_n,
+                                     3,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::interpreted_send_self,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::return_tos_pop_1,
+                                     0xff,
+                                     0xff,
+                                     0xff};
 
   MissingMethodBuilder builder(selector);
   builder.build();
@@ -299,8 +383,7 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectBytes)
   for (int index = 0; index < 80; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
-      index, expected, actual);
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d", index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
 }
@@ -309,28 +392,26 @@ TESTF(missingMethodBuilderTests, buildWithOneArgSelectorShouldBuildCorrectOops) 
   char msg[200];
   symbolOop selector = oopFactory::new_symbol("value:");
 
-  oop expectedOops[20] = {
-    as_smiOop(0),
-    reinterpret_cast<oop>(Universe::find_global_association("Message")),
-    as_smiOop(0),
-    selector,
-    as_smiOop(0),
-    reinterpret_cast<oop>(Universe::find_global_association("Array")),
-    as_smiOop(0),
-    oopFactory::new_symbol("new:"),
-    as_smiOop(0),
-    as_smiOop(0),
-    as_smiOop(0),
-    oopFactory::new_symbol("at:put:"),
-    as_smiOop(0),
-    as_smiOop(0),
-    oopFactory::new_symbol("receiver:selector:arguments:"),
-    as_smiOop(0),
-    as_smiOop(0),
-    oopFactory::new_symbol("doesNotUnderstand:"),
-    as_smiOop(0),
-    as_smiOop(0)
-  };
+  oop expectedOops[20] = {as_smiOop(0),
+                          reinterpret_cast<oop>(Universe::find_global_association("Message")),
+                          as_smiOop(0),
+                          selector,
+                          as_smiOop(0),
+                          reinterpret_cast<oop>(Universe::find_global_association("Array")),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("new:"),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("at:put:"),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("receiver:selector:arguments:"),
+                          as_smiOop(0),
+                          as_smiOop(0),
+                          oopFactory::new_symbol("doesNotUnderstand:"),
+                          as_smiOop(0),
+                          as_smiOop(0)};
 
   MissingMethodBuilder builder(selector);
   builder.build();
@@ -345,40 +426,102 @@ TESTF(missingMethodBuilderTests, buildWithTwoArgSelectorShouldBuildCorrectBytes)
   char msg[200];
   symbolOop selector = oopFactory::new_symbol("value:value:");
 
-  unsigned char expectedBytes[96] = {
-    Bytecodes::allocate_temp_1,
-    Bytecodes::push_global, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_self,
-    Bytecodes::push_literal, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_global, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_succ_n, 1,
-    Bytecodes::interpreted_send_1, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::store_temp_n, 0xFF,
-    Bytecodes::push_succ_n, 0,
-    Bytecodes::push_arg_n, 1,
-    Bytecodes::interpreted_send_2_pop, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::push_succ_n, 1,
-    Bytecodes::push_arg_n, 0,
-    Bytecodes::interpreted_send_2_pop, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::interpreted_send_n, 3, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::interpreted_send_self, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::return_tos_pop_2, 0xff, 0xff, 0xff
-  };
+  unsigned char expectedBytes[96] = {Bytecodes::allocate_temp_1,
+                                     Bytecodes::push_global,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_self,
+                                     Bytecodes::push_literal,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_global,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_succ_n,
+                                     1,
+                                     Bytecodes::interpreted_send_1,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::store_temp_n,
+                                     0xFF,
+                                     Bytecodes::push_succ_n,
+                                     0,
+                                     Bytecodes::push_arg_n,
+                                     1,
+                                     Bytecodes::interpreted_send_2_pop,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_temp_0,
+                                     Bytecodes::push_succ_n,
+                                     1,
+                                     Bytecodes::push_arg_n,
+                                     0,
+                                     Bytecodes::interpreted_send_2_pop,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::push_temp_0,
+                                     Bytecodes::interpreted_send_n,
+                                     3,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::interpreted_send_self,
+                                     0xFF,
+                                     0xFF,
+                                     0xFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     Bytecodes::return_tos_pop_2,
+                                     0xff,
+                                     0xff,
+                                     0xff};
 
   MissingMethodBuilder builder(selector);
   builder.build();
@@ -391,8 +534,7 @@ TESTF(missingMethodBuilderTests, buildWithTwoArgSelectorShouldBuildCorrectBytes)
   for (int index = 0; index < 96; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
-      index, expected, actual);
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d", index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
 }
@@ -401,46 +543,118 @@ TESTF(missingMethodBuilderTests, buildWithThreeArgSelectorShouldBuildCorrectByte
   char msg[200];
   symbolOop selector = oopFactory::new_symbol("value:value:value:");
 
-  unsigned char expectedBytes[112] = {
-    Bytecodes::allocate_temp_1,
-    Bytecodes::push_global, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_self,
-    Bytecodes::push_literal, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_global, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    Bytecodes::push_succ_n, 2,
-    Bytecodes::interpreted_send_1, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::store_temp_n, 0xFF,
-    Bytecodes::push_succ_n, 0,
-    Bytecodes::push_arg_n, 2,
-    Bytecodes::interpreted_send_2_pop, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::push_succ_n, 1,
-    Bytecodes::push_arg_n, 1,
-    Bytecodes::interpreted_send_2_pop, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::push_succ_n, 2,
-    Bytecodes::push_arg_n, 0,
-    Bytecodes::interpreted_send_2_pop, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::push_temp_0,
-    Bytecodes::interpreted_send_n, 3, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::interpreted_send_self, 0xFF, 0xFF, 0xFF,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    Bytecodes::return_tos_pop_n, 3, 0xff, 0xff
-  };
+  unsigned char expectedBytes[112] = {Bytecodes::allocate_temp_1,
+                                      Bytecodes::push_global,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_self,
+                                      Bytecodes::push_literal,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_global,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_succ_n,
+                                      2,
+                                      Bytecodes::interpreted_send_1,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::store_temp_n,
+                                      0xFF,
+                                      Bytecodes::push_succ_n,
+                                      0,
+                                      Bytecodes::push_arg_n,
+                                      2,
+                                      Bytecodes::interpreted_send_2_pop,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_temp_0,
+                                      Bytecodes::push_succ_n,
+                                      1,
+                                      Bytecodes::push_arg_n,
+                                      1,
+                                      Bytecodes::interpreted_send_2_pop,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_temp_0,
+                                      Bytecodes::push_succ_n,
+                                      2,
+                                      Bytecodes::push_arg_n,
+                                      0,
+                                      Bytecodes::interpreted_send_2_pop,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::push_temp_0,
+                                      Bytecodes::interpreted_send_n,
+                                      3,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::interpreted_send_self,
+                                      0xFF,
+                                      0xFF,
+                                      0xFF,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      Bytecodes::return_tos_pop_n,
+                                      3,
+                                      0xff,
+                                      0xff};
 
   MissingMethodBuilder builder(selector);
   builder.build();
@@ -453,9 +667,7 @@ TESTF(missingMethodBuilderTests, buildWithThreeArgSelectorShouldBuildCorrectByte
   for (int index = 0; index < 112; index++) {
     unsigned char expected = expectedBytes[index];
     unsigned char actual = bytes->byte_at(index + 1);
-    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d",
-      index, expected, actual);
+    snprintf(msg, sizeof(msg), "Incorrect byte at %d. Expected: %d, but was: %d", index, expected, actual);
     ASSERT_EQUALS_M(expected, actual, msg);
   }
 }
-

@@ -33,9 +33,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-#define NEXT                        \
-  pos++;                            \
-  if (pos > len) return;            \
+#define NEXT                                                                                                           \
+  pos++;                                                                                                               \
+  if (pos > len)                                                                                                       \
+    return;                                                                                                            \
   current = tempInfo->obj_at(pos)
 
 void TempDecoder::decode(methodOop method, int bci) {
@@ -51,10 +52,11 @@ void TempDecoder::decode(methodOop method, int bci) {
     no_debug_info();
     return;
   }
-  int len  = tempInfo->length();
-  if (len == 0) return;
+  int len = tempInfo->length();
+  if (len == 0)
+    return;
 
-  int pos     = 1;
+  int pos = 1;
   oop current = tempInfo->obj_at(pos);
 
   { // scan parameters
@@ -77,8 +79,7 @@ void TempDecoder::decode(methodOop method, int bci) {
 
   { // scan global stack float temps
     assert_smi(current, "expecting smi");
-    assert(smiOop(current)->value() == 0, "should be zero")
-    int fno = smiOop(current)->value();
+    assert(smiOop(current)->value() == 0, "should be zero") int fno = smiOop(current)->value();
     NEXT;
     while (current->is_byteArray()) {
       stack_float_temp(byteArrayOop(current), fno++);
@@ -97,10 +98,10 @@ void TempDecoder::decode(methodOop method, int bci) {
         heap_temp(byteArrayOop(current), offset++);
       }
       NEXT;
-    } 
+    }
   }
   { // scan inlined temps
-    while(1) {
+    while (1) {
       assert_smi(current, "expecting smi");
       int begin = smiOop(current)->value();
       NEXT;
@@ -114,8 +115,8 @@ void TempDecoder::decode(methodOop method, int bci) {
       while (current->is_byteArray()) {
         if ((begin <= bci) && (bci <= end)) {
           stack_temp(byteArrayOop(current), offset);
-	}
-	offset++;
+        }
+        offset++;
         NEXT;
       }
       // Floats
@@ -125,8 +126,8 @@ void TempDecoder::decode(methodOop method, int bci) {
       while (current->is_byteArray()) {
         if ((begin <= bci) && (bci <= end)) {
           stack_float_temp(byteArrayOop(current), offset);
-	}
-	offset++;
+        }
+        offset++;
         NEXT;
       }
     }
@@ -137,8 +138,9 @@ bool TempDecoder::is_heap_parameter(byteArrayOop name, objArrayOop tempInfo) {
   assert(name->is_symbol(), "Must be symbol");
   for (int index = 1; index <= num_of_params; index++) {
     byteArrayOop par = byteArrayOop(tempInfo->obj_at(index));
-     assert(par->is_symbol(), "Must be symbol");
-    if (name == par) return true;
+    assert(par->is_symbol(), "Must be symbol");
+    if (name == par)
+      return true;
   }
   return false;
 }
@@ -160,11 +162,11 @@ void TempPrinter::stack_float_temp(byteArrayOop name, int fno) {
   mystd->print_cr("  stack float temp: %s@%d", name->as_string(), fno);
 }
 
-void TempPrinter::heap_temp(byteArrayOop name, int no){
+void TempPrinter::heap_temp(byteArrayOop name, int no) {
   mystd->print_cr("  heap temp:  %s@%d", name->as_string(), no);
 }
 
-void TempPrinter::heap_parameter(byteArrayOop name, int no){
+void TempPrinter::heap_parameter(byteArrayOop name, int no) {
   mystd->print_cr("  heap param:  %s@%d", name->as_string(), no);
 }
 
@@ -172,11 +174,11 @@ void TempPrinter::no_debug_info() {
   mystd->print_cr("method has no debug information");
 }
 
-
 class FindParam : public TempDecoder {
- private:
-   int the_no;
- public:
+private:
+  int the_no;
+
+public:
   byteArrayOop result;
 
   void find(methodOop method, int no) {
@@ -185,7 +187,8 @@ class FindParam : public TempDecoder {
     decode(method, 0);
   }
   void parameter(byteArrayOop name, int no) {
-    if (the_no == no) result = name;
+    if (the_no == no)
+      result = name;
   }
 };
 
@@ -196,9 +199,10 @@ byteArrayOop find_parameter_name(methodOop method, int no) {
 }
 
 class FindStackTemp : public TempDecoder {
- private:
-   int the_no;
- public:
+private:
+  int the_no;
+
+public:
   byteArrayOop result;
 
   void find(methodOop method, int bci, int no) {
@@ -206,15 +210,17 @@ class FindStackTemp : public TempDecoder {
     the_no = no;
     TempDecoder::decode(method, bci);
   }
-  void stack_temp(byteArrayOop name, int no) { 
-    if (the_no == no) result = name;
+  void stack_temp(byteArrayOop name, int no) {
+    if (the_no == no)
+      result = name;
   }
 };
 
 class FindStackFloatTemp : public TempDecoder {
- private:
-   int the_fno;
- public:
+private:
+  int the_fno;
+
+public:
   byteArrayOop result;
 
   void find(methodOop method, int bci, int fno) {
@@ -222,15 +228,17 @@ class FindStackFloatTemp : public TempDecoder {
     the_fno = fno;
     TempDecoder::decode(method, bci);
   }
-  void stack_float_temp(byteArrayOop name, int fno) { 
-    if (the_fno == fno) result = name;
+  void stack_float_temp(byteArrayOop name, int fno) {
+    if (the_fno == fno)
+      result = name;
   }
 };
 
 class FindHeapTemp : public TempDecoder {
- private:
-   int the_no;
- public:
+private:
+  int the_no;
+
+public:
   byteArrayOop result;
 
   void find(methodOop method, int bci, int no) {
@@ -239,12 +247,13 @@ class FindHeapTemp : public TempDecoder {
     TempDecoder::decode(method, bci);
   }
   void heap_temp(byteArrayOop name, int no) {
-    if (the_no == no) result = name;
+    if (the_no == no)
+      result = name;
   }
   void heap_parameter(byteArrayOop name, int no) {
-    if (the_no == no) result = name;
+    if (the_no == no)
+      result = name;
   }
-
 };
 
 byteArrayOop find_stack_temp(methodOop method, int bci, int no) {

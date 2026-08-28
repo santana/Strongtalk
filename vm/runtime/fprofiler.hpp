@@ -40,27 +40,22 @@ enum TickPosition {
   other
 };
 
-class FlatProfiler: AllStatic {
- private:
-  static pnode**  table;
+class FlatProfiler : AllStatic {
+private:
+  static pnode** table;
   static int table_size;
 
-  static DeltaProcess*     proc;
+  static DeltaProcess* proc;
   static FlatProfilerTask* task;
-  static timer             time;
+  static timer time;
 
-  static int          gc_ticks;		// total ticks in GC/scavenge
-  static int   semaphore_ticks;
-  static int        stub_ticks;
-  static int    compiler_ticks;		// total ticks in compilation
-  static int     unknown_ticks;
+  static int gc_ticks; // total ticks in GC/scavenge
+  static int semaphore_ticks;
+  static int stub_ticks;
+  static int compiler_ticks; // total ticks in compilation
+  static int unknown_ticks;
 
-  static int total_ticks() {
-    return gc_ticks
-         + semaphore_ticks
-         + stub_ticks
-         + unknown_ticks;
-  }
+  static int total_ticks() { return gc_ticks + semaphore_ticks + stub_ticks + unknown_ticks; }
 
   friend class FlatProfilerTask;
 
@@ -71,7 +66,7 @@ class FlatProfiler: AllStatic {
   static void record_tick_for_running_frame(frame fr);
   static void record_tick_for_calling_frame(frame fr);
 
- public:
+public:
   static void allocate_table();
 
   static void reset();

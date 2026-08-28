@@ -23,9 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "runtime/disclaimer.hpp"
 
-
-char* Disclaimer::_msg =
-"\
+char* Disclaimer::_msg = "\
 Smalltalk Virtual Machine by LongView Technologies LLC		\n\
 ---------------------------------------------------------	\n\
 (c) 1994-1997 Sun Microsystems, Inc. ALL RIGHTS RESERVED.	\n\
@@ -69,7 +67,6 @@ void Disclaimer::print_disclaimer(outputStream* s) {
   s->print(_msg);
 }
 
-
 void Disclaimer::initialize() {
   // Computes a checksum over the disclaimer msg - simple check
   // to detect hack attacks aiming at modifying the disclaimer.
@@ -87,7 +84,6 @@ void Disclaimer::initialize() {
     }
   }
 }
-
 
 void disclaimer_init() {
   Disclaimer::initialize();

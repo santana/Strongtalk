@@ -34,7 +34,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/ostream.hpp"
 #include "oops/oop.inline.hpp"
 
-void set_methodKlass_vtbl(Klass *k) {
+void set_methodKlass_vtbl(Klass* k) {
   methodKlass o;
   k->set_vtbl_value(o.vtbl_value());
 }
@@ -47,9 +47,9 @@ void methodKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
   methodOop m = methodOop(obj);
-  blk->do_oop("debugInfo", (oop*) &m->addr()->_debugInfo);
-  blk->do_oop("selector",  (oop*) &m->addr()->_selector_or_method);
-  blk->do_oop("sizeCodes", (oop*) &m->addr()->_size_and_flags);
+  blk->do_oop("debugInfo", (oop*)&m->addr()->_debugInfo);
+  blk->do_oop("selector", (oop*)&m->addr()->_selector_or_method);
+  blk->do_oop("sizeCodes", (oop*)&m->addr()->_size_and_flags);
   // indexables
   lprintf("methodKlass::oop_layout_iterate not implemented yet\n");
   CodeIterator c(m);
@@ -62,22 +62,33 @@ void methodKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
   methodOop m = methodOop(obj);
-  blk->do_oop((oop*) &m->addr()->_debugInfo);
-  blk->do_oop((oop*) &m->addr()->_selector_or_method);
-  blk->do_oop((oop*) &m->addr()->_size_and_flags);
+  blk->do_oop((oop*)&m->addr()->_debugInfo);
+  blk->do_oop((oop*)&m->addr()->_selector_or_method);
+  blk->do_oop((oop*)&m->addr()->_size_and_flags);
   // codes
   CodeIterator c(m);
   do {
-    switch(c.format()) {
-     case Bytecodes::BBO  : blk->do_oop(c.aligned_oop(2));   break; // BBO
-     case Bytecodes::BBOO : blk->do_oop(c.aligned_oop(2));
-     case Bytecodes::BBLO : blk->do_oop(c.aligned_oop(2)+1); break; // BBOO, BBLO
-     case Bytecodes::BOL  :
-     case Bytecodes::BO   : blk->do_oop(c.aligned_oop(1));   break; // BOL, BO
-     case Bytecodes::BOO  :
-     case Bytecodes::BOOLB: blk->do_oop(c.aligned_oop(1));
-     case Bytecodes::BLO  : blk->do_oop(c.aligned_oop(1)+1); break; // BOO, BOOLB, BLO
-     default: break;  // formats without embedded oops
+    switch (c.format()) {
+      case Bytecodes::BBO:
+        blk->do_oop(c.aligned_oop(2));
+        break; // BBO
+      case Bytecodes::BBOO:
+        blk->do_oop(c.aligned_oop(2));
+      case Bytecodes::BBLO:
+        blk->do_oop(c.aligned_oop(2) + 1);
+        break; // BBOO, BBLO
+      case Bytecodes::BOL:
+      case Bytecodes::BO:
+        blk->do_oop(c.aligned_oop(1));
+        break; // BOL, BO
+      case Bytecodes::BOO:
+      case Bytecodes::BOOLB:
+        blk->do_oop(c.aligned_oop(1));
+      case Bytecodes::BLO:
+        blk->do_oop(c.aligned_oop(1) + 1);
+        break; // BOO, BOOLB, BLO
+      default:
+        break; // formats without embedded oops
     }
   } while (c.advance());
 }
@@ -90,8 +101,8 @@ void methodKlass::oop_print_on(oop obj, outputStream* st) {
   assert(obj->is_method(), "must be method");
   methodOop method = methodOop(obj);
 
-  int indent_col =  3;
-  int value_col  = 16;
+  int indent_col = 3;
+  int value_col = 16;
 
   // header
   memOopKlass::oop_print_value_on(obj, st);
@@ -151,28 +162,42 @@ void methodKlass::oop_print_on(oop obj, outputStream* st) {
   st->fill_to(value_col);
   st->print("%s", method->is_customized() ? "customized" : "not_customized");
   if (method->allocatesInterpretedContext()) {
-    st->print(" allocates_context"); 
+    st->print(" allocates_context");
   }
   if (method->mustBeCustomizedToClass()) {
-    st->print(" class_specific"); 
+    st->print(" class_specific");
   }
   if (method->containsNLR()) {
-    st->print(" NLR"); 
+    st->print(" NLR");
   }
 
   // flags for blocks
   if (method->is_blockMethod()) {
-    switch(method->block_info()) {
-      case methodOopDesc::expects_nil:       st->print(" pure_block");              break;
-      case methodOopDesc::expects_self:      st->print(" self_copying_block");      break;
-      case methodOopDesc::expects_parameter: st->print(" parameter_copying_block"); break;
-      case methodOopDesc::expects_context:   st->print(" full_block");              break;
+    switch (method->block_info()) {
+      case methodOopDesc::expects_nil:
+        st->print(" pure_block");
+        break;
+      case methodOopDesc::expects_self:
+        st->print(" self_copying_block");
+        break;
+      case methodOopDesc::expects_parameter:
+        st->print(" parameter_copying_block");
+        break;
+      case methodOopDesc::expects_context:
+        st->print(" full_block");
+        break;
     }
-  } else { 
-    switch(method->method_inlining_info()) {
-      case methodOopDesc::normal_inline:     st->print(" normal inline");           break;
-      case methodOopDesc::never_inline:      st->print(" never inline");            break;
-      case methodOopDesc::always_inline:     st->print(" aways inline");            break;
+  } else {
+    switch (method->method_inlining_info()) {
+      case methodOopDesc::normal_inline:
+        st->print(" normal inline");
+        break;
+      case methodOopDesc::never_inline:
+        st->print(" never inline");
+        break;
+      case methodOopDesc::always_inline:
+        st->print(" aways inline");
+        break;
     }
   }
   st->cr();
@@ -206,32 +231,43 @@ void methodKlass::oop_print_value_on(oop obj, outputStream* st) {
 int methodKlass::oop_scavenge_contents(oop obj) {
   // Methods must reside in old space
   ShouldNotCallThis();
-  return -1;  
+  return -1;
 }
 
 int methodKlass::oop_scavenge_tenured_contents(oop obj) {
   // There should be no new objects referred insinde a methodOop
-  return object_size(methodOop(obj)->size_of_codes());  
+  return object_size(methodOop(obj)->size_of_codes());
 }
 
 void methodKlass::oop_follow_contents(oop obj) {
   methodOop m = methodOop(obj);
   CodeIterator c(m);
   do {
-    switch(c.format()) {
-     case Bytecodes::BBO  : MarkSweep::reverse_and_push(c.aligned_oop(2));   break; // BBO
-     case Bytecodes::BBOO : MarkSweep::reverse_and_push(c.aligned_oop(2));
-     case Bytecodes::BBLO : MarkSweep::reverse_and_push(c.aligned_oop(2)+1); break; // BBOO, BBLO
-     case Bytecodes::BOL  :
-     case Bytecodes::BO   : MarkSweep::reverse_and_push(c.aligned_oop(1));   break; // BOL, BO
-     case Bytecodes::BOO  :
-     case Bytecodes::BOOLB: MarkSweep::reverse_and_push(c.aligned_oop(1));
-     case Bytecodes::BLO  : MarkSweep::reverse_and_push(c.aligned_oop(1)+1); break; // BOO, BOOLB, BLO
-     default: break;  // formats without embedded oops
+    switch (c.format()) {
+      case Bytecodes::BBO:
+        MarkSweep::reverse_and_push(c.aligned_oop(2));
+        break; // BBO
+      case Bytecodes::BBOO:
+        MarkSweep::reverse_and_push(c.aligned_oop(2));
+      case Bytecodes::BBLO:
+        MarkSweep::reverse_and_push(c.aligned_oop(2) + 1);
+        break; // BBOO, BBLO
+      case Bytecodes::BOL:
+      case Bytecodes::BO:
+        MarkSweep::reverse_and_push(c.aligned_oop(1));
+        break; // BOL, BO
+      case Bytecodes::BOO:
+      case Bytecodes::BOOLB:
+        MarkSweep::reverse_and_push(c.aligned_oop(1));
+      case Bytecodes::BLO:
+        MarkSweep::reverse_and_push(c.aligned_oop(1) + 1);
+        break; // BOO, BOOLB, BLO
+      default:
+        break; // formats without embedded oops
     }
   } while (c.advance());
-  MarkSweep::reverse_and_push((oop*) &m->addr()->_debugInfo);
-  MarkSweep::reverse_and_push((oop*) &m->addr()->_selector_or_method);
+  MarkSweep::reverse_and_push((oop*)&m->addr()->_debugInfo);
+  MarkSweep::reverse_and_push((oop*)&m->addr()->_selector_or_method);
   m->follow_header();
 }
 
@@ -239,10 +275,10 @@ static oop tenured(oop obj) {
   return obj->is_old() ? obj : obj->shallow_copy(true);
 }
 
-methodOop methodKlass::constructMethod(oop selector_or_method, int flags, int nofArgs, 
-                                       objArrayOop debugInfo, byteArrayOop bytes, objArrayOop oops) {
-  klassOop k        = as_klassOop();
-  int      obj_size = methodOopDesc::header_size() + oops->length();
+methodOop methodKlass::constructMethod(oop selector_or_method, int flags, int nofArgs, objArrayOop debugInfo,
+                                       byteArrayOop bytes, objArrayOop oops) {
+  klassOop k = as_klassOop();
+  int obj_size = methodOopDesc::header_size() + oops->length();
 
   assert(oops->length() * oopSize == bytes->length(), "Invalid array sizes");
 
@@ -268,11 +304,11 @@ methodOop methodKlass::constructMethod(oop selector_or_method, int flags, int no
   // then merge in the oops
   for (int index = 1; index <= oops->length(); index++) {
     bool copyOop = true;
-    int bc_index = index*oopSize-(oopSize-1);
+    int bc_index = index * oopSize - (oopSize - 1);
     for (int i = 0; i < oopSize; i++) {
       // copy oop if bytearray holds 4 consecutive aligned zeroes
-      if (bytes->byte_at(bc_index+i) != 0) {
-	copyOop = false;
+      if (bytes->byte_at(bc_index + i) != 0) {
+        copyOop = false;
       }
     }
     if (copyOop) {

@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #ifdef DELTA_COMPILER
 
 #include "compiler/compiler.hpp"
@@ -34,32 +33,37 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/klassOop.hpp"
 #include "oops/oop.inline.hpp"
 
-const int UnknownExpr::UnlikelyBit 	  = 1;
-const int MergeExpr::SplittableBit        = 2;
-const int MergeExpr::UnknownSetBit        = 4;
+const int UnknownExpr::UnlikelyBit = 1;
+const int MergeExpr::SplittableBit = 2;
+const int MergeExpr::UnknownSetBit = 4;
 const int MergeExpr::ContainingUnknownBit = 8;
 
-const int MaxMergeExprSize = 5;	// max. # exprs in a merge expression
+const int MaxMergeExprSize = 5; // max. # exprs in a merge expression
 
-Expr::Expr(PReg* p, Node* n) { 
+Expr::Expr(PReg* p, Node* n) {
   assert(p, "must have PReg");
-  _preg = p; _node = n; next = NULL; flags = 0; 
+  _preg = p;
+  _node = n;
+  next = NULL;
+  flags = 0;
   assert(p->scope()->isInlinedScope(), "should be InlinedScope");
   assert(n != NodeBuilder::EndOfCode, "should be a real node");
 }
 
-
 MergeExpr::MergeExpr(Expr* e1, Expr* e2, PReg* p, Node* nod) : Expr(p, nod) {
   initialize();
-  if (!p) _preg = e1->preg();
-  mergeInto(e1, nod); 
+  if (!p)
+    _preg = e1->preg();
+  mergeInto(e1, nod);
   mergeInto(e2, nod);
 #ifdef ASSERT
   verify();
 #endif
 }
 
-MergeExpr::MergeExpr(PReg* p, Node* nod) : Expr(p, nod) { initialize(); }
+MergeExpr::MergeExpr(PReg* p, Node* nod) : Expr(p, nod) {
+  initialize();
+}
 
 void MergeExpr::initialize() {
   exprs = new GrowableArray<Expr*>(MaxMergeExprSize); // NB: won't grow beyond MaxMergeExprSize
@@ -75,17 +79,17 @@ KlassExpr::KlassExpr(klassOop k, PReg* p, Node* n) : Expr(p, n) {
   assert(k, "must have klass");
 }
 
-BlockExpr::BlockExpr(BlockPReg* p, Node* n) 
-: KlassExpr(blockClosureKlass::blockKlassFor(p->closure()->nofArgs()), p, n) {
+BlockExpr::BlockExpr(BlockPReg* p, Node* n) :
+  KlassExpr(blockClosureKlass::blockKlassFor(p->closure()->nofArgs()), p, n) {
   assert(n, "must have a node");
   _blockScope = p->scope();
 }
 
-Expr* Expr::asReceiver() const { 
+Expr* Expr::asReceiver() const {
   // the receiver is the Expr* for a newly created InlinedScope; return the Expr that
   // should be used as the new scope's receiver
   assert(hasKlass(), "must have klass");
-  return (Expr*)this; 
+  return (Expr*)this;
 }
 
 Expr* MergeExpr::asReceiver() const {
@@ -103,8 +107,7 @@ bool NoResultExpr::equals(Expr* other) const {
 }
 
 bool KlassExpr::equals(Expr* other) const {
-  return (other->isKlassExpr() || other->isConstantExpr()) &&
-    other->klass() == klass();
+  return (other->isKlassExpr() || other->isConstantExpr()) && other->klass() == klass();
 }
 
 bool BlockExpr::equals(Expr* other) const {
@@ -113,17 +116,18 @@ bool BlockExpr::equals(Expr* other) const {
 
 bool ConstantExpr::equals(Expr* other) const {
   return other->isConstantExpr() && other->constant() == constant() ||
-    other->isKlassExpr() && other->klass() == klass();
+         other->isKlassExpr() && other->klass() == klass();
 }
 
 bool MergeExpr::equals(Expr* other) const {
   Unused(other);
   return false; // for now -- fix this later
-}  
+}
 
 // mergeWith: return receiver merged with arg; functional (does not modify receiver or arg expr)
 Expr* UnknownExpr::mergeWith(Expr* other, Node* n) {
-  if (other->isNoResultExpr()) return this;
+  if (other->isNoResultExpr())
+    return this;
   if (other->isUnknownExpr()) {
     if (n && node() && other->node()) {
       // preserve splitting info
@@ -131,7 +135,7 @@ Expr* UnknownExpr::mergeWith(Expr* other, Node* n) {
       assert(e->isSplittable(), "wasted effort");
       return e;
     } else {
-      _node = NULL; 	// prevent future splitting
+      _node = NULL; // prevent future splitting
       return this;
     }
   } else {
@@ -140,18 +144,18 @@ Expr* UnknownExpr::mergeWith(Expr* other, Node* n) {
   }
 }
 
-Expr* NoResultExpr::mergeWith(Expr* other, Node* n)  {
+Expr* NoResultExpr::mergeWith(Expr* other, Node* n) {
   Unused(n);
-  return other; 
+  return other;
 }
 
-Expr* KlassExpr::mergeWith(Expr* other, Node* n)  {
-  if (other->isNoResultExpr()) return this;
-  if ((other->isKlassExpr() || other->isConstantExpr())
-    && other->klass() == klass()) {
-      // generalize klass + constant in same clone family --> klass
-      _node = NULL; 	// prevent future splitting
-      return this;
+Expr* KlassExpr::mergeWith(Expr* other, Node* n) {
+  if (other->isNoResultExpr())
+    return this;
+  if ((other->isKlassExpr() || other->isConstantExpr()) && other->klass() == klass()) {
+    // generalize klass + constant in same clone family --> klass
+    _node = NULL; // prevent future splitting
+    return this;
   } else {
     PReg* r = _preg == other->preg() ? _preg : NULL;
     return new MergeExpr(this, other, r, n);
@@ -159,7 +163,8 @@ Expr* KlassExpr::mergeWith(Expr* other, Node* n)  {
 }
 
 Expr* BlockExpr::mergeWith(Expr* other, Node* n) {
-  if (other->isNoResultExpr()) return this;
+  if (other->isNoResultExpr())
+    return this;
   if (equals(other)) {
     if (n && node() && other->node()) {
       // preserve splitting info
@@ -167,7 +172,7 @@ Expr* BlockExpr::mergeWith(Expr* other, Node* n) {
       assert(e->isSplittable(), "wasted effort");
       return e;
     } else {
-      _node = NULL; 	// prevent future splitting
+      _node = NULL; // prevent future splitting
       return this;
     }
   } else {
@@ -176,20 +181,20 @@ Expr* BlockExpr::mergeWith(Expr* other, Node* n) {
   }
 }
 
-Expr* ConstantExpr::mergeWith(Expr* other, Node* n)  {
+Expr* ConstantExpr::mergeWith(Expr* other, Node* n) {
   // NB: be careful not to turn true & false into klasses
-  if (other->isNoResultExpr()) return this;
-  if (other->isConstantExpr()
-    && other->constant() == constant()) {
-      if (n && node() && other->node()) {
-        // preserve splitting info
-        MergeExpr* e = new MergeExpr(this, other, preg(), n);
-        assert(e->isSplittable(), "wasted effort");
-        return e;
-      } else {
-        _node = NULL; 	// prevent future splitting
-        return this;
-      }
+  if (other->isNoResultExpr())
+    return this;
+  if (other->isConstantExpr() && other->constant() == constant()) {
+    if (n && node() && other->node()) {
+      // preserve splitting info
+      MergeExpr* e = new MergeExpr(this, other, preg(), n);
+      assert(e->isSplittable(), "wasted effort");
+      return e;
+    } else {
+      _node = NULL; // prevent future splitting
+      return this;
+    }
   } else if (other->isKlassExpr()) {
     return other->mergeWith(this, n);
   } else {
@@ -205,9 +210,11 @@ Expr* MergeExpr::mergeWith(Expr* other, Node* n) {
 
 // mergeInto: merge other expr into receiver; modifies receiver
 void MergeExpr::mergeInto(Expr* other, Node* n) {
-  if (other->isNoResultExpr()) return;
+  if (other->isNoResultExpr())
+    return;
   setUnknownSet(false);
-  if (n == NULL) setSplittable(false);
+  if (n == NULL)
+    setSplittable(false);
   _node = n;
   if (other->isMergeExpr()) {
     MergeExpr* o = other->asMergeExpr();
@@ -219,7 +226,7 @@ void MergeExpr::mergeInto(Expr* other, Node* n) {
       // to avoid creating loops in the ->next chain
       Expr* e = o->exprs->at(i);
       Expr* nexte;
-      for ( ; e; e = nexte) {
+      for (; e; e = nexte) {
         nexte = e->next;
         e->next = NULL;
         add(e);
@@ -234,9 +241,8 @@ void MergeExpr::mergeInto(Expr* other, Node* n) {
     Expr* e = exprs->at(i);
     for (int j = i + 1; j < len; j++) {
       Expr* e2 = exprs->at(j);
-      assert(! e->equals(e2), "duplicate expr");
-      assert(! (e->hasKlass() && e2->hasKlass() && e->klass() == e2->klass()),
-        "duplicate klasses");
+      assert(!e->equals(e2), "duplicate expr");
+      assert(!(e->hasKlass() && e2->hasKlass() && e->klass() == e2->klass()), "duplicate klasses");
     }
   }
 #endif
@@ -251,62 +257,65 @@ void MergeExpr::add(Expr* e) {
     setSplittable(false);
     return;
   }
-  if (!e->node()) setSplittable(false);
+  if (!e->node())
+    setSplittable(false);
   for (int i = 0; i < exprs->length(); i++) {
     Expr* e1 = exprs->at(i);
-    if (e->hasKlass() && e1->hasKlass() && e->klass() == e1->klass() ||
-      e->equals(e1)) {
-        // an equivalent expression is already in our list
-        // if unsplittable we don't need to do anything except
-        // if e is a klass and the expr we already have is a constant
-        // (otherwise: might later make unknown unlikely and rely on
-        // constant value)
-        if (!isSplittable() && !e1->isConstantExpr()) return;
-
-        // even though the klass is already in our list, we care about
-        // the new entry because we might have to copy the nodes between
-        // it and the split send
-        // Therefore, we keep lists of equivalent Exprs (linked via the
-        // "next" field).
-        Node* n = e->node();
-        if (n) {
-          for (Expr* e2 = exprs->at(i); e2; e2 = e2->next) {
-            if (n == e2->node()) {
-              // node already in list; this can happen if we're merging an expression
-              // with itself (e.g. we inlined 2 cases, both return the same argument)
-              // can't treat as splittable anymore
-              setSplittable(false);
-              break;
-            }
-          }
-        }
-
-        // generalize different constants to klasses
-        if (e->isConstantExpr() && e1->isConstantExpr() &&
-          e->constant() == e1->constant()) {
-            // leave them as constants
-        } else {
-          if (e->isConstantExpr()) {
-            e = e->convertToKlass(e->preg(), e->node());
-          }
-          if (e1->isConstantExpr()) {
-            // convertToKlass e1 and replace it in receiver
-            Expr* ee = e1->convertToKlass(e1->preg(), e1->node());
-            ee->next = e1->next;
-            exprs->at_put(i, ee);
-          }
-        }
-        if (!isSplittable()) return;
-        // append e at end of e1's next chain
-        for (e1 = exprs->at(i); e1->next; e1 = e1->next) ;
-        e1->next = e;
+    if (e->hasKlass() && e1->hasKlass() && e->klass() == e1->klass() || e->equals(e1)) {
+      // an equivalent expression is already in our list
+      // if unsplittable we don't need to do anything except
+      // if e is a klass and the expr we already have is a constant
+      // (otherwise: might later make unknown unlikely and rely on
+      // constant value)
+      if (!isSplittable() && !e1->isConstantExpr())
         return;
+
+      // even though the klass is already in our list, we care about
+      // the new entry because we might have to copy the nodes between
+      // it and the split send
+      // Therefore, we keep lists of equivalent Exprs (linked via the
+      // "next" field).
+      Node* n = e->node();
+      if (n) {
+        for (Expr* e2 = exprs->at(i); e2; e2 = e2->next) {
+          if (n == e2->node()) {
+            // node already in list; this can happen if we're merging an expression
+            // with itself (e.g. we inlined 2 cases, both return the same argument)
+            // can't treat as splittable anymore
+            setSplittable(false);
+            break;
+          }
+        }
+      }
+
+      // generalize different constants to klasses
+      if (e->isConstantExpr() && e1->isConstantExpr() && e->constant() == e1->constant()) {
+        // leave them as constants
+      } else {
+        if (e->isConstantExpr()) {
+          e = e->convertToKlass(e->preg(), e->node());
+        }
+        if (e1->isConstantExpr()) {
+          // convertToKlass e1 and replace it in receiver
+          Expr* ee = e1->convertToKlass(e1->preg(), e1->node());
+          ee->next = e1->next;
+          exprs->at_put(i, ee);
+        }
+      }
+      if (!isSplittable())
+        return;
+      // append e at end of e1's next chain
+      for (e1 = exprs->at(i); e1->next; e1 = e1->next)
+        ;
+      e1->next = e;
+      return;
     }
   }
   if (exprs->length() == MaxMergeExprSize) {
     // our capacity overflows, so make sure we've got at least one Unknown
     // type in our set
-    if (findUnknown() == NULL) exprs->append(new UnknownExpr(e->preg(), NULL));
+    if (findUnknown() == NULL)
+      exprs->append(new UnknownExpr(e->preg(), NULL));
   } else {
     exprs->append(e);
   }
@@ -320,14 +329,12 @@ int MergeExpr::nklasses() const {
   return n;
 }
 
-
 // copyWithout: return receiver w/o the argument expression
 
 Expr* KlassExpr::copyWithout(Expr* e) const {
   assert(e->klass() == klass(), "don't have this klass");
   return new NoResultExpr(node());
 }
-
 
 Expr* ConstantExpr::copyWithout(Expr* e) const {
   assert(e->constant() == constant(), "don't have this constant");
@@ -340,8 +347,6 @@ Expr* MergeExpr::copyWithout(Expr* e) const {
   return res;
 }
 
-
-
 bool MergeExpr::really_hasKlass(InlinedScope* s) const {
   // Check if receiver really has only one klass.  Specifically, if we're
   // at the place that made the receiver's unknown part unlikely, the
@@ -353,17 +358,22 @@ bool MergeExpr::really_hasKlass(InlinedScope* s) const {
 bool MergeExpr::hasKlass() const {
   // treat a merge expr like a single klass if it contains only one klass and
   // possibly an unlikely unknown
-  if (exprs->length() > 2) return false;
+  if (exprs->length() > 2)
+    return false;
   Expr* e1 = exprs->at(0);
   bool haveKlass1 = e1->hasKlass();
-  if (exprs->length() == 1) return haveKlass1;	// only one expr
+  if (exprs->length() == 1)
+    return haveKlass1; // only one expr
   UnknownExpr* u1 = e1->findUnknown();
-  if (u1 && !u1->isUnlikely()) return false;  // 1st = likely unknown
+  if (u1 && !u1->isUnlikely())
+    return false; // 1st = likely unknown
   Expr* e2 = exprs->at(1);
   bool haveKlass2 = e2->hasKlass();
   UnknownExpr* u2 = e2->findUnknown();
-  if (u2 && !u2->isUnlikely()) return false;  // 2nd = likely unknown
-  if (haveKlass1 && haveKlass2) return false; 	// 2 klasses
+  if (u2 && !u2->isUnlikely())
+    return false; // 2nd = likely unknown
+  if (haveKlass1 && haveKlass2)
+    return false; // 2 klasses
   // success!  one expr may have klass, one is unlikely unknown
   return haveKlass1 || haveKlass2;
 }
@@ -413,7 +423,7 @@ Expr* MergeExpr::convertToKlass(PReg* p, Node* n) const {
 
 bool MergeExpr::containsUnknown() {
   if (isUnknownSet()) {
-    assert ((findUnknown() == NULL) != isContainingUnknown(), "isContainingUnknown wrong");
+    assert((findUnknown() == NULL) != isContainingUnknown(), "isContainingUnknown wrong");
     return isContainingUnknown();
   }
   setUnknownSet(true);
@@ -429,7 +439,8 @@ bool MergeExpr::containsUnknown() {
 
 UnknownExpr* MergeExpr::findUnknown() const {
   for (int i = 0; i < exprs->length(); i++) {
-    if (exprs->at(i)->isUnknownExpr()) return (UnknownExpr*)exprs->at(i);
+    if (exprs->at(i)->isUnknownExpr())
+      return (UnknownExpr*)exprs->at(i);
   }
   return NULL;
 }
@@ -437,12 +448,13 @@ UnknownExpr* MergeExpr::findUnknown() const {
 Expr* MergeExpr::findKlass(klassOop klass) const {
   for (int i = 0; i < exprs->length(); i++) {
     Expr* e = exprs->at(i);
-    if (e->hasKlass() && e->klass() == klass) return e;
+    if (e->hasKlass() && e->klass() == klass)
+      return e;
   }
   return NULL;
 }
 
-Expr* UnknownExpr::makeUnknownUnlikely(InlinedScope* s)    {
+Expr* UnknownExpr::makeUnknownUnlikely(InlinedScope* s) {
   Unused(s);
   assert(DeferUncommonBranches, "shouldn't make unlikely");
   // called on an UnknownExpr itself, this is a no-op; works only
@@ -452,7 +464,8 @@ Expr* UnknownExpr::makeUnknownUnlikely(InlinedScope* s)    {
 
 Expr* MergeExpr::makeUnknownUnlikely(InlinedScope* s) {
   assert(DeferUncommonBranches, "shouldn't make unlikely");
-  unlikelyScope = s; unlikelyBCI = s->bci();
+  unlikelyScope = s;
+  unlikelyBCI = s->bci();
   for (int i = 0; i < exprs->length(); i++) {
     Expr* e;
     if ((e = exprs->at(i))->isUnknownExpr()) {
@@ -461,9 +474,8 @@ Expr* MergeExpr::makeUnknownUnlikely(InlinedScope* s) {
         UnknownExpr* u = (UnknownExpr*)e;
         UnknownExpr* new_u = new UnknownExpr(u->preg(), u->node(), true);
         exprs->at_put(i, new_u);
-        for (u = (UnknownExpr*)u->next; u;
-          u = (UnknownExpr*)u->next, new_u = (UnknownExpr*)new_u->next){
-            new_u->next = new UnknownExpr(u->preg(), u->node(), true);
+        for (u = (UnknownExpr*)u->next; u; u = (UnknownExpr*)u->next, new_u = (UnknownExpr*)new_u->next) {
+          new_u->next = new UnknownExpr(u->preg(), u->node(), true);
         }
       }
       return this;
@@ -473,7 +485,9 @@ Expr* MergeExpr::makeUnknownUnlikely(InlinedScope* s) {
   return NULL;
 }
 
-Expr* ConstantExpr::findKlass(klassOop m) const { return klass() == m ? (Expr*)this : NULL; }
+Expr* ConstantExpr::findKlass(klassOop m) const {
+  return klass() == m ? (Expr*)this : NULL;
+}
 
 // needsStoreCheck: when storing the expr into the heap, do we need a GC store check?
 bool KlassExpr::needsStoreCheck() const {
@@ -484,7 +498,7 @@ bool ConstantExpr::needsStoreCheck() const {
   // don't need a check if either
   // - it's a smi, or
   // - it's an old object (old objects never become young again)
-  return ! (_c->is_smi() || _c->is_old());
+  return !(_c->is_smi() || _c->is_old());
 }
 
 Expr* UnknownExpr::shallowCopy(PReg* p, Node* n) const {
@@ -492,7 +506,8 @@ Expr* UnknownExpr::shallowCopy(PReg* p, Node* n) const {
 }
 
 Expr* NoResultExpr::shallowCopy(PReg* p, Node* n) const {
-  Unused(p); Unused(n);
+  Unused(p);
+  Unused(n);
   return new NoResultExpr();
 }
 
@@ -522,13 +537,14 @@ Expr* MergeExpr::shallowCopy(PReg* p, Node* n) const {
   return e;
 }
 
-InlinedScope* Expr::scope() const { 
+InlinedScope* Expr::scope() const {
   assert(_preg->scope()->isInlinedScope(), "oops");
-  return (InlinedScope*)_preg->scope(); 
+  return (InlinedScope*)_preg->scope();
 }
 
 NameNode* Expr::nameNode(bool mustBeLegal) const {
-  return preg()->nameNode(mustBeLegal); }
+  return preg()->nameNode(mustBeLegal);
+}
 
 NameNode* ConstantExpr::nameNode(bool mustBeLegal) const {
   Unused(mustBeLegal);
@@ -538,7 +554,8 @@ NameNode* ConstantExpr::nameNode(bool mustBeLegal) const {
 
 void Expr::print_helper(char* type) {
   lprintf(" (Node %#lx)", node());
-  if (next) lprintf(" (next %#lx)", next);
+  if (next)
+    lprintf(" (next %#lx)", next);
   lprintf("    ((%s*)%#x)\n", type, this);
 }
 
@@ -547,19 +564,28 @@ void UnknownExpr::print() {
   Expr::print_helper("UnknownExpr");
 }
 
-void NoResultExpr::print() { lprintf("NoResultExpr "); Expr::print_helper("NoResultExpr"); }
-void ContextExpr::print()  { lprintf("ContextExpr %s", preg()->safeName()); Expr::print_helper("ContextExpr"); }
+void NoResultExpr::print() {
+  lprintf("NoResultExpr ");
+  Expr::print_helper("NoResultExpr");
+}
+void ContextExpr::print() {
+  lprintf("ContextExpr %s", preg()->safeName());
+  Expr::print_helper("ContextExpr");
+}
 
 void ConstantExpr::print() {
-  lprintf("ConstantExpr %s", constant()->print_value_string()); Expr::print_helper("ConstantExpr");
+  lprintf("ConstantExpr %s", constant()->print_value_string());
+  Expr::print_helper("ConstantExpr");
 }
 
 void KlassExpr::print() {
-  lprintf("KlassExpr %s", klass()->print_value_string()); Expr::print_helper("KlassExpr"); 
+  lprintf("KlassExpr %s", klass()->print_value_string());
+  Expr::print_helper("KlassExpr");
 }
 
 void BlockExpr::print() {
-  lprintf("BlockExpr %s", preg()->name()); Expr::print_helper("BlockExpr"); 
+  lprintf("BlockExpr %s", preg()->name());
+  Expr::print_helper("BlockExpr");
 }
 
 void MergeExpr::print() {
@@ -585,12 +611,13 @@ void Expr::verify() const {
 void KlassExpr::verify() const {
   Expr::verify();
   _klass->verify();
-  if (!_klass->is_klass()) error("KlassExpr %#lx: _klass %#lx isn't a klass", this, _klass);
+  if (!_klass->is_klass())
+    error("KlassExpr %#lx: _klass %#lx isn't a klass", this, _klass);
 }
 
 void BlockExpr::verify() const {
   Expr::verify();
-  if (_blockScope != preg()->creationScope()) 
+  if (_blockScope != preg()->creationScope())
     error("BlockExpr %#lx: inconsistent parent scope", this, _blockScope, preg()->creationScope());
 }
 
@@ -604,25 +631,25 @@ void MergeExpr::verify() const {
   for (int i = 0; i < exprs->length(); i++) {
     Expr* e = exprs->at(i);
     e->verify();
-    if (e->isMergeExpr()) error("MergeExpr %#lx contains nested MergeExpr %#lx", this, e);
+    if (e->isMergeExpr())
+      error("MergeExpr %#lx contains nested MergeExpr %#lx", this, e);
     Node* n = e->node();
     if (n) {
-      if (nodes.contains(n)) error("MergeExpr %#lx contains 2 expressions with same node %#lx", this, n);
+      if (nodes.contains(n))
+        error("MergeExpr %#lx contains 2 expressions with same node %#lx", this, n);
       nodes.append(n);
     }
   }
   Expr::verify();
 }
 
-void ContextExpr::verify()  const {
+void ContextExpr::verify() const {
   Expr::verify();
 }
-
 
 ExprStack::ExprStack(InlinedScope* scope, int size) : GrowableArray<Expr*>(size) {
   _scope = scope;
 }
-
 
 void ExprStack::push(Expr* expr, InlinedScope* currentScope, int bci) {
   assert(!expr->isContextExpr(), "shouldn't push contexts");
@@ -643,7 +670,6 @@ void ExprStack::push(Expr* expr, InlinedScope* currentScope, int bci) {
   GrowableArray<Expr*>::push(expr);
 }
 
-
 void ExprStack::push2nd(Expr* expr, InlinedScope* currentScope, int bci) {
   assert(!expr->isContextExpr(), "shouldn't push contexts");
   // Register expression e for current BCI.
@@ -663,12 +689,10 @@ void ExprStack::push2nd(Expr* expr, InlinedScope* currentScope, int bci) {
   GrowableArray<Expr*>::push(expr);
 }
 
-
 void ExprStack::assign_top(Expr* expr) {
   assert(!expr->isContextExpr(), "shouldn't push contexts");
   GrowableArray<Expr*>::at_put(len - 1, expr);
 }
-
 
 Expr* ExprStack::pop() {
   Expr* e = GrowableArray<Expr*>::pop();
@@ -677,9 +701,9 @@ Expr* ExprStack::pop() {
     SAPReg* sr = (SAPReg*)r;
     if (sr->scope() == _scope) {
       // endBCI may be assigned several times
-      int newBCI =
-        _scope->bci() == EpilogueBCI ? _scope->nofBytes() - 1 : _scope->bci();
-      if (bciLT(sr->endBCI(), newBCI)) sr->_endBCI = newBCI;
+      int newBCI = _scope->bci() == EpilogueBCI ? _scope->nofBytes() - 1 : _scope->bci();
+      if (bciLT(sr->endBCI(), newBCI))
+        sr->_endBCI = newBCI;
     } else {
       assert(sr->scope()->isSenderOf(_scope), "preg scope too low");
     }
@@ -687,19 +711,17 @@ Expr* ExprStack::pop() {
   return e;
 }
 
-
 void ExprStack::pop(int nofExprsToPop) {
-  for (int i = 0; i < nofExprsToPop; i++) pop();
+  for (int i = 0; i < nofExprsToPop; i++)
+    pop();
 }
-
 
 void ExprStack::print() {
   const int len = length();
-  for (int i = 0; i < len; i++) { 
+  for (int i = 0; i < len; i++) {
     lprintf("[TOS - %2d]:  ", len - i - 1);
     at(i)->print();
   }
 }
-
 
 #endif // DELTA_COMPILER

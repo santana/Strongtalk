@@ -63,26 +63,26 @@ Location pick(RegisterMask& alloc, RegisterMask mask = ~0);
 void printRegister(Location r);
 void printAllocated(RegisterMask r);
 
-  // like a RegisterMask, but has arbitrary length (i.e., bits for
-  // stack temps and regs)
+// like a RegisterMask, but has arbitrary length (i.e., bits for
+// stack temps and regs)
 
-  class LongRegisterMask : ResourceObj {
-    BitVector* bv;
-   public:
-    LongRegisterMask();
-    void allocate  (Location l);
-    void deallocate(Location l);
-    bool isAllocated(Location l);
-    RegisterMask regs();		// returns mask for registers
-    void print();
-    
-   private:
-    void grow();
-    friend int findFirstUnused(LongRegisterMask** masks, int len,
-				int start);
-  };
+class LongRegisterMask : ResourceObj {
+  BitVector* bv;
 
-  Location findFirstUnusedTemp(LongRegisterMask** masks, int len);
+public:
+  LongRegisterMask();
+  void allocate(Location l);
+  void deallocate(Location l);
+  bool isAllocated(Location l);
+  RegisterMask regs(); // returns mask for registers
+  void print();
+
+private:
+  void grow();
+  friend int findFirstUnused(LongRegisterMask** masks, int len, int start);
+};
+
+Location findFirstUnusedTemp(LongRegisterMask** masks, int len);
 #endif // DELTA_COMPILER_unused
 
 #endif // _REGISTER_MASK_HPP

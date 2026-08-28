@@ -24,7 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifndef _LOCATION_HPP
 #define _LOCATION_HPP
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 #include "memory/allocation.hpp"
 
@@ -37,110 +37,121 @@ template <class E> class GrowableArray;
 // there is a corresponding location and vice versa.
 
 enum Mode {
-// mode\bits		3...................31	describes
-//			3..9	10..16	17..31
-   specialLoc,	//	--------id------------	sentinel values/global locations
-   registerLoc,	//	--------regLoc--------	register locations
-   stackLoc,	//	--------offset--------	stack locations
-   contextLoc1,	//	ctxtNo	offset	scID	context locations during compilation (scope ID identifies InlinedScope)
-   contextLoc2,	//	ctxtNo	offset	scOffs	context locations (scOffs is scope offset within encoded scopes)
-   floatLoc,	//	0	floatNo	scopeN  float locations
+  // mode\bits		3...................31	describes
+  //			3..9	10..16	17..31
+  specialLoc, //	--------id------------	sentinel values/global locations
+  registerLoc, //	--------regLoc--------	register locations
+  stackLoc, //	--------offset--------	stack locations
+  contextLoc1, //	ctxtNo	offset	scID	context locations during compilation (scope ID identifies InlinedScope)
+  contextLoc2, //	ctxtNo	offset	scOffs	context locations (scOffs is scope offset within encoded scopes)
+  floatLoc, //	0	floatNo	scopeN  float locations
 };
 
-
-class Location: public ResourceObj /* but usually used as ValueObj */ {
- private:
-  int _loc;	// location encoding
+class Location : public ResourceObj /* but usually used as ValueObj */ {
+private:
+  int _loc; // location encoding
 
   // field layout of _loc (no local const definitions allowed in C++)
   enum {
-    _f1Pos	= 3,			_f1Len	= 7,	_f1Mask	= (1<<_f1Len) - 1,
-    _f2Pos	= _f1Pos + _f1Len,	_f2Len	= 7,	_f2Mask	= (1<<_f2Len) - 1,
-    _f3Pos	= _f2Pos + _f2Len,	_f3Len	= 15,	_f3Mask	= (1<<_f3Len) - 1,
-    _fPos	= _f1Pos,		_fLen	= 29,	_fMask	= (1<<_fLen ) - 1,
+    _f1Pos = 3,
+    _f1Len = 7,
+    _f1Mask = (1 << _f1Len) - 1,
+    _f2Pos = _f1Pos + _f1Len,
+    _f2Len = 7,
+    _f2Mask = (1 << _f2Len) - 1,
+    _f3Pos = _f2Pos + _f2Len,
+    _f3Len = 15,
+    _f3Mask = (1 << _f3Len) - 1,
+    _fPos = _f1Pos,
+    _fLen = 29,
+    _fMask = (1 << _fLen) - 1,
   };
 
-  void overflow(Mode mode, int f1, int f2, int f3);				// handle field overflow if possible
+  void overflow(Mode mode, int f1, int f2, int f3); // handle field overflow if possible
 
- public:
+public:
   // default constructor - for better debugging
-  Location()									{ specialLocation(0); }
-  Location(int l)								{ _loc = l; }
+  Location() { specialLocation(0); }
+  Location(int l) { _loc = l; }
   Location(Mode mode, int f);
   Location(Mode mode, int f1, int f2, int f3);
 
   // factory
-  static Location specialLocation(int id)					{ return Location(specialLoc, id); }
-  static Location registerLocation(int number)					{ return Location(registerLoc, number); }
-  static Location stackLocation(int offset)					{ return Location(stackLoc, offset); }
-  static Location compiledContextLocation(int contextNo, int tempNo, int id)	{ return Location(contextLoc1, contextNo, tempNo, id); }
-  static Location runtimeContextLocation(int contextNo, int tempNo, int offs)	{ return Location(contextLoc2, contextNo, tempNo, offs); }
-  static Location floatLocation(int scopeNo, int tempNo)			{ return Location(floatLoc, 0, tempNo, scopeNo); }
+  static Location specialLocation(int id) { return Location(specialLoc, id); }
+  static Location registerLocation(int number) { return Location(registerLoc, number); }
+  static Location stackLocation(int offset) { return Location(stackLoc, offset); }
+  static Location compiledContextLocation(int contextNo, int tempNo, int id) {
+    return Location(contextLoc1, contextNo, tempNo, id);
+  }
+  static Location runtimeContextLocation(int contextNo, int tempNo, int offs) {
+    return Location(contextLoc2, contextNo, tempNo, offs);
+  }
+  static Location floatLocation(int scopeNo, int tempNo) { return Location(floatLoc, 0, tempNo, scopeNo); }
 
   // attributes
-  Mode mode() const { return (Mode)(_loc & ((1<<_f1Pos) - 1)); }
+  Mode mode() const { return (Mode)(_loc & ((1 << _f1Pos) - 1)); }
 
   int id() const {
     assert(mode() == specialLoc, "not a special location");
-    return (_loc>>_fPos) & _fMask;
+    return (_loc >> _fPos) & _fMask;
   }
 
   int number() const {
     assert(mode() == registerLoc, "not a register location");
-    return (_loc>>_fPos) & _fMask;
+    return (_loc >> _fPos) & _fMask;
   }
 
   int offset() const {
     assert(mode() == stackLoc, "not a stack location");
-    int t = _loc>>_fPos;
+    int t = _loc >> _fPos;
     return _loc < 0 ? (t | ~_fMask) : t;
   }
 
   int contextNo() const {
     assert(mode() == contextLoc1 || mode() == contextLoc2, "not a context location");
-    return (_loc>>_f1Pos) & _f1Mask;
+    return (_loc >> _f1Pos) & _f1Mask;
   }
 
   int tempNo() const {
     assert(mode() == contextLoc1 || mode() == contextLoc2, "not a context location");
-    return (_loc>>_f2Pos) & _f2Mask;
+    return (_loc >> _f2Pos) & _f2Mask;
   }
 
   int scopeID() const {
     assert(mode() == contextLoc1, "not a compiled context location");
-    return (_loc>>_f3Pos) & _f3Mask;
+    return (_loc >> _f3Pos) & _f3Mask;
   }
 
   int scopeOffs() const {
     assert(mode() == contextLoc2, "not a runtime context location");
-    return (_loc>>_f3Pos) & _f3Mask;
+    return (_loc >> _f3Pos) & _f3Mask;
   }
 
   int floatNo() const {
     assert(mode() == floatLoc, "not a float location");
-    return (_loc>>_f2Pos) & _f2Mask;
+    return (_loc >> _f2Pos) & _f2Mask;
   }
 
   int scopeNo() const {
     assert(mode() == floatLoc, "not a float location");
-    return (_loc>>_f3Pos) & _f3Mask;
+    return (_loc >> _f3Pos) & _f3Mask;
   }
 
   // helper functions
   char* name() const;
 
   // predicates
-  bool isSpecialLocation() const	{ return mode() == specialLoc; }
-  bool isRegisterLocation() const	{ return mode() == registerLoc; }
-  bool isStackLocation() const		{ return mode() == stackLoc; }
-  bool isContextLocation() const	{ return mode() == contextLoc1 || mode() == contextLoc2; }
-  bool isFloatLocation() const		{ return mode() == floatLoc; }
+  bool isSpecialLocation() const { return mode() == specialLoc; }
+  bool isRegisterLocation() const { return mode() == registerLoc; }
+  bool isStackLocation() const { return mode() == stackLoc; }
+  bool isContextLocation() const { return mode() == contextLoc1 || mode() == contextLoc2; }
+  bool isFloatLocation() const { return mode() == floatLoc; }
   bool isTopOfStack() const;
-  bool equals(Location y) const		{ return _loc == y._loc; }
+  bool equals(Location y) const { return _loc == y._loc; }
 
-  friend bool operator == (Location x, Location y) {return x._loc == y._loc; }
-  friend bool operator != (Location x, Location y) {return x._loc != y._loc; }
-  
+  friend bool operator==(Location x, Location y) { return x._loc == y._loc; }
+  friend bool operator!=(Location x, Location y) { return x._loc != y._loc; }
+
   bool isTemporaryRegister() const;
   bool isTrashedRegister() const;
   bool isLocalRegister() const;
@@ -152,38 +163,35 @@ class Location: public ResourceObj /* but usually used as ValueObj */ {
   friend class DebugInfoWriter;
 };
 
-
 // special locations
-const int nofSpecialLocations	= 6;
-const Location illegalLocation	= Location::specialLocation(0);
-const Location unAllocated	= Location::specialLocation(1);
-const Location noRegister	= Location::specialLocation(2);
-const Location topOfStack	= Location::specialLocation(3);
-const Location resultOfNLR	= Location::specialLocation(4);
-const Location topOfFloatStack	= Location::specialLocation(5);	// only used if UseFPUStack is true
-
+const int nofSpecialLocations = 6;
+const Location illegalLocation = Location::specialLocation(0);
+const Location unAllocated = Location::specialLocation(1);
+const Location noRegister = Location::specialLocation(2);
+const Location topOfStack = Location::specialLocation(3);
+const Location resultOfNLR = Location::specialLocation(4);
+const Location topOfFloatStack = Location::specialLocation(5); // only used if UseFPUStack is true
 
 // An IntFreeList maintains a list of 'available' integers in the range [0, n[
 // where n is the maximum number of integers ever allocated. An IntFreeList may
 // be used to allocate/release stack locations.
 
 class IntFreeList : public PrintableResourceObj {
- protected:
-  intptr_t			_first;	// the first available integer
-  GrowableArray<intptr_t>*	_list;	// the list
+protected:
+  intptr_t _first; // the first available integer
+  GrowableArray<intptr_t>* _list; // the list
 
   void grow();
 
- public:
+public:
   IntFreeList(int size);
 
-  intptr_t	allocate();	// returns a new integer, grows the list if necessary
-  int	allocated();		// returns the number of allocated integers
-  void	release(int i);		// marks the integer i as 'available' again
-  int	length();		// the maximum number of integers ever allocated
-  void	print();
+  intptr_t allocate(); // returns a new integer, grows the list if necessary
+  int allocated(); // returns the number of allocated integers
+  void release(int i); // marks the integer i as 'available' again
+  int length(); // the maximum number of integers ever allocated
+  void print();
 };
-
 
 #endif // DELTA_COMPILER
 #endif // _LOCATION_HPP

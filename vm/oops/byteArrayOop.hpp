@@ -38,87 +38,72 @@ class Integer;
 //    [length      ]
 //    [bytes       ]* = bytes(1) .. bytes(length) + padding
 
-class byteArrayOopDesc: public memOopDesc {
-  public:
+class byteArrayOopDesc : public memOopDesc {
+public:
   // constructor
   friend byteArrayOop as_byteArrayOop(void* p);
 
   void bootstrap_object(bootstrap* st);
 
-
   // accessors
-  byteArrayOopDesc* addr() const {
-    return (byteArrayOopDesc*) memOopDesc::addr(); }
+  byteArrayOopDesc* addr() const { return (byteArrayOopDesc*)memOopDesc::addr(); }
 
   bool is_within_bounds(int index) const { return 1 <= index && index <= length(); }
 
   oop* addr_as_oops() const { return (oop*)addr(); }
 
-  oop* length_addr() const  {
-    return &addr_as_oops()[blueprint()->non_indexable_size()];
-  }
+  oop* length_addr() const { return &addr_as_oops()[blueprint()->non_indexable_size()]; }
 
   smi length() const {
     oop len = *length_addr();
     assert(len->is_smi(), "length of indexable should be smi");
-    return smiOop(len)->value();}
-
-  void set_length(smi len) {
-    *length_addr() = (oop) as_smiOop(len); }
-
-  u_char* bytes() const {
-    return (u_char*) &length_addr()[1];
+    return smiOop(len)->value();
   }
 
-  char*   chars() const { return (char*) bytes(); }
+  void set_length(smi len) { *length_addr() = (oop)as_smiOop(len); }
+
+  u_char* bytes() const { return (u_char*)&length_addr()[1]; }
+
+  char* chars() const { return (char*)bytes(); }
 
   u_char* byte_at_addr(int which) const {
     assert(which > 0 && which <= length(), "index out of bounds");
     return &bytes()[which - 1];
   }
 
-  u_char byte_at(int which) const {
-    return *byte_at_addr(which); }
-  void byte_at_put(int which, u_char contents) {
-    *byte_at_addr(which) = contents; }
-
+  u_char byte_at(int which) const { return *byte_at_addr(which); }
+  void byte_at_put(int which, u_char contents) { *byte_at_addr(which) = contents; }
 
   // support for large integers
 
   Integer& number() { return *((Integer*)bytes()); }
 
-
   // memory operations
   bool verify();
 
-
   // C-string operations
 
-  char *copy_null_terminated(int &Clength);
-    // Copy the bytes() part. Always add trailing '\0'. If byte array
-    // contains '\0', these will be escaped in the copy, i.e. "....\0...".
-    // Clength is set to length of the copy (may be longer due to escaping).
-    // Presence of null chars can be detected by comparing Clength to length().
+  char* copy_null_terminated(int& Clength);
+  // Copy the bytes() part. Always add trailing '\0'. If byte array
+  // contains '\0', these will be escaped in the copy, i.e. "....\0...".
+  // Clength is set to length of the copy (may be longer due to escaping).
+  // Presence of null chars can be detected by comparing Clength to length().
 
   bool copy_null_terminated(char* buffer, int max_length);
 
-  char *copy_null_terminated() {
+  char* copy_null_terminated() {
     int ignore;
     return copy_null_terminated(ignore);
   }
 
-  char *copy_c_heap_null_terminated();
-    // Identical to copy_null_terminated but allocates the resulting string
-    // in the C heap instead of in the resource area.
+  char* copy_c_heap_null_terminated();
+  // Identical to copy_null_terminated but allocates the resulting string
+  // in the C heap instead of in the resource area.
 
-  bool equals(char* name) {
-    return equals(name, strlen(name));
-  }
+  bool equals(char* name) { return equals(name, strlen(name)); }
 
-  bool equals(char* name, int len) {
-    return len == length() && strncmp(chars(), name, len) == 0; }
-  bool equals(byteArrayOop s) {
-    return equals(s->chars(), s->length()); }
+  bool equals(char* name, int len) { return len == length() && strncmp(chars(), name, len) == 0; }
+  bool equals(byteArrayOop s) { return equals(s->chars(), s->length()); }
 
   // three way compare
   int compare(byteArrayOop arg);
@@ -132,15 +117,14 @@ class byteArrayOopDesc: public memOopDesc {
 
   // Selector specific operations.
   int number_of_arguments() const;
-  bool is_unary()           const;
-  bool is_binary()          const;
-  bool is_keyword()         const;
+  bool is_unary() const;
+  bool is_binary() const;
+  bool is_keyword() const;
 
   friend class byteArrayKlass;
 };
 
-inline byteArrayOop as_byteArrayOop(void* p)
-{
-    return byteArrayOop(as_memOop(p));
+inline byteArrayOop as_byteArrayOop(void* p) {
+  return byteArrayOop(as_memOop(p));
 }
 #endif // _BYTE_ARRAY_OOP_HPP

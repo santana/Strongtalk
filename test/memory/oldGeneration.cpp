@@ -9,25 +9,23 @@
 
 using namespace easyunit;
 DECLARE(OldGeneration)
-  void expandAndCheckCapacity(int expansionSize) {
-    char msg[100];
-    int oldSize = Universe::old_gen.capacity();
+void expandAndCheckCapacity(int expansionSize) {
+  char msg[100];
+  int oldSize = Universe::old_gen.capacity();
 
-    Universe::old_gen.expand(expansionSize);
+  Universe::old_gen.expand(expansionSize);
 
-    int expectedIncrement = ReservedSpace::align_size(expansionSize, ObjectHeapExpandSize * K);
-    int actual = Universe::old_gen.capacity();
-    int expectedSize = oldSize + expectedIncrement;
-    snprintf(msg, sizeof(msg), "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actual);
-    ASSERT_EQUALS_M(expectedSize, actual, msg);
-  }
+  int expectedIncrement = ReservedSpace::align_size(expansionSize, ObjectHeapExpandSize * K);
+  int actual = Universe::old_gen.capacity();
+  int expectedSize = oldSize + expectedIncrement;
+  snprintf(msg, sizeof(msg), "Generation has wrong capacity. Expected: %d, but was: %d", expectedSize, actual);
+  ASSERT_EQUALS_M(expectedSize, actual, msg);
+}
 END_DECLARE
 
-SETUP(OldGeneration) {
-}
+SETUP(OldGeneration) {}
 
-TEARDOWN(OldGeneration){
-}
+TEARDOWN(OldGeneration) {}
 TESTF(OldGeneration, expansionShouldExpandOldGenerationCapacity) {
   expandAndCheckCapacity(1000 * K);
 }
@@ -48,8 +46,8 @@ TESTF(OldGeneration, allocateWithoutExpansionWhenEmptyShouldFail) {
 
 TESTF(OldGeneration, shrinkShouldReduceOldSpaceCapacity) {
   int freeSpace = Universe::old_gen.free();
-  Universe::old_gen.expand(ObjectHeapExpandSize *K);
-  Universe::old_gen.shrink(ObjectHeapExpandSize *K);
+  Universe::old_gen.expand(ObjectHeapExpandSize * K);
+  Universe::old_gen.shrink(ObjectHeapExpandSize * K);
   ASSERT_EQUALS(freeSpace, Universe::old_gen.free());
 }
 

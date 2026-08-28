@@ -34,8 +34,8 @@ void set_mixinKlass_vtbl(Klass* k) {
 }
 
 oop mixinKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
   // allocate
   oop* result = basicAllocate(size, &k, permit_scavenge, tenured);
   if (result == NULL)
@@ -75,7 +75,7 @@ int mixinKlass::oop_scavenge_contents(oop obj) {
   // header + instance variables
   memOop(obj)->scavenge_header();
   memOop(obj)->scavenge_body(memOopDesc::header_size(), size);
-  return size;  
+  return size;
 }
 
 int mixinKlass::oop_scavenge_tenured_contents(oop obj) {
@@ -95,11 +95,11 @@ void mixinKlass::oop_follow_contents(oop obj) {
 void mixinKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
-  blk->do_oop("methods",            (oop*)&mixinOop(obj)->addr()->_methods);
-  blk->do_oop("instVars",           (oop*)&mixinOop(obj)->addr()->_inst_vars);
-  blk->do_oop("classVars",          (oop*)&mixinOop(obj)->addr()->_class_vars);
+  blk->do_oop("methods", (oop*)&mixinOop(obj)->addr()->_methods);
+  blk->do_oop("instVars", (oop*)&mixinOop(obj)->addr()->_inst_vars);
+  blk->do_oop("classVars", (oop*)&mixinOop(obj)->addr()->_class_vars);
   blk->do_oop("primary invocation", (oop*)&mixinOop(obj)->addr()->_primary_invocation);
-  blk->do_oop("class mixin",        (oop*)&mixinOop(obj)->addr()->_class_mixin);
+  blk->do_oop("class mixin", (oop*)&mixinOop(obj)->addr()->_class_mixin);
   // instance variables
   memOop(obj)->layout_iterate_body(blk, mixinOopDesc::header_size(), non_indexable_size());
 }

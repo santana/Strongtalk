@@ -28,28 +28,26 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Keeps the sliding average of where the system spends the time
 class SlidingSystemAverage : AllStatic {
- public:
-
+public:
   enum {
     // initial value
-    nowhere             =  0,
+    nowhere = 0,
 
-    // ticks without last_delta_fp set 
-    in_compiled_code    =  1, 
-    in_interpreted_code =  2,
-    in_pic_code         =  3,
-    in_stub_code        =  4,
+    // ticks without last_delta_fp set
+    in_compiled_code = 1,
+    in_interpreted_code = 2,
+    in_pic_code = 3,
+    in_stub_code = 4,
 
     // ticks with last_delta_fp set
-    in_compiler         =  5,
-    in_garbage_collect  =  6, // sacvenge or GC
-    is_idle             =  7, // hanging in primitiveProcessSchedulerWait:
-    in_vm               =  8, // somewhere else in the vm (primitive / dll)
-    number_of_cases     =  9,
+    in_compiler = 5,
+    in_garbage_collect = 6, // sacvenge or GC
+    is_idle = 7, // hanging in primitiveProcessSchedulerWait:
+    in_vm = 8, // somewhere else in the vm (primitive / dll)
+    number_of_cases = 9,
 
-    buffer_size         = 256
+    buffer_size = 256
   };
-
 
   // Resets the buffer
   static void reset();
@@ -60,9 +58,9 @@ class SlidingSystemAverage : AllStatic {
   // Returns the update statistics array
   static unsigned int* update();
 
- private:
-  static char         buffer[buffer_size];    // Buffer for the ticks
-  static unsigned int stat[number_of_cases];  // Results from buffer
-  static unsigned int pos;                    // Current pos in buffer
+private:
+  static char buffer[buffer_size]; // Buffer for the ticks
+  static unsigned int stat[number_of_cases]; // Results from buffer
+  static unsigned int pos; // Current pos in buffer
 };
 #endif // _SYSTEM_AVERAGE_HPP

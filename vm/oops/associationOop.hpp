@@ -37,37 +37,37 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //  [value       ]
 //  [is_constant ]
 
-class associationOopDesc: public memOopDesc {
- protected:
+class associationOopDesc : public memOopDesc {
+protected:
   symbolOop _key;
-  oop       _value;
-  oop       _is_constant;
- public:
-  associationOopDesc* addr() const {
-    return (associationOopDesc*) memOopDesc::addr(); }
+  oop _value;
+  oop _is_constant;
 
-	friend associationOop as_associationOop(void* p);
+public:
+  associationOopDesc* addr() const { return (associationOopDesc*)memOopDesc::addr(); }
+
+  friend associationOop as_associationOop(void* p);
 
   // sizing
-  static int header_size()	{ return sizeof(associationOopDesc)/oopSize; }
+  static int header_size() { return sizeof(associationOopDesc) / oopSize; }
 
   void bootstrap_object(bootstrap* st);
 
-  symbolOop key() const		{ return addr()->_key; }
-  void set_key(symbolOop k)	{ STORE_OOP(&addr()->_key,k);}
+  symbolOop key() const { return addr()->_key; }
+  void set_key(symbolOop k) { STORE_OOP(&addr()->_key, k); }
 
-  oop value() const		{ return addr()->_value; }
-  void set_value(oop v)		{ STORE_OOP(&addr()->_value, v); }
+  oop value() const { return addr()->_value; }
+  void set_value(oop v) { STORE_OOP(&addr()->_value, v); }
 
-  bool is_constant() const	{ return addr()->_is_constant == trueObj; }
+  bool is_constant() const { return addr()->_is_constant == trueObj; }
   void set_is_constant(bool v);
 
-  static int key_offset()	  { return 2; } // offset of the key field in words
-  static int value_offset()	  { return 3; } // offset of the value field in words
+  static int key_offset() { return 2; } // offset of the key field in words
+  static int value_offset() { return 3; } // offset of the value field in words
   static int is_constant_offset() { return 4; } // offset of the is_constant field in words
   friend class associationKlass;
 };
 inline associationOop as_associationOop(void* p) {
-    return associationOop(as_memOop(p));
+  return associationOop(as_memOop(p));
 }
 #endif // _ASSOCIATION_OOP_HPP

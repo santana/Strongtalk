@@ -27,23 +27,27 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "interpreter/methodIterator.hpp"
 
 IntervalInfo::IntervalInfo(MethodInterval* interval, InlinedScope* scope) {
-  _interval = interval; _scope = scope;
+  _interval = interval;
+  _scope = scope;
 }
 
 bool IntervalInfo::isParentOf(IntervalInfo* other) const {
   MethodInterval* mi = other->interval()->parent();
-  while (mi && mi != _interval) mi = mi->parent();
+  while (mi && mi != _interval)
+    mi = mi->parent();
   return mi != NULL;
 }
 
 bool IntervalInfo::dominates(int bci, IntervalInfo* other, int otherBCI) const {
   // "x dominates y" --> "if y is executed, x was executed earlier"
-  // Bytecode bci1 in interval i1 dominates bytecode bci2 in interval i2 if 
+  // Bytecode bci1 in interval i1 dominates bytecode bci2 in interval i2 if
   // - i1 == i2 && bci1 <= bci2  (i1 == i2 implies straight-line code)
   // - i1 is a parent of i2 && bci1 < bci2
   //   (e.g., i1 is a method and i2 a loop body or if condition)
-  if (this == other && bci <= otherBCI) return true;
-  if (isParentOf(other) && bci < otherBCI) return true;
+  if (this == other && bci <= otherBCI)
+    return true;
+  if (isParentOf(other) && bci < otherBCI)
+    return true;
   return false;
 }
 

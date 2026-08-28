@@ -29,7 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //
 // An InterpretedIC can have four different states:
 //
-// 1) empty					{selector,         0} 
+// 1) empty					{selector,         0}
 // 2) filled with a call to interpreted code	{method,           klass}
 // 3) filled with an interpreter PIC		{selector,         objArrayObj}
 // 4) filled with a call to compiled code	{jump table entry, klass}
@@ -52,12 +52,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "lookup/lookupCache.hpp"
 #include "memory/allocation.hpp"
 
-class InterpretedIC: ValueObj {
- public:
+class InterpretedIC : ValueObj {
+public:
   enum {
-    size               = 2*oopSize,		// inline cache size in bytes
-    first_word_offset  = 0,			// layout info: first word
-    second_word_offset = oopSize,		// layout info: second word
+    size = 2 * oopSize, // inline cache size in bytes
+    first_word_offset = 0, // layout info: first word
+    second_word_offset = oopSize, // layout info: second word
   } InterpretedICConstants;
 
   // Conversion (Bytecode* -> InterpretedIC*)
@@ -67,112 +67,110 @@ class InterpretedIC: ValueObj {
   static u_char* findStartOfSend(u_char* selector_addr);
   static int findStartOfSend(methodOop m, int bci);
 
- private:
+private:
   // field access
-  char*   addr_at(int offset) const		{ return (char*)this + offset; }
-  oop*    first_word_addr() const		{ return (oop*)addr_at(first_word_offset); }
-  oop*    second_word_addr() const		{ return (oop*)addr_at(second_word_offset); }
-  void    set(Bytecodes::Code send_code, oop first_word, oop second_word);
+  char* addr_at(int offset) const { return (char*)this + offset; }
+  oop* first_word_addr() const { return (oop*)addr_at(first_word_offset); }
+  oop* second_word_addr() const { return (oop*)addr_at(second_word_offset); }
+  void set(Bytecodes::Code send_code, oop first_word, oop second_word);
 
- public:
+public:
   // Raw inline cache access
-  u_char* send_code_addr() const		{ return findStartOfSend((u_char*)this); }
-  Bytecodes::Code send_code() const		{ return Bytecodes::Code(*send_code_addr()); }
-  oop             first_word() const		{ return *first_word_addr(); }
-  oop             second_word() const		{ return *second_word_addr(); }
-  
+  u_char* send_code_addr() const { return findStartOfSend((u_char*)this); }
+  Bytecodes::Code send_code() const { return Bytecodes::Code(*send_code_addr()); }
+  oop first_word() const { return *first_word_addr(); }
+  oop second_word() const { return *second_word_addr(); }
+
   // Returns the polymorphic inline cache array. Assert fails if no pic is present.
   objArrayOop pic_array();
 
   // Inline cache information
-  bool		  is_empty() const		{ return second_word() == NULL; }
-  symbolOop	  selector() const;		// the selector
-  jumpTableEntry* jump_table_entry() const;	// only legal to call if compiled send
+  bool is_empty() const { return second_word() == NULL; }
+  symbolOop selector() const; // the selector
+  jumpTableEntry* jump_table_entry() const; // only legal to call if compiled send
 
-  int             nof_arguments() const;        // the number of arguments
-  Bytecodes::SendType     send_type() const;	// the send type
-  Bytecodes::ArgumentSpec argument_spec() const;// the argument spec
+  int nof_arguments() const; // the number of arguments
+  Bytecodes::SendType send_type() const; // the send type
+  Bytecodes::ArgumentSpec argument_spec() const; // the argument spec
 
   // Manipulation
-  void clear();					// clears the inline cache
-  void cleanup();                               // cleanup the inline cache
-  void clear_without_deallocation_pic();        // clears the inline cache without deallocating the pic
-  void replace(nmethod* nm);			// replaces the appropriate target with a nm
+  void clear(); // clears the inline cache
+  void cleanup(); // cleanup the inline cache
+  void clear_without_deallocation_pic(); // clears the inline cache without deallocating the pic
+  void replace(nmethod* nm); // replaces the appropriate target with a nm
   void replace(LookupResult result, klassOop receiver_klass); // replaces the inline cache with a lookup result
 
   // Debugging
   void print();
 
   // Cache miss
-  static oop* inline_cache_miss();		// the inline cache miss handler
+  static oop* inline_cache_miss(); // the inline cache miss handler
 
- private:
+private:
   // helpers for inline_cache_miss
-  static void update_inline_cache(InterpretedIC* ic, frame* f, Bytecodes::Code send_code, klassOop klass, LookupResult result);
+  static void update_inline_cache(InterpretedIC* ic, frame* f, Bytecodes::Code send_code, klassOop klass,
+                                  LookupResult result);
   static oop does_not_understand(oop receiver, InterpretedIC* ic, frame* f);
   static void trace_inline_cache_miss(InterpretedIC* ic, klassOop klass, LookupResult result);
 };
 
-inline InterpretedIC* as_InterpretedIC(char* address_of_next_instr)
-{
-	return (InterpretedIC*)(address_of_next_instr - InterpretedIC::size);
+inline InterpretedIC* as_InterpretedIC(char* address_of_next_instr) {
+  return (InterpretedIC*)(address_of_next_instr - InterpretedIC::size);
 }
 
 // Interpreter_PICs handles the allocation and deallocation of interpreter PICs.
 
 static const int size_of_smallest_interpreterPIC = 2;
-static const int size_of_largest_interpreterPIC  = 5;
-static const int number_of_interpreterPIC_sizes  = size_of_largest_interpreterPIC - size_of_smallest_interpreterPIC + 1;
-
+static const int size_of_largest_interpreterPIC = 5;
+static const int number_of_interpreterPIC_sizes = size_of_largest_interpreterPIC - size_of_smallest_interpreterPIC + 1;
 
 // An InterpretedIC_Iterator is used to iterate through the entries of
 // an inline cache in a methodOop. Whenever possible, one should use this
 // abstraction instead of the (raw) InterpretedIC.
 
-class InterpretedIC_Iterator: public IC_Iterator {
- private:
-  InterpretedIC* _ic;				// the inline cache
-  objArrayOop	_pic;				// the PIC if there is one
+class InterpretedIC_Iterator : public IC_Iterator {
+private:
+  InterpretedIC* _ic; // the inline cache
+  objArrayOop _pic; // the PIC if there is one
 
   // state machine
-  int		_number_of_targets;		// the no. of IC entries
-  IC_Shape	_info;				// send site information
-  int		_index;				// the current entry no.
-  klassOop	_klass;				// the current klass
-  methodOop	_method;			// the current method
-  nmethod*	_nm;				// current nmethod (NULL if none)
+  int _number_of_targets; // the no. of IC entries
+  IC_Shape _info; // send site information
+  int _index; // the current entry no.
+  klassOop _klass; // the current klass
+  methodOop _method; // the current method
+  nmethod* _nm; // current nmethod (NULL if none)
 
-  void set_method(oop m);			// set _method and _nmethod
-  void set_klass(oop k);			// don't assign to _klass directly
+  void set_method(oop m); // set _method and _nmethod
+  void set_klass(oop k); // don't assign to _klass directly
 
- public:
+public:
   InterpretedIC_Iterator(InterpretedIC* ic);
 
   // IC information
-  int		number_of_targets() const	{ return _number_of_targets; }
-  IC_Shape	shape() const			{ return _info; }
-  symbolOop	selector() const		{ return _ic->selector(); }
-  bool		is_interpreted_ic() const	{ return true; }
-  bool		is_super_send() const;
-  InterpretedIC* interpreted_ic() const		{ return _ic; }
-
+  int number_of_targets() const { return _number_of_targets; }
+  IC_Shape shape() const { return _info; }
+  symbolOop selector() const { return _ic->selector(); }
+  bool is_interpreted_ic() const { return true; }
+  bool is_super_send() const;
+  InterpretedIC* interpreted_ic() const { return _ic; }
 
   // Iterating through entries
-  void		init_iteration();
-  void		advance();
-  bool		at_end() const			{ return _index >= number_of_targets(); }
+  void init_iteration();
+  void advance();
+  bool at_end() const { return _index >= number_of_targets(); }
 
   // Accessing entries
-  klassOop	klass() const			{ return _klass; }
+  klassOop klass() const { return _klass; }
 
   // answer whether current target method is compiled or interpreted
-  bool		is_interpreted() const		{ return _nm == NULL; }
-  bool		is_compiled() const		{ return _nm != NULL; }
+  bool is_interpreted() const { return _nm == NULL; }
+  bool is_compiled() const { return _nm != NULL; }
 
-  methodOop	interpreted_method() const;
-  nmethod*	compiled_method() const;
+  methodOop interpreted_method() const;
+  nmethod* compiled_method() const;
 
   // Debugging
-  void		print();
+  void print();
 };
 #endif // _INTERPRETED_IC_HPP

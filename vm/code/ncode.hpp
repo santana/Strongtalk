@@ -31,67 +31,68 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 template <class E> class GrowableArray;
 
-# define OOPNCODE_FROM(fieldName, p)					      \
-    ((OopNCode*)((char*)p - (char*)&((OopNCode*)NULL)->fieldName))
+#define OOPNCODE_FROM(fieldName, p) ((OopNCode*)((char*)p - (char*)&((OopNCode*)NULL)->fieldName))
 
 // NCodeBase is the superclass of all things containing native code.
 
 class NCodeBase : public PrintableCHeapObj {
- protected:
-  int _instsLen;			// instruction length in bytes
- public:
+protected:
+  int _instsLen; // instruction length in bytes
+public:
   void* operator new(size_t size) {
     // placeholder never used for real allocation (subclasses override);
     // abort() is noreturn so clang won't flag this as an operator new
     // that can return NULL.
-    Unused(size); SubclassResponsibility(); abort();
+    Unused(size);
+    SubclassResponsibility();
+    abort();
   }
-  
-  virtual char* insts() const = 0;	// beginning of instructions part
-  virtual int size() const = 0;		// size in bytes
-  int instsLen() const 			{ return _instsLen; }
-  char* instsEnd() const 		{ return insts() + instsLen(); }
-  bool  contains(void* p) const 	{ return (void*)insts() <= p && p < (void*)instsEnd(); }
 
-  virtual bool isNMethod() const  	{ return false; }
-  virtual bool isPIC() const  		{ return false; }
+  virtual char* insts() const = 0; // beginning of instructions part
+  virtual int size() const = 0; // size in bytes
+  int instsLen() const { return _instsLen; }
+  char* instsEnd() const { return insts() + instsLen(); }
+  bool contains(void* p) const { return (void*)insts() <= p && p < (void*)instsEnd(); }
+
+  virtual bool isNMethod() const { return false; }
+  virtual bool isPIC() const { return false; }
   //virtual bool isCountStub() const  	{ return false; }
   //virtual bool isAgingStub() const  	{ return false; }
-  
+
   virtual void moveTo(void* to, int size) = 0; // (possibly overlapping) copy
   virtual void relocate() {};
   virtual void verify() = 0;
- protected:
+
+protected:
   void verify2(const char* name);
 };
 
-
 // OopNCode is the base class of all code containing oop references embedded
-// in the code (e.g. "load constant" instructions).  
+// in the code (e.g. "load constant" instructions).
 
 class OopNCode : public NCodeBase {
- protected:
-  void	check_store(oop x, char *bound) {
-    if (Universe::new_gen.is_new(x, bound)) remember(); }
-  int _locsLen;				// relocation info length (bytes)
- public:
-  
-  relocInfo* locs() const	    	{ return (relocInfo*) instsEnd();}
-  int locsLen() const	    		{ return _locsLen;}
-  relocInfo* locsEnd() const       	{ return (relocInfo*) ((char*)locs() + _locsLen);}
-    
-  virtual bool isNMethod() const 	{ return false; }
-  
+protected:
+  void check_store(oop x, char* bound) {
+    if (Universe::new_gen.is_new(x, bound))
+      remember();
+  }
+  int _locsLen; // relocation info length (bytes)
+public:
+  relocInfo* locs() const { return (relocInfo*)instsEnd(); }
+  int locsLen() const { return _locsLen; }
+  relocInfo* locsEnd() const { return (relocInfo*)((char*)locs() + _locsLen); }
+
+  virtual bool isNMethod() const { return false; }
+
   // Memory operations: return true if need to invalidate instruction cache
-  virtual bool switch_pointers(oop from, oop to,
-			       GrowableArray<nmethod*>* nmethods_to_invalidate);
+  virtual bool switch_pointers(oop from, oop to, GrowableArray<nmethod*>* nmethods_to_invalidate);
 
   void relocate();
   void remember();
   virtual void verify();
 };
 
-NCodeBase* findThing(void* addr);   // returns NULL if addr not in a zone
+NCodeBase* findThing(void* addr); // returns NULL if addr not in a zone
 
 #endif // DELTA_COMPILER
 #endif // _NCODE_HPP

@@ -47,30 +47,33 @@ void doubleByteArrayOopDesc::bootstrap_object(bootstrap* st) {
 }
 
 inline int sub_sign(int a, int b) {
-  if (a < b) return -1;
-  if (a > b) return  1;
+  if (a < b)
+    return -1;
+  if (a > b)
+    return 1;
   return 0;
 }
 
 inline int compare_as_doubleBytes(const doubleByte* a, const doubleByte* b) {
   // machine dependent code; little endian code
-  if (a[0] - b[0]) return sub_sign(a[0], b[0]);
+  if (a[0] - b[0])
+    return sub_sign(a[0], b[0]);
   return sub_sign(a[1], b[1]);
 }
 
 int doubleByteArrayOopDesc::compare(doubleByteArrayOop arg) {
   // Get the addresses of the length fields
-  const unsigned int* a = (const unsigned int*) length_addr();
-  const unsigned int* b = (const unsigned int*) arg->length_addr();
+  const unsigned int* a = (const unsigned int*)length_addr();
+  const unsigned int* b = (const unsigned int*)arg->length_addr();
 
   // Get the word sizes of the arays
   int a_size = roundTo(smiOop((intptr_t)(*a++))->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
   int b_size = roundTo(smiOop((intptr_t)(*b++))->value() * sizeof(doubleByte), sizeof(int)) / sizeof(int);
 
   const unsigned int* a_end = a + min(a_size, b_size);
-  while(a < a_end) {
-    if (*b++ != *a++) 
-      return compare_as_doubleBytes((const doubleByte*) (a-1), (const doubleByte*) (b-1));
+  while (a < a_end) {
+    if (*b++ != *a++)
+      return compare_as_doubleBytes((const doubleByte*)(a - 1), (const doubleByte*)(b - 1));
   }
   return sub_sign(a_size, b_size);
 }
@@ -108,16 +111,15 @@ int doubleByteArrayOopDesc::hash_value() {
   } else {
     unsigned int val;
     val = doubleByte_at(1);
-    val = (val << 3) ^ (doubleByte_at(2)         ^ val);
-    val = (val << 3) ^ (doubleByte_at(len)       ^ val);
-    val = (val << 3) ^ (doubleByte_at(len-1)     ^ val);
-    val = (val << 3) ^ (doubleByte_at(len/2 + 1) ^ val);
-    val = (val << 3) ^ (len                      ^ val);
+    val = (val << 3) ^ (doubleByte_at(2) ^ val);
+    val = (val << 3) ^ (doubleByte_at(len) ^ val);
+    val = (val << 3) ^ (doubleByte_at(len - 1) ^ val);
+    val = (val << 3) ^ (doubleByte_at(len / 2 + 1) ^ val);
+    val = (val << 3) ^ (len ^ val);
     result = markOopDesc::masked_hash(val);
   }
   return result == 0 ? 1 : result;
 }
-
 
 bool doubleByteArrayOopDesc::copy_null_terminated(char* buffer, int max_length) {
   int len = length();
@@ -127,19 +129,18 @@ bool doubleByteArrayOopDesc::copy_null_terminated(char* buffer, int max_length) 
     is_truncated = true;
   }
   for (int index = 0; index < len; index++)
-    buffer[index] = (char) doubleByte_at(index+1);
-  buffer[len]= '\0';
+    buffer[index] = (char)doubleByte_at(index + 1);
+  buffer[len] = '\0';
   return is_truncated;
 }
 
 char* doubleByteArrayOopDesc::as_string() {
   int len = length();
-  char* str = NEW_RESOURCE_ARRAY(char, len+1);
+  char* str = NEW_RESOURCE_ARRAY(char, len + 1);
   int index;
-  for (index = 0; index <len; index++) {
-    str[index] = (char) doubleByte_at(index+1);
+  for (index = 0; index < len; index++) {
+    str[index] = (char)doubleByte_at(index + 1);
   }
   str[index] = '\0';
   return str;
 }
-

@@ -40,70 +40,70 @@ class HeapChunk;
 class ChunkKlass;
 class FreeList;
 
-class Heap: public CHeapObj {
- protected:
-  int size;		// total size in bytes
- public:
-  int blockSize;	// allocation unit in bytes (must be power of 2)
-  int nfree;		// number of free lists
- protected:
-  int log2BS;		// log2(blockSize)
-  
-  int bytesUsed;	// used bytes (rounded to block size)
-  int total;		// total bytes allocated so far
-  int ifrag;		// bytes wasted by internal fragmentation
-  char* _base;	    	// for deallocation
-  char* base;		// base addr of heap (aligned to block size)
-  ChunkKlass* heapKlass;// map of heap (1 byte / block)
-  FreeList* freeList;	// array of free lists for different chunk sizes
-  FreeList* bigList;	// list of all big free blocks
-  ChunkKlass* lastCombine;// result of last block combination
- public:
-  Heap* newHeap;    	// only set when growing a heap (i.e. replacing it)
-  bool combineMode;	// do eager block combination on deallocs?
-  
- public:
+class Heap : public CHeapObj {
+protected:
+  int size; // total size in bytes
+public:
+  int blockSize; // allocation unit in bytes (must be power of 2)
+  int nfree; // number of free lists
+protected:
+  int log2BS; // log2(blockSize)
+
+  int bytesUsed; // used bytes (rounded to block size)
+  int total; // total bytes allocated so far
+  int ifrag; // bytes wasted by internal fragmentation
+  char* _base; // for deallocation
+  char* base; // base addr of heap (aligned to block size)
+  ChunkKlass* heapKlass; // map of heap (1 byte / block)
+  FreeList* freeList; // array of free lists for different chunk sizes
+  FreeList* bigList; // list of all big free blocks
+  ChunkKlass* lastCombine; // result of last block combination
+public:
+  Heap* newHeap; // only set when growing a heap (i.e. replacing it)
+  bool combineMode; // do eager block combination on deallocs?
+
+public:
   // Constructor
   Heap(int s, int bs);
   ~Heap();
 
   // Initializes the Heap
   void clear();
-  
+
   // Allocation
-  void* allocate(int wantedBytes);	// returns NULL if allocation failed
-  void  deallocate(void* p, int bytes);
+  void* allocate(int wantedBytes); // returns NULL if allocation failed
+  void deallocate(void* p, int bytes);
 
   // Compaction
-  char* compact(void move(char* from, char* to, int nbytes));	// returns first free byte  
+  char* compact(void move(char* from, char* to, int nbytes)); // returns first free byte
 
-  // Sizes  
-  int capacity()  const { return size; }
+  // Sizes
+  int capacity() const { return size; }
   int usedBytes() const { return bytesUsed; }
   int freeBytes() const { return size - bytesUsed; }
 
   // Fragmentation
-  double intFrag() const { return usedBytes() ? (float)ifrag / usedBytes() : 0 ; }
+  double intFrag() const { return usedBytes() ? (float)ifrag / usedBytes() : 0; }
   double extFrag() const { return usedBytes() ? 1.0 - (float)usedBytes() / capacity() : 0; }
 
   // Location
   char* startAddr() const { return base; }
-  char* endAddr()   const { return startAddr() + capacity(); }
+  char* endAddr() const { return startAddr() + capacity(); }
 
   // Queries
-  bool  contains(void* p) const;
+  bool contains(void* p) const;
   void* firstUsed() const; // Address of first used object
   void* nextUsed(void* prev) const;
   void* findStartOfBlock(void* start) const;
-  int   sizeOfBlock(void* nm) const;
-  
+  int sizeOfBlock(void* nm) const;
+
   // Misc.
   void verify() const;
   void print() const;
 
- protected:
+protected:
   int mapSize() const { return size >> log2BS; }
-  char*  blockAddr(ChunkKlass* m) const {
+  char* blockAddr(ChunkKlass* m) const {
     u_char* fm = (u_char*)heapKlass;
     u_char* bm = (u_char*)m;
     assert(bm >= fm && bm < fm + mapSize(), "not a heapKlass entry");
@@ -121,8 +121,8 @@ class Heap: public CHeapObj {
 
   // Free list management
   void* allocFromLists(int wantedBytes);
-  bool  addToFreeList(ChunkKlass* m);
-  void  removeFromFreeList(ChunkKlass* m);
+  bool addToFreeList(ChunkKlass* m);
+  void removeFromFreeList(ChunkKlass* m);
 
   int combineAll();
   int combine(HeapChunk*& m);

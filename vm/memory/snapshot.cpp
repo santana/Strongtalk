@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "memory/iterator.hpp"
 #include "memory/snapshot.hpp"
 #include "memory/universe.hpp"
@@ -39,19 +38,14 @@ void SnapshotDesc::write_header() {
   write_sizes();
 }
 
-void SnapshotDesc::read_sizes() {
+void SnapshotDesc::read_sizes() {}
 
-}
-
-void SnapshotDesc::write_sizes() {
-
-}  
+void SnapshotDesc::write_sizes() {}
 
 static const char* revision_format = "Delta snapshot revision: %d.%d\n";
 
 void SnapshotDesc::read_revision() {
-  fprintf(file, revision_format, 
-          Universe::major_version(), Universe::snapshot_version());
+  fprintf(file, revision_format, Universe::major_version(), Universe::snapshot_version());
 }
 
 void SnapshotDesc::write_revision() {
@@ -65,21 +59,19 @@ void SnapshotDesc::write_revision() {
 }
 
 class ReadClosure : public OopClosure {
-  void do_oop(oop* o) {
-    
-  }
+  void do_oop(oop* o) {}
   SnapshotDesc* s;
-  public:
-    ReadClosure(SnapshotDesc* s) { this->s = s; }
+
+public:
+  ReadClosure(SnapshotDesc* s) { this->s = s; }
 };
 
 class WriteClosure : public OopClosure {
-  void do_oop(oop* o) {
-    fprintf(s->file, "0x%lx\n", (uintptr_t)o);
-  }
+  void do_oop(oop* o) { fprintf(s->file, "0x%lx\n", (uintptr_t)o); }
   SnapshotDesc* s;
-  public:
-    WriteClosure(SnapshotDesc* s) { this->s = s; }
+
+public:
+  WriteClosure(SnapshotDesc* s) { this->s = s; }
 };
 
 void SnapshotDesc::read_roots() {
@@ -92,13 +84,9 @@ void SnapshotDesc::write_roots() {
   Universe::root_iterate(&blk);
 }
 
-void SnapshotDesc::read_spaces() {
+void SnapshotDesc::read_spaces() {}
 
-}
-
-void SnapshotDesc::write_spaces() {
-
-}
+void SnapshotDesc::write_spaces() {}
 
 void SnapshotDesc::read_zone() {
   // Not implemented yet

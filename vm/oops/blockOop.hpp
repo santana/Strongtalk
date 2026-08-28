@@ -35,60 +35,63 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // in which case their _lexical_scope is used to resolve accesses
 // to free variables.
 
-class blockClosureOopDesc: public memOopDesc {
- private:
-  oop _methodOrJumpAddr;		// block method (if interpreted), jumpTable stub address (if compiled)
-  contextOop     _lexical_scope;	// lexical context or nil (if no free variables)
-  blockClosureOop addr() const 		{ return blockClosureOop(memOopDesc::addr()); }
- public:
+class blockClosureOopDesc : public memOopDesc {
+private:
+  oop _methodOrJumpAddr; // block method (if interpreted), jumpTable stub address (if compiled)
+  contextOop _lexical_scope; // lexical context or nil (if no free variables)
+  blockClosureOop addr() const { return blockClosureOop(memOopDesc::addr()); }
+
+public:
   // field offsets for code generation
   static int method_or_entry_byte_offset() { return (2 * oopSize) - Mem_Tag; }
-  static int context_byte_offset()	   { return (3 * oopSize) - Mem_Tag; }
+  static int context_byte_offset() { return (3 * oopSize) - Mem_Tag; }
 
-	friend blockClosureOop as_blockClosureOop(void* p);
+  friend blockClosureOop as_blockClosureOop(void* p);
 
-  static blockClosureOop create_clean_block(int nofArgs, char* entry_point);	// create a clean block
+  static blockClosureOop create_clean_block(int nofArgs, char* entry_point); // create a clean block
 
   inline bool isCompiledBlock() const { return !oop(addr()->_methodOrJumpAddr)->is_mem(); }
-  void set_method(methodOop m)        { STORE_OOP(&addr()->_methodOrJumpAddr, m); }
-  void set_jumpAddr(void* jmp_addr)   {
+  void set_method(methodOop m) { STORE_OOP(&addr()->_methodOrJumpAddr, m); }
+  void set_jumpAddr(void* jmp_addr) {
     assert(!oop(jmp_addr)->is_mem(), "not properly aligned");
     addr()->_methodOrJumpAddr = (oop)jmp_addr;
   }
   methodOop method() const;
 
-  #ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   jumpTableEntry* jump_table_entry() const;
-  #endif
+#endif
 
   // returns the number of arguments for the method oop belonging to this closure
   int number_of_arguments();
 
   // sizing
-  static int header_size() 		{ return sizeof(blockClosureOopDesc)/oopSize; }
-  static int object_size() 		{ return header_size(); }
+  static int header_size() { return sizeof(blockClosureOopDesc) / oopSize; }
+  static int object_size() { return header_size(); }
 
-  void set_lexical_scope(contextOop l)	{ STORE_OOP(&addr()->_lexical_scope, l); }
-  contextOop lexical_scope() const	{ return addr()->_lexical_scope; }
+  void set_lexical_scope(contextOop l) { STORE_OOP(&addr()->_lexical_scope, l); }
+  contextOop lexical_scope() const { return addr()->_lexical_scope; }
 
   bool is_pure() const;
 
   // deoptimization
   void deoptimize();
 
-  char* name() const 			{ return "blockClosure"; }
+  char* name() const { return "blockClosure"; }
   void verify();
 
   friend class blockClosureKlass;
 };
-inline blockClosureOop as_blockClosureOop(void* p) { return blockClosureOop(as_memOop(p)); }
+inline blockClosureOop as_blockClosureOop(void* p) {
+  return blockClosureOop(as_memOop(p));
+}
 // Contexts contain the heap-allocated local variables of a method, i.e., the locals
 // and arguments that are uplevel-accessed by blocks.  They are variable-length, what's
 // shown below is just the common prefix which is followed by the words containing the
 // actual data.
 
-class contextOopDesc: public memOopDesc {
- private:
+class contextOopDesc : public memOopDesc {
+private:
   smiOop _parent;
   //
   // %note: Robert please describe the parent states in excruciating details.
@@ -101,47 +104,48 @@ class contextOopDesc: public memOopDesc {
   // The transition from frame to smiOop_zero happens when the block is zapped
   // by the epilog code of the method or a non local return.
   // NOTE: the frame is needed in case of a non local return.
-  contextOop addr() const 		{ return contextOop(memOopDesc::addr()); }
- public:
-	friend contextOop as_contextOop(void* p);
+  contextOop addr() const { return contextOop(memOopDesc::addr()); }
 
-  void set_parent(oop h) 		{ STORE_OOP(&addr()->_parent, h); }
-  oop  parent() const 			{ return addr()->_parent; }
+public:
+  friend contextOop as_contextOop(void* p);
+
+  void set_parent(oop h) { STORE_OOP(&addr()->_parent, h); }
+  oop parent() const { return addr()->_parent; }
 
   // Test operations on home
   bool is_dead() const;
   bool has_parent_fp() const;
   bool has_outer_context() const;
 
-  void** parent_fp() const		{ return has_parent_fp() ? (void**) parent() : NULL; }
+  void** parent_fp() const { return has_parent_fp() ? (void**)parent() : NULL; }
   void set_home_fp(void** fp) {
     assert(oop(fp)->is_smi(), "checking alignment");
     set_parent(oop(fp));
   }
 
   // Returns the outer context if any
-  contextOop outer_context() const;     // NULL if is_dead or has_frame
+  contextOop outer_context() const; // NULL if is_dead or has_frame
 
   // Sets the home to smiOop_zero
-  void kill()				{ set_parent(smiOop_zero); }
+  void kill() { set_parent(smiOop_zero); }
 
-  static int header_size() 		{ return sizeof(contextOopDesc)/oopSize; }
-  int object_size() 			{ return header_size() + length(); }
+  static int header_size() { return sizeof(contextOopDesc) / oopSize; }
+  int object_size() { return header_size() + length(); }
 
-  oop* obj_addr_at(int index)           { return oops(header_size() + index); }
-  oop  obj_at(int index) 		{ return raw_at(header_size() + index); }
+  oop* obj_addr_at(int index) { return oops(header_size() + index); }
+  oop obj_at(int index) { return raw_at(header_size() + index); }
   void obj_at_put(int index, oop value) { raw_at_put(header_size() + index, value); }
-  int length() 				{ return mark()->hash() - 1; }
+  int length() { return mark()->hash() - 1; }
 
   // constants for code generation
-  static int parent_word_offset() 	{ return 2; }	// word offset of parent context
-  static int temp0_word_offset()	{ return 3; }	// word offset of first context temp
-  static int parent_byte_offset()	{ return byteOffset(parent_word_offset()); }
-  static int temp0_byte_offset() 	{ return byteOffset(temp0_word_offset()); }
+  static int parent_word_offset() { return 2; } // word offset of parent context
+  static int temp0_word_offset() { return 3; } // word offset of first context temp
+  static int parent_byte_offset() { return byteOffset(parent_word_offset()); }
+  static int temp0_byte_offset() { return byteOffset(temp0_word_offset()); }
 
   // Accessors for storing and reading the forward reference
   // to the unoptimized context (Used during deoptimization).
-  void   set_unoptimized_context(contextOop con);
+  void set_unoptimized_context(contextOop con);
   contextOop unoptimized_context();
 
   // Returns the length of the context chain.
@@ -152,5 +156,7 @@ class contextOopDesc: public memOopDesc {
 
   friend class contextKlass;
 };
-inline contextOop as_contextOop(void* p) { return contextOop(as_memOop(p)); }
+inline contextOop as_contextOop(void* p) {
+  return contextOop(as_memOop(p));
+}
 #endif // _BLOCK_OOP_HPP

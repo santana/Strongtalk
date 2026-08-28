@@ -42,11 +42,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 void InterpretedDLL_Cache::verify() {
   // check oops
-  if (!dll_name()->is_symbol()) fatal("dll name is not a symbolOop");
-  if (!funct_name()->is_symbol()) fatal("function name is not a symbolOop");
-  if (number_of_arguments() < 0) fatal("illegal number of arguments");
+  if (!dll_name()->is_symbol())
+    fatal("dll name is not a symbolOop");
+  if (!funct_name()->is_symbol())
+    fatal("function name is not a symbolOop");
+  if (number_of_arguments() < 0)
+    fatal("illegal number of arguments");
 }
-
 
 void InterpretedDLL_Cache::print() {
   mystd->print("DLL call ");
@@ -56,16 +58,12 @@ void InterpretedDLL_Cache::print() {
   mystd->print(" (0x%x, %s, interpreted)\n", entry_point(), async() ? "asynchronous" : "synchronous");
 }
 
-
 // CompiledDLL_Cache implementation
 
 bool CompiledDLL_Cache::async() const {
   char* d = destination();
-  return
-    d == StubRoutines::lookup_DLL_entry(true) ||
-    d == StubRoutines::call_DLL_entry(true);
+  return d == StubRoutines::lookup_DLL_entry(true) || d == StubRoutines::call_DLL_entry(true);
 }
-
 
 void CompiledDLL_Cache::verify() {
   // check layout
@@ -74,18 +72,17 @@ void CompiledDLL_Cache::verify() {
   test_at(test_2_instruction_offset)->verify();
   NativeCall::verify();
   // check oops
-  if (!dll_name()->is_symbol()) fatal("dll name is not a symbolOop");
-  if (!function_name()->is_symbol()) fatal("function name is not a symbolOop");
+  if (!dll_name()->is_symbol())
+    fatal("dll name is not a symbolOop");
+  if (!function_name()->is_symbol())
+    fatal("function name is not a symbolOop");
   // check destination
   char* d = destination();
-  if (d != StubRoutines::lookup_DLL_entry(true)  &&
-      d != StubRoutines::lookup_DLL_entry(false) &&
-      d != StubRoutines::call_DLL_entry(true)    &&
-      d != StubRoutines::call_DLL_entry(false))  {
+  if (d != StubRoutines::lookup_DLL_entry(true) && d != StubRoutines::lookup_DLL_entry(false) &&
+      d != StubRoutines::call_DLL_entry(true) && d != StubRoutines::call_DLL_entry(false)) {
     fatal1("CompiledDLL_Cache destination 0x%x incorrect", d);
   }
 }
-
 
 void CompiledDLL_Cache::print() {
   mystd->print("DLL call ");
@@ -95,7 +92,6 @@ void CompiledDLL_Cache::print() {
   mystd->print(" (0x%x, %s, compiled)\n", entry_point(), async() ? "asynchronous" : "synchronous");
 }
 
-
 // DLLs implementation
 
 dll_func DLLs::lookup(symbolOop name, DLL* library) {
@@ -104,18 +100,15 @@ dll_func DLLs::lookup(symbolOop name, DLL* library) {
   return os::dll_lookup(buffer, library);
 }
 
-
 DLL* DLLs::load(symbolOop name) {
   char buffer[200];
   assert(!name->copy_null_terminated(buffer, 200), "DLL library name longer than 200 chars - truncated");
   return os::dll_load(buffer);
 }
 
-
 bool DLLs::unload(DLL* library) {
   return os::dll_unload(library);
 }
-
 
 extern Compiler* theCompiler;
 
@@ -128,11 +121,8 @@ dll_func DLLs::lookup_fail(symbolOop dll_name, symbolOop function_name) {
 
   oop res = Delta::call(Universe::dll_lookup_receiver(), Universe::dll_lookup_selector(), function_name, dll_name);
 
-  return res->is_proxy() 
-       ? (dll_func) proxyOop(res)->get_pointer()
-       : NULL;
+  return res->is_proxy() ? (dll_func)proxyOop(res)->get_pointer() : NULL;
 }
-
 
 dll_func DLLs::lookup(symbolOop dll_name, symbolOop function_name) {
   dll_func result = lookup_fail(dll_name, function_name);
@@ -158,7 +148,6 @@ dll_func DLLs::lookup(symbolOop dll_name, symbolOop function_name) {
   return NULL;
 }
 
-
 dll_func DLLs::lookup_and_patch_InterpretedDLL_Cache() {
   // get DLL call info
   frame f = DeltaProcess::active()->last_frame();
@@ -171,7 +160,6 @@ dll_func DLLs::lookup_and_patch_InterpretedDLL_Cache() {
   cache->set_entry_point(function);
   return function;
 }
-
 
 dll_func DLLs::lookup_and_patch_CompiledDLL_Cache() {
   // get DLL call info
@@ -192,23 +180,21 @@ void DLLs::enter_async_call(DeltaProcess** addr) {
   proc->transfer_and_continue();
 }
 
-
 void DLLs::exit_async_call(DeltaProcess** addr) {
   DeltaProcess* proc = *addr;
   proc->wait_for_control();
   proc->applyStepping();
 }
 
-
 void DLLs::exit_sync_call(DeltaProcess** addr) {
   // nothing to do here for now
 }
 
 extern "C" {
-  void PRIM_API enter_async_call(DeltaProcess** addr) {
-    DLLs::enter_async_call(addr);
-  }
-  void PRIM_API exit_async_call(DeltaProcess** addr) {
-    DLLs::exit_async_call(addr);
-  }
+void PRIM_API enter_async_call(DeltaProcess** addr) {
+  DLLs::enter_async_call(addr);
+}
+void PRIM_API exit_async_call(DeltaProcess** addr) {
+  DLLs::exit_async_call(addr);
+}
 }

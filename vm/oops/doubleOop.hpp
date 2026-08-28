@@ -31,31 +31,33 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   [Klass ]
 //   [Double]   (contains untagged values)
 
-class doubleOopDesc: public memOopDesc {
- private:
+class doubleOopDesc : public memOopDesc {
+private:
   // instance variables
   double _value;
 
   // conversion to untagged doubleOopDesc*
-  doubleOopDesc* addr() const { return (doubleOopDesc*) memOopDesc::addr(); }
+  doubleOopDesc* addr() const { return (doubleOopDesc*)memOopDesc::addr(); }
 
- public:
+public:
   // type conversion
-	friend doubleOop as_doubleOop(void* p);
+  friend doubleOop as_doubleOop(void* p);
 
   // sizing
-  static int header_size()  { return sizeof(doubleOopDesc)/oopSize; }
-  static int object_size()  { return header_size(); }
-  static int value_offset() { return sizeof(memOopDesc)/oopSize; }
+  static int header_size() { return sizeof(doubleOopDesc) / oopSize; }
+  static int object_size() { return header_size(); }
+  static int value_offset() { return sizeof(memOopDesc) / oopSize; }
 
   // value accessors
-  double   value() const    { return addr()->_value; }
-  void set_value(double v)  { addr()->_value = v;    }
+  double value() const { return addr()->_value; }
+  void set_value(double v) { addr()->_value = v; }
 
   // bootstrapping
   void bootstrap_object(bootstrap* st);
 
   friend class doubleKlass;
 };
-inline doubleOop as_doubleOop(void* p) { return doubleOop(as_memOop(p)); }
+inline doubleOop as_doubleOop(void* p) {
+  return doubleOop(as_memOop(p));
+}
 #endif // _DOUBLE_OOP_HPP

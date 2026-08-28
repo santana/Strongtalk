@@ -11,8 +11,8 @@ extern "C" oop* eden_top;
 extern "C" oop* eden_end;
 
 DECLARE(VframeKlassTests)
-  klassOop theClass;
-  oop* oldEdenTop;
+klassOop theClass;
+oop* oldEdenTop;
 END_DECLARE
 
 SETUP(VframeKlassTests) {
@@ -20,7 +20,7 @@ SETUP(VframeKlassTests) {
   oldEdenTop = eden_top;
 }
 
-TEARDOWN(VframeKlassTests){
+TEARDOWN(VframeKlassTests) {
   eden_top = oldEdenTop;
   MarkSweep::collect();
 }

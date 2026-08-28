@@ -27,12 +27,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/allocation.hpp"
 
 class objectIDTable : AllStatic {
- private:
+private:
   static objArrayOop array();
- public:
-  static int  insert(oop obj);
-  static oop  at(int index);
-  static int  find_index(oop obj);
+
+public:
+  static int insert(oop obj);
+  static oop at(int index);
+  static int find_index(oop obj);
   static bool is_index_ok(int index);
   static void allocateSize(int size);
   static void cleanup_after_bootstrap();

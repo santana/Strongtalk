@@ -33,11 +33,12 @@ void set_proxyKlass_vtbl(Klass* k) {
 }
 
 oop proxyKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
   // allocate
   oop* result = basicAllocate(size, &k, permit_scavenge, tenured);
-  if (!result) return NULL;
+  if (!result)
+    return NULL;
   proxyOop obj = as_proxyOop(result);
   // header
   memOop(obj)->initialize_header(true, k);
@@ -65,7 +66,7 @@ int proxyKlass::oop_scavenge_contents(oop obj) {
   memOop(obj)->scavenge_header();
   // instance variables
   memOop(obj)->scavenge_body(proxyOopDesc::header_size(), size);
-  return size;  
+  return size;
 }
 
 int proxyKlass::oop_scavenge_tenured_contents(oop obj) {

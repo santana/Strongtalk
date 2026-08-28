@@ -37,14 +37,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-const int codeTableSize  = 2048;
+const int codeTableSize = 2048;
 const int debugTableSize = 256;
 
 struct codeTableEntry;
 
 struct codeTableLink : public CHeapObj {
   // instance variable
-  nmethod*       nm;
+  nmethod* nm;
   codeTableLink* next;
 
   // memory operations
@@ -54,41 +54,40 @@ struct codeTableLink : public CHeapObj {
 struct codeTableEntry : ValueObj {
   // methods are tagged, links are not.
   void* nmethod_or_link;
-  bool  is_empty()   { return nmethod_or_link == NULL; }
-  bool  is_nmethod() { return (intptr_t) nmethod_or_link & 1; }
-  void  clear()      { nmethod_or_link = NULL; }
+  bool is_empty() { return nmethod_or_link == NULL; }
+  bool is_nmethod() { return (intptr_t)nmethod_or_link & 1; }
+  void clear() { nmethod_or_link = NULL; }
 
-  nmethod* get_nmethod() { 
-    return (nmethod*) ((intptr_t) nmethod_or_link - 1);
-  }
+  nmethod* get_nmethod() { return (nmethod*)((intptr_t)nmethod_or_link - 1); }
   void set_nmethod(nmethod* nm) {
     assert_oop_aligned(nm);
-    nmethod_or_link = (void*) ((intptr_t) nm + 1); }
+    nmethod_or_link = (void*)((intptr_t)nm + 1);
+  }
 
-  codeTableLink* get_link() { return (codeTableLink*) nmethod_or_link; }
+  codeTableLink* get_link() { return (codeTableLink*)nmethod_or_link; }
   void set_link(codeTableLink* l) {
     assert_oop_aligned(l);
-    nmethod_or_link = (void*) l;
+    nmethod_or_link = (void*)l;
   }
 
   // memory operations
   void deallocate();
-  
-  int length();   // returns the number of nmethod in this bucket.
+
+  int length(); // returns the number of nmethod in this bucket.
 
   bool verify(int i);
 };
 
-class codeTable : public PrintableCHeapObj{
- protected:
-  int             tableSize;
+class codeTable : public PrintableCHeapObj {
+protected:
+  int tableSize;
   codeTableEntry* buckets;
 
-  codeTableEntry* at(int index)       { return &buckets[index]; }
+  codeTableEntry* at(int index) { return &buckets[index]; }
   codeTableEntry* bucketFor(int hash) { return at(hash & (tableSize - 1)); }
-  codeTableLink*  new_link(nmethod* nm, codeTableLink* n = NULL);
+  codeTableLink* new_link(nmethod* nm, codeTableLink* n = NULL);
 
- public:
+public:
   codeTable(int size);
   void clear();
   nmethod* lookup(LookupKey* L);
@@ -104,7 +103,7 @@ class codeTable : public PrintableCHeapObj{
   // Removes a nmethod from the table
   void remove(nmethod* nm);
 
- protected:
+protected:
   // should always add through zone->addToCodeTable()
   void add(nmethod* nm);
   void addIfAbsent(nmethod* nm); // add only if not there yet

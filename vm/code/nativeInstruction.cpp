@@ -28,9 +28,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 void NativeCall::verify() {
   // make sure code pattern is actually a call imm32 instruction
-  if (*(u_char*)instruction_address() != instruction_code) fatal("not a call imm32");
+  if (*(u_char*)instruction_address() != instruction_code)
+    fatal("not a call imm32");
 }
-
 
 void NativeCall::print() {
   mystd->print_cr("0x%x: call 0x%x", instruction_address(), destination());
@@ -43,7 +43,6 @@ void NativeMov::verify() {
     fatal("not a mov reg, imm32");
 }
 
-
 void NativeMov::print() {
   mystd->print_cr("0x%x: mov reg, 0x%x", instruction_address(), data());
 }
@@ -51,11 +50,10 @@ void NativeMov::print() {
 // Implementation of NativeTest
 void NativeTest::verify() {
   // make sure code pattern is actually a test eax, imm32 instruction
-  if (*(u_char*)instruction_address() != instruction_code) fatal("not a test eax, imm32");
+  if (*(u_char*)instruction_address() != instruction_code)
+    fatal("not a test eax, imm32");
 }
-
 
 void NativeTest::print() {
   mystd->print_cr("0x%x: test eax, 0x%x", instruction_address(), data());
 }
-

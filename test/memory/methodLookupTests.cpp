@@ -9,7 +9,7 @@
 using namespace easyunit;
 
 DECLARE(MethodLookupTests)
-  PersistentHandle* fixture;
+PersistentHandle* fixture;
 END_DECLARE
 
 SETUP(MethodLookupTests) {

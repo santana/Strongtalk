@@ -34,7 +34,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Implementation of IC
 
-IC::IC(CompiledIC* ic)    : _iter(new CompiledIC_Iterator(ic)) {}
+IC::IC(CompiledIC* ic) : _iter(new CompiledIC_Iterator(ic)) {}
 IC::IC(InterpretedIC* ic) : _iter(new InterpretedIC_Iterator(ic)) {}
 
 GrowableArray<klassOop>* IC::receiver_klasses() const {
@@ -48,7 +48,6 @@ GrowableArray<klassOop>* IC::receiver_klasses() const {
   return result;
 }
 
-
 void IC::replace(nmethod* nm) {
   Unimplemented();
   IC_Iterator* it = iterator();
@@ -59,15 +58,23 @@ void IC::replace(nmethod* nm) {
   }
 }
 
-
 void IC::print() {
   char* s;
   switch (shape()) {
-    case anamorphic : s = "Anamorphic";  break;
-    case monomorphic: s = "Monomorphic"; break;
-    case polymorphic: s = "Polymorphic"; break;
-    case megamorphic: s = "Megamorphic"; break;
-    default         : ShouldNotReachHere();
+    case anamorphic:
+      s = "Anamorphic";
+      break;
+    case monomorphic:
+      s = "Monomorphic";
+      break;
+    case polymorphic:
+      s = "Polymorphic";
+      break;
+    case megamorphic:
+      s = "Megamorphic";
+      break;
+    default:
+      ShouldNotReachHere();
   }
   mystd->print("%s IC: %d entries\n", s, number_of_targets());
 
@@ -87,7 +94,8 @@ void IC::print() {
 
 void IC_Iterator::goto_elem(int n) {
   init_iteration();
-  for (int i = 0; i < n; i++) advance();
+  for (int i = 0; i < n; i++)
+    advance();
 }
 
 methodOop IC_Iterator::interpreted_method(int i) {
@@ -95,13 +103,12 @@ methodOop IC_Iterator::interpreted_method(int i) {
   return interpreted_method();
 }
 
-nmethod*  IC_Iterator::compiled_method(int i) {
+nmethod* IC_Iterator::compiled_method(int i) {
   goto_elem(i);
   return compiled_method();
 }
 
-klassOop  IC_Iterator::klass(int i) {
+klassOop IC_Iterator::klass(int i) {
   goto_elem(i);
   return klass();
 }
-

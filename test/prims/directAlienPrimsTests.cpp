@@ -16,45 +16,45 @@ using namespace easyunit;
 
 extern "C" int expansion_count;
 DECLARE(DirectAlienPrimsTests)
-  HeapResourceMark *rm;
-  byteArrayOop alien;
-  byteArrayOop largeUnsignedInteger;
-  byteArrayOop largeUnsignedInteger2;
-  byteArrayOop veryLargeUnsignedInteger;
-  byteArrayOop largeSignedInteger;
-  doubleOop    doubleValue;
+HeapResourceMark* rm;
+byteArrayOop alien;
+byteArrayOop largeUnsignedInteger;
+byteArrayOop largeUnsignedInteger2;
+byteArrayOop veryLargeUnsignedInteger;
+byteArrayOop largeSignedInteger;
+doubleOop doubleValue;
 
-  void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
-    char text[200];
-    ASSERT_TRUE_M(result->is_mark(), "Should be marked");
-    snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
-    ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
-  }
-  void checkLargeInteger(oop result, int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
-    bool ok;
-    int actual = byteArrayOop(result)->number().as_int(ok);
-    ASSERT_TRUE_M(ok, "should be integer");
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
-  void checkLargeUnsigned(oop result, unsigned int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
-    bool ok;
-    unsigned int actual = byteArrayOop(result)->number().as_unsigned_int(ok);
-    ASSERT_TRUE_M(ok, "should be integer");
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
-  void checkSmallInteger(oop result, int expected) {
-    char message[200];
-    ASSERT_TRUE_M(result->is_smi(), "Should be small integer");
-    int actual = smiOop(result)->value();
-    snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
-    ASSERT_EQUALS_M(expected, actual, message);
-  }
+void checkMarkedSymbol(char* message, oop result, symbolOop expected) {
+  char text[200];
+  ASSERT_TRUE_M(result->is_mark(), "Should be marked");
+  snprintf(text, sizeof(text), "Should be: %s, was: %s", message, unmarkSymbol(result)->as_string());
+  ASSERT_TRUE_M(unmarkSymbol(result) == expected, text);
+}
+void checkLargeInteger(oop result, int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
+  bool ok;
+  int actual = byteArrayOop(result)->number().as_int(ok);
+  ASSERT_TRUE_M(ok, "should be integer");
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
+void checkLargeUnsigned(oop result, unsigned int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_byteArray(), "Should be integer");
+  bool ok;
+  unsigned int actual = byteArrayOop(result)->number().as_unsigned_int(ok);
+  ASSERT_TRUE_M(ok, "should be integer");
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
+void checkSmallInteger(oop result, int expected) {
+  char message[200];
+  ASSERT_TRUE_M(result->is_smi(), "Should be small integer");
+  int actual = smiOop(result)->value();
+  snprintf(message, sizeof(message), "wrong value. expected: %d, was: %d", expected, actual);
+  ASSERT_EQUALS_M(expected, actual, message);
+}
 END_DECLARE
 
 SETUP(DirectAlienPrimsTests) {
@@ -81,7 +81,7 @@ SETUP(DirectAlienPrimsTests) {
   byteArrayPrimitives::alienSetSize(as_smiOop(8), alien);
 }
 
-TEARDOWN(DirectAlienPrimsTests){
+TEARDOWN(DirectAlienPrimsTests) {
   MarkSweep::collect();
   delete rm;
   rm = NULL;

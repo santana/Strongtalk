@@ -26,7 +26,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Bit-format of markOop:
 //  sentinel:1 near_death:1 tagged_contents:1 age:7 hash:20 tag:2 = 32 bits
-//  - sentinel is needed during pointer reversal in garbage collection 
+//  - sentinel is needed during pointer reversal in garbage collection
 //    to distinguish markOops from roots of oops. markOops are used termination
 //    elements in the pointer list.
 //    During normal execution the sentinel is 1 but the but may be used for
@@ -44,60 +44,69 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-class markOopDesc: public oopDesc {
- private:
-  uintptr_t value()  const { return (uintptr_t) this; }
-  friend   int assign_hash(markOop& m);
+class markOopDesc : public oopDesc {
+private:
+  uintptr_t value() const { return (uintptr_t)this; }
+  friend int assign_hash(markOop& m);
 
-  enum { no_hash    = 0, 
-         first_hash = 1};
+  enum {
+    no_hash = 0,
+    first_hash = 1
+  };
 
-  enum { sentinel_bits         = 1,
-         near_death_bits       = 1,
-         tagged_contents_bits  = 1,
-         age_bits              = 7,
-         hash_bits             = BitsPerWord - sentinel_bits - near_death_bits - tagged_contents_bits - age_bits - Tag_Size };
+  enum {
+    sentinel_bits = 1,
+    near_death_bits = 1,
+    tagged_contents_bits = 1,
+    age_bits = 7,
+    hash_bits = BitsPerWord - sentinel_bits - near_death_bits - tagged_contents_bits - age_bits - Tag_Size
+  };
 
-  enum { hash_shift            = Tag_Size,
-         age_shift             = hash_bits             + hash_shift,
-         tagged_contents_shift = age_bits              + age_shift,
-         near_death_shift      = tagged_contents_bits  + tagged_contents_shift,
-         sentinel_shift        = near_death_bits       + near_death_shift };
+  enum {
+    hash_shift = Tag_Size,
+    age_shift = hash_bits + hash_shift,
+    tagged_contents_shift = age_bits + age_shift,
+    near_death_shift = tagged_contents_bits + tagged_contents_shift,
+    sentinel_shift = near_death_bits + near_death_shift
+  };
 
   // On 64-bit these shifts exceed 31, so use uintptr_t to avoid
   // signed-int overflow.  Computed directly (not via nthMask) so
   // the compiler sees them as constant expressions.
-  static const uintptr_t hash_mask                     = ((uintptr_t)1 << hash_bits) - 1;
-  static const uintptr_t hash_mask_in_place            = hash_mask << hash_shift;
-  static const uintptr_t age_mask                      = ((uintptr_t)1 << age_bits) - 1;
-  static const uintptr_t age_mask_in_place             = age_mask << age_shift;
-  static const uintptr_t tagged_contents_mask          = ((uintptr_t)1 << tagged_contents_bits) - 1;
+  static const uintptr_t hash_mask = ((uintptr_t)1 << hash_bits) - 1;
+  static const uintptr_t hash_mask_in_place = hash_mask << hash_shift;
+  static const uintptr_t age_mask = ((uintptr_t)1 << age_bits) - 1;
+  static const uintptr_t age_mask_in_place = age_mask << age_shift;
+  static const uintptr_t tagged_contents_mask = ((uintptr_t)1 << tagged_contents_bits) - 1;
   static const uintptr_t tagged_contents_mask_in_place = tagged_contents_mask << tagged_contents_shift;
-  static const uintptr_t near_death_mask               = ((uintptr_t)1 << near_death_bits) - 1;
-  static const uintptr_t near_death_mask_in_place      = near_death_mask << near_death_shift;
-  static const uintptr_t sentinel_mask                 = ((uintptr_t)1 << sentinel_bits) - 1;
-  static const uintptr_t sentinel_mask_in_place        = sentinel_mask << sentinel_shift;
+  static const uintptr_t near_death_mask = ((uintptr_t)1 << near_death_bits) - 1;
+  static const uintptr_t near_death_mask_in_place = near_death_mask << near_death_shift;
+  static const uintptr_t sentinel_mask = ((uintptr_t)1 << sentinel_bits) - 1;
+  static const uintptr_t sentinel_mask_in_place = sentinel_mask << sentinel_shift;
 
-  static const uintptr_t no_hash_in_place           = no_hash     << hash_shift;
-  static const uintptr_t first_hash_in_place        = first_hash  << hash_shift;
+  static const uintptr_t no_hash_in_place = no_hash << hash_shift;
+  static const uintptr_t first_hash_in_place = first_hash << hash_shift;
   static const uintptr_t untagged_contents_in_place = (uintptr_t)1 << tagged_contents_shift;
 
   static const uintptr_t sentinel_is_place = (uintptr_t)1 << sentinel_shift;
- public:
-  enum { max_age = age_mask };
+
+public:
+  enum {
+    max_age = age_mask
+  };
   // accessors
-  bool    has_sentinel()      const { return maskBits(value(), sentinel_mask_in_place) != 0; }
-  markOop set_sentinel()      const { return markOop( sentinel_is_place | value()); } 
-  markOop clear_sentinel()    const { return markOop(~sentinel_is_place & value()); }
+  bool has_sentinel() const { return maskBits(value(), sentinel_mask_in_place) != 0; }
+  markOop set_sentinel() const { return markOop(sentinel_is_place | value()); }
+  markOop clear_sentinel() const { return markOop(~sentinel_is_place & value()); }
 
-  bool has_tagged_contents()  const { return maskBits(value(), tagged_contents_mask_in_place) != 0; }
+  bool has_tagged_contents() const { return maskBits(value(), tagged_contents_mask_in_place) != 0; }
 
-  bool    is_near_death()     const { return maskBits(value(), near_death_mask_in_place) != 0; }
-  markOop set_near_death()    const { return markOop( near_death_mask_in_place | value()); } 
-  markOop clear_near_death()  const { return markOop(~near_death_mask_in_place & value()); }
+  bool is_near_death() const { return maskBits(value(), near_death_mask_in_place) != 0; }
+  markOop set_near_death() const { return markOop(near_death_mask_in_place | value()); }
+  markOop clear_near_death() const { return markOop(~near_death_mask_in_place & value()); }
 
   // klass invalidation (via sentinel bit)
-  bool    is_klass_invalid()  const { return !has_sentinel();  }
+  bool is_klass_invalid() const { return !has_sentinel(); }
   markOop set_klass_invalid() const { return clear_sentinel(); }
   markOop clear_klass_invalid() const { return set_sentinel(); }
 
@@ -105,45 +114,42 @@ class markOopDesc: public oopDesc {
   // The legacy x86 oldCodeGenerator consumes this as a 32-bit testl immediate,
   // so keep the (historically truncated) int result rather than changing the
   // 64-bit semantics here.
-  static int context_forward_bit_mask() { return (int) near_death_mask_in_place; }
-  bool    has_context_forward() const { return is_near_death();  }
+  static int context_forward_bit_mask() { return (int)near_death_mask_in_place; }
+  bool has_context_forward() const { return is_near_death(); }
   markOop set_context_forward() const { return set_near_death(); }
 
   // notification queue check
-  bool    is_queued()    const { return !has_sentinel();  }
-  markOop set_queued()   const { return clear_sentinel(); }
-  markOop clear_queued() const { return set_sentinel();   }
+  bool is_queued() const { return !has_sentinel(); }
+  markOop set_queued() const { return clear_sentinel(); }
+  markOop clear_queued() const { return set_sentinel(); }
 
   // age operations
-  int        age()            const { return maskBits(value(), age_mask_in_place)  >> age_shift; }
-  markOop    set_age(int v)   const {
+  int age() const { return maskBits(value(), age_mask_in_place) >> age_shift; }
+  markOop set_age(int v) const {
     assert((v & ~age_mask) == 0, "shouldn't overflow field");
     return markOop((value() & ~age_mask_in_place) | ((v & age_mask) << age_shift));
   }
-  markOop    incr_age()       const { return age() == max_age ? markOop(this) : set_age(age() + 1); }
+  markOop incr_age() const { return age() == max_age ? markOop(this) : set_age(age() + 1); }
 
   // hash operations
-  int        hash()           const { return maskBits(value(), hash_mask_in_place) >> hash_shift; }
-  markOop    set_hash(int v)  const {
-    if ((v & hash_mask) == 0) v = first_hash; // avoid no_hash
+  int hash() const { return maskBits(value(), hash_mask_in_place) >> hash_shift; }
+  markOop set_hash(int v) const {
+    if ((v & hash_mask) == 0)
+      v = first_hash; // avoid no_hash
     markOop val = markOop((value() & ~hash_mask_in_place) | ((v & hash_mask) << hash_shift));
     assert(val->hash() != no_hash, "should have hash now");
     return val;
   }
-  bool       has_valid_hash() const { return hash() != no_hash; }
+  bool has_valid_hash() const { return hash() != no_hash; }
 
   // markOop prototypes
-  static markOop tagged_prototype() {
-    return markOop(sentinel_is_place | no_hash_in_place | Mark_Tag);
-  }
+  static markOop tagged_prototype() { return markOop(sentinel_is_place | no_hash_in_place | Mark_Tag); }
   static markOop untagged_prototype() {
     return markOop(sentinel_is_place | untagged_contents_in_place | no_hash_in_place | Mark_Tag);
   }
 
   // badOop
-  static markOop bad() {
-    return markOop(sentinel_is_place | first_hash_in_place | Mark_Tag);
-  }
+  static markOop bad() { return markOop(sentinel_is_place | first_hash_in_place | Mark_Tag); }
 
   friend int hash_markOop(markOop& m) {
     int v = m->hash();
@@ -156,10 +162,12 @@ class markOopDesc: public oopDesc {
   static int masked_hash(int v) { return v & hash_mask; }
 };
 
-# define badOop markOopDesc::bad()
+#define badOop markOopDesc::bad()
 
 // tells whether p is a root to an oop or a markOop
 // used during pointer reversal during GC.
 //inline bool is_oop_root(oop* p) { return !markOop(p)->has_sentinel(); }
-inline bool is_oop_root(oop* p) { return !markOop(p)->is_mark(); }
+inline bool is_oop_root(oop* p) {
+  return !markOop(p)->is_mark();
+}
 #endif // _MARK_OOP_HPP

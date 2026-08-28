@@ -42,8 +42,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 extern "C" oop nilObj;
 
 class oopDesc {
-// protected:
- public:
+  // protected:
+public:
   // The _mark instance variable is here rather than in memOop (where
   // it belongs) because many C++ compilers have trouble with empty
   // objects (size 0), i.e., give them nonzero length which messes up
@@ -52,18 +52,18 @@ class oopDesc {
   // only the ones below memOop do.
   markOop _mark;
 
- public:
+public:
   // Called during bootstrapping for computing vtbl values see (create_*Klass)
   oopDesc();
 
   // tag checks
-  intptr_t tag() const 		{ return maskBits(intptr_t(this), Tag_Mask); }
-  bool is_smi() const   { return tag() == Int_Tag; }
-  bool is_mem() const   { return tag() == Mem_Tag; }
-  bool is_mark() const  { return tag() == Mark_Tag; }
+  intptr_t tag() const { return maskBits(intptr_t(this), Tag_Mask); }
+  bool is_smi() const { return tag() == Int_Tag; }
+  bool is_mem() const { return tag() == Mem_Tag; }
+  bool is_mark() const { return tag() == Mark_Tag; }
 
   // tag dispatchers (inlined in oop.inline.h)
-  inline Klass*   blueprint() const;
+  inline Klass* blueprint() const;
   inline klassOop klass() const;
 
   inline smi identity_hash();
@@ -78,29 +78,29 @@ class oopDesc {
   inline generation* my_generation();
 
   // type test operations (inlined in oop.inline.h)
-  inline bool is_double()           const;
-  inline bool is_block()            const;
-  inline bool is_byteArray()        const;
-  inline bool is_doubleByteArray()  const;
+  inline bool is_double() const;
+  inline bool is_block() const;
+  inline bool is_byteArray() const;
+  inline bool is_doubleByteArray() const;
   inline bool is_doubleValueArray() const;
-  inline bool is_symbol()           const;
-  inline bool is_objArray()         const;
-  inline bool is_weakArray()        const;
-  inline bool is_klass()            const;
-  inline bool is_process()          const;
-  inline bool is_vframe()           const;
-  inline bool is_method()           const;
-  inline bool is_proxy()            const;
-  inline bool is_mixin()            const;
-  inline bool is_association()      const;
-  inline bool is_context()          const;
-  inline bool is_indexable()        const;
+  inline bool is_symbol() const;
+  inline bool is_objArray() const;
+  inline bool is_weakArray() const;
+  inline bool is_klass() const;
+  inline bool is_process() const;
+  inline bool is_vframe() const;
+  inline bool is_method() const;
+  inline bool is_proxy() const;
+  inline bool is_mixin() const;
+  inline bool is_association() const;
+  inline bool is_context() const;
+  inline bool is_indexable() const;
 
   // Returns is the oop is the nil object
   inline bool is_nil() const { return this == nilObj; }
 
   // Primitives
-  inline oop primitive_allocate(bool allow_scavenge=true, bool tenured=false);
+  inline oop primitive_allocate(bool allow_scavenge = true, bool tenured = false);
   inline oop primitive_allocate_size(int size);
 
   inline oop shallow_copy(bool tenured);
@@ -108,12 +108,12 @@ class oopDesc {
   inline bool verify();
 
   // FIX LATER
-  oop gc_mark()   { return this; }
+  oop gc_mark() { return this; }
   oop gc_unmark() { return this; }
 
   // printing functions for VM debugging
-  void print_on(outputStream* st);        // First level print
-  void print_value_on(outputStream* st);  // Prints oop as <ClassName>(<objectID>).
+  void print_on(outputStream* st); // First level print
+  void print_value_on(outputStream* st); // Prints oop as <ClassName>(<objectID>).
 
   // printing on default output stream
   void print();

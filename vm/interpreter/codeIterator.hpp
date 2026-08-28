@@ -33,16 +33,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdint>
 
-class CodeIterator: public StackObj {
- private:
+class CodeIterator : public StackObj {
+private:
   methodOop method;
-  u_char*   current;
-  u_char*   end;
+  u_char* current;
+  u_char* end;
 
-  inline void    align();
-  inline u_char* align(u_char* p) const			{ return (u_char*) (((intptr_t) p + oopSize - 1) & (~(oopSize - 1))); }
+  inline void align();
+  inline u_char* align(u_char* p) const { return (u_char*)(((intptr_t)p + oopSize - 1) & (~(oopSize - 1))); }
 
- public:
+public:
   // Constructor
   CodeIterator(methodOop method, int startBCI = 1);
   CodeIterator(u_char* hp);
@@ -55,36 +55,34 @@ class CodeIterator: public StackObj {
   }
 
   // accessors
-  u_char	byte_at(int offset_from_instruction)	{ return current[offset_from_instruction]; }
-  oop		oop_at(int offset_from_instruction)	{ return *aligned_oop(offset_from_instruction); }
-  intptr_t	word_at(int offset_from_instruction)	{ return (intptr_t) *aligned_oop(offset_from_instruction); }
+  u_char byte_at(int offset_from_instruction) { return current[offset_from_instruction]; }
+  oop oop_at(int offset_from_instruction) { return *aligned_oop(offset_from_instruction); }
+  intptr_t word_at(int offset_from_instruction) { return (intptr_t)*aligned_oop(offset_from_instruction); }
 
-  Bytecodes::Code		code() const		{ return Bytecodes::Code(*current); }
-  Bytecodes::CodeType		code_type() const	{ return Bytecodes::code_type(code()); }
-  Bytecodes::Format		format() const		{ return Bytecodes::format(code()); }
-  Bytecodes::SendType		send() const		{ return Bytecodes::send_type(code()); }
-  Bytecodes::ArgumentSpec	argumentsType() const	{ return Bytecodes::argument_spec(code()); }
-  bool				pop_result() const	{ return Bytecodes::pop_tos(code()); }
-  Bytecodes::LoopType		loopType() const	{ return Bytecodes::loop_type(code()); }
-  int				bci() const;
-  int				next_bci() const;
-  u_char*			hp() const		{ return current; }
-  u_char*			next_hp() const;
+  Bytecodes::Code code() const { return Bytecodes::Code(*current); }
+  Bytecodes::CodeType code_type() const { return Bytecodes::code_type(code()); }
+  Bytecodes::Format format() const { return Bytecodes::format(code()); }
+  Bytecodes::SendType send() const { return Bytecodes::send_type(code()); }
+  Bytecodes::ArgumentSpec argumentsType() const { return Bytecodes::argument_spec(code()); }
+  bool pop_result() const { return Bytecodes::pop_tos(code()); }
+  Bytecodes::LoopType loopType() const { return Bytecodes::loop_type(code()); }
+  int bci() const;
+  int next_bci() const;
+  u_char* hp() const { return current; }
+  u_char* next_hp() const;
 
   // FOR DEOPTIMIZATION
   // Returns the interpreter return point for the current byte code.
-  char*	interpreter_return_point(bool restore_value = false) const;
+  char* interpreter_return_point(bool restore_value = false) const;
 
-  void set_bci(int bci); 
+  void set_bci(int bci);
 
-  // returns the location of an aligned oop 
-  oop* aligned_oop(int offset_from_instruction) {
-    return (oop*) align(current + offset_from_instruction);
-  }
+  // returns the location of an aligned oop
+  oop* aligned_oop(int offset_from_instruction) { return (oop*)align(current + offset_from_instruction); }
 
-  bool is_message_send()   const { return Bytecodes::code_type(code()) == Bytecodes::message_send;   }
+  bool is_message_send() const { return Bytecodes::code_type(code()) == Bytecodes::message_send; }
   bool is_primitive_call() const { return Bytecodes::code_type(code()) == Bytecodes::primitive_call; }
-  bool is_dll_call()       const { return Bytecodes::code_type(code()) == Bytecodes::dll_call;       }
+  bool is_dll_call() const { return Bytecodes::code_type(code()) == Bytecodes::dll_call; }
 
   // Returns the address of the block method if the current butecode is a push closure, NULL otherwise.
   oop* block_method_addr();
@@ -102,9 +100,9 @@ class CodeIterator: public StackObj {
   void uncustomize_inst_var_code(klassOop from_klass);
 
   // Returns the inline cache iff the current instruction is a send
-  InterpretedIC*         ic();
-  InterpretedPrim_Cache* prim_cache(); 
-  InterpretedDLL_Cache*  dll_cache();
+  InterpretedIC* ic();
+  InterpretedPrim_Cache* prim_cache();
+  InterpretedDLL_Cache* dll_cache();
 
   // For byte code manipulation
   void set_code(u_char code) { *current = code; }

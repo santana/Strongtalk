@@ -25,27 +25,24 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "compiler/costModel.hpp"
 
-
 int CostModel::_cost[Bytecodes::number_of_codes];
-
 
 void CostModel::set_default_costs() {
   // default cost for most codes
   set_cost_for_all(1);
 
   // specialize for individual code types
-  set_cost_for_type(Bytecodes::new_closure,     3);
-  set_cost_for_type(Bytecodes::new_context,     3);
-  set_cost_for_type(Bytecodes::message_send,    5);
+  set_cost_for_type(Bytecodes::new_closure, 3);
+  set_cost_for_type(Bytecodes::new_context, 3);
+  set_cost_for_type(Bytecodes::message_send, 5);
   set_cost_for_type(Bytecodes::nonlocal_return, 3);
-  set_cost_for_type(Bytecodes::primitive_call,  5);
-  set_cost_for_type(Bytecodes::dll_call,        5);
+  set_cost_for_type(Bytecodes::primitive_call, 5);
+  set_cost_for_type(Bytecodes::dll_call, 5);
 
   // specialize for individual send types
-  set_cost_for_send(Bytecodes::predicted_send,  2);
-  set_cost_for_send(Bytecodes::accessor_send,   2);
+  set_cost_for_send(Bytecodes::predicted_send, 2);
+  set_cost_for_send(Bytecodes::accessor_send, 2);
 }
-
 
 void CostModel::set_cost_for_all(int cost) {
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
@@ -53,12 +50,10 @@ void CostModel::set_cost_for_all(int cost) {
   }
 }
 
-
 void CostModel::set_cost_for_code(Bytecodes::Code code, int cost) {
   assert(Bytecodes::is_defined(code), "undefined bytecode");
   _cost[code] = cost;
 }
-
 
 void CostModel::set_cost_for_type(Bytecodes::CodeType type, int cost) {
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
@@ -68,7 +63,6 @@ void CostModel::set_cost_for_type(Bytecodes::CodeType type, int cost) {
   }
 }
 
-
 void CostModel::set_cost_for_send(Bytecodes::SendType type, int cost) {
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
     if (Bytecodes::send_type(Bytecodes::Code(i)) == type) {
@@ -77,7 +71,6 @@ void CostModel::set_cost_for_send(Bytecodes::SendType type, int cost) {
   }
 }
 
-  
 void CostModel::print() {
   mystd->print("%40s: %s\n", "Bytecode", "Cost");
   for (int i = 0; i < Bytecodes::number_of_codes; i++) {
@@ -87,7 +80,6 @@ void CostModel::print() {
     }
   }
 }
-
 
 void costModel_init() {
   CostModel::set_default_costs();

@@ -88,8 +88,7 @@ extern "C" oop primitiveValue5(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, 
 //     flags = #(NLR Block LastDeltaFrameNotNeeded)
 //     name  = 'primitiveValue6' }
 //%
-extern "C" oop primitiveValue6(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5,
-                               oop arg6);
+extern "C" oop primitiveValue6(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop arg6);
 
 //%prim
 // <BlockWithSevenArguments> primitiveValue: arg1 <Object> value: arg2 <Object> value: arg3 <Object>
@@ -99,8 +98,7 @@ extern "C" oop primitiveValue6(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, 
 //     flags = #(NLR Block LastDeltaFrameNotNeeded)
 //     name  = 'primitiveValue7' }
 //%
-extern "C" oop primitiveValue7(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5,
-                               oop arg6, oop arg7);
+extern "C" oop primitiveValue7(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop arg6, oop arg7);
 
 //%prim
 // <BlockWithEightArguments> primitiveValue: arg1 <Object> value: arg2 <Object> value: arg3 <Object>
@@ -110,8 +108,7 @@ extern "C" oop primitiveValue7(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, 
 //     flags = #(NLR Block LastDeltaFrameNotNeeded)
 //     name  = 'primitiveValue8' }
 //%
-extern "C" oop primitiveValue8(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5,
-                               oop arg6, oop arg7, oop arg8);
+extern "C" oop primitiveValue8(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop arg6, oop arg7, oop arg8);
 
 //%prim
 // <BlockWithNineArguments> primitiveValue: arg1 <Object> value: arg2 <Object> value: arg3 <Object>
@@ -121,8 +118,8 @@ extern "C" oop primitiveValue8(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, 
 //     flags = #(NLR Block LastDeltaFrameNotNeeded)
 //     name  = 'primitiveValue9' }
 //%
-extern "C" oop primitiveValue9(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5,
-                               oop arg6, oop arg7, oop arg8, oop arg9);
+extern "C" oop primitiveValue9(oop blk, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop arg6, oop arg7, oop arg8,
+                               oop arg9);
 
 // Instead we should come up with a
 // generic solution for up to 255 arguments at some point. (gri)
@@ -136,8 +133,7 @@ extern "C" blockClosureOop allocateBlock(smiOop nofArgs);
 //     flags = #(Internal Block Allocate)
 //     name  = 'allocateBlock' }
 //%
-extern "C" blockClosureOop allocateTenuredBlock(smiOop nofArgs);  // for compiler
-
+extern "C" blockClosureOop allocateTenuredBlock(smiOop nofArgs); // for compiler
 
 extern "C" blockClosureOop allocateBlock0();
 //%prim
@@ -251,7 +247,7 @@ extern "C" contextOop allocateContext2();
 
 PRIM_DECL_2(unwindprotect, oop receiver, oop protectBlock);
 //%prim
-// <BlockWithoutArguments> primitiveUnwindProtect: protect   <BlockWithoutArguments> 
+// <BlockWithoutArguments> primitiveUnwindProtect: protect   <BlockWithoutArguments>
 //                                         ifFail: failBlock <PrimFailBlock> ^<Object> =
 //   Internal {
 //     doc   = 'Evaluates the receiver block and if it returns via a non-local-return'

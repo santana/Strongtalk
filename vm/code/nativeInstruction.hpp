@@ -30,173 +30,160 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The base class for differnt kinds of native instruction abstractions.
 // Provides the primitive operations to manipulate code relative to this.
 
-class NativeInstruction: ValueObj {
- protected:
-  char*	addr_at(int offset) const		{ return (char*)this + offset; }
+class NativeInstruction : ValueObj {
+protected:
+  char* addr_at(int offset) const { return (char*)this + offset; }
 
-  char  char_at(int offset) const		{ return *addr_at(offset); }
-  int   long_at(int offset) const		{ return *(int*)addr_at(offset); }
-  oop   oop_at (int offset) const		{ return *(oop*)addr_at(offset); }
+  char char_at(int offset) const { return *addr_at(offset); }
+  int long_at(int offset) const { return *(int*)addr_at(offset); }
+  oop oop_at(int offset) const { return *(oop*)addr_at(offset); }
 
-  void  set_char_at(int offset, char c)		{ *addr_at(offset) = c; }
-  void  set_long_at(int offset, int  i)		{ *(int*)addr_at(offset) = i; }
-  void  set_oop_at (int offset, oop  o)		{ *(oop*)addr_at(offset) = o; }
+  void set_char_at(int offset, char c) { *addr_at(offset) = c; }
+  void set_long_at(int offset, int i) { *(int*)addr_at(offset) = i; }
+  void set_oop_at(int offset, oop o) { *(oop*)addr_at(offset) = o; }
 };
-
 
 // An abstraction for accessing/manipulating native call imm32 instructions.
 // (used to manipulate inline caches, primitive & dll calls, etc.)
 
-class NativeCall: public NativeInstruction {
- public:
+class NativeCall : public NativeInstruction {
+public:
   enum Intel_specific_constants {
-    instruction_code		= 0xE8,
-    instruction_size		=    5,
-    instruction_offset		=   -5,
-    displacement_offset		=   -4,
-    return_address_offset	=    0,
+    instruction_code = 0xE8,
+    instruction_size = 5,
+    instruction_offset = -5,
+    displacement_offset = -4,
+    return_address_offset = 0,
   };
 
-  char* instruction_address() const		{ return addr_at(instruction_offset); }
-  char* next_instruction_address() const	{ return addr_at(return_address_offset); }
-  int   displacement() const			{ return long_at(displacement_offset); }
-  char* return_address() const			{ return addr_at(return_address_offset); }
-  char* destination() const			{ return return_address() + displacement(); }
-  void  set_destination(char* dest)		{ set_long_at(displacement_offset, dest - return_address()); }
+  char* instruction_address() const { return addr_at(instruction_offset); }
+  char* next_instruction_address() const { return addr_at(return_address_offset); }
+  int displacement() const { return long_at(displacement_offset); }
+  char* return_address() const { return addr_at(return_address_offset); }
+  char* destination() const { return return_address() + displacement(); }
+  void set_destination(char* dest) { set_long_at(displacement_offset, dest - return_address()); }
 
-  void  verify();
-  void  print();
-  
+  void verify();
+  void print();
+
   // Creation
   friend NativeCall* nativeCall_at(char* address);
 
   friend NativeCall* nativeCall_from_return_address(char* return_address);
 
   friend NativeCall* nativeCall_from_relocInfo(char* displacement_address);
-
 };
 
-inline NativeCall* nativeCall_at(char* address)
-{
-	NativeCall* call = (NativeCall*)(address - NativeCall::instruction_offset);
-    #ifdef ASSERT
-      call->verify();
-    #endif
-    return call;
+inline NativeCall* nativeCall_at(char* address) {
+  NativeCall* call = (NativeCall*)(address - NativeCall::instruction_offset);
+#ifdef ASSERT
+  call->verify();
+#endif
+  return call;
 }
 
-inline NativeCall* nativeCall_from_return_address(char* return_address)
-{
-	NativeCall* call = (NativeCall*)(return_address - NativeCall::return_address_offset);
-    #ifdef ASSERT
-      call->verify();
-    #endif
-    return call;
+inline NativeCall* nativeCall_from_return_address(char* return_address) {
+  NativeCall* call = (NativeCall*)(return_address - NativeCall::return_address_offset);
+#ifdef ASSERT
+  call->verify();
+#endif
+  return call;
 }
 
-inline NativeCall* nativeCall_from_relocInfo(char* displacement_address)
-{
-	NativeCall* call = (NativeCall*)(displacement_address - NativeCall::displacement_offset);
-    #ifdef ASSERT
-      call->verify();
-    #endif
-    return call;
+inline NativeCall* nativeCall_from_relocInfo(char* displacement_address) {
+  NativeCall* call = (NativeCall*)(displacement_address - NativeCall::displacement_offset);
+#ifdef ASSERT
+  call->verify();
+#endif
+  return call;
 }
 
 // An abstraction for accessing/manipulating native mov reg, imm32 instructions.
 // (used to manipulate inlined 32bit data dll calls, etc.)
 
-class NativeMov: public NativeInstruction {
- public:
+class NativeMov : public NativeInstruction {
+public:
   enum Intel_specific_constants {
-    instruction_code		= 0xB8,
-    instruction_size		=    5,
-    instruction_offset		=    0,
-    data_offset			=    1,
-    next_instruction_offset	=    5,
-    register_mask		= 0x07,
+    instruction_code = 0xB8,
+    instruction_size = 5,
+    instruction_offset = 0,
+    data_offset = 1,
+    next_instruction_offset = 5,
+    register_mask = 0x07,
   };
 
-  char* instruction_address() const		{ return addr_at(instruction_offset); }
-  char* next_instruction_address() const	{ return addr_at(next_instruction_offset); }
-  intptr_t data() const				{ return long_at(data_offset); }
-  void  set_data(intptr_t x)			{ set_long_at(data_offset, x); }
+  char* instruction_address() const { return addr_at(instruction_offset); }
+  char* next_instruction_address() const { return addr_at(next_instruction_offset); }
+  intptr_t data() const { return long_at(data_offset); }
+  void set_data(intptr_t x) { set_long_at(data_offset, x); }
 
-  void  verify();
-  void  print();
-  
+  void verify();
+  void print();
+
   // Creation
   friend NativeMov* nativeMov_at(char* address);
-
 };
 
-inline NativeMov* nativeMov_at(char* address)
-{
-	NativeMov* test = (NativeMov*)(address - NativeMov::instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
-    return test;
+inline NativeMov* nativeMov_at(char* address) {
+  NativeMov* test = (NativeMov*)(address - NativeMov::instruction_offset);
+#ifdef ASSERT
+  test->verify();
+#endif
+  return test;
 }
-
 
 // An abstraction for accessing/manipulating native test eax, imm32 instructions.
 // (used to manipulate inlined 32bit data for NLRs, dll calls, etc.)
 
-class NativeTest: public NativeInstruction {
- public:
+class NativeTest : public NativeInstruction {
+public:
   enum Intel_specific_constants {
-    instruction_code		= 0xA9,
-    instruction_size		=    5,
-    instruction_offset		=    0,
-    data_offset			=    1,
-    next_instruction_offset	=    5,
+    instruction_code = 0xA9,
+    instruction_size = 5,
+    instruction_offset = 0,
+    data_offset = 1,
+    next_instruction_offset = 5,
   };
 
-  char* instruction_address() const		{ return addr_at(instruction_offset); }
-  char* next_instruction_address() const	{ return addr_at(next_instruction_offset); }
-  intptr_t data() const				{ return long_at(data_offset); }
-  void  set_data(intptr_t x)			{ set_long_at(data_offset, x); }
+  char* instruction_address() const { return addr_at(instruction_offset); }
+  char* next_instruction_address() const { return addr_at(next_instruction_offset); }
+  intptr_t data() const { return long_at(data_offset); }
+  void set_data(intptr_t x) { set_long_at(data_offset, x); }
 
-  void  verify();
-  void  print();
-  
+  void verify();
+  void print();
+
   // Creation
   friend NativeTest* nativeTest_at(char* address);
-
 };
 
-inline NativeTest* nativeTest_at(char* address)
-{
-	NativeTest* test = (NativeTest*)(address - NativeTest::instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
-    return test;
- }
-
+inline NativeTest* nativeTest_at(char* address) {
+  NativeTest* test = (NativeTest*)(address - NativeTest::instruction_offset);
+#ifdef ASSERT
+  test->verify();
+#endif
+  return test;
+}
 
 // An abstraction for accessing/manipulating native test eax, imm32 instructions that serve as IC info.
 
-class IC_Info: public NativeTest {
- public:
+class IC_Info : public NativeTest {
+public:
   enum IC_Info_specific_constants {
-    info_offset		= data_offset,
-    number_of_flags	= 8,
-    flags_mask		= (1 << number_of_flags) - 1,
+    info_offset = data_offset,
+    number_of_flags = 8,
+    flags_mask = (1 << number_of_flags) - 1,
   };
 
-  char* NLR_target() const			{ return instruction_address() + (data() >> number_of_flags); }
-  int	flags() const				{ return data() & flags_mask; }
-  void  set_flags(int flags)			{ set_data((data() & ~flags_mask) | (flags & flags_mask)); }
+  char* NLR_target() const { return instruction_address() + (data() >> number_of_flags); }
+  int flags() const { return data() & flags_mask; }
+  void set_flags(int flags) { set_data((data() & ~flags_mask) | (flags & flags_mask)); }
 
   // Creation
   friend IC_Info* ic_info_at(char* address);
-
 };
 
-inline IC_Info* ic_info_at(char* address)
-{
-    return (IC_Info*)nativeTest_at(address);
+inline IC_Info* ic_info_at(char* address) {
+  return (IC_Info*)nativeTest_at(address);
 }
 #endif // _NATIVE_INSTRUCTION_HPP

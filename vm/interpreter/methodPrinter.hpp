@@ -44,13 +44,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   MethodPrinterClosure blk(output);
 //   MethodIterator mi(method, &blk);
 
-class MethodPrinterClosure: public MethodClosure {
- private:
-   outputStream*  st;
-   void print_sendtype(Bytecodes::SendType type);
-   void show(char* str);
-   void indent();
- public:
+class MethodPrinterClosure : public MethodClosure {
+private:
+  outputStream* st;
+  void print_sendtype(Bytecodes::SendType type);
+  void show(char* str);
+  void indent();
+
+public:
   MethodPrinterClosure(outputStream* stream = NULL);
   void if_node(IfNode* node);
   void cond_node(CondNode* node);
@@ -81,8 +82,8 @@ class MethodPrinterClosure: public MethodClosure {
   void store_global(associationOop obj);
   void pop();
   void normal_send(InterpretedIC* ic);
-  void self_send  (InterpretedIC* ic);
-  void super_send (InterpretedIC* ic);
+  void self_send(InterpretedIC* ic);
+  void super_send(InterpretedIC* ic);
   void double_equal();
   void double_not_equal();
   void method_return(int nofArgs);

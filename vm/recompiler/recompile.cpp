@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #ifdef DELTA_COMPILER
 
 #include "code/compiledIC.hpp"
@@ -42,7 +41,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-nmethod* recompilee = NULL;	    	// method being recompiled
+nmethod* recompilee = NULL; // method being recompiled
 Recompilation* theRecompilation;
 
 char* Recompilation::methodOop_invocation_counter_overflow(oop rcvr, methodOop method) {
@@ -56,7 +55,7 @@ char* Recompilation::methodOop_invocation_counter_overflow(oop rcvr, methodOop m
   // If the method is illegal, recompilation is simply aborted.
   bool ok = false;
   if (Universe::is_heap((oop*)method)) {
-    memOop obj = as_memOop(Universe::object_start((oop*) method));
+    memOop obj = as_memOop(Universe::object_start((oop*)method));
     if (obj->is_method()) {
       ok = true;
     }
@@ -87,15 +86,14 @@ char* Recompilation::methodOop_invocation_counter_overflow(oop rcvr, methodOop m
     if (dbg_n++ < 20) {
       stringStream buf;
       method->selector()->print_symbol_on(&buf);
-      fprintf(stderr, "DBG overflow rcvr=%#lx method=%#lx counters=%#x sel=%s\n",
-              (long)rcvr, (long)method, method->counters(), buf.as_string());
+      fprintf(stderr, "DBG overflow rcvr=%#lx method=%#lx counters=%#x sel=%s\n", (long)rcvr, (long)method,
+              method->counters(), buf.as_string());
       fflush(stderr);
     }
     method->set_invocation_count(0);
     return NULL;
   }
 }
-
 
 char* Recompilation::nmethod_invocation_counter_overflow(oop rcvr, char* retpc) {
   // called by an nmethod whenever the nmethod's invocation counter reaches its limit
@@ -104,11 +102,10 @@ char* Recompilation::nmethod_invocation_counter_overflow(oop rcvr, char* retpc) 
   ResourceMark rm;
   nmethod* trigger = findNMethod(retpc);
   LOG_EVENT3("nmethod_invocation_counter_overflow: rcvr = %#x, pc = %#x (nmethod %#x)", rcvr, retpc, trigger);
-  char* continuationAddr = trigger->verifiedEntryPoint();   // where to continue
+  char* continuationAddr = trigger->verifiedEntryPoint(); // where to continue
 #ifdef ASSERT
   deltaVFrame* vf = DeltaProcess::active()->last_delta_vframe();
-  assert(vf->is_compiled_frame() && ((compiledVFrame*)vf)->code() == trigger,
-         "stack isn't set up right");
+  assert(vf->is_compiled_frame() && ((compiledVFrame*)vf)->code() == trigger, "stack isn't set up right");
   //DeltaProcess::active()->trace_stack();
 #endif
   if (UseRecompilation) {
@@ -124,7 +121,6 @@ char* Recompilation::nmethod_invocation_counter_overflow(oop rcvr, char* retpc) 
   return continuationAddr;
 }
 
-
 nmethod* compile_method(LookupKey* key, methodOop m) {
   if (UseInliningDatabase && !m->is_blockMethod()) {
     // Find entry in inlining database matching the key.
@@ -135,8 +131,8 @@ nmethod* compile_method(LookupKey* key, methodOop m) {
       VMProcess::execute(&op);
       if (TraceInliningDatabase) {
         mystd->print_cr("Inlining database compile ");
-	key->print_on(mystd);
-	mystd->cr();
+        key->print_on(mystd);
+        mystd->cr();
       }
       return op.result();
     }
@@ -146,9 +142,8 @@ nmethod* compile_method(LookupKey* key, methodOop m) {
   return op.result();
 }
 
-
 void Recompilation::init() {
-  _newNM = NULL; 
+  _newNM = NULL;
   _triggerVF = NULL;
   _recompiledTrigger = false;
   assert(!theRecompilation, "already set");
@@ -165,13 +160,11 @@ void Recompilation::init() {
   }
 }
 
-
 void Recompilation::doit() {
   ResourceMark rm;
   if (PrintRecompilation) {
-    lprintf("recompilation trigger: %s (%#x)\n", 
-	    _method->selector()->as_string(), 
-	    isCompiled() ? (char*)_nm : (char*)_method);
+    lprintf("recompilation trigger: %s (%#x)\n", _method->selector()->as_string(),
+            isCompiled() ? (char*)_nm : (char*)_method);
   }
 
   _triggerVF = calling_process()->last_delta_vframe();
@@ -198,26 +191,26 @@ void Recompilation::doit() {
     _recompiledTrigger = r != NULL && r->rframe() == first;
     if (r) {
       recompile(r);
-    } 
-    
+    }
+
     //slr debugging
-  if (false && _nm) {
-    mystd->cr();
-    _nm->print_value_on(mystd);
-    mystd->cr();
-    _method->print_value_on(mystd);
-    mystd->cr();
-    mystd->print_cr("uncommon? %d", _nm->isUncommonRecompiled());
-  }
+    if (false && _nm) {
+      mystd->cr();
+      _nm->print_value_on(mystd);
+      mystd->cr();
+      _method->print_value_on(mystd);
+      mystd->cr();
+      mystd->print_cr("uncommon? %d", _nm->isUncommonRecompiled());
+    }
     //slr debugging
-  
-    if (true || !_recompiledTrigger) {	  // fix this
+
+    if (true || !_recompiledTrigger) { // fix this
       // reset the trigger's counter
       if (isCompiled() /*&& !_nm->isUncommonRecompiled()*/) {
-	// don't 
-	_nm->set_invocation_count(1);
+        // don't
+        _nm->set_invocation_count(1);
       } else {
-	_method->set_invocation_count(1);
+        _method->set_invocation_count(1);
       }
     }
   }
@@ -232,9 +225,11 @@ bool Recompilation::handleStaleInlineCache(RFrame* first) {
   if (key && (nm = Universe::code->lookup(key)) != NULL) {
     // yes, we already have a compiled method; see if the sending inline cache points to that nmethod
     IC_Iterator* it = first->caller()->fr().current_ic_iterator();
-    if (!it) return false;	// no inline cache (perform)
+    if (!it)
+      return false; // no inline cache (perform)
     assert(it->selector() == key->selector(), "selector mismatch");
-    while (!it->at_end() && it->klass() != key->klass()) it->advance();
+    while (!it->at_end() && it->klass() != key->klass())
+      it->advance();
     if (it->at_end()) {
       // NB: this is possible -- inline cache could have been modified after the call, so now the
       // called method is no longer in it
@@ -242,60 +237,58 @@ bool Recompilation::handleStaleInlineCache(RFrame* first) {
       nmethod* target = it->compiled_method();
       assert(!target || target == nm || target->key.equal(&nm->key), "inconsistent target");
       if (!target || target != nm) {
-	// yes, the inline cache still calls the interpreted method rather than the compiled one,
-	// or calls an obsolete nmethod which has been recompiled
-	// replace it with the compiled one; no need to recompile anything now
-	if (PrintRecompilation) {
-  	  if (it->is_interpreted_ic()) {
+        // yes, the inline cache still calls the interpreted method rather than the compiled one,
+        // or calls an obsolete nmethod which has been recompiled
+        // replace it with the compiled one; no need to recompile anything now
+        if (PrintRecompilation) {
+          if (it->is_interpreted_ic()) {
             lprintf("replacing nm %#x in InterpretedIC %#x\n", nm, it->interpreted_ic());
-  	  } else {
+          } else {
             lprintf("replacing nm %#x in CompiledIC %#x\n", nm, it->compiled_ic());
-  	  }
-	}
+          }
+        }
 
-	// Replace the element in the inline cache
- 	if (it->is_interpreted_ic()) {
+        // Replace the element in the inline cache
+        if (it->is_interpreted_ic()) {
           it->interpreted_ic()->replace(nm);
-  	} else {
+        } else {
           it->compiled_ic()->replace(nm);
-  	}
+        }
 
-	_newNM = nm;
-	return true;
+        _newNM = nm;
+        return true;
       }
     }
   }
   return false;
 }
 
-
 oop Recompilation::receiverOf(deltaVFrame* vf) const {
   return _triggerVF->equal(vf) ? _rcvr : vf->receiver();
 }
 
-
 #ifdef HEAVY_CLEANUP
-class CleanupInlineCaches: public ObjectClosure {
+class CleanupInlineCaches : public ObjectClosure {
   void do_object(memOop obj) {
-    if (obj->is_method()) 
+    if (obj->is_method())
       methodOop(obj)->cleanup_inline_caches();
   }
 };
 #endif
 
-
 void Recompilation::recompile(Recompilee* r) {
   // recompile r
-  recompilee = r->is_compiled() ? r->code() : NULL;	// previous version (if any)
+  recompilee = r->is_compiled() ? r->code() : NULL; // previous version (if any)
   if (r->rframe()->is_blockMethod()) {
     recompile_block(r);
   } else {
     recompile_method(r);
   }
 
-  if (_newNM == NULL) return;		      // possible -- fix this later
+  if (_newNM == NULL)
+    return; // possible -- fix this later
 
-  if (recompilee && ! recompilee->isFree()) {
+  if (recompilee && !recompilee->isFree()) {
     // discard old nmethod (*after* compiling newNM)
     recompilee->clear_inline_caches();
   }
@@ -310,10 +303,12 @@ void Recompilation::recompile(Recompilee* r) {
     // Replace the element in the inline cache
     if (it->is_interpreted_ic()) {
       InterpretedIC* ic = it->interpreted_ic();
-      if (!ic->is_empty()) ic->replace(_newNM);
+      if (!ic->is_empty())
+        ic->replace(_newNM);
     } else {
       CompiledIC* ic = it->compiled_ic();
-      if (!ic->is_empty()) ic->replace(_newNM);
+      if (!ic->is_empty())
+        ic->replace(_newNM);
     }
   } else if (!_newNM->is_method()) {
     // recompiled a block: block call stub has already been updated
@@ -325,7 +320,6 @@ void Recompilation::recompile(Recompilee* r) {
   lookupCache::flush(&_newNM->key);
   DeltaCallCache::clearAll();
 }
-
 
 void Recompilation::recompile_method(Recompilee* r) {
   // recompile method r
@@ -339,12 +333,14 @@ void Recompilation::recompile_method(Recompilee* r) {
     m->print();
   }
 #endif
-  _newNM = Universe::code->lookup(key);	      // see if we've already compiled it
+  _newNM = Universe::code->lookup(key); // see if we've already compiled it
 
   if (_newNM == NULL || _newNM == recompilee) {
-    if (recompilee && !recompilee->isZombie()) recompilee->unlink(); // remove it from the code table
+    if (recompilee && !recompilee->isZombie())
+      recompilee->unlink(); // remove it from the code table
     _newNM = compile_method(key, m);
-    if (recompilee && !recompilee->isZombie()) recompilee->makeZombie(true);
+    if (recompilee && !recompilee->isZombie())
+      recompilee->makeZombie(true);
 #ifdef HEAVY_CLEANUP
     static int count;
     if (count++ > 10) {
@@ -356,10 +352,9 @@ void Recompilation::recompile_method(Recompilee* r) {
     }
 #endif
   } else {
-    recompilee = NULL;			      // no recompilation necessary
+    recompilee = NULL; // no recompilation necessary
   }
 }
-
 
 void Recompilation::recompile_block(Recompilee* r) {
   assert(r->rframe()->is_blockMethod(), "must be block recompilation");
@@ -378,7 +373,8 @@ void Recompilation::recompile_block(Recompilee* r) {
   oop block;
   if (recompilee && recompilee->is_block()) {
     deltaVFrame* sender = vf->sender_delta_frame();
-    if (sender == NULL) return;		      // pathological case (not sure it can happen)
+    if (sender == NULL)
+      return; // pathological case (not sure it can happen)
     GrowableArray<oop>* exprs = sender->expression_stack();
     // primitiveValue takes block as first argument
     int nargs = recompilee->method()->nofArgs();
@@ -388,9 +384,9 @@ void Recompilation::recompile_block(Recompilee* r) {
   }
   assert(block->is_block(), "must be a block");
   _newNM = jumpTable::compile_block(blockClosureOop(block));
-  if (recompilee != NULL) recompilee->makeZombie(true);	  // do this last (after recompilation) 
+  if (recompilee != NULL)
+    recompilee->makeZombie(true); // do this last (after recompilation)
 }
-
 
 Recompilee* Recompilee::new_Recompilee(RFrame* rf) {
   if (rf->is_compiled()) {
@@ -403,8 +399,12 @@ Recompilee* Recompilee::new_Recompilee(RFrame* rf) {
   }
 }
 
-LookupKey* CompiledRecompilee::key() const  	{ return &_nm->key; }
-methodOop  CompiledRecompilee::method() const	{ return _nm->method(); }
+LookupKey* CompiledRecompilee::key() const {
+  return &_nm->key;
+}
+methodOop CompiledRecompilee::method() const {
+  return _nm->method();
+}
 
 #else
 

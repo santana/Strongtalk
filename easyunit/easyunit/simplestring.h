@@ -23,13 +23,12 @@ This class was originally created by Michael Feathers and was modified
 by Barthelemy Dagenais.
 */
 
-
 #ifndef SIMPLE_STRING
 #define SIMPLE_STRING
 #include "alloceasy.h"
 #include <stdlib.h>
 
-#define NEW_BUFFER(size) (char*) malloc(sizeof(char) * (size))
+#define NEW_BUFFER(size) (char*)malloc(sizeof(char) * (size))
 
 namespace easyunit {
 
@@ -38,40 +37,39 @@ namespace easyunit {
  * provided to ease the manipulation of strings without using any other
  * libraries.
  */
-  class SimpleString: public CHeap
-{
-	friend bool	operator== (const SimpleString& left, const SimpleString& right);
+class SimpleString : public CHeap {
+  friend bool operator==(const SimpleString& left, const SimpleString& right);
 
-	friend bool	operator!= (const SimpleString& left, const SimpleString& right);
+  friend bool operator!=(const SimpleString& left, const SimpleString& right);
 
-  public:
-    SimpleString ();
-		SimpleString (const char *value);
-		SimpleString (const SimpleString& other);
-		~SimpleString ();
+public:
+  SimpleString();
+  SimpleString(const char* value);
+  SimpleString(const SimpleString& other);
+  ~SimpleString();
 
-	  SimpleString operator= (const SimpleString& other);
-    SimpleString operator+ (const SimpleString& other);
-    
-    char *asCharString () const;
-    int size() const;
+  SimpleString operator=(const SimpleString& other);
+  SimpleString operator+(const SimpleString& other);
 
-  private:
-	  char *buffer;
+  char* asCharString() const;
+  int size() const;
+
+private:
+  char* buffer;
 };
 
-bool operator== (const SimpleString& left, const SimpleString& right);
-bool operator!= (const SimpleString& left, const SimpleString& right);
+bool operator==(const SimpleString& left, const SimpleString& right);
+bool operator!=(const SimpleString& left, const SimpleString& right);
 
 // Those functions are provided to ease the conversion between
 // primary datatypes and SimpleString. Feel free to extend this list
 // to support your own datatype.
-SimpleString StringFrom (bool value);
-SimpleString StringFrom (const char *value);
-SimpleString StringFrom (long value);
-SimpleString StringFrom (int value);
-SimpleString StringFrom (double value);
-SimpleString StringFrom (const SimpleString& other);
+SimpleString StringFrom(bool value);
+SimpleString StringFrom(const char* value);
+SimpleString StringFrom(long value);
+SimpleString StringFrom(int value);
+SimpleString StringFrom(double value);
+SimpleString StringFrom(const SimpleString& other);
 
 } // EasyUnit ns
 #endif

@@ -32,16 +32,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.inline.hpp"
 
 void OopNCode::remember() {
-Unimplemented();//  if (rememberLink.isEmpty()) Memory->code->rememberLink.add(&rememberLink);
+  Unimplemented(); //  if (rememberLink.isEmpty()) Memory->code->rememberLink.add(&rememberLink);
 }
-
 
 void OopNCode::relocate() {
   Unimplemented();
 }
 
-bool OopNCode::switch_pointers(oop from, oop to,
-			       GrowableArray<nmethod*>* nmethods_to_invalidate) {
+bool OopNCode::switch_pointers(oop from, oop to, GrowableArray<nmethod*>* nmethods_to_invalidate) {
   Unused(nmethods_to_invalidate);
   bool needToInvalICache = false;
   Unimplemented();
@@ -54,7 +52,7 @@ void NCodeBase::verify2(const char* name) {
   if (instsLen() > 256 * K)
     error("instr length of %s at %#lx seems too big (%ld)", name, this, instsLen());
 }
-  
+
 void OopNCode::verify() {
   const char* name = isNMethod() ? "nmethod" : (isPIC() ? " PIC" : "count stub");
   NCodeBase::verify2(name);
@@ -68,6 +66,6 @@ NCodeBase* findThing(void* addr) {
   } else {
     return NULL;
   }
-}  
+}
 
 #endif // DELTA_COMPILER

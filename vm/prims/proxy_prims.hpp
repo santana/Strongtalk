@@ -30,9 +30,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Primitives for proxy
 
 class proxyOopPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   // Conversion
@@ -144,7 +145,7 @@ class proxyOopPrimitives : AllStatic {
   //                             ifFail: failBlock <PrimFailBlock> ^<SmallInteger> =
   //   Internal { name = 'proxyOopPrimitives::doubleByteAtPut' }
   //%
-  static PRIM_DECL_3(doubleByteAtPut, oop receiver, oop offset, oop value); 
+  static PRIM_DECL_3(doubleByteAtPut, oop receiver, oop offset, oop value);
 
   // Smi
 
@@ -290,7 +291,5 @@ class proxyOopPrimitives : AllStatic {
   //              name  = 'proxyOopPrimitives::callOut5' }
   //%
   static PRIM_DECL_7(callOut5, oop receiver, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop result);
-
-
 };
 #endif // _PROXY_PRIMS_HPP

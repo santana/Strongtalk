@@ -36,11 +36,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 
 void memOopDesc::layout_iterate_body(ObjectLayoutClosure* blk, int begin, int end) {
-  oop* p = (oop*) addr();
+  oop* p = (oop*)addr();
   oop* q = p + end;
-  p     += begin;
+  p += begin;
   while (p < q) {
-    int offset = p - (oop*) addr();
+    int offset = p - (oop*)addr();
     // Compute the instance variable name at the current offset
     symbolOop name = blueprint()->inst_var_name_at(offset);
     char* n = "instVar?";
@@ -54,11 +54,11 @@ void memOopDesc::layout_iterate_body(ObjectLayoutClosure* blk, int begin, int en
 }
 
 oop memOopDesc::scavenge() {
-  assert((!Universe::should_scavenge(this)) == 
-         (((char*) this > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(this)),
-	 "just checking");
+  assert((!Universe::should_scavenge(this)) ==
+           (((char*)this > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(this)),
+         "just checking");
 
-  if (((char*) this > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(this)) {
+  if (((char*)this > Universe::old_gen.low_boundary) || Universe::new_gen.to()->contains(this)) {
     return this;
   } else if (this->is_forwarded()) {
     return oop(this->forwardee());
@@ -75,29 +75,26 @@ void memOopDesc::follow_contents() {
 
 oop memOopDesc::copy_to_survivor_space() {
   int s = size();
-  assert(Universe::should_scavenge(this) && !is_forwarded(), 
-	 "shouldn't be scavenging"); 
+  assert(Universe::should_scavenge(this) && !is_forwarded(), "shouldn't be scavenging");
   bool is_new;
   oop* x = Universe::allocate_in_survivor_space(this, s, is_new);
 
-# ifdef VERBOSE_SCAVENGING
-  lprintf("{copy %s %#lx -> %#lx (%d)}\n",
-	  blueprint()->name(), oops(), x, s);
-# endif
+#ifdef VERBOSE_SCAVENGING
+  lprintf("{copy %s %#lx -> %#lx (%d)}\n", blueprint()->name(), oops(), x, s);
+#endif
 
-  memOop p= as_memOop(x);
+  memOop p = as_memOop(x);
   copy_oops(oops(), x, s);
 
-  if (is_new) { 
-    p->set_mark(p->mark()->incr_age()); 
-    Universe::age_table->add(p, s); 
+  if (is_new) {
+    p->set_mark(p->mark()->incr_age());
+    Universe::age_table->add(p, s);
   } else {
-  # ifdef VERBOSE_SCAVENGING
-    lprintf("{tenuring %s %#lx -> %#lx (%d)}\n",
-	    blueprint()->name(), oops(), x, s);
-  # endif
+#ifdef VERBOSE_SCAVENGING
+    lprintf("{tenuring %s %#lx -> %#lx (%d)}\n", blueprint()->name(), oops(), x, s);
+#endif
   }
-  forward_to(p); 
+  forward_to(p);
   return p;
 }
 
@@ -113,14 +110,14 @@ bool memOopDesc::verify() {
   bool flag = true;
   if (flag) {
     markOop m = mark();
-    if (! oop(m)->is_mark()) {
+    if (!oop(m)->is_mark()) {
       error("mark of memOop %#lx isn't a markOop", this);
-      if (! m->verify())
+      if (!m->verify())
         error(" mark of memOop %#lx isn't even a legal oop", this);
       flag = false;
     }
     klassOop p = klass();
-    if (! p->is_klass()) {
+    if (!p->is_klass()) {
       error("map of memOop %#lx isn't a klassOop", this);
       flag = false;
     }
@@ -135,9 +132,8 @@ void memOopDesc::set_identity_hash(smi h) {
 void memOopDesc::bootstrap_header(bootstrap* st) {
   if (st->new_format()) {
     st->read_oop((oop*)&addr()->_klass_field);
-    set_mark(blueprint()->has_untagged_contents() 
-           ? markOopDesc::untagged_prototype()
-	   : markOopDesc::tagged_prototype());
+    set_mark(blueprint()->has_untagged_contents() ? markOopDesc::untagged_prototype()
+                                                  : markOopDesc::tagged_prototype());
   } else {
     st->read_mark(&addr()->_mark);
     st->read_oop((oop*)&addr()->_klass_field);
@@ -151,7 +147,7 @@ void memOopDesc::bootstrap_object(bootstrap* st) {
 
 void memOopDesc::bootstrap_body(bootstrap* st, int h_size) {
   int offset = h_size;
-  int s      = blueprint()->non_indexable_size();
+  int s = blueprint()->non_indexable_size();
   while (offset < s) {
     st->read_oop((oop*)addr() + offset);
     offset++;
@@ -159,14 +155,12 @@ void memOopDesc::bootstrap_body(bootstrap* st, int h_size) {
 }
 
 bool memOopDesc::is_within_instVar_bounds(int index) {
-  return index >= blueprint()->oop_header_size()
-      && index <  blueprint()->non_indexable_size();
+  return index >= blueprint()->oop_header_size() && index < blueprint()->non_indexable_size();
 }
 
 oop memOopDesc::instVarAt(int index) {
-  return raw_at(index );
+  return raw_at(index);
 }
-
 
 oop memOopDesc::instVarAtPut(int index, oop value) {
   raw_at_put(index, value);
@@ -182,6 +176,5 @@ void memOopDesc::print_id_on(outputStream* st) {
   if (GCInProgress || !(id = objectIDTable::insert(memOop(this))))
     st->print("(%#-6lx)", addr());
   else
-    st->print("%d",id);
+    st->print("%d", id);
 }
-

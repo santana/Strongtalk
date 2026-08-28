@@ -33,11 +33,12 @@ void set_processKlass_vtbl(Klass* k) {
 }
 
 oop processKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
   // allocate
   oop* result = basicAllocate(size, &k, permit_scavenge, tenured);
-  if (!result) return NULL;
+  if (!result)
+    return NULL;
   processOop obj = as_processOop(result);
   // header
   memOop(obj)->initialize_header(true, k);
@@ -65,7 +66,7 @@ int processKlass::oop_scavenge_contents(oop obj) {
   memOop(obj)->scavenge_header();
   // instance variables
   memOop(obj)->scavenge_body(processOopDesc::header_size(), size);
-  return size;  
+  return size;
 }
 
 int processKlass::oop_scavenge_tenured_contents(oop obj) {
@@ -87,7 +88,7 @@ void processKlass::oop_follow_contents(oop obj) {
 void processKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
-  blk->do_long("process", (void**) &processOop(obj)->addr()->_process);
+  blk->do_long("process", (void**)&processOop(obj)->addr()->_process);
   // instance variables
   memOop(obj)->layout_iterate_body(blk, processOopDesc::header_size(), non_indexable_size());
 }

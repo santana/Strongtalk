@@ -40,7 +40,7 @@ class outputStream;
 class InliningDatabaseKey;
 
 class InliningDatabase : AllStatic {
- private:
+private:
   // Helper functions to compute file path when filing out.
   static char* selector_string(symbolOop selector);
   static char* method_string(methodOop method);
@@ -50,12 +50,12 @@ class InliningDatabase : AllStatic {
   static RScope* file_in_from(FILE* stream);
 
   // Helper functions when iterating over zone.
-  static int      local_number_of_nmethods_written;
-  static void     local_file_out_all(nmethod* nm);
+  static int local_number_of_nmethods_written;
+  static void local_file_out_all(nmethod* nm);
   static klassOop local_klass;
-  static void     local_file_out_klass(nmethod* nm);
+  static void local_file_out_klass(nmethod* nm);
 
-  // Returns the file name for the two keys and creates the necessary directories 
+  // Returns the file name for the two keys and creates the necessary directories
   static char* compute_file_name(LookupKey* outer, LookupKey* inner, bool create_directories);
 
   // Returns the file name for the index file
@@ -65,17 +65,17 @@ class InliningDatabase : AllStatic {
 
   static outputStream* index_st;
   static InliningDatabaseKey* table;
-  static unsigned int table_size;      // Size of table power of 2
+  static unsigned int table_size; // Size of table power of 2
   static unsigned int table_size_mask; // nthMask(table_size)
-  static unsigned int table_no;        // Number of elements in the table
- public:
+  static unsigned int table_no; // Number of elements in the table
+public:
   // Accessor for the root of the database
   static char* default_directory();
-  static void  set_directory(char* dir);
+  static void set_directory(char* dir);
   static char* directory();
 
   // Writes the inlining structure for all compiled code.
-  // Returns the number of written inlining structures. 
+  // Returns the number of written inlining structures.
   static bool file_out_all();
 
   // Writes the inlining structure for compiled method.
@@ -83,7 +83,7 @@ class InliningDatabase : AllStatic {
   static bool file_out(nmethod* nm, outputStream* index_st = NULL);
 
   // Writes the inlining structure for all compiled methods with a
-  // specific receiver klass, returns the number of written structures. 
+  // specific receiver klass, returns the number of written structures.
   static int file_out(klassOop klass);
 
   // Reads the inlining structure from file_name.
@@ -96,15 +96,15 @@ class InliningDatabase : AllStatic {
 
   // Converts a string into a mangled name that is a valid filename
   // on the running platform.
-  static char* mangle_name(char *str);
+  static char* mangle_name(char* str);
 
-  // Converts a mangled string back to the orignal sting. 
+  // Converts a mangled string back to the orignal sting.
   static char* unmangle_name(char* str);
 
   // the lookup table
-  static void    reset_lookup_table();
-  static void    add_lookup_entry(LookupKey* outer,  LookupKey* inner = NULL);
-  static bool    lookup(LookupKey* outer, LookupKey* inner = NULL);
+  static void reset_lookup_table();
+  static void add_lookup_entry(LookupKey* outer, LookupKey* inner = NULL);
+  static bool lookup(LookupKey* outer, LookupKey* inner = NULL);
   static RScope* lookup_and_remove(LookupKey* outer, LookupKey* inner = NULL);
   static RScope* select_and_remove(bool* end_of_table); // For background compilation
 
@@ -113,7 +113,8 @@ class InliningDatabase : AllStatic {
 
   // Iterates through all oops stored in the inlining database
   static void oops_do(void f(oop*));
- private:
+
+private:
   static void allocate_table(unsigned int size);
   static inline unsigned int index_for(LookupKey* outer, LookupKey* inner);
   static inline unsigned int next_index(unsigned int index);

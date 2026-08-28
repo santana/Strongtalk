@@ -32,13 +32,14 @@ class memConverter;
 class ClassChange;
 
 class Reflection : AllStatic {
- private:
+private:
   // Variables used for schema change
-  static GrowableArray<ClassChange*> *class_changes; // Class changes
-  static GrowableArray<memOop>       *converted;     // Converted objects
+  static GrowableArray<ClassChange*>* class_changes; // Class changes
+  static GrowableArray<memOop>* converted; // Converted objects
 
   static int invocations_offset() { return 3; }
- private:
+
+private:
   // registers all changes in 'class_changes'
   static void register_class_changes(mixinOop new_mixin, objArrayOop invocations);
 
@@ -55,35 +56,28 @@ class Reflection : AllStatic {
   static void update_classes(bool class_vars_changed, bool instance_methods_changed, bool class_methods_changed);
 
   // FOR SCHEMA CHANGES
- 
+
   // builds the new classes and converters
   static void setup_schema_change();
 
-  static void update_class(klassOop klass,
-			   mixinOop new_mixin, 
-			   mixinOop old_mixin,
-			   bool     instance_methods_changed,
-			   bool     class_methods_changed,
-			   bool     class_vars_changed);
-
+  static void update_class(klassOop klass, mixinOop new_mixin, mixinOop old_mixin, bool instance_methods_changed,
+                           bool class_methods_changed, bool class_vars_changed);
 
   static bool has_methods_changed(mixinOop new_mixin, mixinOop old_mixin);
   static bool has_class_vars_changed(mixinOop new_mixin, mixinOop old_mixin);
 
-  static void apply_change(mixinOop    new_mixin,
-			  mixinOop    old_mixin,
-		          objArrayOop invocations);
+  static void apply_change(mixinOop new_mixin, mixinOop old_mixin, objArrayOop invocations);
 
   static memOop convert_object(memOop obj);
 
- public:
+public:
   // Entry for primitiveApplyChange:ifFail:
   static oop apply_change(objArrayOop change);
 
   // Converts an object if necessary (used when scanning the object heap)
   static void convert(oop* p);
 
-  // place forward pointer and 
+  // place forward pointer and
   static void forward(memOop old_obj, memOop new_obj);
 };
 #endif // _REFLECTION_HPP

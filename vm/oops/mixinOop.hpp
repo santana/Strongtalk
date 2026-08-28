@@ -39,61 +39,61 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [class mixin       ]-  (Mixin)
 //    [instance variables]*
 
-class mixinOopDesc: public memOopDesc {
- private:
-   objArrayOop _methods;
-   objArrayOop _inst_vars;          // Description of instance variables
-   objArrayOop _class_vars;         // Description of class variables
-   klassOop    _primary_invocation; // Points to the primary invocation
-   mixinOop    _class_mixin;        // Mixin for the class part
-   oop         _installed;          // Tells whether the mixin has been installed
+class mixinOopDesc : public memOopDesc {
+private:
+  objArrayOop _methods;
+  objArrayOop _inst_vars; // Description of instance variables
+  objArrayOop _class_vars; // Description of class variables
+  klassOop _primary_invocation; // Points to the primary invocation
+  mixinOop _class_mixin; // Mixin for the class part
+  oop _installed; // Tells whether the mixin has been installed
 
- protected:
+protected:
   mixinOopDesc* addr() const { return (mixinOopDesc*)memOopDesc::addr(); }
 
- public:
-	friend mixinOop as_mixinOop(void* p);
+public:
+  friend mixinOop as_mixinOop(void* p);
 
   // sizing
-  static int header_size() { return sizeof(mixinOopDesc)/oopSize; }
+  static int header_size() { return sizeof(mixinOopDesc) / oopSize; }
 
   // accessors
-  objArrayOop methods() const             { return addr()->_methods; }
-  void set_methods(objArrayOop m)         { STORE_OOP(&addr()->_methods, m); }
+  objArrayOop methods() const { return addr()->_methods; }
+  void set_methods(objArrayOop m) { STORE_OOP(&addr()->_methods, m); }
 
-  objArrayOop instVars() const            { return addr()->_inst_vars; }
-  void set_instVars(objArrayOop i)        { STORE_OOP(&addr()->_inst_vars, i); }
+  objArrayOop instVars() const { return addr()->_inst_vars; }
+  void set_instVars(objArrayOop i) { STORE_OOP(&addr()->_inst_vars, i); }
 
-  objArrayOop classVars() const           { return addr()->_class_vars; }
-  void set_classVars(objArrayOop c)       { STORE_OOP(&addr()->_class_vars, c); }
+  objArrayOop classVars() const { return addr()->_class_vars; }
+  void set_classVars(objArrayOop c) { STORE_OOP(&addr()->_class_vars, c); }
 
-  klassOop primary_invocation() const     { return addr()->_primary_invocation; }
+  klassOop primary_invocation() const { return addr()->_primary_invocation; }
   void set_primary_invocation(klassOop k) { STORE_OOP(&addr()->_primary_invocation, k); }
 
-  mixinOop class_mixin() const            { return addr()->_class_mixin; }
-  void set_class_mixin(mixinOop m)        { STORE_OOP(&addr()->_class_mixin, m); }
+  mixinOop class_mixin() const { return addr()->_class_mixin; }
+  void set_class_mixin(mixinOop m) { STORE_OOP(&addr()->_class_mixin, m); }
 
-  oop  installed() const                  { return addr()->_installed; }
-  void set_installed(oop b)               { STORE_OOP(&addr()->_installed, b); }
+  oop installed() const { return addr()->_installed; }
+  void set_installed(oop b) { STORE_OOP(&addr()->_installed, b); }
 
   // primitive operations
-  int       number_of_methods()   const;       // Return the number of methods.
-  methodOop method_at(int index)  const;       // Return the method at index.
-  void      add_method(methodOop method);      // Add/overwrite method.
-  methodOop remove_method_at(int index);       // Remove and return the method at index.
-  bool      includes_method(methodOop method); // Remove and return the class variable at index.
+  int number_of_methods() const; // Return the number of methods.
+  methodOop method_at(int index) const; // Return the method at index.
+  void add_method(methodOop method); // Add/overwrite method.
+  methodOop remove_method_at(int index); // Remove and return the method at index.
+  bool includes_method(methodOop method); // Remove and return the class variable at index.
 
-  int       number_of_instVars()  const;       // Return the number of instance variables.
-  symbolOop instVar_at(int index) const;       // Return the instance variable at index.
-  void      add_instVar(symbolOop name);       // Add instance variable.
-  symbolOop remove_instVar_at(int index);      // Remove and return the instance variable at index.
-  bool      includes_instVar(symbolOop name);  // Tells whether the name is present as an instance variable name.
+  int number_of_instVars() const; // Return the number of instance variables.
+  symbolOop instVar_at(int index) const; // Return the instance variable at index.
+  void add_instVar(symbolOop name); // Add instance variable.
+  symbolOop remove_instVar_at(int index); // Remove and return the instance variable at index.
+  bool includes_instVar(symbolOop name); // Tells whether the name is present as an instance variable name.
 
-  int       number_of_classVars()  const;      // Return the number of class variables.
-  symbolOop classVar_at(int index) const;      // Return the class variable at index.
-  void      add_classVar(symbolOop name);      // Add class variable.
-  symbolOop remove_classVar_at(int index);     // Remove and return the class variable at index.
-  bool      includes_classVar(symbolOop name); // Tells whether the name is present
+  int number_of_classVars() const; // Return the number of class variables.
+  symbolOop classVar_at(int index) const; // Return the class variable at index.
+  void add_classVar(symbolOop name); // Add class variable.
+  symbolOop remove_classVar_at(int index); // Remove and return the class variable at index.
+  bool includes_classVar(symbolOop name); // Tells whether the name is present
 
   // Returns the offset of an instance variable.
   // -1 is returned if inst var is not present in mixin.
@@ -116,5 +116,7 @@ class mixinOopDesc: public memOopDesc {
 
   friend class mixinKlass;
 };
-inline mixinOop as_mixinOop(void* p) { return mixinOop(as_memOop(p)); }
+inline mixinOop as_mixinOop(void* p) {
+  return mixinOop(as_memOop(p));
+}
 #endif // _MIXIN_OOP_HPP

@@ -39,52 +39,55 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 template <class E> class GrowableArray;
 
 enum IC_Shape {
-  anamorphic,	// send has never been executed => no type information	(size = 0)
-  monomorphic,	// only one receiver type available			(size = 1)
-  polymorphic,	// more than one receiver type available		(size > 1)
-  megamorphic	// many receiver types, only last one is available	(size = 1)
+  anamorphic, // send has never been executed => no type information	(size = 0)
+  monomorphic, // only one receiver type available			(size = 1)
+  polymorphic, // more than one receiver type available		(size > 1)
+  megamorphic // many receiver types, only last one is available	(size = 1)
 };
 
-  
 // IC_Iterator is the abstract superclass of all IC iterators in the system.
 // It SHOULD BE USED whenever iteration over an inline cache is required.
 
-class IC_Iterator: public PrintableResourceObj {
- public:
+class IC_Iterator : public PrintableResourceObj {
+public:
   // IC information
-  virtual int		number_of_targets() const	= 0;
-  virtual IC_Shape	shape() const			= 0;
-  virtual symbolOop	selector() const		= 0;
+  virtual int number_of_targets() const = 0;
+  virtual IC_Shape shape() const = 0;
+  virtual symbolOop selector() const = 0;
 
-  virtual InterpretedIC* interpreted_ic() const		{ ShouldNotCallThis(); return NULL; }
-  virtual CompiledIC*    compiled_ic() const		{ ShouldNotCallThis(); return NULL; }
+  virtual InterpretedIC* interpreted_ic() const {
+    ShouldNotCallThis();
+    return NULL;
+  }
+  virtual CompiledIC* compiled_ic() const {
+    ShouldNotCallThis();
+    return NULL;
+  }
 
-  virtual bool		is_interpreted_ic() const	{ return false; }	// is sender interpreted?
-  virtual bool		is_compiled_ic() const		{ return false; }	// is sender compiled?
-  virtual bool		is_super_send() const		= 0;			// is super send?
+  virtual bool is_interpreted_ic() const { return false; } // is sender interpreted?
+  virtual bool is_compiled_ic() const { return false; } // is sender compiled?
+  virtual bool is_super_send() const = 0; // is super send?
 
   // Iterating through entries
-  virtual void		init_iteration()		= 0;
-  virtual void		advance()			= 0;
-  virtual bool		at_end() const			= 0;
+  virtual void init_iteration() = 0;
+  virtual void advance() = 0;
+  virtual bool at_end() const = 0;
 
   // Accessing entries
-  virtual klassOop	klass() const			= 0;
+  virtual klassOop klass() const = 0;
 
-  virtual bool		is_interpreted() const		= 0;	// is current target interpreted?
-  virtual bool		is_compiled() const		= 0;	// is current target compiled?
+  virtual bool is_interpreted() const = 0; // is current target interpreted?
+  virtual bool is_compiled() const = 0; // is current target compiled?
 
-  virtual methodOop	interpreted_method() const	= 0;	// target methodOop (always non-NULL)
-  virtual nmethod*	compiled_method() const		= 0;	// target nmethod; NULL if interpreted
+  virtual methodOop interpreted_method() const = 0; // target methodOop (always non-NULL)
+  virtual nmethod* compiled_method() const = 0; // target nmethod; NULL if interpreted
 
   // methods for direct access to ith element (will set iteration state to i)
-  void      goto_elem(int i);
+  void goto_elem(int i);
   methodOop interpreted_method(int i);
-  nmethod*  compiled_method(int i);
-  klassOop  klass(int i);
-
-}; 
-
+  nmethod* compiled_method(int i);
+  klassOop klass(int i);
+};
 
 // IC is the implementation independent representation for ICs. It allows manipulation
 // of ICs without dealing with concrete interpreted or compiled ICs and it SHOULD BE
@@ -103,35 +106,35 @@ class IC_Iterator: public PrintableResourceObj {
 // monormorphic case and one for the polymorphic case. Having IC based on the
 // iterator seems to simplify this.)
 
-class IC: public PrintableResourceObj {
- private:
-  const IC_Iterator*	_iter;
+class IC : public PrintableResourceObj {
+private:
+  const IC_Iterator* _iter;
 
- public:
-  IC(IC_Iterator* iter) : _iter(iter)		{ }
+public:
+  IC(IC_Iterator* iter) : _iter(iter) {}
   IC(CompiledIC* ic);
   IC(InterpretedIC* ic);
 
-  IC_Iterator*	iterator() const		{ return (IC_Iterator*)_iter; }
+  IC_Iterator* iterator() const { return (IC_Iterator*)_iter; }
 
   // IC information
-  int		number_of_targets() const	{ return _iter->number_of_targets(); }
-  IC_Shape	shape() const			{ return _iter->shape(); }
-  symbolOop	selector() const		{ return _iter->selector(); }
-  
-  InterpretedIC* interpreted_ic() const		{ return _iter->interpreted_ic(); }
-  CompiledIC*	compiled_ic() const		{ return _iter->compiled_ic(); }
+  int number_of_targets() const { return _iter->number_of_targets(); }
+  IC_Shape shape() const { return _iter->shape(); }
+  symbolOop selector() const { return _iter->selector(); }
 
-  bool		is_interpreted_ic() const	{ return _iter->is_interpreted_ic(); }
-  bool		is_compiled_ic() const		{ return _iter->is_compiled_ic(); }
-  bool		is_super_send() const		{ return _iter->is_super_send(); }
+  InterpretedIC* interpreted_ic() const { return _iter->interpreted_ic(); }
+  CompiledIC* compiled_ic() const { return _iter->compiled_ic(); }
+
+  bool is_interpreted_ic() const { return _iter->is_interpreted_ic(); }
+  bool is_compiled_ic() const { return _iter->is_compiled_ic(); }
+  bool is_super_send() const { return _iter->is_super_send(); }
 
   GrowableArray<klassOop>* receiver_klasses() const;
 
   // IC manipulation
-  void		replace(nmethod* nm);		// replace entry matching nm's key with nm
+  void replace(nmethod* nm); // replace entry matching nm's key with nm
 
   // Debugging
-  void		print();
+  void print();
 };
 #endif // _IC_ITERATOR_HPP

@@ -34,10 +34,8 @@
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
 
-static char
-    * specialLocNames[nofSpecialLocations] = { "illegalLocation",
-        "unAllocated", "noRegister", "topOfStack", "resultOfNLR",
-            "topOfFloatStack" };
+static char* specialLocNames[nofSpecialLocations] = {"illegalLocation", "unAllocated", "noRegister",
+                                                     "topOfStack",      "resultOfNLR", "topOfFloatStack"};
 
 // Constructors
 
@@ -47,7 +45,7 @@ void Location::overflow(Mode mode, int f1, int f2, int f3) {
 }
 
 Location::Location(Mode mode, int f) {
-  _loc = (int)mode + (f<<_fPos);
+  _loc = (int)mode + (f << _fPos);
 }
 
 Location::Location(Mode mode, int f1, int f2, int f3) {
@@ -59,42 +57,38 @@ Location::Location(Mode mode, int f1, int f2, int f3) {
 char* Location::name() const {
   char* s;
   switch (mode()) {
-  case specialLoc: {
-    const char* name = specialLocNames[id()];
-    s = NEW_RESOURCE_ARRAY(char, strlen(name) + 1);
-    snprintf(s, strlen(name) + 1, "%s", name);
-    break;
-  }
-  case registerLoc: {
-    const char* name = Mapping::asRegister(*this).name();
-    s = NEW_RESOURCE_ARRAY(char, 8);
-    snprintf(s, 8, "%s", name);
-    break;
-  }
-  case stackLoc: {
-    s = NEW_RESOURCE_ARRAY(char, 8);
-    snprintf(s, 8, "S%d", offset());
-    break;
-  }
-    break;
-  case contextLoc1: {
-    s = NEW_RESOURCE_ARRAY(char, 24);
-    snprintf(s, 24, "C%d,%d(%d)", contextNo(), tempNo(), scopeID());
-  }
-    break;
-  case contextLoc2: {
-    s = NEW_RESOURCE_ARRAY(char, 24);
-    snprintf(s, 24, "C%d,%d[%d]", contextNo(), tempNo(), scopeOffs());
-  }
-    break;
-  case floatLoc: {
-    s = NEW_RESOURCE_ARRAY(char, 16);
-    snprintf(s, 16, "F%d(%d)", floatNo(), scopeNo());
-  }
-    break;
-  default:ShouldNotReachHere()
-    ;
-    break;
+    case specialLoc: {
+      const char* name = specialLocNames[id()];
+      s = NEW_RESOURCE_ARRAY(char, strlen(name) + 1);
+      snprintf(s, strlen(name) + 1, "%s", name);
+      break;
+    }
+    case registerLoc: {
+      const char* name = Mapping::asRegister(*this).name();
+      s = NEW_RESOURCE_ARRAY(char, 8);
+      snprintf(s, 8, "%s", name);
+      break;
+    }
+    case stackLoc: {
+      s = NEW_RESOURCE_ARRAY(char, 8);
+      snprintf(s, 8, "S%d", offset());
+      break;
+    } break;
+    case contextLoc1: {
+      s = NEW_RESOURCE_ARRAY(char, 24);
+      snprintf(s, 24, "C%d,%d(%d)", contextNo(), tempNo(), scopeID());
+    } break;
+    case contextLoc2: {
+      s = NEW_RESOURCE_ARRAY(char, 24);
+      snprintf(s, 24, "C%d,%d[%d]", contextNo(), tempNo(), scopeOffs());
+    } break;
+    case floatLoc: {
+      s = NEW_RESOURCE_ARRAY(char, 16);
+      snprintf(s, 16, "F%d(%d)", floatNo(), scopeNo());
+    } break;
+    default:
+      ShouldNotReachHere();
+      break;
   }
   return s;
 }

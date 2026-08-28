@@ -33,79 +33,59 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [klass_field ]
 //    [pointer     ]
 
-const int pointer_no     = sizeof(memOopDesc)/oopSize;
+const int pointer_no = sizeof(memOopDesc) / oopSize;
 const int pointer_offset = sizeof(memOopDesc) - Mem_Tag;
 
-class proxyOopDesc: public memOopDesc {
- private:
+class proxyOopDesc : public memOopDesc {
+private:
   void* _pointer;
- protected:
+
+protected:
   proxyOopDesc* addr() const { return (proxyOopDesc*)memOopDesc::addr(); }
 
- public:
+public:
   // field offsets for code generation
   static int pointer_byte_offset() { return (2 * oopSize) - Mem_Tag; }
 
-	friend proxyOop as_proxyOop(void* p);
+  friend proxyOop as_proxyOop(void* p);
 
   // sizing
-  static int header_size() { return sizeof(proxyOopDesc)/oopSize; }
+  static int header_size() { return sizeof(proxyOopDesc) / oopSize; }
 
-  void* get_pointer() const    { return addr()->_pointer; }
-  void  set_pointer(void *ptr) { addr()->_pointer = ptr;  }
+  void* get_pointer() const { return addr()->_pointer; }
+  void set_pointer(void* ptr) { addr()->_pointer = ptr; }
 
-  void  null_pointer() { set_pointer(NULL); }
+  void null_pointer() { set_pointer(NULL); }
 
-  bool is_null() const    { return get_pointer() ==       NULL; }
-  bool is_allOnes() const { return get_pointer() == (void*) -1; }
+  bool is_null() const { return get_pointer() == NULL; }
+  bool is_allOnes() const { return get_pointer() == (void*)-1; }
 
   smi foreign_hash() const { return smi(get_pointer()) >> Tag_Size; }
 
-  bool same_pointer_as(proxyOop x) const {
-    return get_pointer() == x->get_pointer();
-  }
+  bool same_pointer_as(proxyOop x) const { return get_pointer() == x->get_pointer(); }
 
   void bootstrap_object(bootstrap* st);
 
- private:
-   unsigned char* addr_at(int offset) const {
-     return ((unsigned char*) get_pointer()) + offset;
-   }
- public:
-  unsigned char byte_at(int offset) const {
-    return *addr_at(offset);
-  }
-  void byte_at_put(int offset, unsigned char c) {
-    *addr_at(offset) = c;
-  }
-  doubleByte doubleByte_at(int offset) const {
-    return *((doubleByte*) addr_at(offset));
-  }
-  void doubleByte_at_put(int offset, doubleByte db) {
-     *((doubleByte*) addr_at(offset)) = db;
-  }
-  long long_at(int offset) const {
-    return *((long*) addr_at(offset));
-  }
-  void long_at_put(int offset, long l) {
-    *((long*) addr_at(offset)) = l;
-  }
+private:
+  unsigned char* addr_at(int offset) const { return ((unsigned char*)get_pointer()) + offset; }
 
-  float float_at(int offset) const {
-    return *((float*) addr_at(offset));
-  }
-  void float_at_put(int offset, float f) {
-    *((float*) addr_at(offset)) = f;
-  }
+public:
+  unsigned char byte_at(int offset) const { return *addr_at(offset); }
+  void byte_at_put(int offset, unsigned char c) { *addr_at(offset) = c; }
+  doubleByte doubleByte_at(int offset) const { return *((doubleByte*)addr_at(offset)); }
+  void doubleByte_at_put(int offset, doubleByte db) { *((doubleByte*)addr_at(offset)) = db; }
+  long long_at(int offset) const { return *((long*)addr_at(offset)); }
+  void long_at_put(int offset, long l) { *((long*)addr_at(offset)) = l; }
 
-  double double_at(int offset) const {
-    return *((double*) addr_at(offset));
-  }
-  void double_at_put(int offset, double d) {
-    *((double*) addr_at(offset)) = d;
-  }
+  float float_at(int offset) const { return *((float*)addr_at(offset)); }
+  void float_at_put(int offset, float f) { *((float*)addr_at(offset)) = f; }
+
+  double double_at(int offset) const { return *((double*)addr_at(offset)); }
+  void double_at_put(int offset, double d) { *((double*)addr_at(offset)) = d; }
 
   friend class proxyKlass;
 };
-inline proxyOop as_proxyOop(void* p) { return proxyOop(as_memOop(p)); }
+inline proxyOop as_proxyOop(void* p) {
+  return proxyOop(as_memOop(p));
+}
 #endif // _PROXY_OOP_HPP

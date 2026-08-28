@@ -45,54 +45,54 @@ class relocInfo;
 
 class ZombieLink;
 
-class zone: public CHeapObj {
- public:
-  Heap*       methodHeap;     // Contains all nmethods
-  Heap*       picHeap;        // Contains all compiled CompiledPICs
-  codeTable*  methodTable;    // Hash table: LookupKey --> nmethod
-  jumpTable   _jump_table;    // Contains all jump entries
+class zone : public CHeapObj {
+public:
+  Heap* methodHeap; // Contains all nmethods
+  Heap* picHeap; // Contains all compiled CompiledPICs
+  codeTable* methodTable; // Hash table: LookupKey --> nmethod
+  jumpTable _jump_table; // Contains all jump entries
 
- public: 
+public:
   // returns the optimized method matching the lookup key, otherwise NULL
   nmethod* lookup(LookupKey* key) { return methodTable->lookup(key); }
 
- protected:
-  nmethod* LRUhand;	// for LRU algorithm; sweeps through iZone
+protected:
+  nmethod* LRUhand; // for LRU algorithm; sweeps through iZone
 
   bool _needsCompaction;
   bool _needsLRUSweep;
   bool _needsSweep;
 
-  int compactTime;	// time of last compaction
-  int compactDuration;  // duration of last compaction
+  int compactTime; // time of last compaction
+  int compactDuration; // duration of last compaction
 
-  double minFreeFrac; 	// fraction of free space needed at compaction time
+  double minFreeFrac; // fraction of free space needed at compaction time
 
- public:  
+public:
   zone(int& size);
 
-  void* operator new(size_t size) 	{ return AllocateHeap(size, "nmethod zone header"); }
+  void* operator new(size_t size) { return AllocateHeap(size, "nmethod zone header"); }
 
   void clear();
-  
-  int capacity() const			{ return methodHeap->capacity(); }
 
-  jumpTable* jump_table() const		{ return (jumpTable*)&_jump_table; }
+  int capacity() const { return methodHeap->capacity(); }
+
+  jumpTable* jump_table() const { return (jumpTable*)&_jump_table; }
 
   void verify_if_often();
 
   int used();
-  int numberOfNMethods() const 		{ return jump_table()->usedIDs; }
-  
+  int numberOfNMethods() const { return jump_table()->usedIDs; }
+
   nmethod* allocate(int size);
 
   void free(nmethod* m);
   void addToCodeTable(nmethod* nm);
 
   void compact(bool forced = false);
-  bool needsCompaction() const 		{ return _needsCompaction; }
-  bool needsWork() const 		{ return needsCompaction() || _needsSweep; }
-  bool needsSweep() const 		{ return _needsSweep; }
+  bool needsCompaction() const { return _needsCompaction; }
+  bool needsWork() const { return needsCompaction() || _needsSweep; }
+  bool needsSweep() const { return _needsSweep; }
   void doWork();
   void doSweep();
   void flush();
@@ -105,13 +105,13 @@ class zone: public CHeapObj {
   void cleanup_inline_caches();
 
   int findReplCandidates(int needed);
-  
+
   bool isDeltaPC(void* p) const;
-  bool contains(void *p) const 		{ return methodHeap->contains(p); }
+  bool contains(void* p) const { return methodHeap->contains(p); }
 
   nmethod* findNMethod(void* start) const;
-  nmethod* findNMethod_maybe(void* start) const;  	// slow!
-  
+  nmethod* findNMethod_maybe(void* start) const; // slow!
+
   void nmethods_do(void f(nmethod* nm));
   void PICs_do(void f(PIC* pic));
 
@@ -122,34 +122,33 @@ class zone: public CHeapObj {
   void verify();
 
   void print();
-  
+
   void print_nmethod_histogram(int size);
 
-  nmethod* first_nm() const 		{ return (nmethod*)(methodHeap->firstUsed()); }
-  nmethod* next_nm(nmethod* p) const  	{ return (nmethod*)(methodHeap->nextUsed(p)); }
+  nmethod* first_nm() const { return (nmethod*)(methodHeap->firstUsed()); }
+  nmethod* next_nm(nmethod* p) const { return (nmethod*)(methodHeap->nextUsed(p)); }
 
-  PIC* first_pic() const 	{ return (PIC*)(picHeap->firstUsed()); }
-  PIC* next_pic(PIC* p) const  	{ return (PIC*)(picHeap->nextUsed(p)); }
+  PIC* first_pic() const { return (PIC*)(picHeap->firstUsed()); }
+  PIC* next_pic(PIC* p) const { return (PIC*)(picHeap->nextUsed(p)); }
 
-  char*    instsStart();
-  int	   instsSize();
-  int    LRU_time();
-  int	   sweeper(int maxVisit, int maxReclaim,
-		   int* nvisited = NULL, int* nbytesReclaimed = NULL);
-  int    nextNMethodID();
+  char* instsStart();
+  int instsSize();
+  int LRU_time();
+  int sweeper(int maxVisit, int maxReclaim, int* nvisited = NULL, int* nbytesReclaimed = NULL);
+  int nextNMethodID();
 
- public:
-   void mark_dependents_for_deoptimization();
-   void mark_all_for_deoptimization();
-   void unmark_all_for_deoptimization();
-   void make_marked_nmethods_zombies();
+public:
+  void mark_dependents_for_deoptimization();
+  void mark_all_for_deoptimization();
+  void unmark_all_for_deoptimization();
+  void make_marked_nmethods_zombies();
 
- protected:
-  void     print_helper(bool stats);
-  void 	   adjustPolicy();
-  int    flushNextMethod(int needed);
+protected:
+  void print_helper(bool stats);
+  void adjustPolicy();
+  int flushNextMethod(int needed);
   inline nmethod* next_circular_nm(nmethod* nm);
- 
+
   friend void moveInsts(char* from, char* to, int size);
   friend void printAllNMethods();
   friend void sweepTrigger();
@@ -158,15 +157,15 @@ class zone: public CHeapObj {
 // holds usage information for nmethods (or index of next free nmethod ID
 // if not assigned to any nmethod)
 class LRUcount : ValueObj {
- public:
-  uint16 unused;	// nmethod prologue clears BOTH fields to 0
-  uint16 lastUsed;	// time of last use
-  
-  LRUcount() 		{ ShouldNotCallThis(); } // shouldn't create
-  void  set(int i) 	{ *(int*)this = i; }
+public:
+  uint16 unused; // nmethod prologue clears BOTH fields to 0
+  uint16 lastUsed; // time of last use
+
+  LRUcount() { ShouldNotCallThis(); } // shouldn't create
+  void set(int i) { *(int*)this = i; }
 };
 
-extern LRUcount* LRUtable;	// for optimized methods
-extern int* LRUflag;	// == LRUtable, just different type for convenience
+extern LRUcount* LRUtable; // for optimized methods
+extern int* LRUflag; // == LRUtable, just different type for convenience
 #endif // DELTA_COMPILER
 #endif // _ZONE_HPP

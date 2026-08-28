@@ -36,49 +36,42 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //    [instVars    ]*
 //    [length      ]      offset
 
-class doubleByteArrayOopDesc: public memOopDesc {
-  public:
+class doubleByteArrayOopDesc : public memOopDesc {
+public:
   // constructor
-	friend doubleByteArrayOop as_doubleByteArrayOop(void* p);
+  friend doubleByteArrayOop as_doubleByteArrayOop(void* p);
 
   void bootstrap_object(bootstrap* st);
 
   // accessors
-  doubleByteArrayOopDesc* addr() const {
-    return (doubleByteArrayOopDesc*) memOopDesc::addr(); }
+  doubleByteArrayOopDesc* addr() const { return (doubleByteArrayOopDesc*)memOopDesc::addr(); }
 
   bool is_within_bounds(int index) const { return 1 <= index && index <= length(); }
 
   oop* addr_as_oops() const { return (oop*)addr(); }
 
   // returns the location of the length field
-  oop* length_addr() const {
-    return &addr_as_oops()[blueprint()->non_indexable_size()];
-  }
+  oop* length_addr() const { return &addr_as_oops()[blueprint()->non_indexable_size()]; }
 
   smi length() const {
     oop len = *length_addr();
     assert(len->is_smi(), "length of indexable should be smi");
-    return smiOop(len)->value();}
+    return smiOop(len)->value();
+  }
 
-  void set_length(smi len) {
-    *length_addr() = (oop) as_smiOop(len); }
+  void set_length(smi len) { *length_addr() = (oop)as_smiOop(len); }
 
   // returns the location where the double bytes start
-  doubleByte* doubleBytes() const {
-    return (doubleByte*) &length_addr()[1];
-  }
+  doubleByte* doubleBytes() const { return (doubleByte*)&length_addr()[1]; }
 
   doubleByte* doubleByte_at_addr(int which) const {
     assert(which > 0 && which <= length(), "index out of bounds");
     return &doubleBytes()[which - 1];
   }
 
-  doubleByte doubleByte_at(int which) const {
-    return *doubleByte_at_addr(which); }
+  doubleByte doubleByte_at(int which) const { return *doubleByte_at_addr(which); }
 
-  void doubleByte_at_put(int which, doubleByte contents) {
-    *doubleByte_at_addr(which) = contents; }
+  void doubleByte_at_put(int which, doubleByte contents) { *doubleByte_at_addr(which) = contents; }
 
   // three way compare
   int compare(doubleByteArrayOop arg);
@@ -96,6 +89,7 @@ class doubleByteArrayOopDesc: public memOopDesc {
   friend class doubleByteArrayKlass;
 };
 inline doubleByteArrayOop as_doubleByteArrayOop(void* p) {
-    return doubleByteArrayOop(as_memOop(p)); }
+  return doubleByteArrayOop(as_memOop(p));
+}
 
 #endif // _DBYTE_ARRAY_OOP_HPP

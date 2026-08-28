@@ -31,46 +31,54 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // The recompilation system determines which interpreted methods should be compiled
 // by the native-code compiler, or which compiled methods need to be recompiled for
-// further optimization. This file contains the interface to the run-time system.   
+// further optimization. This file contains the interface to the run-time system.
 //
-// A Recompilation performs a recompilation from interpreted or compiled code to 
+// A Recompilation performs a recompilation from interpreted or compiled code to
 // (hopefully better) compiled code. The global theRecompilation is set only during
 // a recompilation.
- 
+
 class Recompilation;
 extern Recompilation* theRecompilation;
-extern nmethod* recompilee;		// method currently being recompiled
+extern nmethod* recompilee; // method currently being recompiled
 
 class Recompilation : public VM_Operation {
- private:
-  oop		_rcvr;			// receiver of trigger method/nmethod
-  methodOop	_method;		// trigger method
-  nmethod*	_nm;			// trigger nmethod (if compiled, NULL otherwise)
-  nmethod*	_newNM;			// new nmethod replacing trigger (if any)
-  deltaVFrame*	_triggerVF;		// vframe of trigger method/nmethod (NOT COMPLETELY INITIALIZED)
-  bool		_isUncommon;		// recompiling because of uncommon branch?
-  bool		_recompiledTrigger;	// is newNM the new version of _nm?
+private:
+  oop _rcvr; // receiver of trigger method/nmethod
+  methodOop _method; // trigger method
+  nmethod* _nm; // trigger nmethod (if compiled, NULL otherwise)
+  nmethod* _newNM; // new nmethod replacing trigger (if any)
+  deltaVFrame* _triggerVF; // vframe of trigger method/nmethod (NOT COMPLETELY INITIALIZED)
+  bool _isUncommon; // recompiling because of uncommon branch?
+  bool _recompiledTrigger; // is newNM the new version of _nm?
 
- public:
-  Recompilation(oop rcvr, methodOop method) {		    // used if interpreted method triggers counter
-    _method = method; _rcvr = rcvr; _nm = NULL; _isUncommon = false; init();
+public:
+  Recompilation(oop rcvr, methodOop method) { // used if interpreted method triggers counter
+    _method = method;
+    _rcvr = rcvr;
+    _nm = NULL;
+    _isUncommon = false;
+    init();
   }
-  Recompilation(oop rcvr, nmethod* nm, bool unc = false) {  // used if compiled method triggers counter
-    _method = nm->method(); _rcvr = rcvr; _nm = nm; _isUncommon = unc; init();
+  Recompilation(oop rcvr, nmethod* nm, bool unc = false) { // used if compiled method triggers counter
+    _method = nm->method();
+    _rcvr = rcvr;
+    _nm = nm;
+    _isUncommon = unc;
+    init();
   }
-  ~Recompilation()			{ theRecompilation = NULL; }
+  ~Recompilation() { theRecompilation = NULL; }
   void doit();
-  bool isCompiled() const		{ return _nm != NULL; }
-  bool recompiledTrigger() const	{ return _recompiledTrigger; }
-  char* result() const			{ return _newNM ? _newNM->verifiedEntryPoint() : NULL; }
-  oop  receiverOf(deltaVFrame* vf) const;     // same as vf->receiver() but also works for trigger
-  char* name() 				{ return "recompile"; }
+  bool isCompiled() const { return _nm != NULL; }
+  bool recompiledTrigger() const { return _recompiledTrigger; }
+  char* result() const { return _newNM ? _newNM->verifiedEntryPoint() : NULL; }
+  oop receiverOf(deltaVFrame* vf) const; // same as vf->receiver() but also works for trigger
+  char* name() { return "recompile"; }
 
   // entry points dealing with invocation counter overflow
   static char* methodOop_invocation_counter_overflow(oop rcvr, methodOop method); // called by interpreter
-  static char* nmethod_invocation_counter_overflow  (oop rcvr, char*     pc    ); // called by nmethods
+  static char* nmethod_invocation_counter_overflow(oop rcvr, char* pc); // called by nmethods
 
- protected:
+protected:
   void init();
   void recompile(Recompilee* r);
   void recompile_method(Recompilee* r);
@@ -78,53 +86,59 @@ class Recompilation : public VM_Operation {
   bool handleStaleInlineCache(RFrame* first);
 };
 
-
 // A Recompilee represents something to be recompiled (either an interpreted method or
 // a compiled method).
 
 class Recompilee : public ResourceObj {
- protected:
+protected:
   RFrame* _rf;
-  Recompilee(RFrame* rf) 		{ _rf = rf; }
- public:
-  virtual bool is_interpreted() const	{ return false; }
-  virtual bool is_compiled() const	{ return false; }
-  virtual LookupKey* key() const 	= 0;
-  virtual methodOop  method() const	= 0;
-  virtual nmethod*   code() const 	{ ShouldNotCallThis(); return NULL; }	// only for compiled recompileed
-  	  RFrame*    rframe() const	{ return _rf; }
+  Recompilee(RFrame* rf) { _rf = rf; }
+
+public:
+  virtual bool is_interpreted() const { return false; }
+  virtual bool is_compiled() const { return false; }
+  virtual LookupKey* key() const = 0;
+  virtual methodOop method() const = 0;
+  virtual nmethod* code() const {
+    ShouldNotCallThis();
+    return NULL;
+  } // only for compiled recompileed
+  RFrame* rframe() const { return _rf; }
   static Recompilee* new_Recompilee(RFrame* rf);
 };
 
 class InterpretedRecompilee : public Recompilee {
   LookupKey* _key;
   methodOop _method;
- public:
-  InterpretedRecompilee(RFrame* rf, LookupKey* k, methodOop m) : Recompilee(rf) { _key = k; _method = m; }
-  bool       is_interpreted() const	{ return true; }
-  LookupKey* key() const 		{ return _key; }
-  methodOop  method() const		{ return _method; }
+
+public:
+  InterpretedRecompilee(RFrame* rf, LookupKey* k, methodOop m) : Recompilee(rf) {
+    _key = k;
+    _method = m;
+  }
+  bool is_interpreted() const { return true; }
+  LookupKey* key() const { return _key; }
+  methodOop method() const { return _method; }
 };
 
 class CompiledRecompilee : public Recompilee {
   nmethod* _nm;
- public:
+
+public:
   CompiledRecompilee(RFrame* rf, nmethod* nm) : Recompilee(rf) { _nm = nm; }
-  bool       is_compiled() const	{ return true; }
+  bool is_compiled() const { return true; }
   LookupKey* key() const;
-  methodOop  method() const;
-  nmethod*   code() const		{ return _nm; }
+  methodOop method() const;
+  nmethod* code() const { return _nm; }
 };
 
-
 #ifdef junk
-extern int nstages;			// # of recompilation stages
-extern smi* compileCounts;		// # of compilations indexed by stage
-extern int* recompileLimits;		// recompilation limits indexed by stage
+extern int nstages; // # of recompilation stages
+extern smi* compileCounts; // # of compilations indexed by stage
+extern int* recompileLimits; // recompilation limits indexed by stage
 #endif
-const int MaxRecompilationLevels = 4;	// max. # recompilation levels
-const int MaxVersions = 4 - 1;		// desired max. # nmethod recompilations
-
+const int MaxRecompilationLevels = 4; // max. # recompilation levels
+const int MaxVersions = 4 - 1; // desired max. # nmethod recompilations
 
 #endif // DELTA_COMPILER
 #endif // _RECOMPILE_HPP

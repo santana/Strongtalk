@@ -40,10 +40,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-
 byteArrayOop oopFactory::new_byteArray(int size) {
-  byteArrayKlass* bk =
-    (byteArrayKlass*) Universe::byteArrayKlassObj()->klass_part();
+  byteArrayKlass* bk = (byteArrayKlass*)Universe::byteArrayKlassObj()->klass_part();
   return byteArrayOop(bk->allocateObjectSize(size));
 }
 
@@ -51,14 +49,13 @@ byteArrayOop oopFactory::new_byteArray(char* name) {
   int len = strlen(name);
   byteArrayOop result = new_byteArray(len);
   for (int index = 0; index < len; index++) {
-    result->byte_at_put(index+1, name[index]);
+    result->byte_at_put(index + 1, name[index]);
   }
   return result;
 }
 
 objArrayOop oopFactory::new_objArray(int size) {
-  objArrayKlass* ok =
-    (objArrayKlass*) Universe::objArrayKlassObj()->klass_part();
+  objArrayKlass* ok = (objArrayKlass*)Universe::objArrayKlassObj()->klass_part();
   objArrayOop result = objArrayOop(ok->allocateObjectSize(size));
   result->set_length(size);
   return result;
@@ -68,18 +65,17 @@ objArrayOop oopFactory::new_objArray(GrowableArray<oop>* array) {
   BlockScavenge bs;
   FlagSetting(processSemaphore, true);
   int size = array->length();
-  objArrayKlass* ok =
-    (objArrayKlass*) Universe::objArrayKlassObj()->klass_part();
+  objArrayKlass* ok = (objArrayKlass*)Universe::objArrayKlassObj()->klass_part();
 
   objArrayOop result = objArrayOop(ok->allocateObjectSize(size));
   for (int index = 1; index <= size; index++) {
-    result->obj_at_put(index, array->at(index-1));
+    result->obj_at_put(index, array->at(index - 1));
   }
   return result;
 }
 
 doubleOop oopFactory::new_double(double value) {
-  doubleOop d = as_doubleOop(Universe::allocate(sizeof(doubleOopDesc)/oopSize));
+  doubleOop d = as_doubleOop(Universe::allocate(sizeof(doubleOopDesc) / oopSize));
   d->init_untagged_contents_mark();
   d->set_klass_field(doubleKlassObj);
   d->set_value(value);
@@ -87,14 +83,14 @@ doubleOop oopFactory::new_double(double value) {
 }
 
 doubleOop oopFactory::clone_double_to_oldspace(doubleOop value) {
-  doubleOop d = as_doubleOop(Universe::allocate_tenured(sizeof(doubleOopDesc)/oopSize));
+  doubleOop d = as_doubleOop(Universe::allocate_tenured(sizeof(doubleOopDesc) / oopSize));
   d->init_untagged_contents_mark();
   d->set_klass_field(doubleKlassObj);
   d->set_value(value->value());
   return d;
 }
 
-symbolOop oopFactory::new_symbol(char* name,int len) {
+symbolOop oopFactory::new_symbol(char* name, int len) {
   return Universe::symbol_table->lookup(name, len);
 }
 
@@ -117,7 +113,7 @@ associationOop oopFactory::new_association(symbolOop key, oop value, bool is_con
 
 vframeOop oopFactory::new_vframe(processOop process, int index) {
   BlockScavenge bs;
-  vframeKlass* vk =(vframeKlass*) Universe::vframeKlassObj()->klass_part();
+  vframeKlass* vk = (vframeKlass*)Universe::vframeKlassObj()->klass_part();
 
   vframeOop result = vframeOop(vk->allocateObject());
 

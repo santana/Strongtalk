@@ -24,7 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifndef _DISASSEMBLER_HPP
 #define _DISASSEMBLER_HPP
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
 
 #include "topIncludes/std_includes.hpp"
 
@@ -35,10 +35,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   the i386 code with delta specific information.
 
 class Disassembler : AllStatic {
- public:
-  static void decode(nmethod* nm,            outputStream* st = mystd);
+public:
+  static void decode(nmethod* nm, outputStream* st = mystd);
   static void decode(char* begin, char* end, outputStream* st = mystd);
 };
 
-# endif
+#endif
 #endif // _DISASSEMBLER_HPP

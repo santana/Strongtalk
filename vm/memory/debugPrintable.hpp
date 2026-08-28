@@ -31,13 +31,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 extern "C" {
 #ifdef DEBUG
-  void pp(void* p);
-  void urs_ps();
+void pp(void* p);
+void urs_ps();
 #endif
-  void pp_short(void* p);
+void pp_short(void* p);
 #ifdef DEBUG
-  void pr(oop p);
-  void pm(Klass* p);
+void pr(oop p);
+void pm(Klass* p);
 #endif
 }
 

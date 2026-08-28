@@ -31,21 +31,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/growableArray.hpp"
 #include "oops/oop.inline.hpp"
 
-GrowableArray<const compiledVFrame*>*  frames;
-GrowableArray<contextOop>*       contexts;
+GrowableArray<const compiledVFrame*>* frames;
+GrowableArray<contextOop>* contexts;
 
 bool StackChunkBuilder::_is_deoptimizing = false;
-void** StackChunkBuilder::frame_pointer  = nullptr;
+void** StackChunkBuilder::frame_pointer = nullptr;
 
 StackChunkBuilder::StackChunkBuilder(void** fp, int size) {
   number_of_vframes = 0;
-  number_of_locals  = 0;
-  array             = new GrowableArray<oop>(size);
-  frame_pointer     = fp;
+  number_of_locals = 0;
+  array = new GrowableArray<oop>(size);
+  frame_pointer = fp;
 }
 
-StackChunkBuilder::~StackChunkBuilder() {
-}
+StackChunkBuilder::~StackChunkBuilder() {}
 
 void StackChunkBuilder::append(deltaVFrame* f) {
   methodOop method;
@@ -53,22 +52,22 @@ void StackChunkBuilder::append(deltaVFrame* f) {
   GrowableArray<oop>* stack;
   {
     //FlagSetting fl(TraceCanonicalContext, false);
-  number_of_vframes++;
+    number_of_vframes++;
 
-  // Append the frame information to the array
-  /*methodOop */method = f->method();
-  array->push(f->receiver());
-  array->push(method);
-  array->push(as_smiOop(f->bci()));
- 
-  // push locals
-  /*int*/ number_of_temps = method->number_of_stack_temporaries();
-  /*GrowableArray<oop>* */ stack = f->expression_stack();
+    // Append the frame information to the array
+    /*methodOop */ method = f->method();
+    array->push(f->receiver());
+    array->push(method);
+    array->push(as_smiOop(f->bci()));
 
-  // push number of locals
-  int locals = number_of_temps + stack->length();
-  array->push(as_smiOop(locals));
-  number_of_locals += locals;
+    // push locals
+    /*int*/ number_of_temps = method->number_of_stack_temporaries();
+    /*GrowableArray<oop>* */ stack = f->expression_stack();
+
+    // push number of locals
+    int locals = number_of_temps + stack->length();
+    array->push(as_smiOop(locals));
+    number_of_locals += locals;
   }
   // push context and temporaries
   // if a context is present store the canoniocal form as temporary 0.
@@ -84,13 +83,13 @@ void StackChunkBuilder::append(deltaVFrame* f) {
     if (!method->is_blockMethod()) {
       con->set_home_fp(frame_pointer);
       if (f->is_compiled_frame()) {
-        Processes::update_nlr_targets((compiledVFrame*) f, con);
+        Processes::update_nlr_targets((compiledVFrame*)f, con);
       }
     }
   }
-  for (int index = con ? 1 : 0; index < number_of_temps; index++) 
+  for (int index = con ? 1 : 0; index < number_of_temps; index++)
     array->push(f->temp_at(index));
- 
+
   // push expression stack
   for (int index = stack->length() - 1; index >= 0; index--) {
     array->push(stack->at(index));
@@ -102,7 +101,7 @@ objArrayOop StackChunkBuilder::as_objArray() {
   objArrayOop result = oopFactory::new_objArray(length);
   result->obj_at_put(1, as_smiOop(number_of_vframes));
   result->obj_at_put(2, as_smiOop(number_of_locals));
-  for (int index = 0; index < array->length(); index++) 
+  for (int index = 0; index < array->length(); index++)
     result->obj_at_put(index + header_size() + 1, array->at(index));
   return result;
 }
@@ -110,7 +109,7 @@ objArrayOop StackChunkBuilder::as_objArray() {
 void StackChunkBuilder::context_at_put(const compiledVFrame* frame, contextOop con) {
   // Returns if no StackChunkBuilder is in use
   if (!is_deoptimizing()) {
-    con->kill(); 
+    con->kill();
     return;
   }
 
@@ -126,8 +125,10 @@ void StackChunkBuilder::context_at_put(const compiledVFrame* frame, contextOop c
 
 contextOop StackChunkBuilder::context_at(const compiledVFrame* frame) {
   // Returns if no StackChunkBuilder is in use
-  if (!is_deoptimizing()) return NULL;
-  if (!frame) return NULL;
+  if (!is_deoptimizing())
+    return NULL;
+  if (!frame)
+    return NULL;
 
   // See if it's stored
   for (int index = 0; index < frames->length(); index++) {
@@ -140,16 +141,14 @@ contextOop StackChunkBuilder::context_at(const compiledVFrame* frame) {
 
 void StackChunkBuilder::begin_deoptimization() {
   assert(!is_deoptimizing(), "just checking");
-  _is_deoptimizing  = true;
-  frames            = new GrowableArray<const compiledVFrame*>(100);
-  contexts          = new GrowableArray<contextOop>(100);
+  _is_deoptimizing = true;
+  frames = new GrowableArray<const compiledVFrame*>(100);
+  contexts = new GrowableArray<contextOop>(100);
 }
 
 void StackChunkBuilder::end_deoptimization() {
   assert(is_deoptimizing(), "just checking");
-  _is_deoptimizing  = false;
-  frames   = NULL;
+  _is_deoptimizing = false;
+  frames = NULL;
   contexts = NULL;
-
 }
-

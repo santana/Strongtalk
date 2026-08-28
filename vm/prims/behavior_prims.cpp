@@ -89,7 +89,8 @@ PRIM_DECL_2(behaviorPrimitives::setSuperclass, oop receiver, oop newSuper) {
 
   Klass* receiverClass = klassOop(receiver)->klass_part();
   klassOop newSuperclass;
-  if (receiverClass->superKlass() == newSuper) return receiver; // no change
+  if (receiverClass->superKlass() == newSuper)
+    return receiver; // no change
   if (receiverClass->superKlass() == nilObj) {
     newSuperclass = klassOop(newSuper);
     if (newSuperclass->klass_part()->number_of_instance_variables() > 0)
@@ -108,7 +109,7 @@ PRIM_DECL_2(behaviorPrimitives::setSuperclass, oop receiver, oop newSuper) {
     }
   }
   receiverClass->set_superKlass(newSuperclass);
-  
+
   Universe::flush_inline_caches_in_methods();
   Universe::code->clear_inline_caches();
 
@@ -188,16 +189,17 @@ PRIM_DECL_1(behaviorPrimitives::classVariables, oop behavior) {
   return reinterpret_cast<oop>(klassOop(behavior)->klass_part()->classVars());
 }
 
-// OPERATIONS FOR METHODS 
+// OPERATIONS FOR METHODS
 
-PRIM_DECL_2(behaviorPrimitives::printMethod, oop receiver, oop name){
+PRIM_DECL_2(behaviorPrimitives::printMethod, oop receiver, oop name) {
   PROLOGUE_2("printMethod", receiver, name);
   ASSERT_RECEIVER;
   if (!name->is_byteArray())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   methodOop m = klassOop(receiver)->klass_part()->lookup(symbolOop(name));
-  if (!m) return markSymbol(vmSymbols::not_found());
+  if (!m)
+    return markSymbol(vmSymbols::not_found());
   m->print_codes();
   return receiver;
 }
@@ -377,7 +379,8 @@ PRIM_DECL_2(behaviorPrimitives::methodFor, oop receiver, oop selector) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   methodOop m = klassOop(receiver)->klass_part()->lookup(symbolOop(selector));
-  if (m) return m;
+  if (m)
+    return m;
   return markSymbol(vmSymbols::not_found());
 }
 
@@ -386,7 +389,7 @@ PRIM_DECL_1(behaviorPrimitives::format, oop behavior) {
   if (!behavior->is_klass())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  char* format_name =  Klass::name_from_format(klassOop(behavior)->klass_part()->format());
+  char* format_name = Klass::name_from_format(klassOop(behavior)->klass_part()->format());
   return oopFactory::new_symbol(format_name);
 }
 
@@ -398,30 +401,47 @@ PRIM_DECL_1(behaviorPrimitives::vm_type, oop behavior) {
   Klass::Format f = klassOop(behavior)->klass_part()->format();
 
   switch (f) {
-   case Klass::mem_klass:              return vmSymbols::mem_klass();
-   case Klass::association_klass:      return vmSymbols::association_klass();
-   case Klass::blockClosure_klass:     return vmSymbols::blockClosure_klass();
-   case Klass::byteArray_klass:        return vmSymbols::byteArray_klass();
-   case Klass::symbol_klass:           return vmSymbols::symbol_klass();
-   case Klass::context_klass:          return vmSymbols::context_klass();
-   case Klass::doubleByteArray_klass:  return vmSymbols::doubleByteArray_klass();
-   case Klass::doubleValueArray_klass: return vmSymbols::doubleValueArray_klass();
-   case Klass::double_klass:           return vmSymbols::double_klass();
-   case Klass::klass_klass:            return vmSymbols::klass_klass();
-   case Klass::method_klass:           return vmSymbols::method_klass();
-   case Klass::mixin_klass:            return vmSymbols::mixin_klass();
-   case Klass::objArray_klass:         return vmSymbols::objArray_klass();
-   case Klass::weakArray_klass:        return vmSymbols::weakArray_klass();
-   case Klass::process_klass:          return vmSymbols::process_klass();
-   case Klass::vframe_klass:           return vmSymbols::vframe_klass();
-   case Klass::proxy_klass:            return vmSymbols::proxy_klass();
-   case Klass::smi_klass:              return vmSymbols::smi_klass();
-   default: 
-     fatal("wrong format for klass");
+    case Klass::mem_klass:
+      return vmSymbols::mem_klass();
+    case Klass::association_klass:
+      return vmSymbols::association_klass();
+    case Klass::blockClosure_klass:
+      return vmSymbols::blockClosure_klass();
+    case Klass::byteArray_klass:
+      return vmSymbols::byteArray_klass();
+    case Klass::symbol_klass:
+      return vmSymbols::symbol_klass();
+    case Klass::context_klass:
+      return vmSymbols::context_klass();
+    case Klass::doubleByteArray_klass:
+      return vmSymbols::doubleByteArray_klass();
+    case Klass::doubleValueArray_klass:
+      return vmSymbols::doubleValueArray_klass();
+    case Klass::double_klass:
+      return vmSymbols::double_klass();
+    case Klass::klass_klass:
+      return vmSymbols::klass_klass();
+    case Klass::method_klass:
+      return vmSymbols::method_klass();
+    case Klass::mixin_klass:
+      return vmSymbols::mixin_klass();
+    case Klass::objArray_klass:
+      return vmSymbols::objArray_klass();
+    case Klass::weakArray_klass:
+      return vmSymbols::weakArray_klass();
+    case Klass::process_klass:
+      return vmSymbols::process_klass();
+    case Klass::vframe_klass:
+      return vmSymbols::vframe_klass();
+    case Klass::proxy_klass:
+      return vmSymbols::proxy_klass();
+    case Klass::smi_klass:
+      return vmSymbols::smi_klass();
+    default:
+      fatal("wrong format for klass");
   }
   return markSymbol(vmSymbols::first_argument_has_wrong_type());
 }
-
 
 PRIM_DECL_2(behaviorPrimitives::is_class_of, oop receiver, oop obj) {
   PROLOGUE_2("is_class_of", receiver, obj);
@@ -430,16 +450,51 @@ PRIM_DECL_2(behaviorPrimitives::is_class_of, oop receiver, oop obj) {
 }
 
 // empty functions, we'll patch them later
-static void trap() { assert(false, "This primitive should be patched"); };
+static void trap() {
+  assert(false, "This primitive should be patched");
+};
 
-extern "C" oop primitiveInlineAllocations(oop receiver, oop count) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew0(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew1(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew2(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew3(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew4(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew5(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew6(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew7(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew8(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
-extern "C" oop primitiveNew9(oop receiver, oop tenured) { trap(); return markSymbol(vmSymbols::primitive_trap()); };
+extern "C" oop primitiveInlineAllocations(oop receiver, oop count) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew0(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew1(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew2(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew3(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew4(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew5(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew6(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew7(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew8(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};
+extern "C" oop primitiveNew9(oop receiver, oop tenured) {
+  trap();
+  return markSymbol(vmSymbols::primitive_trap());
+};

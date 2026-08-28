@@ -37,22 +37,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 bool GCInProgress = false;
 
 oop Universe::tenure(oop p) {
-  tenuring_threshold = 0;		// tenure everything
+  tenuring_threshold = 0; // tenure everything
   scavenge(&p);
-# define checkIt(s) assert(s->used() == 0, "new spaces should be empty");
+#define checkIt(s) assert(s->used() == 0, "new spaces should be empty");
   APPLY_TO_YOUNG_SPACES(checkIt)
-# undef checkIt
+#undef checkIt
   return p;
 }
 
 bool Universe::can_scavenge() {
   // don't scavenge if we're in critical vm operation
-  if (processSemaphore) return false;
+  if (processSemaphore)
+    return false;
 
-  if (BlockScavenge::is_blocked()) return false;
+  if (BlockScavenge::is_blocked())
+    return false;
 
   // don't scavenge if we're allocating in the VM process.
-  if (DeltaProcess::active()->in_vm_operation()) return false;
+  if (DeltaProcess::active()->in_vm_operation())
+    return false;
 
   return true;
 }
@@ -64,7 +67,7 @@ extern "C" void scavenge_and_allocate(int size) {
 oop* Universe::scavenge_and_allocate(int size, oop* p) {
   // Fix this:
   //  If it is a huge object we are allocating we should
-  //  allocate it in old_space and return without doing a scavenge  
+  //  allocate it in old_space and return without doing a scavenge
   if (!can_scavenge()) {
     _scavenge_blocked = true;
     return allocate_tenured(size);
@@ -72,9 +75,9 @@ oop* Universe::scavenge_and_allocate(int size, oop* p) {
 
   VM_Scavenge op(p);
   VMProcess::execute(&op);
-//  The following assertions break the tests
-//  assert(DeltaProcess::active()->last_Delta_fp() != NULL, "last Delta fp should be present");
-//  assert(DeltaProcess::active()->last_Delta_sp() != NULL, "last Delta fp should be present");
+  //  The following assertions break the tests
+  //  assert(DeltaProcess::active()->last_Delta_fp() != NULL, "last Delta fp should be present");
+  //  assert(DeltaProcess::active()->last_Delta_sp() != NULL, "last Delta fp should be present");
   _scavenge_blocked = false;
   return allocate_without_scavenge(size);
 }
@@ -92,19 +95,21 @@ void Universe::scavenge(oop* p) {
   //   the symbol_table can be ignored during scavenge since all
   //   all symbols are tenured.
   FlagSetting fl(GCInProgress, true);
-  if (DeltaProcess::stepping) breakpoint();
+  if (DeltaProcess::stepping)
+    breakpoint();
   ResourceMark rm;
   scavengeCount++;
   assert(!processSemaphore, "processSemaphore shouldn't be set");
   {
     EventMarker m("scavenging");
-    TraceTime   t("Scavenge", PrintScavenge);
+    TraceTime t("Scavenge", PrintScavenge);
 
     if (PrintScavenge && WizardMode) {
-      mystd->print(" %d",tenuring_threshold);
+      mystd->print(" %d", tenuring_threshold);
     }
-    
-    if (VerifyBeforeScavenge) verify();
+
+    if (VerifyBeforeScavenge)
+      verify();
 
     WeakArrayRegister::begin_scavenge();
 
@@ -114,25 +119,25 @@ void Universe::scavenge(oop* p) {
     new_gen.to_space->clear();
 
     // Save top of to_space and old_gen
-    NewWaterMark to_mark  = new_gen.to_space->top_mark();
-    OldWaterMark old_mark =           old_gen.top_mark();
+    NewWaterMark to_mark = new_gen.to_space->top_mark();
+    OldWaterMark old_mark = old_gen.top_mark();
 
     // Scavenge all roots
-    if (p) SCAVENGE_TEMPLATE(p);
+    if (p)
+      SCAVENGE_TEMPLATE(p);
 
     Universe::oops_do(scavenge_oop);
     //Universe::roots_do(scavenge_oop);
     //Handles::oops_do(scavenge_oop);
 
-    {FOR_EACH_OLD_SPACE(s) s->scavenge_recorded_stores();}
+    { FOR_EACH_OLD_SPACE(s) s->scavenge_recorded_stores(); }
 
     Processes::scavenge_contents();
     NotificationQueue::oops_do(&Universe::scavenge_oop);
 
     // Scavenge promoted contents in to_space and old_gen until done.
 
-    while (   (old_mark != old_gen.top_mark()) 
-           || (to_mark != new_gen.to_space->top_mark())) {
+    while ((old_mark != old_gen.top_mark()) || (to_mark != new_gen.to_space->top_mark())) {
       old_gen.scavenge_contents_from(&old_mark);
       new_gen.to_space->scavenge_contents_from(&to_mark);
     }
@@ -142,20 +147,23 @@ void Universe::scavenge(oop* p) {
     new_gen.swap_spaces();
 
     // Set the desired survivor size to half the real survivor space
-    int desired_survivor_size = new_gen.to()->capacity()/2;
-    tenuring_threshold = age_table->tenuring_threshold(desired_survivor_size/oopSize);
-    
-    if (VerifyAfterScavenge) verify(true);
-    
+    int desired_survivor_size = new_gen.to()->capacity() / 2;
+    tenuring_threshold = age_table->tenuring_threshold(desired_survivor_size / oopSize);
+
+    if (VerifyAfterScavenge)
+      verify(true);
+
     // do this at end so an overflow during a scavenge doesnt cause another one
     NeedScavenge = false;
   }
 }
 
 space* Universe::spaceFor(void* p) {
-  if (new_gen.from()->contains(p)) return new_gen.from();
-  if (new_gen.eden()->contains(p)) return new_gen.eden();
-  {FOR_EACH_OLD_SPACE(s) if (s->contains(p)) return s;}
+  if (new_gen.from()->contains(p))
+    return new_gen.from();
+  if (new_gen.eden()->contains(p))
+    return new_gen.eden();
+  { FOR_EACH_OLD_SPACE(s) if (s->contains(p)) return s; }
   ShouldNotReachHere(); // not in any space
   return NULL;
 }

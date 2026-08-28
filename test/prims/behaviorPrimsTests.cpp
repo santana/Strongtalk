@@ -12,8 +12,8 @@
 using namespace easyunit;
 
 DECLARE(BehaviorPrimitives)
-  EdenMark edenMark;
-  klassOop objectClass;
+EdenMark edenMark;
+klassOop objectClass;
 END_DECLARE
 
 SETUP(BehaviorPrimitives) {
@@ -21,12 +21,12 @@ SETUP(BehaviorPrimitives) {
   objectClass = klassOop(Universe::find_global("Object"));
 }
 
-TEARDOWN(BehaviorPrimitives){
-}
+TEARDOWN(BehaviorPrimitives) {}
 
 TESTF(BehaviorPrimitives, allocateForMemOopShouldReportFailureWhenNoSpace) {
   ASSERT_TRUE_M(Universe::new_gen.eden()->free() < (2 * oopSize), "Too much free space");
-  ASSERT_EQUALS_M(markSymbol(vmSymbols::failed_allocation()), behaviorPrimitives::allocate3(Universe::falseObj(), objectClass), "Allocation should fail");
+  ASSERT_EQUALS_M(markSymbol(vmSymbols::failed_allocation()),
+                  behaviorPrimitives::allocate3(Universe::falseObj(), objectClass), "Allocation should fail");
 }
 
 TESTF(BehaviorPrimitives, allocateForMemOopShouldAllocateTenureWhenRequired) {
@@ -34,7 +34,8 @@ TESTF(BehaviorPrimitives, allocateForMemOopShouldAllocateTenureWhenRequired) {
 }
 
 TESTF(BehaviorPrimitives, allocateForMemOopShouldCheckTenuredIsBoolean) {
-  ASSERT_TRUE(markSymbol(vmSymbols::second_argument_has_wrong_type()) == behaviorPrimitives::allocate3(Universe::nilObj(), objectClass));
+  ASSERT_TRUE(markSymbol(vmSymbols::second_argument_has_wrong_type()) ==
+              behaviorPrimitives::allocate3(Universe::nilObj(), objectClass));
 }
 
 TESTF(BehaviorPrimitives, allocateForMemOopShouldScavengeAndAllocateWhenAllowed) {

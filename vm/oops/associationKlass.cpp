@@ -36,11 +36,12 @@ void set_associationKlass_vtbl(Klass* k) {
 }
 
 oop associationKlass::allocateObject(bool permit_scavenge, bool tenured) {
-  klassOop k    = as_klassOop();
-  int      size = non_indexable_size();
+  klassOop k = as_klassOop();
+  int size = non_indexable_size();
   // allocate
   oop* result = Universe::allocate_tenured(size, permit_scavenge);
-  if (result == NULL && !permit_scavenge) return NULL;
+  if (result == NULL && !permit_scavenge)
+    return NULL;
   associationOop obj = as_associationOop(result);
   // header
   memOop(obj)->initialize_header(has_untagged_contents(), k);
@@ -71,14 +72,14 @@ bool associationKlass::oop_verify(oop obj) {
 
 void associationKlass::oop_short_print_on(oop obj, outputStream* st) {
   associationOop assoc = associationOop(obj);
-  st->print("{"); 
+  st->print("{");
   assoc->key()->print_symbol_on(st);
-  st->print(", "); 
+  st->print(", ");
   assoc->value()->print_value_on(st);
   if (assoc->is_constant()) {
     st->print(" (constant)");
   }
-  st->print("} "); 
+  st->print("} ");
 }
 
 void associationKlass::oop_print_value_on(oop obj, outputStream* st) {
@@ -88,15 +89,16 @@ void associationKlass::oop_print_value_on(oop obj, outputStream* st) {
     st->print("-");
   }
   print_name_on(st);
-  st->print(" {"); 
+  st->print(" {");
   assoc->key()->print_symbol_on(st);
-  st->print(", "); 
+  st->print(", ");
   assoc->value()->print_value_on(st);
   if (assoc->is_constant()) {
     st->print(" (constant)");
   }
   st->print("}");
-  if (PrintOopAddress) st->print(" (%#x)", this);
+  if (PrintOopAddress)
+    st->print(" (%#x)", this);
 }
 
 int associationKlass::oop_scavenge_contents(oop obj) {
@@ -104,7 +106,7 @@ int associationKlass::oop_scavenge_contents(oop obj) {
   // header + instance variables
   memOop(obj)->scavenge_header();
   memOop(obj)->scavenge_body(memOopDesc::header_size(), size);
-  return size;  
+  return size;
 }
 
 int associationKlass::oop_scavenge_tenured_contents(oop obj) {
@@ -125,9 +127,9 @@ void associationKlass::oop_layout_iterate(oop obj, ObjectLayoutClosure* blk) {
   // header
   memOop(obj)->layout_iterate_header(blk);
   associationOop assoc = associationOop(obj);
-  blk->do_oop("key",         (oop*) &assoc->addr()->_key);
-  blk->do_oop("value",       (oop*) &assoc->addr()->_value);
-  blk->do_oop("is_constant", (oop*) &assoc->addr()->_is_constant);
+  blk->do_oop("key", (oop*)&assoc->addr()->_key);
+  blk->do_oop("value", (oop*)&assoc->addr()->_value);
+  blk->do_oop("is_constant", (oop*)&assoc->addr()->_is_constant);
   // instance variables
   memOop(obj)->layout_iterate_body(blk, associationOopDesc::header_size(), non_indexable_size());
 }
@@ -136,9 +138,9 @@ void associationKlass::oop_oop_iterate(oop obj, OopClosure* blk) {
   // header
   memOop(obj)->oop_iterate_header(blk);
   associationOop assoc = associationOop(obj);
-  blk->do_oop((oop*) &assoc->addr()->_key);
-  blk->do_oop((oop*) &assoc->addr()->_value);
-  blk->do_oop((oop*) &assoc->addr()->_is_constant);
+  blk->do_oop((oop*)&assoc->addr()->_key);
+  blk->do_oop((oop*)&assoc->addr()->_value);
+  blk->do_oop((oop*)&assoc->addr()->_is_constant);
   // instance variables
   memOop(obj)->oop_iterate_body(blk, associationOopDesc::header_size(), non_indexable_size());
 }

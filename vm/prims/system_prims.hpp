@@ -29,13 +29,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // Misc. system primitives
 
 class systemPrimitives : AllStatic {
- private: 
+private:
   static void inc_calls() { number_of_calls++; }
- public:
+
+public:
   static int number_of_calls;
 
   // REFLECTIVE OPERATIONS
-  
+
   //%prim
   // <NoReceiver> primitiveCreateInvocationOf: mixin      <Mixin>
   //                                    named: name       <Symbol>
@@ -46,7 +47,7 @@ class systemPrimitives : AllStatic {
   //   Internal { doc   = 'format: #Oops, #ExternalProxy #Process'
   //              doc   = '        #IndexedInstanceVariables #IndexedByteInstanceVariables'
   //              doc   = '        #IndexedDoubleByteInstanceVariables #IndexedNextOfKinInstanceVariables'
-  //              error = #(WrongFormat) 
+  //              error = #(WrongFormat)
   //              name  = 'systemPrimitives::createNamedInvocation' }
   //%
   static PRIM_DECL_5(createNamedInvocation, oop mixin, oop name, oop primary, oop superclass, oop format);
@@ -59,7 +60,7 @@ class systemPrimitives : AllStatic {
   //   Internal { doc   = 'format: #Oops, #ExternalProxy #Process'
   //              doc   = '        #IndexedInstanceVariables #IndexedByteInstanceVariables'
   //              doc   = '        #IndexedDoubleByteInstanceVariables #IndexedNextOfKinInstanceVariables'
-  //              error = #(WrongFormat) 
+  //              error = #(WrongFormat)
   //              name  = 'systemPrimitives::createInvocation' }
   //%
   static PRIM_DECL_3(createInvocation, oop mixin, oop superclass, oop format);
@@ -120,21 +121,21 @@ class systemPrimitives : AllStatic {
 
   //%prim
   // <NoReceiver> primitiveFreeSpace ^<SmallInteger> =
-  //   Internal { name  = 'systemPrimitives::freeSpace' 
+  //   Internal { name  = 'systemPrimitives::freeSpace'
   //              doc   = 'Returns the number of unused bytes in the old generation' }
   //%
   static PRIM_DECL_0(freeSpace);
 
   //%prim
   // <NoReceiver> primitiveNurseryFreeSpace ^<SmallInteger> =
-  //   Internal { name  = 'systemPrimitives::nurseryFreeSpace' 
+  //   Internal { name  = 'systemPrimitives::nurseryFreeSpace'
   //              doc   = 'Returns the number of unused bytes in the new generation' }
   //%
   static PRIM_DECL_0(nurseryFreeSpace);
 
   //%prim
   // <NoReceiver> primitiveExpansions ^<SmallInteger> =
-  //   Internal { name  = 'systemPrimitives::expansions' 
+  //   Internal { name  = 'systemPrimitives::expansions'
   //              doc   = 'Returns the number of expansions of the old generation' }
   //%
   static PRIM_DECL_0(expansions);
@@ -176,11 +177,11 @@ class systemPrimitives : AllStatic {
   static PRIM_DECL_0(systemTime);
 
   //%prim
-  // <NoReceiver> primitiveElapsedTime ^<Float> = 
+  // <NoReceiver> primitiveElapsedTime ^<Float> =
   //   Internal { name = 'systemPrimitives::elapsedTime' }
   //%
   static PRIM_DECL_0(elapsedTime);
-  
+
   //%prim
   // <NoReceiver> primitiveWriteSnapshot: fileName <String> ^<Object> =
   //   Internal { name  = 'systemPrimitives::writeSnapshot' }
@@ -264,7 +265,7 @@ class systemPrimitives : AllStatic {
   //   Internal { name  = 'systemPrimitives::smalltalk_size' }
   //%
   static PRIM_DECL_0(smalltalk_size);
-  
+
   //%prim
   // <NoReceiver> primitiveSmalltalkArray ^<IndexedInstanceVariables> =
   //   Internal { name  = 'systemPrimitives::smalltalk_array' }
@@ -297,7 +298,6 @@ class systemPrimitives : AllStatic {
   //   Internal { name  = 'systemPrimitives::defWindowProc' }
   //%
   static PRIM_DECL_1(defWindowProc, oop resultProxy);
-
 
   //%prim
   // <NoReceiver> primitiveWindowsHInstance: resultProxy <Proxy>
@@ -336,14 +336,14 @@ class systemPrimitives : AllStatic {
   // FLAT PROFILER
 
   //%prim
-  // <NoReceiver> primitiveFlatProfilerReset ^<Object> = 
+  // <NoReceiver> primitiveFlatProfilerReset ^<Object> =
   //   Internal { doc  = 'Resets the flat profiler to initial state.'
   //              name = 'systemPrimitives::flat_profiler_reset' }
   //%
   static PRIM_DECL_0(flat_profiler_reset);
 
   //%prim
-  // <NoReceiver> primitiveFlatProfilerProcess ^<Process|nil> = 
+  // <NoReceiver> primitiveFlatProfilerProcess ^<Process|nil> =
   //   Internal { doc  = 'Returns the process beeing profiler, nil otherwise.'
   //              name = 'systemPrimitives::flat_profiler_process' }
   //%
@@ -351,14 +351,14 @@ class systemPrimitives : AllStatic {
 
   //%prim
   // <NoReceiver> primitiveFlatProfilerEngage: process <Process>
-  //                                   ifFail: failBlock <PrimFailBlock> ^<Process> = 
+  //                                   ifFail: failBlock <PrimFailBlock> ^<Process> =
   //   Internal { doc  = 'Starts profiling process.'
   //              name = 'systemPrimitives::flat_profiler_engage' }
   //%
   static PRIM_DECL_1(flat_profiler_engage, oop process);
 
   //%prim
-  // <NoReceiver> primitiveFlatProfilerDisengage ^<Process|nil> = 
+  // <NoReceiver> primitiveFlatProfilerDisengage ^<Process|nil> =
   //   Internal { doc  = 'Stops profiling.'
   //              name = 'systemPrimitives::flat_profiler_disengage' }
   //%
@@ -371,9 +371,8 @@ class systemPrimitives : AllStatic {
   //%
   static PRIM_DECL_0(flat_profiler_print);
 
-
   // SUPPORT FOR WEAK ARRAY NOTIFICATION
-  
+
   //%prim
   // <NoReceiver> primitiveNotificationQueueGetIfFail: failBlock <PrimFailBlock>  ^<Object> =
   //   Internal { doc   = 'Returns the first element in the notification queue (FIFO).'
@@ -381,14 +380,14 @@ class systemPrimitives : AllStatic {
   //              name  = 'systemPrimitives::notificationQueueGet' }
   //%
   static PRIM_DECL_0(notificationQueueGet);
-  
+
   //%prim
   // <NoReceiver> primitiveNotificationQueuePut: value <Object> ^<Object> =
   //   Internal { doc   = 'Appends the argument to the notification queue (FIFO).'
   //              name  = 'systemPrimitives::notificationQueuePut' }
   //%
   static PRIM_DECL_1(notificationQueuePut, oop value);
-  
+
   //%prim
   // <NoReceiver> primitiveHadNearDeathExperience: value <Object> ^<Boolean> =
   //   Internal { doc  = 'Tells whether the receiver had a near death experience.'
@@ -409,7 +408,7 @@ class systemPrimitives : AllStatic {
   static PRIM_DECL_2(dll_setup, oop receiver, oop selector);
 
   //%prim
-  // <NoReceiver> primitiveDLLLookup: name      <Symbol> 
+  // <NoReceiver> primitiveDLLLookup: name      <Symbol>
   //                              in: library   <Proxy>
   //                          result: entry     <Proxy>
   //                          ifFail: failBlock <PrimFailBlock> ^<Proxy> =
@@ -420,7 +419,7 @@ class systemPrimitives : AllStatic {
   static PRIM_DECL_3(dll_lookup, oop name, oop library, oop result);
 
   //%prim
-  // <NoReceiver> primitiveDLLLoad: name      <Symbol> 
+  // <NoReceiver> primitiveDLLLoad: name      <Symbol>
   //                        result: library   <Proxy>
   //                        ifFail: failBlock <PrimFailBlock> ^<Proxy> =
   //   Internal { doc    = 'Load library'
@@ -430,7 +429,7 @@ class systemPrimitives : AllStatic {
   static PRIM_DECL_2(dll_load, oop name, oop library);
 
   //%prim
-  // <NoReceiver> primitiveDLLUnload: library <Proxy> 
+  // <NoReceiver> primitiveDLLUnload: library <Proxy>
   //                          ifFail: failBlock <PrimFailBlock> ^<Object> =
   //   Internal { doc    = 'Unload the library'
   //              errors = #(Failed)
@@ -457,7 +456,6 @@ class systemPrimitives : AllStatic {
   //              name   = 'systemPrimitives::inlining_database_set_directory' }
   //%
   static PRIM_DECL_1(inlining_database_set_directory, oop name);
-
 
   //%prim
   // <NoReceiver>  primitiveInliningDatabaseFileOutClass: receiverClass <Behavior>
@@ -517,7 +515,6 @@ class systemPrimitives : AllStatic {
   //   Internal { name   = 'systemPrimitives::inlining_database_add_entry' }
   //%
   static PRIM_DECL_2(inlining_database_add_entry, oop receiver_class, oop method_selector);
-
 
   //%prim
   // <NoReceiver>  primitiveSlidingSystemAverageIfFail: failBlock <PrimFailBlock> ^<IndexedInstanceVariables> =
@@ -625,7 +622,7 @@ class systemPrimitives : AllStatic {
   //              name   = 'systemPrimitives::alienCalloc' }
   //%
   static PRIM_DECL_1(alienCalloc, oop size);
-  
+
   //%prim
   // <NoReceiver> primitiveAlienFree: address <SmallInteger|LargeInteger>
   //                          ifFail: failBlock <PrimFailBlock> ^<Float> =

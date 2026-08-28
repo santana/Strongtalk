@@ -31,7 +31,7 @@ template <class E> class GrowableArray;
 // MarkSweep takes care of garbage collection
 class OopRelocations;
 class MarkSweep : AllStatic {
- public:
+public:
   static oop collect(oop p = NULL);
 
   // Call backs
@@ -40,18 +40,19 @@ class MarkSweep : AllStatic {
   static void reverse_and_follow(oop* p);
 
   static void add_hcode_offset(int offset);
-  static int  next_hcode_offset();
- private:
+  static int next_hcode_offset();
+
+private:
   // the traversal stack used during phase1.
   static GrowableArray<memOop>* stack;
   // the hcode pointer offsets saved before and
   // and retrieved after the garbage collection.
   static GrowableArray<intptr_t>* hcode_offsets;
-  static int                 hcode_pos;
+  static int hcode_pos;
   // resource area for non-aligned oops requiring relocation (eg. in nmethods)
-  static OopRelocations*     oopRelocations;
+  static OopRelocations* oopRelocations;
 
- private:
+private:
   static void mark_sweep_phase1(oop* p);
   static void mark_sweep_phase2();
   static void mark_sweep_phase3();

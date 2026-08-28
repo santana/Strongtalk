@@ -56,19 +56,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the typedefs below are necessary to ensure that args are passed correctly when calling a primitive
 // through a function pointer
 // NB: there's no general n-argument primitive because some calling conventions can't handle vararg functions
-typedef  oop (PRIM_API *prim_fntype0)();
-typedef  oop (PRIM_API *prim_fntype1)(oop);
-typedef  oop (PRIM_API *prim_fntype2)(oop, oop);
-typedef  oop (PRIM_API *prim_fntype3)(oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype4)(oop, oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype5)(oop, oop, oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype6)(oop, oop, oop, oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype7)(oop, oop, oop, oop, oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype8)(oop, oop, oop, oop, oop, oop, oop, oop);
-typedef  oop (PRIM_API *prim_fntype9)(oop, oop, oop, oop, oop, oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype0)();
+typedef oop(PRIM_API* prim_fntype1)(oop);
+typedef oop(PRIM_API* prim_fntype2)(oop, oop);
+typedef oop(PRIM_API* prim_fntype3)(oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype4)(oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype5)(oop, oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype6)(oop, oop, oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype7)(oop, oop, oop, oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype8)(oop, oop, oop, oop, oop, oop, oop, oop);
+typedef oop(PRIM_API* prim_fntype9)(oop, oop, oop, oop, oop, oop, oop, oop, oop);
 
 oop primitive_desc::eval(oop* a) {
-  const bool reverseArgs = true;	// change this when changing primitive calling convention
+  const bool reverseArgs = true; // change this when changing primitive calling convention
   oop res;
   long rbx_on_stack;
 
@@ -85,41 +85,84 @@ oop primitive_desc::eval(oop* a) {
           "popq %%rax;"
           : "=a"(rbx_on_stack));
 #endif
-  if (reverseArgs) {
+    if (reverseArgs) {
     switch (number_of_parameters()) {
-    case  0: res = ((prim_fntype0)_fn)(); break;
-    case  1: res = ((prim_fntype1)_fn)(a[0]); break;
-    case  2: res = ((prim_fntype2)_fn)(a[1], a[0]); break;
-    case  3: res = ((prim_fntype3)_fn)(a[2], a[1], a[0]); break;
-    case  4: res = ((prim_fntype4)_fn)(a[3], a[2], a[1], a[0]); break;
-    case  5: res = ((prim_fntype5)_fn)(a[4], a[3], a[2], a[1], a[0]); break;
-    case  6: res = ((prim_fntype6)_fn)(a[5], a[4], a[3], a[2], a[1], a[0]); break;
-    case  7: res = ((prim_fntype7)_fn)(a[6], a[5], a[4], a[3], a[2], a[1], a[0]); break;
-    case  8: res = ((prim_fntype8)_fn)(a[7], a[6], a[5], a[4], a[3], a[2], a[1], a[0]); break;
-    case  9: res = ((prim_fntype9)_fn)(a[8], a[7], a[6], a[5], a[4], a[3], a[2], a[1], a[0]); break;
-    default: ShouldNotReachHere();
+      case 0:
+        res = ((prim_fntype0)_fn)();
+        break;
+      case 1:
+        res = ((prim_fntype1)_fn)(a[0]);
+        break;
+      case 2:
+        res = ((prim_fntype2)_fn)(a[1], a[0]);
+        break;
+      case 3:
+        res = ((prim_fntype3)_fn)(a[2], a[1], a[0]);
+        break;
+      case 4:
+        res = ((prim_fntype4)_fn)(a[3], a[2], a[1], a[0]);
+        break;
+      case 5:
+        res = ((prim_fntype5)_fn)(a[4], a[3], a[2], a[1], a[0]);
+        break;
+      case 6:
+        res = ((prim_fntype6)_fn)(a[5], a[4], a[3], a[2], a[1], a[0]);
+        break;
+      case 7:
+        res = ((prim_fntype7)_fn)(a[6], a[5], a[4], a[3], a[2], a[1], a[0]);
+        break;
+      case 8:
+        res = ((prim_fntype8)_fn)(a[7], a[6], a[5], a[4], a[3], a[2], a[1], a[0]);
+        break;
+      case 9:
+        res = ((prim_fntype9)_fn)(a[8], a[7], a[6], a[5], a[4], a[3], a[2], a[1], a[0]);
+        break;
+      default:
+        ShouldNotReachHere();
     }
-  } else {
+  }
+  else {
     switch (number_of_parameters()) {
-    case  0: res = ((prim_fntype0)_fn)(); break;
-    case  1: res = ((prim_fntype1)_fn)(a[0]); break;
-    case  2: res = ((prim_fntype2)_fn)(a[0], a[1]); break;
-    case  3: res = ((prim_fntype3)_fn)(a[0], a[1], a[2]); break;
-    case  4: res = ((prim_fntype4)_fn)(a[0], a[1], a[2], a[3]); break;
-    case  5: res = ((prim_fntype5)_fn)(a[0], a[1], a[2], a[3], a[4]); break;
-    case  6: res = ((prim_fntype6)_fn)(a[0], a[1], a[2], a[3], a[4], a[5]); break;
-    case  7: res = ((prim_fntype7)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6]); break;
-    case  8: res = ((prim_fntype8)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]); break;
-    case  9: res = ((prim_fntype9)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]); break;
-    default: ShouldNotReachHere();
+      case 0:
+        res = ((prim_fntype0)_fn)();
+        break;
+      case 1:
+        res = ((prim_fntype1)_fn)(a[0]);
+        break;
+      case 2:
+        res = ((prim_fntype2)_fn)(a[0], a[1]);
+        break;
+      case 3:
+        res = ((prim_fntype3)_fn)(a[0], a[1], a[2]);
+        break;
+      case 4:
+        res = ((prim_fntype4)_fn)(a[0], a[1], a[2], a[3]);
+        break;
+      case 5:
+        res = ((prim_fntype5)_fn)(a[0], a[1], a[2], a[3], a[4]);
+        break;
+      case 6:
+        res = ((prim_fntype6)_fn)(a[0], a[1], a[2], a[3], a[4], a[5]);
+        break;
+      case 7:
+        res = ((prim_fntype7)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+        break;
+      case 8:
+        res = ((prim_fntype8)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+        break;
+      case 9:
+        res = ((prim_fntype9)_fn)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
+        break;
+      default:
+        ShouldNotReachHere();
     }
   }
 
   // %hack: some primitives alter EBX and crash the compiler's constant propagation
   long rbx_now;
 #ifndef __GNUC__
-  __asm mov rbx_now, rbx
-  __asm mov rbx, rbx_on_stack
+  __asm mov rbx_now, rbx __asm mov rbx,
+    rbx_on_stack
 #elif defined(__aarch64__)
   __asm__ volatile("mov %0, x19" : "=r"(rbx_now));
   __asm__ volatile("mov x19, %0" : : "r"(rbx_on_stack));
@@ -129,11 +172,12 @@ oop primitive_desc::eval(oop* a) {
           "movq %%rax, %0;"
           "movq %1, %%rax;"
           "movq %%rax, %%rbx;"
-          "popq %%rax;" : "=a"(rbx_now) : "a"(rbx_on_stack));
+          "popq %%rax;"
+          : "=a"(rbx_now)
+          : "a"(rbx_on_stack));
 #endif
 
-  if (rbx_now != rbx_on_stack)
-  {
+    if (rbx_now != rbx_on_stack) {
     mystd->print_cr("rbx changed (%lX -> %lX) in :", rbx_on_stack, rbx_now);
     print();
   }
@@ -145,7 +189,7 @@ void primitives::print_table() {
   mystd->print_cr("Primitive table:");
   for (int index = 0; index < size_of_primitive_table; index++) {
     primitive_desc* e = primitive_table[index];
-    mystd->print("%3d ",index);
+    mystd->print("%3d ", index);
     e->print();
   }
   mystd->print_cr(" - format: <index> <name> <number_of_parameters> <flags> [category]");
@@ -156,62 +200,70 @@ void primitives::print_table() {
   mystd->print_cr("            W = can walk stack (computed)");
 }
 
-
 bool primitive_desc::can_walk_stack() const {
   return can_scavenge() || can_invoke_delta() || can_perform_NLR();
 }
-
 
 symbolOop primitive_desc::selector() const {
   return oopFactory::new_symbol(name());
 }
 
-
 void primitive_desc::print() {
-  mystd->print("%48s %d %s%s%s%s%s%s%s%s%s",
-             name(),
-             number_of_parameters(),
-	     has_receiver()           ? "R" : "_",
-             can_fail()               ? "F" : "_",
-	     can_scavenge()           ? "S" : "_",
-	     can_walk_stack()         ? "W" : "_",
-	     can_perform_NLR()        ? "N" : "_",
-	     can_be_constant_folded() ? "C" : "_",
-	     can_invoke_delta()       ? "D" : "_",
-	     is_internal()            ? "I" : "_",
-	     needs_delta_fp_code()    ? "P" : "_");
-  switch(group()) {
-    case IntComparisonPrimitive:   mystd->print(", smi compare");           break;
-    case IntArithmeticPrimitive:   mystd->print(", smi arith");             break;
-    case FloatComparisonPrimitive: mystd->print(", double compare");        break;
-    case FloatArithmeticPrimitive: mystd->print(", double arith");          break;
-    case ByteArrayPrimitive:       mystd->print(", byte array op.");        break;
-    case DoubleByteArrayPrimitive: mystd->print(", double-byte array op."); break;
-    case ObjArrayPrimitive:        mystd->print(", array op.");             break;
-    case BlockPrimitive: 	   mystd->print(", block/context");         break;
-    case NormalPrimitive:                                                 break;
-    default: fatal("Unknown primitive group");
+  mystd->print("%48s %d %s%s%s%s%s%s%s%s%s", name(), number_of_parameters(), has_receiver() ? "R" : "_",
+               can_fail() ? "F" : "_", can_scavenge() ? "S" : "_", can_walk_stack() ? "W" : "_",
+               can_perform_NLR() ? "N" : "_", can_be_constant_folded() ? "C" : "_", can_invoke_delta() ? "D" : "_",
+               is_internal() ? "I" : "_", needs_delta_fp_code() ? "P" : "_");
+  switch (group()) {
+    case IntComparisonPrimitive:
+      mystd->print(", smi compare");
+      break;
+    case IntArithmeticPrimitive:
+      mystd->print(", smi arith");
+      break;
+    case FloatComparisonPrimitive:
+      mystd->print(", double compare");
+      break;
+    case FloatArithmeticPrimitive:
+      mystd->print(", double arith");
+      break;
+    case ByteArrayPrimitive:
+      mystd->print(", byte array op.");
+      break;
+    case DoubleByteArrayPrimitive:
+      mystd->print(", double-byte array op.");
+      break;
+    case ObjArrayPrimitive:
+      mystd->print(", array op.");
+      break;
+    case BlockPrimitive:
+      mystd->print(", block/context");
+      break;
+    case NormalPrimitive:
+      break;
+    default:
+      fatal("Unknown primitive group");
   }
   mystd->cr();
 }
-
 
 char* primitive_desc::parameter_type(int index) const {
   assert((0 <= index) && (index < number_of_parameters()), "illegal parameter index");
   return _types[1 + index];
 }
 
-
 char* primitive_desc::return_type() const {
   return _types[0];
 }
 
-
 Expr* primitive_desc::convertToKlass(char* type, PReg* p, Node* n) const {
-  if (0 == strcmp(type, "SmallInteger")) return new KlassExpr(Universe::smiKlassObj(), p, n);
-  if (0 == strcmp(type, "Double"))       return new KlassExpr(Universe::doubleKlassObj(), p, n);
-  if (0 == strcmp(type, "Float"))        return new KlassExpr(Universe::doubleKlassObj(), p, n);
-  if (0 == strcmp(type, "Symbol"))       return new KlassExpr(Universe::symbolKlassObj(), p, n);
+  if (0 == strcmp(type, "SmallInteger"))
+    return new KlassExpr(Universe::smiKlassObj(), p, n);
+  if (0 == strcmp(type, "Double"))
+    return new KlassExpr(Universe::doubleKlassObj(), p, n);
+  if (0 == strcmp(type, "Float"))
+    return new KlassExpr(Universe::doubleKlassObj(), p, n);
+  if (0 == strcmp(type, "Symbol"))
+    return new KlassExpr(Universe::symbolKlassObj(), p, n);
   if (0 == strcmp(type, "Boolean")) {
     // NB: set expression node to NULL, not n -- MergeExpr cannot be split
     Expr* t = new ConstantExpr(Universe::trueObj(), p, NULL);
@@ -226,16 +278,13 @@ Expr* primitive_desc::convertToKlass(char* type, PReg* p, Node* n) const {
   return NULL;
 }
 
-
 Expr* primitive_desc::parameter_klass(int index, PReg* p, Node* n) const {
   return convertToKlass(parameter_type(index), p, n);
 }
 
-
 Expr* primitive_desc::return_klass(PReg* p, Node* n) const {
   return convertToKlass(return_type(), p, n);
 }
-
 
 void primitive_desc::error(char* msg) {
   print();
@@ -245,16 +294,22 @@ void primitive_desc::error(char* msg) {
 void primitive_desc::verify() {
   bool ok = true;
   if (can_invoke_delta()) {
-    if (!can_scavenge()) error("canInvokeDelta implies canScavenge");
-    if (!can_walk_stack()) error("canInvokeDelta implies can_walk_stack");
-    if (can_be_constant_folded()) error("canInvokeDelta implies !canbeConstantFolded");
-    if (!can_perform_NLR()) error("canInvokeDelta implies canPerformNLR");
+    if (!can_scavenge())
+      error("canInvokeDelta implies canScavenge");
+    if (!can_walk_stack())
+      error("canInvokeDelta implies can_walk_stack");
+    if (can_be_constant_folded())
+      error("canInvokeDelta implies !canbeConstantFolded");
+    if (!can_perform_NLR())
+      error("canInvokeDelta implies canPerformNLR");
   }
   if (can_be_constant_folded()) {
-    if (can_perform_NLR()) error("canbeConstantFolded implies !canPerformNLR");
+    if (can_perform_NLR())
+      error("canbeConstantFolded implies !canPerformNLR");
   }
   if (group() == BlockPrimitive) {
-    if (!can_walk_stack()) error("blocks must have can_walk_stack");
+    if (!can_walk_stack())
+      error("blocks must have can_walk_stack");
   }
 }
 
@@ -262,27 +317,32 @@ int primitive_desc::compare(char* str, int len) {
   int src_len = strlen(name());
   int sign = strncmp(name(), str, min(src_len, len));
   // if (sign != 0 || src_len == len) return sign;
-  if (sign != 0) return sign < 0 ? -1 : 1;
-  if (src_len == len) return 0;
+  if (sign != 0)
+    return sign < 0 ? -1 : 1;
+  if (src_len == len)
+    return 0;
   return src_len < len ? -1 : 1;
 }
 
 primitive_desc* primitives::lookup(char* s, int len) {
   int first = 0;
-  int last  = size_of_primitive_table;
+  int last = size_of_primitive_table;
 
   primitive_desc* element;
   do {
-    int middle = first + (last - first)/2;
-    element    = primitive_table[middle];
-    int sign   = element->compare(s, len);
-         if (sign == -1) first = middle + 1;
-    else if (sign ==  1) last  = middle - 1;
-    else return element;
+    int middle = first + (last - first) / 2;
+    element = primitive_table[middle];
+    int sign = element->compare(s, len);
+    if (sign == -1)
+      first = middle + 1;
+    else if (sign == 1)
+      last = middle - 1;
+    else
+      return element;
   } while (first < last);
 
   // This should not be an assertion as it is possible to compile a reference
-  // to a non-existent primitive (for an example see 
+  // to a non-existent primitive (for an example see
   // ProcessPrimitiveLookupError>>provoke), in which case the lookup should
   // fail and signal a PrimitiveLookupError - slr 24/09/2008
 
@@ -292,15 +352,14 @@ primitive_desc* primitives::lookup(char* s, int len) {
   return element->compare(s, len) == 0 ? element : NULL;
 }
 
-
 primitive_desc* primitives::lookup(fntype fn) {
   for (int index = 0; index < size_of_primitive_table; index++) {
     primitive_desc* e = primitive_table[index];
-    if (e->fn() == fn) return e;
+    if (e->fn() == fn)
+      return e;
   }
   return NULL;
 }
-
 
 void primitives::lookup_and_patch() {
   // get primitive call info
@@ -321,10 +380,12 @@ void primitives::lookup_and_patch() {
     it.advance();
     f.set_hp(it.hp());
 
-    { ResourceMark rm;
+    {
+      ResourceMark rm;
       // primitive not found => process error
       mystd->print("primitive lookup error\n");
-      sel->print_value(); mystd->print(" not found\n");
+      sel->print_value();
+      mystd->print(" not found\n");
     }
     if (DeltaProcess::active()->is_scheduler()) {
       ResourceMark rm;
@@ -336,7 +397,6 @@ void primitives::lookup_and_patch() {
     ShouldNotReachHere();
   }
 }
-
 
 void prim_init() {
   primitives::initialize();
@@ -353,22 +413,21 @@ void prim_init() {
 
 // For debugging/profiling
 void primitives::clear_counters() {
-  behaviorPrimitives::number_of_calls        = 0;
-  byteArrayPrimitives::number_of_calls       = 0;
-  callBackPrimitives::number_of_calls        = 0;
+  behaviorPrimitives::number_of_calls = 0;
+  byteArrayPrimitives::number_of_calls = 0;
+  callBackPrimitives::number_of_calls = 0;
   doubleByteArrayPrimitives::number_of_calls = 0;
-  debugPrimitives::number_of_calls           = 0;
-  doubleOopPrimitives::number_of_calls       = 0;
-  methodOopPrimitives::number_of_calls       = 0;
-  mixinOopPrimitives::number_of_calls        = 0;
-  objArrayPrimitives::number_of_calls        = 0;
-  oopPrimitives::number_of_calls             = 0;
-  processOopPrimitives::number_of_calls      = 0;
-  proxyOopPrimitives::number_of_calls        = 0;
-  smiOopPrimitives::number_of_calls          = 0;
-  systemPrimitives::number_of_calls          = 0;
+  debugPrimitives::number_of_calls = 0;
+  doubleOopPrimitives::number_of_calls = 0;
+  methodOopPrimitives::number_of_calls = 0;
+  mixinOopPrimitives::number_of_calls = 0;
+  objArrayPrimitives::number_of_calls = 0;
+  oopPrimitives::number_of_calls = 0;
+  processOopPrimitives::number_of_calls = 0;
+  proxyOopPrimitives::number_of_calls = 0;
+  smiOopPrimitives::number_of_calls = 0;
+  systemPrimitives::number_of_calls = 0;
 }
-
 
 static void print_calls(char* name, int inc, int* total) {
   if (inc > 0) {
@@ -377,26 +436,24 @@ static void print_calls(char* name, int inc, int* total) {
   }
 }
 
-
 void primitives::print_counters() {
   int total = 0;
   lprintf("Primitive call counters:\n");
-  print_calls("Behavoir",        behaviorPrimitives::number_of_calls,        &total);
-  print_calls("byteArray",       byteArrayPrimitives::number_of_calls,       &total);
-  print_calls("callBack",        callBackPrimitives::number_of_calls,        &total);
+  print_calls("Behavoir", behaviorPrimitives::number_of_calls, &total);
+  print_calls("byteArray", byteArrayPrimitives::number_of_calls, &total);
+  print_calls("callBack", callBackPrimitives::number_of_calls, &total);
   print_calls("doubelByteArray", doubleByteArrayPrimitives::number_of_calls, &total);
-  print_calls("debug",           debugPrimitives::number_of_calls,           &total);
-  print_calls("double",          doubleOopPrimitives::number_of_calls,       &total);
-  print_calls("method",          methodOopPrimitives::number_of_calls,       &total);
-  print_calls("mixin",           mixinOopPrimitives::number_of_calls,        &total);
-  print_calls("objArray",        objArrayPrimitives::number_of_calls,        &total);
-  print_calls("oop",             oopPrimitives::number_of_calls,             &total);
-  print_calls("process",         processOopPrimitives::number_of_calls,      &total);
-  print_calls("proxy",           proxyOopPrimitives::number_of_calls,        &total);
-  print_calls("smi",             smiOopPrimitives::number_of_calls,          &total);
-  print_calls("system",          systemPrimitives::number_of_calls,          &total);
+  print_calls("debug", debugPrimitives::number_of_calls, &total);
+  print_calls("double", doubleOopPrimitives::number_of_calls, &total);
+  print_calls("method", methodOopPrimitives::number_of_calls, &total);
+  print_calls("mixin", mixinOopPrimitives::number_of_calls, &total);
+  print_calls("objArray", objArrayPrimitives::number_of_calls, &total);
+  print_calls("oop", oopPrimitives::number_of_calls, &total);
+  print_calls("process", processOopPrimitives::number_of_calls, &total);
+  print_calls("proxy", proxyOopPrimitives::number_of_calls, &total);
+  print_calls("smi", smiOopPrimitives::number_of_calls, &total);
+  print_calls("system", systemPrimitives::number_of_calls, &total);
   lprintf("Total:\t%6d\n", total);
-
 }
 
 primitive_desc* InterpretedPrim_Cache::pdesc() const {
@@ -406,7 +463,7 @@ primitive_desc* InterpretedPrim_Cache::pdesc() const {
     case Bytecodes::prim_call_failure:
     case Bytecodes::prim_call_self:
     case Bytecodes::prim_call_self_failure:
-      return primitives::lookup((fntype) c.word_at(1));
+      return primitives::lookup((fntype)c.word_at(1));
 
     case Bytecodes::prim_call_lookup:
     case Bytecodes::prim_call_failure_lookup:
@@ -414,7 +471,8 @@ primitive_desc* InterpretedPrim_Cache::pdesc() const {
     case Bytecodes::prim_call_self_failure_lookup:
       return primitives::lookup(symbolOop(c.oop_at(1)));
 
-    default: fatal("Wrong bytecode");
+    default:
+      fatal("Wrong bytecode");
   }
   return NULL;
 }
@@ -432,9 +490,10 @@ bool InterpretedPrim_Cache::has_receiver() const {
     case Bytecodes::prim_call_failure:
     case Bytecodes::prim_call_lookup:
     case Bytecodes::prim_call_failure_lookup:
-       return false;
+      return false;
 
-    default: fatal("Wrong bytecode");
+    default:
+      fatal("Wrong bytecode");
   }
   return false;
 }
@@ -446,7 +505,7 @@ symbolOop InterpretedPrim_Cache::name() const {
     case Bytecodes::prim_call_failure:
     case Bytecodes::prim_call_self:
     case Bytecodes::prim_call_self_failure:
-      return primitives::lookup((fntype) c.word_at(1))->selector();
+      return primitives::lookup((fntype)c.word_at(1))->selector();
 
     case Bytecodes::prim_call_lookup:
     case Bytecodes::prim_call_failure_lookup:
@@ -454,15 +513,14 @@ symbolOop InterpretedPrim_Cache::name() const {
     case Bytecodes::prim_call_self_failure_lookup:
       return symbolOop(c.oop_at(1));
 
-    default: fatal("Wrong bytecode");
+    default:
+      fatal("Wrong bytecode");
   }
   return NULL;
 }
 
 int InterpretedPrim_Cache::number_of_parameters() const {
-  int result = name()->number_of_arguments()
-             + (has_receiver()     ? 1 : 0)
-	     - (has_failure_code() ? 1 : 0);
+  int result = name()->number_of_arguments() + (has_receiver() ? 1 : 0) - (has_failure_code() ? 1 : 0);
   assert(pdesc() == NULL || pdesc()->number_of_parameters() == result, "checking result");
   return result;
 }
@@ -482,7 +540,8 @@ bool InterpretedPrim_Cache::has_failure_code() const {
     case Bytecodes::prim_call_self:
       return false;
 
-    default: fatal("Wrong bytecode");
+    default:
+      fatal("Wrong bytecode");
   }
   return false;
 }
@@ -519,29 +578,28 @@ primitive_desc* primitives::verified_lookup(char* selector) {
 }
 
 void primitives::initialize() {
-  _new0              = verified_lookup("primitiveNew0:ifFail:");
-  _new1              = verified_lookup("primitiveNew1:ifFail:");
-  _new2              = verified_lookup("primitiveNew2:ifFail:");
-  _new3              = verified_lookup("primitiveNew3:ifFail:");
-  _new4              = verified_lookup("primitiveNew4:ifFail:");
-  _new5              = verified_lookup("primitiveNew5:ifFail:");
-  _new6              = verified_lookup("primitiveNew6:ifFail:");
-  _new7              = verified_lookup("primitiveNew7:ifFail:");
-  _new8              = verified_lookup("primitiveNew8:ifFail:");
-  _new9              = verified_lookup("primitiveNew9:ifFail:");
+  _new0 = verified_lookup("primitiveNew0:ifFail:");
+  _new1 = verified_lookup("primitiveNew1:ifFail:");
+  _new2 = verified_lookup("primitiveNew2:ifFail:");
+  _new3 = verified_lookup("primitiveNew3:ifFail:");
+  _new4 = verified_lookup("primitiveNew4:ifFail:");
+  _new5 = verified_lookup("primitiveNew5:ifFail:");
+  _new6 = verified_lookup("primitiveNew6:ifFail:");
+  _new7 = verified_lookup("primitiveNew7:ifFail:");
+  _new8 = verified_lookup("primitiveNew8:ifFail:");
+  _new9 = verified_lookup("primitiveNew9:ifFail:");
 
-  _equal             = verified_lookup("primitiveEqual:");
-  _not_equal         = verified_lookup("primitiveNotEqual:");
+  _equal = verified_lookup("primitiveEqual:");
+  _not_equal = verified_lookup("primitiveNotEqual:");
 
-  _block_allocate    = verified_lookup("primitiveCompiledBlockAllocate:");
-  _block_allocate0   = verified_lookup("primitiveCompiledBlockAllocate0");
-  _block_allocate1   = verified_lookup("primitiveCompiledBlockAllocate1");
-  _block_allocate2   = verified_lookup("primitiveCompiledBlockAllocate2");
-  _context_allocate  = verified_lookup("primitiveCompiledContextAllocate:");
+  _block_allocate = verified_lookup("primitiveCompiledBlockAllocate:");
+  _block_allocate0 = verified_lookup("primitiveCompiledBlockAllocate0");
+  _block_allocate1 = verified_lookup("primitiveCompiledBlockAllocate1");
+  _block_allocate2 = verified_lookup("primitiveCompiledBlockAllocate2");
+  _context_allocate = verified_lookup("primitiveCompiledContextAllocate:");
   _context_allocate0 = verified_lookup("primitiveCompiledContextAllocate0");
   _context_allocate1 = verified_lookup("primitiveCompiledContextAllocate1");
   _context_allocate2 = verified_lookup("primitiveCompiledContextAllocate2");
-
 }
 
 void primitives::patch(char* name, char* entry_point) {

@@ -29,18 +29,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Collects statistical information on the interpreter.
 
-class InterpreterStatistics: AllStatic {
- private:
-  static bool _is_initialized;			// true if InterpreterStatistics has been initialized
+class InterpreterStatistics : AllStatic {
+private:
+  static bool _is_initialized; // true if InterpreterStatistics has been initialized
   static unsigned int _bytecode_counters[];
   static int _bytecode_generation_order[];
 
   static void reset_bytecode_counters();
   static void reset_bytecode_generation_order();
 
- public:
-  static bool is_initialized()			{ return _is_initialized; }
-  static unsigned int* bytecode_counters()	{ return _bytecode_counters; }
+public:
+  static bool is_initialized() { return _is_initialized; }
+  static unsigned int* bytecode_counters() { return _bytecode_counters; }
   static Bytecodes::Code ith_bytecode_to_generate(int i);
 
   static void initialize();

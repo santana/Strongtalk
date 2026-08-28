@@ -30,7 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // vframes are virtual stack frames representing source level activations.
 // A deltaVFrame represents an activation of a Delta level method. A single
-// frame may hold several source level activations in the case of 
+// frame may hold several source level activations in the case of
 // optimized code. The debugging stored with the optimized code enables
 // us to unfold a frame as a stack of vframes.
 // A cVFrame represents an activation of a non-Delta method.
@@ -44,18 +44,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   - cVFrame
 //     - cChunk             ; special frame created when entering Delta from C
 
-class vframe: public PrintableResourceObj {
- private:
+class vframe : public PrintableResourceObj {
+private:
   // Interface for the accessing the callees argument.
   // Must be provided for all vframes calling deltaVFrames.
   virtual oop callee_argument_at(int index) const;
 
- protected:
+protected:
   frame _fr;
 
-  vframe(const frame* fr) { _fr = *fr; }	// for subclass use only
+  vframe(const frame* fr) { _fr = *fr; } // for subclass use only
 
- public:
+public:
   // constructor: creates bottom (most recent) vframe from a frame
   static vframe* new_vframe(frame* f);
 
@@ -65,22 +65,22 @@ class vframe: public PrintableResourceObj {
   // returns the sender vframe
   virtual vframe* sender() const;
 
-  // answers if the receiver is the top vframe in the frame, i.e., if the sender vframe 
+  // answers if the receiver is the top vframe in the frame, i.e., if the sender vframe
   // is in the caller frame
   virtual bool is_top() const { return true; }
 
-  // returns top vframe within same frame (see is_top())	
-  virtual vframe* top() const;		
+  // returns top vframe within same frame (see is_top())
+  virtual vframe* top() const;
 
   // comparison operation
   virtual bool equal(const vframe* f) const;
 
   // type testing operations
-  virtual bool is_c_frame()           const { return false; }
-  virtual bool is_c_chunk()           const { return false; }
-  virtual bool is_delta_frame()       const { return false; }
+  virtual bool is_c_frame() const { return false; }
+  virtual bool is_c_chunk() const { return false; }
+  virtual bool is_delta_frame() const { return false; }
   virtual bool is_interpreted_frame() const { return false; }
-  virtual bool is_compiled_frame()    const { return false; }
+  virtual bool is_compiled_frame() const { return false; }
   virtual bool is_deoptimized_frame() const { return false; }
 
   // printing operations
@@ -98,27 +98,27 @@ class vframe: public PrintableResourceObj {
   friend class deoptimizedVFrame;
 };
 
-class deltaVFrame: public vframe {
- private:
-   oop callee_argument_at(int index) const; // see vframe
+class deltaVFrame : public vframe {
+private:
+  oop callee_argument_at(int index) const; // see vframe
 
- public:
+public:
   // constructor
   deltaVFrame(const frame* fr) : vframe(fr) {}
 
-  bool is_delta_frame() const	{ return true; }
+  bool is_delta_frame() const { return true; }
 
   // returns the receiver (block for block invoc.)
-  virtual oop receiver() const 			= 0;
+  virtual oop receiver() const = 0;
 
   // returns the active method
-  virtual methodOop method() const   		= 0;
+  virtual methodOop method() const = 0;
 
   // returns the current byte code index
-  virtual int bci() const 			= 0;
+  virtual int bci() const = 0;
 
-  virtual oop temp_at(int offset) const         = 0;
-  virtual oop expression_at(int index) const    = 0;
+  virtual oop temp_at(int offset) const = 0;
+  virtual oop expression_at(int index) const = 0;
   virtual oop context_temp_at(int offset) const = 0;
 
   // Returns the interpreter contextOop for this vframe.
@@ -136,10 +136,10 @@ class deltaVFrame: public vframe {
   // - non lifo block activations yield NULL.
   // - other block activations yield the parent activation
   //   if the parent frame resides on the same stack, NULL otherwise!
-  virtual deltaVFrame* parent() const 		= 0;
-  
+  virtual deltaVFrame* parent() const = 0;
+
   // returns the nearest delta vframe in the sender chain
-  deltaVFrame* sender_delta_frame() const; 
+  deltaVFrame* sender_delta_frame() const;
 
   // returns the arguments
   GrowableArray<oop>* arguments() const;
@@ -165,8 +165,8 @@ class deltaVFrame: public vframe {
 //      [return pc   ]    +1
 //      [arguments   ]    +2
 
-class interpretedVFrame: public deltaVFrame {
- public: 
+class interpretedVFrame : public deltaVFrame {
+public:
   // Constructor
   interpretedVFrame(frame* fr) : deltaVFrame(fr) {};
 
@@ -175,7 +175,7 @@ class interpretedVFrame: public deltaVFrame {
 
   // Accessors for HP
   u_char* hp() const;
-  void  set_hp(u_char* p);
+  void set_hp(u_char* p);
 
   // Sets temporaries
   void temp_at_put(int offset, oop obj);
@@ -187,7 +187,7 @@ class interpretedVFrame: public deltaVFrame {
   // NULL is returned is no context exists.
   contextOop interpreter_context() const;
 
- private:
+private:
   static const int temp_offset;
   static const int hp_offset;
   static const int receiver_offset;
@@ -195,12 +195,12 @@ class interpretedVFrame: public deltaVFrame {
   oop* expression_addr(int offset) const;
   bool has_interpreter_context() const;
 
- public:
+public:
   // Virtuals from vframe
-  bool is_interpreted_frame() const	{ return true; }
+  bool is_interpreted_frame() const { return true; }
   bool equal(const vframe* f) const;
 
- public:
+public:
   // Virtuals from deltaVFrame
   oop receiver() const;
   methodOop method() const;
@@ -217,14 +217,14 @@ class interpretedVFrame: public deltaVFrame {
 #ifdef DELTA_COMPILER
 class DeferredExpression;
 
-class compiledVFrame: public deltaVFrame {
+class compiledVFrame : public deltaVFrame {
 public:
   // Constructors
   static compiledVFrame* new_vframe(const frame* fr, ScopeDesc* sd, int bci);
   compiledVFrame(const frame* fr, ScopeDesc* sd, int bci);
 
   // Returns the active nmethod
-  nmethod*  code() const;
+  nmethod* code() const;
 
   // Returns the scopeDesc
   ScopeDesc* scope() const { return sd; }
@@ -234,19 +234,19 @@ public:
   contextOop compiled_context() const;
 
   // Rewind the bci one step
-  void rewind_bci(); 
+  void rewind_bci();
 
   // Returns the scope for the parent.
   virtual ScopeDesc* parent_scope() const = 0;
 
- protected:
+protected:
   ScopeDesc* sd;
-  int        _bci;
+  int _bci;
 
   static contextOop compute_canonical_context(ScopeDesc* sd, const compiledVFrame* vf, contextOop con = NULL);
   static contextOop compute_canonical_parent_context(ScopeDesc* scope, const compiledVFrame* vf, contextOop con);
-  static oop        resolve_name             (NameDesc* nd,  const compiledVFrame* vf, contextOop con = NULL);
-  static oop        resolve_location         (Location loc,  const compiledVFrame* vf, contextOop con = NULL);
+  static oop resolve_name(NameDesc* nd, const compiledVFrame* vf, contextOop con = NULL);
+  static oop resolve_location(Location loc, const compiledVFrame* vf, contextOop con = NULL);
 
   // The filler_obj is used during deoptimization for values that couldn't be retrieved.
   // - stack temps if the frame is absent
@@ -254,22 +254,23 @@ public:
   // In the ideal situation this should never be used but is works great as a defensive mechanism.
   static oop filler_oop();
 
-  // Returns the bci for a scope desc. 
+  // Returns the bci for a scope desc.
   // d must belong to the same nmethod and be in the sender chain.
-  int  bci_for(ScopeDesc* d) const;
+  int bci_for(ScopeDesc* d) const;
 
   friend struct MemoizedBlockNameDesc;
-  friend class  blockClosureOopDesc;
- public:
+  friend class blockClosureOopDesc;
+
+public:
   // Virtuals defined in vframe
   bool is_compiled_frame() const { return true; }
   vframe* sender() const;
   bool equal(const vframe* f) const;
 
- public:
+public:
   // Virtuals defined in deltaVFrame
   methodOop method() const;
-  int  bci() const;
+  int bci() const;
   oop temp_at(int offset) const;
   oop expression_at(int index) const;
   oop context_temp_at(int offset) const;
@@ -282,63 +283,63 @@ public:
 
 class DeferredExpression : public ResourceObj {
 private:
-  compiledVFrame const * const _frame;
+  compiledVFrame const* const _frame;
   NameDesc* expression;
+
 public:
-  DeferredExpression(compiledVFrame const * const aframe, NameDesc* expression) :_frame(aframe), expression(expression) {}
-  oop value() {
-    return compiledVFrame::resolve_name(expression, _frame);
-  }
+  DeferredExpression(compiledVFrame const* const aframe, NameDesc* expression) :
+    _frame(aframe), expression(expression) {}
+  oop value() { return compiledVFrame::resolve_name(expression, _frame); }
 };
 
 class compiledMethodVFrame : public compiledVFrame {
- public:
+public:
   // Constructor
   compiledMethodVFrame(const frame* fr, ScopeDesc* sd, int bci);
 
- public:
+public:
   // Virtuals defined in vframe
   bool is_top() const;
 
- public:
+public:
   // Virtuals defined in deltaVFrame
   deltaVFrame* parent() const { return NULL; }
   contextOop canonical_context() const;
-  oop  receiver() const;
+  oop receiver() const;
   // Virtuals defined in compiledVFrame
   ScopeDesc* parent_scope() const { return NULL; }
 };
 
 class compiledBlockVFrame : public compiledVFrame {
- public:
+public:
   // Constructor
   compiledBlockVFrame(const frame* fr, ScopeDesc* sd, int bci);
 
- public:
+public:
   // Virtuals defined in vframe
   bool is_top() const;
 
- public:
+public:
   // Virtuals defined in deltaVFrame
   deltaVFrame* parent() const;
   contextOop canonical_context() const;
-  oop  receiver() const;
+  oop receiver() const;
   // Virtuals defined in compiledVFrame
   ScopeDesc* parent_scope() const;
 };
 
 class compiledTopLevelBlockVFrame : public compiledVFrame {
- public:
+public:
   // Constructor
   compiledTopLevelBlockVFrame(const frame* fr, ScopeDesc* sd, int bci);
 
- public:
+public:
   // Virtuals defined in vframe
   bool is_top() const { return true; }
 
- public:
+public:
   // Virtuals defined in deltaVFrame
-  oop  receiver() const;
+  oop receiver() const;
   contextOop canonical_context() const;
   deltaVFrame* parent() const;
   // Virtuals defined in compiledVFrame
@@ -348,8 +349,8 @@ class compiledTopLevelBlockVFrame : public compiledVFrame {
 // A deoptimizedVFrame is represented by a frame and an offset
 // into the packed array of frames.
 
-class deoptimizedVFrame: public deltaVFrame {
- public:
+class deoptimizedVFrame : public deltaVFrame {
+public:
   // Constructor
   deoptimizedVFrame(const frame* fr);
   deoptimizedVFrame(const frame* fr, int offset);
@@ -358,7 +359,7 @@ class deoptimizedVFrame: public deltaVFrame {
   // NULL is returned is no context exists.
   contextOop deoptimized_context() const;
 
- private:
+private:
   int offset;
   objArrayOop frame_array;
 
@@ -366,27 +367,27 @@ class deoptimizedVFrame: public deltaVFrame {
   objArrayOop retrieve_frame_array() const;
 
   // Returns the oop at offset+index
-  oop  obj_at(int index) const;
-  int  end_of_expressions() const;
+  oop obj_at(int index) const;
+  int end_of_expressions() const;
 
   enum {
-    receiver_offset     = 0,
-    method_offset       = 1,
-    bci_offset          = 2,
-    locals_size_offset  = 3,
-    first_temp_offset   = 4,
+    receiver_offset = 0,
+    method_offset = 1,
+    bci_offset = 2,
+    locals_size_offset = 3,
+    first_temp_offset = 4,
   };
 
   friend class StackChunkBuilder;
 
- public:
+public:
   // Virtuals defined in vframe
   bool equal(const vframe* f) const;
   bool is_deoptimized_frame() const { return true; }
   vframe* sender() const;
   bool is_top() const;
 
- public:
+public:
   // Virtuals defined in deltaVFrame
   oop receiver() const;
   methodOop method() const;
@@ -401,31 +402,31 @@ class deoptimizedVFrame: public deltaVFrame {
 
 #endif
 
-class cVFrame: public vframe {
- public:
+class cVFrame : public vframe {
+public:
   // Constructor
   cVFrame(const frame* fr) : vframe(fr) {}
 
- public:
+public:
   // Virtuals defined in vframe
   bool is_c_frame() const { return true; }
   void print_value() const;
   void print();
 };
 
-class cChunk: public cVFrame {
- public:
+class cChunk : public cVFrame {
+public:
   // Constructor
   cChunk(const frame* fr) : cVFrame(fr) {}
 
- public:
+public:
   // Virtuals defined in vframe
   bool is_c_chunk() const { return true; }
   vframe* sender() const;
   void print_value() const;
   void print();
 
- private:
+private:
   // Virtual defined in vframe
   oop callee_argument_at(int index) const;
 };

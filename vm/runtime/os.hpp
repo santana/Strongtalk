@@ -35,19 +35,20 @@ class Event;
 class DLL;
 
 class os {
- private:
+private:
   static int _vm_page_size;
   static void initialize_system_info();
   friend void os_init();
- public:
-  static int    argc();
+
+public:
+  static int argc();
   static char** argv();
-  static void   set_args(int argc, char* argv[]);
-  static int    getenv(char* name,char* buffer,int len);
-  static void   add_exception_handler(void handler(void* fp, void* sp, void* pc));
+  static void set_args(int argc, char* argv[]);
+  static int getenv(char* name, char* buffer, int len);
+  static void add_exception_handler(void handler(void* fp, void* sp, void* pc));
 
   // We must call updateTimes before calling userTime or currentTime.
-  static int    updateTimes();
+  static int updateTimes();
   static double userTime();
   static double systemTime();
 
@@ -70,35 +71,35 @@ class os {
 
   static void* get_hInstance();
   static void* get_prevInstance();
-  static int   get_nCmdShow();
+  static int get_nCmdShow();
 
   // OS interface to Virtual Memory - used for object memory allocations
-  static int   vm_page_size() { return _vm_page_size; }
+  static int vm_page_size() { return _vm_page_size; }
   static char* reserve_memory(int size);
-  static bool  commit_memory(char* addr, int size);
-  static bool  uncommit_memory(char* addr, int size);
-  static bool  release_memory(char* addr, int size);
-  static bool  guard_memory(char* addr, int size);
+  static bool commit_memory(char* addr, int size);
+  static bool uncommit_memory(char* addr, int size);
+  static bool release_memory(char* addr, int size);
+  static bool guard_memory(char* addr, int size);
   static char* exec_memory(int size);
 
   // MAP_JIT write-protect toggle (Apple Silicon). Generated code regions are
   // writable in the "unprotected" state and executable in the "protected"
   // state; no-ops on other platforms.
-  static void  jit_write_protect(bool protect);
-  static bool  jit_write_protect_enabled();
-  
+  static void jit_write_protect(bool protect);
+  static bool jit_write_protect_enabled();
+
   // OS interface to C memory routines - used for small allocations
   static void* malloc(int size);
   static void* calloc(int size, char filler);
-  static void  free(void* p);
+  static void free(void* p);
 
   // threads
   static Thread* starting_thread(int* id_addr);
   static Thread* create_thread(int main(void* parameter), void* parameter, int* id_addr);
-  static Event*  create_event(bool initial_state);
-  static void*   stack_limit(Thread* thread);
+  static Event* create_event(bool initial_state);
+  static void* stack_limit(Thread* thread);
 
-  static int  current_thread_id();
+  static int current_thread_id();
   static void wait_for_event(Event* event);
   static void transfer(Thread* from_thread, Event* from_event, Thread* to_thread, Event* to_event);
   static void transfer_and_continue(Thread* from_thread, Event* from_event, Thread* to_thread, Event* to_event);
@@ -120,32 +121,33 @@ class os {
 
   static int message_box(char* title, char* message);
 
-  static void     fatalExit(int num);
+  static void fatalExit(int num);
 
   static bool move_file(char* from, char* to);
   static bool check_directory(char* dir_name);
 
   // DLL support
   static dll_func dll_lookup(char* name, DLL* library);
-  static DLL*     dll_load(char* name);
-  static bool     dll_unload(DLL* library);
-  static char*    dll_extension();
+  static DLL* dll_load(char* name);
+  static bool dll_unload(DLL* library);
+  static char* dll_extension();
 
   // Platform
-  static char*	  platform_class_name();
-  static int      error_code();
+  static char* platform_class_name();
+  static int error_code();
 };
 
 // A critial region for controling thread transfer at
 // interrupts
 class ThreadCritical {
- private:
+private:
   static bool _initialized;
   friend void os_init();
   friend void os_exit();
   static void intialize();
   static void release();
- public:
+
+public:
   static bool initialized() { return _initialized; }
   ThreadCritical();
   ~ThreadCritical();

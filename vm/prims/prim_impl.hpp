@@ -29,9 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Macroes for the primitive implementation
 
-#define PRIM_NOT_IMPLEMENTED \
-   return markSymbol(vmSymbols::not_yet_implemented());
-
+#define PRIM_NOT_IMPLEMENTED return markSymbol(vmSymbols::not_yet_implemented());
 
 // Macros to disable certain primitives in the final product.
 // Note: Some primitives cannot fail (and in the compiled code
@@ -39,89 +37,115 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //       return a markOop but must return a normal oop.
 
 #ifdef PRODUCT
-  #define PRINT_WARNING                     warning("warning: disabled primitive called");
-  #define PRIMITIVE_FAILS_IN_PRODUCT        return markSymbol(vmSymbols::primitive_disabled_in_product());
-  #define PRIMITIVE_RETURNS_TRUE_IN_PRODUCT PRINT_WARNING return Universe::trueObj();
-  #define PRIMITIVE_RETURNS_ZERO_IN_PRODUCT PRINT_WARNING return as_smiOop(0);
+#define PRINT_WARNING warning("warning: disabled primitive called");
+#define PRIMITIVE_FAILS_IN_PRODUCT return markSymbol(vmSymbols::primitive_disabled_in_product());
+#define PRIMITIVE_RETURNS_TRUE_IN_PRODUCT PRINT_WARNING return Universe::trueObj();
+#define PRIMITIVE_RETURNS_ZERO_IN_PRODUCT PRINT_WARNING return as_smiOop(0);
 #else
-  #define PRIMITIVE_FAILS_IN_PRODUCT
-  #define PRIMITIVE_RETURNS_TRUE_IN_PRODUCT
-  #define PRIMITIVE_RETURNS_ZERO_IN_PRODUCT
+#define PRIMITIVE_FAILS_IN_PRODUCT
+#define PRIMITIVE_RETURNS_TRUE_IN_PRODUCT
+#define PRIMITIVE_RETURNS_ZERO_IN_PRODUCT
 #endif
-
 
 // Macros to do primitive tracing
 
 #ifdef ASSERT
-#define TRACE_FUNC(flag,label) \
-  static void Trace(char* name, \
-                    char* s1 = NULL, oop a1 = NULL, \
-                    char* s2 = NULL, oop a2 = NULL, \
-                    char* s3 = NULL, oop a3 = NULL, \
-                    char* s4 = NULL, oop a4 = NULL, \
-                    char* s5 = NULL, oop a5 = NULL, \
-                    char* s6 = NULL, oop a6 = NULL, \
-                    char* s7 = NULL, oop a7 = NULL, \
-                    char* s8 = NULL, oop a8 = NULL, \
-                    char* s9 = NULL, oop a9 = NULL, \
-                    char* s10 = NULL, oop a10 = NULL) { \
-  if (!flag) return; \
-  lprintf("{%s::%s", label, name); \
-  if (s1) { lprintf(" %s=", s1); a1->print_value(); } \
-  if (s2) { lprintf(" %s=", s2); a2->print_value(); } \
-  if (s3) { lprintf(" %s=", s3); a3->print_value(); } \
-  if (s4) { lprintf(" %s=", s4); a4->print_value(); } \
-  if (s5) { lprintf(" %s=", s5); a5->print_value(); } \
-  if (s6) { lprintf(" %s=", s6); a6->print_value(); } \
-  if (s7) { lprintf(" %s=", s7); a7->print_value(); } \
-  if (s8) { lprintf(" %s=", s8); a8->print_value(); } \
-  if (s9) { lprintf(" %s=", s9); a9->print_value(); } \
-  if (s10) { lprintf(" %s=", s10); a10->print_value(); } \
-  lprintf("}\n"); \
-}
-#define TRACE_0(name) \
-  inc_calls();  \
+#define TRACE_FUNC(flag, label)                                                                                        \
+  static void Trace(char* name, char* s1 = NULL, oop a1 = NULL, char* s2 = NULL, oop a2 = NULL, char* s3 = NULL,       \
+                    oop a3 = NULL, char* s4 = NULL, oop a4 = NULL, char* s5 = NULL, oop a5 = NULL, char* s6 = NULL,    \
+                    oop a6 = NULL, char* s7 = NULL, oop a7 = NULL, char* s8 = NULL, oop a8 = NULL, char* s9 = NULL,    \
+                    oop a9 = NULL, char* s10 = NULL, oop a10 = NULL) {                                                 \
+    if (!flag)                                                                                                         \
+      return;                                                                                                          \
+    lprintf("{%s::%s", label, name);                                                                                   \
+    if (s1) {                                                                                                          \
+      lprintf(" %s=", s1);                                                                                             \
+      a1->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s2) {                                                                                                          \
+      lprintf(" %s=", s2);                                                                                             \
+      a2->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s3) {                                                                                                          \
+      lprintf(" %s=", s3);                                                                                             \
+      a3->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s4) {                                                                                                          \
+      lprintf(" %s=", s4);                                                                                             \
+      a4->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s5) {                                                                                                          \
+      lprintf(" %s=", s5);                                                                                             \
+      a5->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s6) {                                                                                                          \
+      lprintf(" %s=", s6);                                                                                             \
+      a6->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s7) {                                                                                                          \
+      lprintf(" %s=", s7);                                                                                             \
+      a7->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s8) {                                                                                                          \
+      lprintf(" %s=", s8);                                                                                             \
+      a8->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s9) {                                                                                                          \
+      lprintf(" %s=", s9);                                                                                             \
+      a9->print_value();                                                                                               \
+    }                                                                                                                  \
+    if (s10) {                                                                                                         \
+      lprintf(" %s=", s10);                                                                                            \
+      a10->print_value();                                                                                              \
+    }                                                                                                                  \
+    lprintf("}\n");                                                                                                    \
+  }
+#define TRACE_0(name)                                                                                                  \
+  inc_calls();                                                                                                         \
   Trace(name);
 
-#define TRACE_1(name, a1) \
-  inc_calls();      \
+#define TRACE_1(name, a1)                                                                                              \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1);
 
-#define TRACE_2(name, a1, a2) \
-  inc_calls();          \
+#define TRACE_2(name, a1, a2)                                                                                          \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2);
 
-#define TRACE_3(name, a1, a2, a3) \
-  inc_calls();              \
+#define TRACE_3(name, a1, a2, a3)                                                                                      \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3);
 
-#define TRACE_4(name, a1, a2, a3, a4) \
-  inc_calls();                  \
+#define TRACE_4(name, a1, a2, a3, a4)                                                                                  \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4);
 
-#define TRACE_5(name, a1, a2, a3, a4, a5) \
-  inc_calls();                      \
+#define TRACE_5(name, a1, a2, a3, a4, a5)                                                                              \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5);
 
-#define TRACE_6(name, a1, a2, a3, a4, a5, a6) \
-  inc_calls();                          \
+#define TRACE_6(name, a1, a2, a3, a4, a5, a6)                                                                          \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6);
 
-#define TRACE_7(name, a1, a2, a3, a4, a5, a6, a7) \
-  inc_calls();                              \
+#define TRACE_7(name, a1, a2, a3, a4, a5, a6, a7)                                                                      \
+  inc_calls();                                                                                                         \
   Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7);
 
-#define TRACE_8(name, a1, a2, a3, a4, a5, a6, a7, a8) \
-  inc_calls();                              \
-  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7, XSTR(a8), a8);
+#define TRACE_8(name, a1, a2, a3, a4, a5, a6, a7, a8)                                                                  \
+  inc_calls();                                                                                                         \
+  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7,        \
+        XSTR(a8), a8);
 
-#define TRACE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
-  inc_calls();                              \
-  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7, XSTR(a8), a8, XSTR(a9), a9);
+#define TRACE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9)                                                              \
+  inc_calls();                                                                                                         \
+  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7,        \
+        XSTR(a8), a8, XSTR(a9), a9);
 
-#define TRACE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
-  inc_calls();                              \
-  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7, XSTR(a8), a8, XSTR(a9), a9, XSTR(a10), a10);
+#define TRACE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)                                                        \
+  inc_calls();                                                                                                         \
+  Trace(name, XSTR(a1), a1, XSTR(a2), a2, XSTR(a3), a3, XSTR(a4), a4, XSTR(a5), a5, XSTR(a6), a6, XSTR(a7), a7,        \
+        XSTR(a8), a8, XSTR(a9), a9, XSTR(a10), a10);
 #else
 #define TRACE_FUNC(flag, label)
 #define TRACE_0(name)
@@ -137,27 +161,16 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define TRACE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 #endif
 
-
-#define PROLOGUE_0(name)\
-  TRACE_0(name)
-#define PROLOGUE_1(name, a1)\
-  TRACE_1(name, a1)
-#define PROLOGUE_2(name, a1, a2)\
-  TRACE_2(name, a1, a2)
-#define PROLOGUE_3(name, a1, a2, a3)\
-  TRACE_3(name, a1, a2, a3)
-#define PROLOGUE_4(name, a1, a2, a3, a4)\
-  TRACE_4(name, a1, a2, a3, a4)
-#define PROLOGUE_5(name, a1, a2, a3, a4, a5)\
-  TRACE_5(name, a1, a2, a3, a4, a5)
-#define PROLOGUE_6(name, a1, a2, a3, a4, a5, a6)\
-  TRACE_6(name, a1, a2, a3, a4, a5, a6)
-#define PROLOGUE_7(name, a1, a2, a3, a4, a5, a6, a7)\
-  TRACE_7(name, a1, a2, a3, a4, a5, a6, a7)
-#define PROLOGUE_8(name, a1, a2, a3, a4, a5, a6, a7, a8)\
-  TRACE_8(name, a1, a2, a3, a4, a5, a6, a7, a8)
-#define PROLOGUE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9)\
-  TRACE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9)
-#define PROLOGUE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)\
+#define PROLOGUE_0(name) TRACE_0(name)
+#define PROLOGUE_1(name, a1) TRACE_1(name, a1)
+#define PROLOGUE_2(name, a1, a2) TRACE_2(name, a1, a2)
+#define PROLOGUE_3(name, a1, a2, a3) TRACE_3(name, a1, a2, a3)
+#define PROLOGUE_4(name, a1, a2, a3, a4) TRACE_4(name, a1, a2, a3, a4)
+#define PROLOGUE_5(name, a1, a2, a3, a4, a5) TRACE_5(name, a1, a2, a3, a4, a5)
+#define PROLOGUE_6(name, a1, a2, a3, a4, a5, a6) TRACE_6(name, a1, a2, a3, a4, a5, a6)
+#define PROLOGUE_7(name, a1, a2, a3, a4, a5, a6, a7) TRACE_7(name, a1, a2, a3, a4, a5, a6, a7)
+#define PROLOGUE_8(name, a1, a2, a3, a4, a5, a6, a7, a8) TRACE_8(name, a1, a2, a3, a4, a5, a6, a7, a8)
+#define PROLOGUE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9) TRACE_9(name, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+#define PROLOGUE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)                                                     \
   TRACE_10(name, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 #endif // _PRIM_IMPL_HPP

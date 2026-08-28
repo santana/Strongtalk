@@ -51,69 +51,46 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // ----------- inlining policy ---------------
 
 #ifdef later
-static const int DefaultCompilerMaxSplitCost        =   50;
-static const int DefaultCompilerMaxBlockInstrSize   =  400;
-static const int DefaultCompilerMaxFnInstrSize      =  250;
-static const int DefaultCompilerMaxBlockFnInstrSize =  600;
+static const int DefaultCompilerMaxSplitCost = 50;
+static const int DefaultCompilerMaxBlockInstrSize = 400;
+static const int DefaultCompilerMaxFnInstrSize = 250;
+static const int DefaultCompilerMaxBlockFnInstrSize = 600;
 static const int DefaultCompilerMaxNmethodInstrSize = 5000;
 #endif
 
 static CompilerInliningPolicy inliningPolicy;
 
 bool InliningPolicy::shouldNotInline() const {
-  if (method->method_inlining_info() == methodOopDesc::never_inline) return true;
+  if (method->method_inlining_info() == methodOopDesc::never_inline)
+    return true;
   const symbolOop sel = method->selector();
-  return (sel == vmSymbols::error() ||
-    sel == vmSymbols::error_() ||
-    sel == vmSymbols::subclassResponsibility());
+  return (sel == vmSymbols::error() || sel == vmSymbols::error_() || sel == vmSymbols::subclassResponsibility());
 }
 
 bool InliningPolicy::isCriticalSmiSelector(const symbolOop sel) {
   // true if performance-critical smi method in standard library
   // could also handle these by putting a bit in the methodOops
-  return  sel == vmSymbols::plus() ||
-    sel == vmSymbols::minus() ||
-    sel == vmSymbols::multiply() ||
-    sel == vmSymbols::divide() ||
-    sel == vmSymbols::mod() ||
-    sel == vmSymbols::equal() ||
-    sel == vmSymbols::not_equal() ||
-    sel == vmSymbols::less_than() ||
-    sel == vmSymbols::less_than() ||
-    sel == vmSymbols::less_than_or_equal() ||
-    sel == vmSymbols::greater_than() ||
-    sel == vmSymbols::greater_than_or_equal() ||
-    sel == vmSymbols::double_equal() ||
-    sel == vmSymbols::bitAnd_() ||
-    sel == vmSymbols::bitOr_() ||
-    sel == vmSymbols::bitXor_() ||
-    sel == vmSymbols::bitShift_() ||
-    sel == vmSymbols::bitInvert();
+  return sel == vmSymbols::plus() || sel == vmSymbols::minus() || sel == vmSymbols::multiply() ||
+         sel == vmSymbols::divide() || sel == vmSymbols::mod() || sel == vmSymbols::equal() ||
+         sel == vmSymbols::not_equal() || sel == vmSymbols::less_than() || sel == vmSymbols::less_than() ||
+         sel == vmSymbols::less_than_or_equal() || sel == vmSymbols::greater_than() ||
+         sel == vmSymbols::greater_than_or_equal() || sel == vmSymbols::double_equal() || sel == vmSymbols::bitAnd_() ||
+         sel == vmSymbols::bitOr_() || sel == vmSymbols::bitXor_() || sel == vmSymbols::bitShift_() ||
+         sel == vmSymbols::bitInvert();
 }
 
 bool InliningPolicy::isCriticalArraySelector(const symbolOop sel) {
-  return  sel == vmSymbols::at() ||
-    sel == vmSymbols::at_put() ||
-    sel == vmSymbols::size();
+  return sel == vmSymbols::at() || sel == vmSymbols::at_put() || sel == vmSymbols::size();
 }
 
 bool InliningPolicy::isCriticalBoolSelector(const symbolOop sel) {
-  return  sel == vmSymbols::and_() ||
-    sel == vmSymbols::or_() ||
-    sel == vmSymbols::_and() ||
-    sel == vmSymbols::_or() ||
-    sel == vmSymbols::and1() ||
-    sel == vmSymbols::or1() ||
-    sel == vmSymbols::_and() ||
-    sel == vmSymbols::_not() ||
-    sel == vmSymbols::xor_() ||
-    sel == vmSymbols::eqv_();
+  return sel == vmSymbols::and_() || sel == vmSymbols::or_() || sel == vmSymbols::_and() || sel == vmSymbols::_or() ||
+         sel == vmSymbols::and1() || sel == vmSymbols::or1() || sel == vmSymbols::_and() || sel == vmSymbols::_not() ||
+         sel == vmSymbols::xor_() || sel == vmSymbols::eqv_();
 }
 
 bool InliningPolicy::isPredictedSmiSelector(const symbolOop sel) {
-  return sel != vmSymbols::equal()     &&
-    sel != vmSymbols::not_equal() &&
-    isCriticalSmiSelector(sel);
+  return sel != vmSymbols::equal() && sel != vmSymbols::not_equal() && isCriticalSmiSelector(sel);
 }
 
 bool InliningPolicy::isPredictedArraySelector(const symbolOop sel) {
@@ -126,18 +103,11 @@ bool InliningPolicy::isPredictedBoolSelector(const symbolOop sel) {
 bool InliningPolicy::isInterpreterPredictedSmiSelector(const symbolOop sel) {
   // true if performance-critical smi method in standard library
   // could also handle these by putting a bit in the methodOops
-  return  sel == vmSymbols::plus() ||
-    sel == vmSymbols::minus() ||
-    sel == vmSymbols::multiply() ||
-    sel == vmSymbols::divide() ||
-    sel == vmSymbols::mod() ||
-    sel == vmSymbols::equal() ||
-    sel == vmSymbols::not_equal() ||
-    sel == vmSymbols::less_than() ||
-    sel == vmSymbols::less_than() ||
-    sel == vmSymbols::less_than_or_equal() ||
-    sel == vmSymbols::greater_than() ||
-    sel == vmSymbols::greater_than_or_equal();
+  return sel == vmSymbols::plus() || sel == vmSymbols::minus() || sel == vmSymbols::multiply() ||
+         sel == vmSymbols::divide() || sel == vmSymbols::mod() || sel == vmSymbols::equal() ||
+         sel == vmSymbols::not_equal() || sel == vmSymbols::less_than() || sel == vmSymbols::less_than() ||
+         sel == vmSymbols::less_than_or_equal() || sel == vmSymbols::greater_than() ||
+         sel == vmSymbols::greater_than_or_equal();
 }
 
 bool InliningPolicy::isInterpreterPredictedArraySelector(const symbolOop sel) {
@@ -148,25 +118,25 @@ bool InliningPolicy::isInterpreterPredictedBoolSelector(const symbolOop sel) {
   return false;
 }
 
-
-
 bool InliningPolicy::isBuiltinMethod() const {
   // true if performance-critical method in standard library
   // could also handle these by putting a bit in the methodOops
-  if (method->method_inlining_info() == methodOopDesc::always_inline) return true;
+  if (method->method_inlining_info() == methodOopDesc::always_inline)
+    return true;
   const symbolOop sel = method->selector();
   const klassOop klass = receiverKlass();
   const bool isNum = klass == Universe::smiKlassObj() || klass == Universe::doubleKlassObj();
-  if  (isNum && isCriticalSmiSelector(sel)) return true;
+  if (isNum && isCriticalSmiSelector(sel))
+    return true;
 
-  const bool isArr = klass == Universe::objArrayKlassObj()  ||
-    klass == Universe::byteArrayKlassObj() ||
-    klass == Universe::symbolKlassObj()    ||
-    false;	// probably should add doubleByteArray et al
-  if (isArr && isCriticalArraySelector(sel)) return true;
+  const bool isArr = klass == Universe::objArrayKlassObj() || klass == Universe::byteArrayKlassObj() ||
+                     klass == Universe::symbolKlassObj() || false; // probably should add doubleByteArray et al
+  if (isArr && isCriticalArraySelector(sel))
+    return true;
 
   const bool isBool = klass == Universe::trueObj()->klass() || klass == Universe::falseObj()->klass();
-  if (isBool && isCriticalBoolSelector(sel)) return true;
+  if (isBool && isCriticalBoolSelector(sel))
+    return true;
   return false;
 }
 
@@ -190,39 +160,46 @@ char* CompilerInliningPolicy::shouldInline(InlinedScope* s, InlinedScope* callee
   // should check for existing compiled version here -- fix this
   sender = s;
   this->method = callee->method();
-  this->rcvr   = callee->self();
+  this->rcvr = callee->self();
   if (NodeFactory::cumulCost > MaxNmInstrSize) {
     theCompiler->reporter->report_toobig(callee);
     return "method getting too big";
   }
-  if (shouldNotInline()) return "should not inline (special)";
+  if (shouldNotInline())
+    return "should not inline (special)";
   // performance bug: should check how many recursive calls the method has -- unrolling factorial
   // to depth N gives N copies, but unrolling fibonacci gives 2**N
   // also, should look at call chain to estimate how big inlined recursion will get
-  if (sender->isRecursiveCall(method, callee->selfKlass(), MaxRecursionUnroll)) return "recursive";
+  if (sender->isRecursiveCall(method, callee->selfKlass(), MaxRecursionUnroll))
+    return "recursive";
   return basic_shouldInline(method);
 }
 
 char* InliningPolicy::basic_shouldInline(methodOop method) {
   // should the interpreted method be inlined?
-  if (method->method_inlining_info() == methodOopDesc::always_inline) return NULL;
+  if (method->method_inlining_info() == methodOopDesc::always_inline)
+    return NULL;
   calleeCost = method->estimated_inline_cost(receiverKlass());
 
   if (method->is_blockMethod()) {
     // even large blocks should be inlined if they make up most of their home's code
     int parentCost = method->parent()->estimated_inline_cost(receiverKlass());
     assert(parentCost > calleeCost, "must be higher");
-    if (float(parentCost - calleeCost) / parentCost * 100.0 < MinBlockCostFraction) return NULL;
+    if (float(parentCost - calleeCost) / parentCost * 100.0 < MinBlockCostFraction)
+      return NULL;
   }
 
   // compute the cost limit based on the provided arguments
   int cost_limit = method->is_blockMethod() ? MaxBlockInlineCost : MaxFnInlineCost;
   for (int i = method->number_of_arguments() - 1; i >= 0; i--) {
     klassOop k = nthArgKlass(i);
-    if (k && k->klass_part()->oop_is_block()) cost_limit += BlockArgAdditionalAllowedInlineCost;
+    if (k && k->klass_part()->oop_is_block())
+      cost_limit += BlockArgAdditionalAllowedInlineCost;
   }
-  if (calleeCost < cost_limit) return NULL;
-  if (isBuiltinMethod()) return NULL;
+  if (calleeCost < cost_limit)
+    return NULL;
+  if (isBuiltinMethod())
+    return NULL;
   return "too big";
 }
 
@@ -232,9 +209,13 @@ klassOop CompilerInliningPolicy::nthArgKlass(int i) const {
   return e->hasKlass() ? e->klass() : NULL;
 }
 
-klassOop CompilerInliningPolicy::receiverKlass() const 		{ return rcvr->klass(); }
+klassOop CompilerInliningPolicy::receiverKlass() const {
+  return rcvr->klass();
+}
 
-klassOop RecompilerInliningPolicy::nthArgKlass(int i) const 	{ return _vf ? _vf->argument_at(i)->klass() : NULL; }
+klassOop RecompilerInliningPolicy::nthArgKlass(int i) const {
+  return _vf ? _vf->argument_at(i)->klass() : NULL;
+}
 klassOop RecompilerInliningPolicy::receiverKlass() const {
   return _vf ? theRecompilation->receiverOf(_vf)->klass() : NULL;
 }
@@ -248,7 +229,8 @@ char* RecompilerInliningPolicy::shouldInline(RFrame* rf) {
   // for now, always inline super sends
   extern bool SuperSendsAreAlwaysInlined;
   assert(SuperSendsAreAlwaysInlined, "fix this");
-  if (rf->is_super()) return NULL;
+  if (rf->is_super())
+    return NULL;
 
   _vf = rf->top_vframe();
   this->method = rf->top_method();
@@ -274,17 +256,22 @@ char* RecompilerInliningPolicy::shouldInline(RFrame* rf) {
 }
 
 char* RecompilerInliningPolicy::shouldInline(nmethod* nm) {
-  if (!CodeSizeImpactsInlining) return NULL;
-  if (method->method_inlining_info() == methodOopDesc::always_inline) return NULL;
+  if (!CodeSizeImpactsInlining)
+    return NULL;
+  if (method->method_inlining_info() == methodOopDesc::always_inline)
+    return NULL;
   // compute the allowable cost based on the method type and the provided arguments
   int cost_limit = method->is_blockMethod() ? MaxBlockInstrSize : MaxFnInstrSize;
   int i = method->number_of_arguments();
   while (i-- > 0) {
     klassOop k = nthArgKlass(i);
-    if (k && k->klass_part()->oop_is_block()) cost_limit += BlockArgAdditionalInstrSize;
+    if (k && k->klass_part()->oop_is_block())
+      cost_limit += BlockArgAdditionalInstrSize;
   }
-  if (nm->size() < cost_limit) return NULL;	// ok
-  if (isBuiltinMethod()) return NULL;		// ok, special case (?)
+  if (nm->size() < cost_limit)
+    return NULL; // ok
+  if (isBuiltinMethod())
+    return NULL; // ok, special case (?)
   return "too big (compiled)";
 }
 
@@ -334,8 +321,9 @@ Expr* Inliner::inlineSend() {
   } else if (gen->is_in_dead_code()) {
     // don't waste time inlining dead code
     res = new NoResultExpr;
-    gen->abort();   // the rest of this method is dead code, too
-    if (CompilerDebug) cout(PrintInlining)->print("%*s*skipping %s (dead code)\n", depth, "", _info->sel->as_string());
+    gen->abort(); // the rest of this method is dead code, too
+    if (CompilerDebug)
+      cout(PrintInlining)->print("%*s*skipping %s (dead code)\n", depth, "", _info->sel->as_string());
   } else {
     tryInlineSend();
   }
@@ -347,13 +335,16 @@ Expr* Inliner::inlineSend() {
     assert(res, "must have result");
   }
   // merge end of inlined version with end of noninlined version
-  if (merge && res && !res->isNoResultExpr()) gen->branch(merge);
+  if (merge && res && !res->isNoResultExpr())
+    gen->branch(merge);
 
   // update caller's current node
-  if (gen != sender->gen()) sender->gen()->setCurrent(gen->current());
+  if (gen != sender->gen())
+    sender->gen()->setCurrent(gen->current());
 
   // ...and return result (sender is responsible for popping expr stack)
-  if (!res) res = new NoResultExpr;
+  if (!res)
+    res = new NoResultExpr;
   return res;
 }
 
@@ -361,15 +352,22 @@ Expr* Inliner::genRealSend() {
   const int nofArgs = _info->sel->number_of_arguments();
   bool uninlinable = theCompiler->registerUninlinable(this);
   if (CompilerDebug) {
-    cout(PrintInlining)->print("%*s*sending %s %s%s\n", depth, "", _info->sel->as_string(),
-      uninlinable ? "(unlinlinable) " : "",
-      _info->counting ? "(counting) " : "");
+    cout(PrintInlining)
+      ->print("%*s*sending %s %s%s\n", depth, "", _info->sel->as_string(), uninlinable ? "(unlinlinable) " : "",
+              _info->counting ? "(counting) " : "");
   }
-  switch(kind) {
-    case NormalSend: 	gen->gen_normal_send(_info, nofArgs, resultPR); break;
-    case SelfSend: 	gen->gen_self_send  (_info, nofArgs, resultPR); break;
-    case SuperSend: 	gen->gen_super_send (_info, nofArgs, resultPR); break;
-    default:		fatal1("illegal SendKind %d", kind);
+  switch (kind) {
+    case NormalSend:
+      gen->gen_normal_send(_info, nofArgs, resultPR);
+      break;
+    case SelfSend:
+      gen->gen_self_send(_info, nofArgs, resultPR);
+      break;
+    case SuperSend:
+      gen->gen_super_send(_info, nofArgs, resultPR);
+      break;
+    default:
+      fatal1("illegal SendKind %d", kind);
   }
   return new UnknownExpr(resultPR, gen->current());
 }
@@ -407,11 +405,11 @@ void Inliner::tryInlineSend() {
       _info->needRealSend = true;
     }
   } else if (_info->rcvr->isMergeExpr()) {
-    res = inlineMerge(_info);		// inline some cases
+    res = inlineMerge(_info); // inline some cases
     if (res) {
       // inlined some cases; inlineMerge decided whether needRealSend should be set or not
       if (!theCompiler->is_uncommon_compile()) {
-        _info->uninlinable = true;	  // remaining sends are here by choice
+        _info->uninlinable = true; // remaining sends are here by choice
         _info->counting = false;
       }
     } else {
@@ -422,12 +420,14 @@ void Inliner::tryInlineSend() {
     // unknown receiver
     // NB: *must* use uncommon branch if marked unlikely because
     // future type tests won't test for unknown
-    if (CompilerDebug) cout(PrintInlining)->print("%*s*cannot inline %s (unknown receiver)\n", depth, "", sel->as_string());
+    if (CompilerDebug)
+      cout(PrintInlining)->print("%*s*cannot inline %s (unknown receiver)\n", depth, "", sel->as_string());
     if (_info->rcvr->findUnknown()->isUnlikely()) {
       // generate an uncommon branch for the unknown case, not a send
       gen->append_exit(NodeFactory::new_UncommonNode(sender->gen()->copyCurrentExprStack(), sender->bci()));
       _info->needRealSend = false;
-      if (CompilerDebug) cout(PrintInlining)->print("%*s*making %s uncommon\n", depth, "", sel->as_string());
+      if (CompilerDebug)
+        cout(PrintInlining)->print("%*s*making %s uncommon\n", depth, "", sel->as_string());
       res = new NoResultExpr();
       // rest of method's code is unreachable
       assert(gen->current() == NULL, "expected no current node");
@@ -438,13 +438,12 @@ void Inliner::tryInlineSend() {
   }
 }
 
-
 Expr* Inliner::inlineMerge(SendInfo* info) {
   // try to inline the send by type-casing
-  merge = NodeFactory::new_MergeNode(sender->bci());		// where all cases merge again
-  Expr* res = NULL;							// final (merged) result
+  merge = NodeFactory::new_MergeNode(sender->bci()); // where all cases merge again
+  Expr* res = NULL; // final (merged) result
   assert(info->rcvr->isMergeExpr(), "must be a merge");
-  MergeExpr* r = (MergeExpr*)info->rcvr;				// receiver type
+  MergeExpr* r = (MergeExpr*)info->rcvr; // receiver type
   symbolOop sel = info->sel;
 
   int nexprs = r->exprs->length();
@@ -453,27 +452,27 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
     info->needRealSend = true;
     info->uninlinable = true;
     info->counting = false;
-    if (CompilerDebug) cout(PrintInlining)->print("%*s*not type-casing %s (%ld > MaxTypeCaseSize)\n",
-      depth, "", sel->as_string(), ncases);
+    if (CompilerDebug)
+      cout(PrintInlining)
+        ->print("%*s*not type-casing %s (%ld > MaxTypeCaseSize)\n", depth, "", sel->as_string(), ncases);
     return res;
   }
 
   // build list of cases to inline
   // (add only immediate klasses (currently only smis) at first, collect others in ...2 lists
-  GrowableArray<InlinedScope*>* scopes  = new GrowableArray<InlinedScope*>(nexprs);
+  GrowableArray<InlinedScope*>* scopes = new GrowableArray<InlinedScope*>(nexprs);
   GrowableArray<InlinedScope*>* scopes2 = new GrowableArray<InlinedScope*>(nexprs);
-  GrowableArray<Expr*>* 	exprs  	= new GrowableArray<Expr*>(nexprs);
-  GrowableArray<Expr*>* 	exprs2 	= new GrowableArray<Expr*>(nexprs);
-  GrowableArray<Expr*>* 	others 	= new GrowableArray<Expr*>(nexprs);
-  GrowableArray<klassOop>* 	klasses = new GrowableArray<klassOop>(nexprs);
-  GrowableArray<klassOop>* 	klasses2= new GrowableArray<klassOop>(nexprs);
+  GrowableArray<Expr*>* exprs = new GrowableArray<Expr*>(nexprs);
+  GrowableArray<Expr*>* exprs2 = new GrowableArray<Expr*>(nexprs);
+  GrowableArray<Expr*>* others = new GrowableArray<Expr*>(nexprs);
+  GrowableArray<klassOop>* klasses = new GrowableArray<klassOop>(nexprs);
+  GrowableArray<klassOop>* klasses2 = new GrowableArray<klassOop>(nexprs);
   const bool containsUnknown = r->containsUnknown();
 
   for (int i = 0; i < nexprs; i++) {
     Expr* nth = r->exprs->at(i)->shallowCopy(r->preg(), NULL);
-    assert(!nth->isConstantExpr() || nth->next == NULL ||
-      nth->constant() == nth->next->constant(),
-      "shouldn't happen: merged consts - convert to klass");
+    assert(!nth->isConstantExpr() || nth->next == NULL || nth->constant() == nth->next->constant(),
+           "shouldn't happen: merged consts - convert to klass");
     // NB: be sure to generalize constants to klasses before inlining, so that values
     // from an unknown source are dispatched to the optimized code
     // also, right now the TypeTestNode only tests for klasses, not constants
@@ -482,19 +481,18 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
     }
 
     InlinedScope* s;
-    if (nth->hasKlass() &&
-      (s = tryLookup(nth)) != NULL) {
-        // can inline this case
-        klassOop klass = nth->klass();
-        if (klass == smiKlassObj) {
-          scopes  ->append(s);	    // smis go first
-          exprs   ->append(nth);
-          klasses ->append(klass);
-        } else {
-          scopes2 ->append(s);	    // append later
-          exprs2  ->append(nth);
-          klasses2->append(klass);
-        }
+    if (nth->hasKlass() && (s = tryLookup(nth)) != NULL) {
+      // can inline this case
+      klassOop klass = nth->klass();
+      if (klass == smiKlassObj) {
+        scopes->append(s); // smis go first
+        exprs->append(nth);
+        klasses->append(klass);
+      } else {
+        scopes2->append(s); // append later
+        exprs2->append(nth);
+        klasses2->append(klass);
+      }
     } else {
       if (lastLookupFailed) {
         // ignore this case -- most probably it will never happen
@@ -512,53 +510,53 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
 
   // combine all lists into one (with immediate case first)
   klasses->appendAll(klasses2);
-  exprs  ->appendAll(exprs2);
-  scopes ->appendAll(scopes2);
+  exprs->appendAll(exprs2);
+  scopes->appendAll(scopes2);
 
   // decide whether to use uncommon branch for unknown case (if any)
   // NB: *must* use uncommon branch if marked unlikely because
   // future type tests won't test for unknown
   bool useUncommonBranchForUnknown = false;
-  if (others->length() == 1 && others->first()->isUnknownExpr() &&
-    ((UnknownExpr*)others->first())->isUnlikely()) {
-      // generate an uncommon branch for the unknown case, not a send
-      useUncommonBranchForUnknown = true;
-      if (CompilerDebug) cout(PrintInlining)->print("%*s*making %s uncommon (2)\n", depth,"",sel->as_string());
+  if (others->length() == 1 && others->first()->isUnknownExpr() && ((UnknownExpr*)others->first())->isUnlikely()) {
+    // generate an uncommon branch for the unknown case, not a send
+    useUncommonBranchForUnknown = true;
+    if (CompilerDebug)
+      cout(PrintInlining)->print("%*s*making %s uncommon (2)\n", depth, "", sel->as_string());
   }
 
   // now do the type test and inline the individual cases
-  Node* typeCase    = NULL;
+  Node* typeCase = NULL;
   Node* fallThrough = NULL;
   if (scopes->length() > 0) {
     //memoizeBlocks(sel);
 
     if (CompilerDebug) {
       char* s = NEW_RESOURCE_ARRAY(char, 200);
-      snprintf(s, 200, "begin type-case of %s (ends at node N%d)",
-        sel->copy_null_terminated(), merge->id());
+      snprintf(s, 200, "begin type-case of %s (ends at node N%d)", sel->copy_null_terminated(), merge->id());
       gen->comment(s);
     }
-    if (CompilerDebug) cout(PrintInlining)->print("%*s*type-casing %s (%d cases)\n", depth, "", sel->as_string(), scopes->length());
+    if (CompilerDebug)
+      cout(PrintInlining)->print("%*s*type-casing %s (%d cases)\n", depth, "", sel->as_string(), scopes->length());
 
     typeCase = NodeFactory::new_TypeTestNode(r->preg(), klasses, info->needRealSend || containsUnknown);
     gen->append(typeCase);
-    fallThrough = typeCase->append(NodeFactory::new_NopNode());	// non-predicted case
+    fallThrough = typeCase->append(NodeFactory::new_NopNode()); // non-predicted case
     for (int i = 0; i < scopes->length(); i++) {
       // inline one case
       Inliner* inliner = new Inliner(sender);
       inliner->initialize(new SendInfo(*info), kind);
-      inliner->callee = scopes->at(i);			// scope to inline
-      inliner->gen = callee->gen();			// node builder to use
+      inliner->callee = scopes->at(i); // scope to inline
+      inliner->gen = callee->gen(); // node builder to use
       inliner->gen->setCurrent(typeCase->append(i + 1, NodeFactory::new_NopNode()));
       Expr* rcvr = exprs->at(i);
       inliner->info()->rcvr = rcvr;
       assert(r->scope()->isSenderOf(inliner->callee), "r must be from caller scope");
       Expr* e = inliner->doInline(inliner->gen->current());
       if (e->isNoResultExpr()) {
-        if (!res) res = e;	// must return non-NULL result (otherwise sender thinks no inlining happened)
+        if (!res)
+          res = e; // must return non-NULL result (otherwise sender thinks no inlining happened)
       } else {
-        assert(e->preg()->scope()->isSenderOf(inliner->callee),
-          "result register must be from caller scope");
+        assert(e->preg()->scope()->isSenderOf(inliner->callee), "result register must be from caller scope");
         gen->append(NodeFactory::new_NopNode());
         e = e->shallowCopy(info->resReg, gen->current());
         res = res ? res->mergeWith(e, merge) : e;
@@ -569,23 +567,23 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
     gen->setCurrent(fallThrough);
   } else {
     // no case was deemed inlinable
-    if (!info->counting && !theCompiler->is_uncommon_compile()) info->uninlinable = true;
+    if (!info->counting && !theCompiler->is_uncommon_compile())
+      info->uninlinable = true;
     useUncommonBranchForUnknown = false;
   }
 
-  if (res && res->isMergeExpr()) res->setNode(merge, info->resReg);
+  if (res && res->isMergeExpr())
+    res->setNode(merge, info->resReg);
 
-  assert( info->needRealSend &&  others->length() ||
-    !info->needRealSend && !others->length(), "inconsistent");
+  assert(info->needRealSend && others->length() || !info->needRealSend && !others->length(), "inconsistent");
 
   if (useUncommonBranchForUnknown) {
     // generate an uncommon branch for the unknown case, not a send
     // use an uncommon send rather than an uncommon node to capture
     // the argument usage in case none of the type tests uses the arguments.
     // - was a bug slr 12/02/2009.
-    gen->append_exit(NodeFactory::new_UncommonSendNode(gen->copyCurrentExprStack(), 
-                                                       sender->bci(),
-                                                       info->sel->number_of_arguments()));
+    gen->append_exit(
+      NodeFactory::new_UncommonSendNode(gen->copyCurrentExprStack(), sender->bci(), info->sel->number_of_arguments()));
     info->needRealSend = false;
   } else if (others->isEmpty()) {
     // typecase cannot fail
@@ -594,7 +592,6 @@ Expr* Inliner::inlineMerge(SendInfo* info) {
 
   return res;
 }
-
 
 Expr* Inliner::makeResult(Expr* r) {
   Expr* res;
@@ -625,10 +622,12 @@ Expr* Inliner::doInline(Node* start) {
 #define calleeSize(n) 0
 
   if (CompilerDebug) {
-    cout(PrintInlining)->print("%*s*inlining %s, cost %ld/size %ld (%#lx)%s\n", depth, "",
-      callee->selector()->as_string(), inliningPolicy.calleeCost, calleeSize(callee->rscope),
-      PrintHexAddresses ? callee : 0, callee->rscope->isNullScope() ? "" : "*");
-    if (PrintInlining) callee->method()->pretty_print();
+    cout(PrintInlining)
+      ->print("%*s*inlining %s, cost %ld/size %ld (%#lx)%s\n", depth, "", callee->selector()->as_string(),
+              inliningPolicy.calleeCost, calleeSize(callee->rscope), PrintHexAddresses ? callee : 0,
+              callee->rscope->isNullScope() ? "" : "*");
+    if (PrintInlining)
+      callee->method()->pretty_print();
   }
 
   // Save dependency information in the scopeDesc recorder.
@@ -656,10 +655,13 @@ Expr* Inliner::doInline(Node* start) {
 }
 
 void Inliner::reportInline(char* prefix) {
-  if (!info()->sel) return;
-  if (!callee->methodHolder()) return;
+  if (!info()->sel)
+    return;
+  if (!callee->methodHolder())
+    return;
   char* klassName = callee->methodHolder()->klass_part()->delta_name();
-  if (!klassName) return;
+  if (!klassName)
+    return;
 
   int prefixLen = strlen(prefix);
   symbolOop selector = info()->sel;
@@ -697,15 +699,16 @@ Expr* Inliner::picPredict() {
       return picPredictUnlikely(_info, (RUntakenScope*)predictedReceivers->first());
     } else if (predictedReceivers->first()->isUninlinableScope()) {
       if (CompilerDebug)
-        cout(PrintInlining)->print("%*s*PIC-predicting %s as uninlinable/megamorphic\n", depth, "", _info->sel->as_string());
-      _info->uninlinable = true;	// prevent static type prediction
+        cout(PrintInlining)
+          ->print("%*s*PIC-predicting %s as uninlinable/megamorphic\n", depth, "", _info->sel->as_string());
+      _info->uninlinable = true; // prevent static type prediction
       return _info->rcvr;
     }
   }
 
   // check special case: perfect information (from dataflow information)
   if (!_info->rcvr->containsUnknown()) {
-    return _info->rcvr;	// already know type exactly, don't use PIC
+    return _info->rcvr; // already know type exactly, don't use PIC
   }
 
   // extract klasses from PIC
@@ -732,11 +735,12 @@ Expr* Inliner::picPredict() {
     Expr* newRcvr = _info->rcvr;
     for (int i = ((MergeExpr*)_info->rcvr)->exprs->length() - 1; i >= 0; i--) {
       Expr* e = ((MergeExpr*)_info->rcvr)->exprs->at(i);
-      if (e->isUnknownExpr()) continue;
+      if (e->isUnknownExpr())
+        continue;
       if (!allKlasses->findKlass(e->klass())) {
         if (PrintInlining) {
-          mystd->print("%*s*discarding static type info for send %s (not found in PIC): ",
-            depth, "", _info->sel->as_string());
+          mystd->print("%*s*discarding static type info for send %s (not found in PIC): ", depth, "",
+                       _info->sel->as_string());
           e->print();
         }
         newRcvr = newRcvr->copyWithout(e);
@@ -746,8 +750,7 @@ Expr* Inliner::picPredict() {
   }
 
   if (CompilerDebug)
-    cout(PrintInlining)->print("%*s*PIC-type-predicting %s (%ld klasses): ", depth, "",
-    _info->sel->as_string(), npic);
+    cout(PrintInlining)->print("%*s*PIC-type-predicting %s (%ld klasses): ", depth, "", _info->sel->as_string(), npic);
 
   // iterate through PIC _info and add it to the receiver type (_info->rcvr)
   for (int i = 0; i < klasses.length(); i++) {
@@ -787,7 +790,8 @@ Expr* Inliner::picPredict() {
       }
     }
   } // for
-  if (CompilerDebug) cout(PrintInlining)->print("\n");
+  if (CompilerDebug)
+    cout(PrintInlining)->print("\n");
 
   // mark unknown branch as unlikely
   UnknownExpr* u = _info->rcvr->findUnknown();
@@ -801,7 +805,8 @@ Expr* Inliner::picPredict() {
 }
 
 Expr* Inliner::picPredictUnlikely(SendInfo* info, RUntakenScope* uscope) {
-  if (!theCompiler->useUncommonTraps) return info->rcvr;
+  if (!theCompiler->useUncommonTraps)
+    return info->rcvr;
 
   bool makeUncommon = uscope->isUnlikely();
   if (!makeUncommon && info->inPrimFailure) {
@@ -816,9 +821,9 @@ Expr* Inliner::picPredictUnlikely(SendInfo* info, RUntakenScope* uscope) {
     makeUncommon = false;
   }
   if (false && CompilerDebug) {
-    cout(PrintInlining)->print("%*s*%sPIC-type-predicting %s as never executed\n",
-      depth, "", makeUncommon ? "" : "NOT ",
-      info->sel->copy_null_terminated());
+    cout(PrintInlining)
+      ->print("%*s*%sPIC-type-predicting %s as never executed\n", depth, "", makeUncommon ? "" : "NOT ",
+              info->sel->copy_null_terminated());
   }
   if (makeUncommon) {
     return new UnknownExpr(info->rcvr->preg(), NULL, true);
@@ -831,14 +836,12 @@ Expr* Inliner::typePredict() {
   // NB: all non-predicted cases exit this function early
   Expr* r = _info->rcvr;
   if (!(r->isUnknownExpr() ||
-    r->isMergeExpr() &&
-    ((MergeExpr*)r)->exprs->length() == 1 &&
-    ((MergeExpr*)r)->exprs->at(0)->isUnknownExpr())) {
-      // r already has a type (e.g. something predicted via PICs)
-      // trust that information more than the static type prediction
-      // NB: UnknownExprs are sometimes merged into a MergeExpr, that's why the above
-      // test looks a bit more complicated
-      return _info->rcvr;
+        r->isMergeExpr() && ((MergeExpr*)r)->exprs->length() == 1 && ((MergeExpr*)r)->exprs->at(0)->isUnknownExpr())) {
+    // r already has a type (e.g. something predicted via PICs)
+    // trust that information more than the static type prediction
+    // NB: UnknownExprs are sometimes merged into a MergeExpr, that's why the above
+    // test looks a bit more complicated
+    return _info->rcvr;
   }
 
   // perform static type prediction
@@ -852,7 +855,7 @@ Expr* Inliner::typePredict() {
       return r;
     }
   } else if (InliningPolicy::isPredictedBoolSelector(_info->sel)) {
-    r = r->mergeWith(new ConstantExpr(trueObj,  r->preg(), NULL), NULL);
+    r = r->mergeWith(new ConstantExpr(trueObj, r->preg(), NULL), NULL);
     r = r->mergeWith(new ConstantExpr(falseObj, r->preg(), NULL), NULL);
   } else {
     return r;
@@ -866,7 +869,7 @@ Expr* Inliner::typePredict() {
   return r;
 }
 
-bool SuperSendsAreAlwaysInlined = true;	// remove when removing super hack
+bool SuperSendsAreAlwaysInlined = true; // remove when removing super hack
 
 InlinedScope* Inliner::tryLookup(Expr* rcvr) {
   // try to lookup the send to receiver rcvr and determine if it should be inlined;
@@ -875,7 +878,7 @@ InlinedScope* Inliner::tryLookup(Expr* rcvr) {
   // we're looking at right now
   assert(rcvr->hasKlass(), "should know klass");
 
-  const klassOop  klass = (kind == SuperSend) ? sender->methodHolder() : rcvr->klass();
+  const klassOop klass = (kind == SuperSend) ? sender->methodHolder() : rcvr->klass();
   if (klass == NULL) {
     _info->uninlinable = true;
     assert(kind == SuperSend, "shouldn't happen for normal sends");
@@ -883,23 +886,23 @@ InlinedScope* Inliner::tryLookup(Expr* rcvr) {
   }
 
   const symbolOop selector = _info->sel;
-  const methodOop method = (kind == SuperSend) ?
-    lookupCache::compile_time_super_lookup (klass, selector) :
-  lookupCache::compile_time_normal_lookup(klass, selector);
+  const methodOop method = (kind == SuperSend) ? lookupCache::compile_time_super_lookup(klass, selector)
+                                               : lookupCache::compile_time_normal_lookup(klass, selector);
   lastLookupFailed = method == NULL;
 
   if (lastLookupFailed) {
     // nothing found statically (i.e., lookup error)
-    _info->uninlinable = true;		// fix this -- probably wrong for merge exprs.
+    _info->uninlinable = true; // fix this -- probably wrong for merge exprs.
     return notify("lookup failed");
   }
 
   // Construct a lookup key
-  LookupKey* key = kind == SuperSend
-    ? LookupKey::allocate(rcvr->klass(), method)
-    : LookupKey::allocate(rcvr->klass(), selector);
+  LookupKey* key = kind == SuperSend ? LookupKey::allocate(rcvr->klass(), method)
+                                     : LookupKey::allocate(rcvr->klass(), selector);
 
-  if (CompilerDebug) cout(PrintInlining)->print("%*s found %s --> %#x\n", sender->depth, "", key->print_string(), PrintHexAddresses ? method : 0);
+  if (CompilerDebug)
+    cout(PrintInlining)
+      ->print("%*s found %s --> %#x\n", sender->depth, "", key->print_string(), PrintHexAddresses ? method : 0);
 
   // NB: use rcvr->klass() (not klass) for the scope -- klass may be the method holder (for super sends)
   // was bug -- Urs 3/16/96
@@ -918,7 +921,8 @@ InlinedScope* Inliner::tryLookup(Expr* rcvr) {
       _msg = checkSendInPrimFailure();
     }
   }
-  if (_msg) return notify(_msg);		// shouldn't inline this call
+  if (_msg)
+    return notify(_msg); // shouldn't inline this call
 
   return callee;
 }
@@ -930,7 +934,8 @@ char* Inliner::checkSendInPrimFailure() {
   if (rs->isNullScope() || rs->isInterpretedScope()) {
     // not compiled -- don't inline, failure probably never happens
     // but make sure we'll detect if it does happen often
-    if (UseRecompilation) _info->counting = true;
+    if (UseRecompilation)
+      _info->counting = true;
     return "send in primitive failure (null/interpreted sender)";
   }
   RScope* callee = rs->subScope(sender->bci(), _info->key);
@@ -938,7 +943,8 @@ char* Inliner::checkSendInPrimFailure() {
     // never executed; shouldn't even generate code for failure!
     // (note: if failure block has several sends, this can happen, but in the standard
     // system it's probably a performance bug)
-    if (WizardMode) warning("probably should have made primitive failure uncommon");
+    if (WizardMode)
+      warning("probably should have made primitive failure uncommon");
     return "untaken send in primitive failure";
   }
   if (callee->isInlinedScope()) {
@@ -955,9 +961,10 @@ char* Inliner::checkSendInPrimFailure() {
 
 RScope* Inliner::makeBlockRScope(const Expr* rcvr, LookupKey* key, const methodOop method) {
   // create an InlinedScope for this block method
-  if (!TypeFeedback) return new RNullScope;
+  if (!TypeFeedback)
+    return new RNullScope;
   if (!rcvr->preg()->isBlockPReg()) {
-    return new RNullScope;	  // block parent is in a different nmethod -- won't inline
+    return new RNullScope; // block parent is in a different nmethod -- won't inline
   }
 
   // first check if block was inlined in previous nmethod (or comes from inlining database)
@@ -981,8 +988,8 @@ RScope* Inliner::makeBlockRScope(const Expr* rcvr, LookupKey* key, const methodO
     int blockIndex = 0;
     for (blockIndex = parentNM->number_of_noninlined_blocks(); blockIndex >= 1; blockIndex--) {
       if (parentNM->noninlined_block_method_at(blockIndex) == method &&
-        checkSenderPath(parent, parentNM->noninlined_block_scope_at(blockIndex)->parent())) {
-          break;	  // found it
+          checkSenderPath(parent, parentNM->noninlined_block_scope_at(blockIndex)->parent())) {
+        break; // found it
       }
     }
     if (blockIndex >= 1) {
@@ -1008,7 +1015,6 @@ RScope* Inliner::makeBlockRScope(const Expr* rcvr, LookupKey* key, const methodO
   }
 }
 
-
 bool Inliner::checkSenderPath(Scope* here, ScopeDesc* there) const {
   // return true if sender paths of here and there match
   // NB: I believe the code below isn't totally correct, in the sense that it
@@ -1021,26 +1027,27 @@ bool Inliner::checkSenderPath(Scope* here, ScopeDesc* there) const {
   // Fix this later.  -Urs 8/96
   while (here && !there->isTop()) {
     InlinedScope* sen = here->sender();
-    if (sen == NULL) break;
-    if (sen->bci() != there->senderBCI()) return false;
-    here  = here->sender();
+    if (sen == NULL)
+      break;
+    if (sen->bci() != there->senderBCI())
+      return false;
+    here = here->sender();
     there = there->sender();
   }
   return true;
 }
 
-
 InlinedScope* Inliner::makeScope(const Expr* rcvr, const klassOop klass, const LookupKey* key, const methodOop method) {
   // create an InlinedScope for this method/receiver
   SendInfo* calleeInfo = new SendInfo(*_info);
-  calleeInfo->key = (LookupKey*) key;
+  calleeInfo->key = (LookupKey*)key;
   const klassOop methodHolder = klass->klass_part()->lookup_method_holder_for(method);
 
   if (method->is_blockMethod()) {
     RScope* rs = makeBlockRScope(rcvr, calleeInfo->key, method);
-# ifdef ASSERT
-    bool isNullRScope = rs->isNullScope(); 	// for conditional breakpoints (no type feedback info)
-# endif
+#ifdef ASSERT
+    bool isNullRScope = rs->isNullScope(); // for conditional breakpoints (no type feedback info)
+#endif
     if (rcvr->preg()->isBlockPReg()) {
       InlinedScope* parent = rcvr->preg()->scope();
       calleeInfo->rcvr = parent->self();
@@ -1053,9 +1060,9 @@ InlinedScope* Inliner::makeScope(const Expr* rcvr, const klassOop klass, const L
   } else {
     // normal method
     RScope* rs = sender->rscope->subScope(sender->bci(), calleeInfo->key);
-# ifdef ASSERT
-    bool isNullRScope = rs->isNullScope(); 	// for conditional breakpoints (no type feedback info)
-# endif
+#ifdef ASSERT
+    bool isNullRScope = rs->isNullScope(); // for conditional breakpoints (no type feedback info)
+#endif
     callee = MethodScope::new_MethodScope(method, methodHolder, sender, rs, calleeInfo);
     callee->set_self(rcvr->asReceiver());
   }
@@ -1065,11 +1072,12 @@ InlinedScope* Inliner::makeScope(const Expr* rcvr, const klassOop klass, const L
 
 InlinedScope* Inliner::notify(const char* msg) {
   if (CompilerDebug) {
-    cout(PrintInlining)->print("%*s*cannot inline %s, cost = %ld (%s)\n", depth, "", _info->sel->as_string(),
-      inliningPolicy.calleeCost, msg);
+    cout(PrintInlining)
+      ->print("%*s*cannot inline %s, cost = %ld (%s)\n", depth, "", _info->sel->as_string(), inliningPolicy.calleeCost,
+              msg);
   }
   _msg = (char*)msg;
-  return NULL;	// cheap trick to make notify more convenient (can say "return notify(...)")
+  return NULL; // cheap trick to make notify more convenient (can say "return notify(...)")
 }
 
 void Inliner::print() {
@@ -1084,7 +1092,8 @@ Expr* Inliner::inlineBlockInvocation(SendInfo* info) {
   const methodOop method = block->closure()->method();
   const InlinedScope* parent = block->closure()->parent_scope();
   // should decide here whether to actually inline -- fix this
-  if (CompilerDebug) cout(PrintInlining)->print("%*s*inlining block invocation\n", sender->depth, "");
+  if (CompilerDebug)
+    cout(PrintInlining)->print("%*s*inlining block invocation\n", sender->depth, "");
 
   // Construct a fake lookupKey
   LookupKey* key = LookupKey::allocate(parent->selfKlass(), method);
@@ -1094,7 +1103,7 @@ Expr* Inliner::inlineBlockInvocation(SendInfo* info) {
     Expr* r = doInline(sender->current());
     return makeResult(r);
   } else {
-    return NULL;	// couldn't inline the block
+    return NULL; // couldn't inline the block
   }
 }
 

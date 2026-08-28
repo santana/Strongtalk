@@ -23,30 +23,28 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "interpreter/interpreterStatistics.hpp"
 
-
 bool InterpreterStatistics::_is_initialized = false;
 unsigned int InterpreterStatistics::_bytecode_counters[Bytecodes::number_of_codes];
 int InterpreterStatistics::_bytecode_generation_order[Bytecodes::number_of_codes];
 
-
 void InterpreterStatistics::reset_bytecode_counters() {
-  for (int i = 0; i < Bytecodes::number_of_codes; i++) _bytecode_counters[i] = 0;
+  for (int i = 0; i < Bytecodes::number_of_codes; i++)
+    _bytecode_counters[i] = 0;
 }
-
 
 void InterpreterStatistics::reset_bytecode_generation_order() {
-  for (int i = 0; i < Bytecodes::number_of_codes; i++) _bytecode_generation_order[i] = i;
+  for (int i = 0; i < Bytecodes::number_of_codes; i++)
+    _bytecode_generation_order[i] = i;
 }
-
 
 Bytecodes::Code InterpreterStatistics::ith_bytecode_to_generate(int i) {
   assert(0 <= i && i < Bytecodes::number_of_codes, "illegal index");
   return Bytecodes::Code(_bytecode_generation_order[i]);
 }
 
-
 void InterpreterStatistics::initialize() {
-  if (is_initialized()) return;
+  if (is_initialized())
+    return;
   reset_bytecode_counters();
   reset_bytecode_generation_order();
   _is_initialized = true;

@@ -21,7 +21,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
-
 #include "code/inliningdb.hpp"
 #include "code/zone.hpp"
 #include "interpreter/interpreter.hpp"
@@ -54,7 +53,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-bool NeedScavenge  = false;
+bool NeedScavenge = false;
 bool bootstrapping = true;
 
 int BlockScavenge::counter = 0;
@@ -70,18 +69,22 @@ void Universe::genesis() {
   mystd->print_cr("Copyright 1994 - 1996, LongView Technologies L.L.C. All rights reserved.");
   mystd->print_cr("(use argument -? for a list of flags)");
   */
-  
+
   mystd->cr();
   Disclaimer::print_disclaimer();
-  mystd->print_cr("Version %d.%d (build %s %s)", Universe::major_version(), Universe::minor_version(), __DATE__, __TIME__);
+  mystd->print_cr("Version %d.%d (build %s %s)", Universe::major_version(), Universe::minor_version(), __DATE__,
+                  __TIME__);
   mystd->print_cr("(use argument -? for a list of flags)");
   mystd->cr();
 
-  if (UseNewBackend | TryNewBackend)	mystd->print_cr("- VM using new backend (%s makeConformant)", UseNewMakeConformant ? "new" : "old");
+  if (UseNewBackend | TryNewBackend)
+    mystd->print_cr("- VM using new backend (%s makeConformant)", UseNewMakeConformant ? "new" : "old");
   //if (Disclaimer::is_product())	Disclaimer::print_disclaimer();
-  if (Disclaimer::is_debug())		mystd->print_cr("- VM is in debug mode");
-  if (!Interpreter::is_optimized())	Interpreter::print_code_status();
-  
+  if (Disclaimer::is_debug())
+    mystd->print_cr("- VM is in debug mode");
+  if (!Interpreter::is_optimized())
+    Interpreter::print_code_status();
+
   scavengeCount = 0;
 
   current_sizes.initialize();
@@ -90,13 +93,13 @@ void Universe::genesis() {
 
   age_table = new ageTable;
 
-  // Reserve space for object heap 
+  // Reserve space for object heap
   ReservedSpace rs(current_sizes.reserved_object_size);
 
   if (!rs.is_reserved()) {
     fatal("could not reserve enough space for object heap");
   }
- 
+
   int new_size = ReservedSpace::page_align_size(current_sizes.eden_size + 2 * current_sizes.surv_size);
 
   ReservedSpace new_rs = rs.first_part(new_size);
@@ -109,15 +112,14 @@ void Universe::genesis() {
 
   remembered_set = new rSet; // uses _boundary's
 
-  tenuring_threshold = ageTable::table_size;	// don't tenure anything at first
+  tenuring_threshold = ageTable::table_size; // don't tenure anything at first
 
   lookupCache::flush();
 
-# ifdef DELTA_COMPILER
+#ifdef DELTA_COMPILER
   code = new zone(current_sizes.code_size);
-# endif
+#endif
 }
-
 
 void Universe::cleanup_after_bootstrap() {
   objectIDTable::cleanup_after_bootstrap();
@@ -126,7 +128,7 @@ void Universe::cleanup_after_bootstrap() {
   Universe::_callBack_selector = symbolOop(nilObj());
 
   Universe::_dll_lookup_receiver = nilObj();
-  Universe::_dll_lookup_selector = symbolOop(nilObj());  
+  Universe::_dll_lookup_selector = symbolOop(nilObj());
 
   Universe::_pic_free_list = objArrayKlass::allocate_tenured_pic(number_of_interpreterPIC_sizes);
 
@@ -135,15 +137,13 @@ void Universe::cleanup_after_bootstrap() {
   Universe::roots_do(Universe::check_root);
 }
 
-
 void Universe::check_root(oop* p) {
-  if (*p == badOop) fatal("badOop found in roots");
+  if (*p == badOop)
+    fatal("badOop found in roots");
 }
 
-
 void Universe::switch_pointers(oop from, oop to) {
-  assert(from->is_mem() && to->is_mem(),
-	 "unexpected kind of pointer switching");
+  assert(from->is_mem() && to->is_mem(), "unexpected kind of pointer switching");
   // FIX LATER  assert(!from->is_old() || to->is_old(),
   //	        "shouldn't be switching an old oop to a new oop");
   //APPLY_TO_VM_OOPS(SWITCH_POINTERS_TEMPLATE);
@@ -153,18 +153,19 @@ void Universe::switch_pointers(oop from, oop to) {
   symbol_table->switch_pointers(from, to);
 }
 
-
 memOop Universe::relocate(memOop p) {
   //APPLY_TO_SPACES(SPACE_OOP_RELOCATE_TEMPLATE);
   ShouldNotReachHere(); // oop not in any old space
   return NULL;
 }
 
-
 bool Universe::verify_oop(memOop p) {
-  if (new_gen.eden()->contains(p)) return true;
-  if (new_gen.from()->contains(p)) return true;
-  if (old_gen.contains(p)) return true;
+  if (new_gen.eden()->contains(p))
+    return true;
+  if (new_gen.from()->contains(p))
+    return true;
+  if (old_gen.contains(p))
+    return true;
   if (new_gen.to()->contains(p)) {
     error("memOop %#lx is in to_space", p);
   } else {
@@ -173,18 +174,21 @@ bool Universe::verify_oop(memOop p) {
   return false;
 }
 
-
 void Universe::verify(bool postScavenge) {
   ResourceMark rm;
   lprintf("verifying ");
-  lprintf("newgen: ");  new_gen.verify();
-  lprintf("oldgen: ");  old_gen.verify();
-  lprintf("r ");        remembered_set->verify(postScavenge);
-  lprintf("S ");        symbol_table->verify();
-  lprintf("P ");        Processes::verify();
+  lprintf("newgen: ");
+  new_gen.verify();
+  lprintf("oldgen: ");
+  old_gen.verify();
+  lprintf("r ");
+  remembered_set->verify(postScavenge);
+  lprintf("S ");
+  symbol_table->verify();
+  lprintf("P ");
+  Processes::verify();
   lprintf(" done\n");
 }
-
 
 void Universe::print() {
   mystd->print_cr("Memory:");
@@ -195,119 +199,108 @@ void Universe::print() {
   }
 }
 
-
 oop* Universe::object_start(oop* p) {
-  if(new_gen.contains(p)) return new_gen.object_start(p);
+  if (new_gen.contains(p))
+    return new_gen.object_start(p);
   return old_gen.object_start(p);
 }
 
-
-class PrintClosure: public ObjectClosure {
-  void do_object(memOop obj) { 
+class PrintClosure : public ObjectClosure {
+  void do_object(memOop obj) {
     PrintObjectClosure blk(mystd);
     blk.do_object(obj);
     obj->layout_iterate(&blk);
   }
 };
 
-
 void Universe::print_layout() {
   PrintClosure blk;
   object_iterate(&blk);
 }
-
 
 static void decode_method(methodOop method, klassOop klass) {
   if (WizardMode) {
     ResourceMark rm;
     method->print_codes();
   }
-  { ResourceMark rm;
+  {
+    ResourceMark rm;
     method->print();
     prettyPrinter::print(method, klass);
   }
 }
 
-
 static void decode_klass(symbolOop name, klassOop klass) {
   // Klass methods
-  { 
+  {
     objArrayOop f = klass->klass_part()->methods();
-    for (int index = 1; index <= f->length(); index ++)
-    decode_method(methodOop(f->obj_at(index)), klass);
+    for (int index = 1; index <= f->length(); index++)
+      decode_method(methodOop(f->obj_at(index)), klass);
   }
   // Mixin methods
   {
     objArrayOop f = klass->klass_part()->mixin()->methods();
-    for (int index = 1; index <= f->length(); index ++)
-    decode_method(methodOop(f->obj_at(index)), klass);
+    for (int index = 1; index <= f->length(); index++)
+      decode_method(methodOop(f->obj_at(index)), klass);
   }
 }
-
 
 void Universe::decode_methods() {
   int l = Universe::systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = 
-       (associationOop) Universe::systemDictionaryObj()->obj_at(index);
-     if (assoc->value()->is_klass())
-        decode_klass(assoc->key(), klassOop(assoc->value()));
+    associationOop assoc = (associationOop)Universe::systemDictionaryObj()->obj_at(index);
+    if (assoc->value()->is_klass())
+      decode_klass(assoc->key(), klassOop(assoc->value()));
   }
 }
-
 
 void Universe::object_iterate(ObjectClosure* blk) {
   new_gen.object_iterate(blk);
   old_gen.object_iterate(blk);
 }
 
-
 static OopClosure* the_blk;
 static void the_func(oop* p) {
   the_blk->do_oop(p);
 }
-
 
 void Universe::root_iterate(OopClosure* blk) {
   the_blk = blk;
   Universe::oops_do(the_func);
 }
 
-
-// Traverses the system dictionary to find the 
+// Traverses the system dictionary to find the
 // association referring the class or meta class
 // and then prints the key.
 void Universe::print_klass_name(klassOop k) {
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = 
-       (associationOop) systemDictionaryObj()->obj_at(index);
-     if (assoc->value() == k) {
-     	assoc->key()->print_symbol_on();
-	return;
-     } else if (assoc->value()->klass() == k) {
-        assoc->key()->print_symbol_on();
-	lprintf(" class");
-        return;
-     }
+    associationOop assoc = (associationOop)systemDictionaryObj()->obj_at(index);
+    if (assoc->value() == k) {
+      assoc->key()->print_symbol_on();
+      return;
+    } else if (assoc->value()->klass() == k) {
+      assoc->key()->print_symbol_on();
+      lprintf(" class");
+      return;
+    }
   }
 }
 
-
 char* Universe::klass_name(klassOop k) {
-  if (k == NULL) return "(NULL)";
+  if (k == NULL)
+    return "(NULL)";
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = 
-       (associationOop) systemDictionaryObj()->obj_at(index);
-     if (assoc->value() == k) {
-     	return assoc->key()->as_string();
-     } else if (assoc->value()->klass() == k) {
-        symbolOop name = assoc->key();
-	char* result = NEW_RESOURCE_ARRAY(char, name->length()+7);
-	snprintf(result, name->length() + 7, "%s class", name->as_string());
-        return result;
-     }
+    associationOop assoc = (associationOop)systemDictionaryObj()->obj_at(index);
+    if (assoc->value() == k) {
+      return assoc->key()->as_string();
+    } else if (assoc->value()->klass() == k) {
+      symbolOop name = assoc->key();
+      char* result = NEW_RESOURCE_ARRAY(char, name->length() + 7);
+      snprintf(result, name->length() + 7, "%s class", name->as_string());
+      return result;
+    }
   }
   // it's an unknown class (mixin invocation)
   klassOop super = k->klass_part()->superKlass();
@@ -322,84 +315,82 @@ char* Universe::klass_name(klassOop k) {
   }
 }
 
-
 klassOop Universe::method_holder_of(methodOop m) {
-  m = m->home();	// so block methods can be found, too
+  m = m->home(); // so block methods can be found, too
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = 
-       (associationOop) systemDictionaryObj()->obj_at(index);
-     if (assoc->value()->is_klass()) {
-       klassOop k = klassOop(assoc->value());
-       klassOop res;
-       if ((res = k->klass_part()->lookup_method_holder_for(m)) != NULL) {
-	 // note: do search this way because not all superclasses are in system dictionary
-	 return res;
-       } else if ((res = k->klass()->klass_part()->lookup_method_holder_for(m)) != NULL) {
-         return res;	// in metaclass hierarchy
-       }
-     }
+    associationOop assoc = (associationOop)systemDictionaryObj()->obj_at(index);
+    if (assoc->value()->is_klass()) {
+      klassOop k = klassOop(assoc->value());
+      klassOop res;
+      if ((res = k->klass_part()->lookup_method_holder_for(m)) != NULL) {
+        // note: do search this way because not all superclasses are in system dictionary
+        return res;
+      } else if ((res = k->klass()->klass_part()->lookup_method_holder_for(m)) != NULL) {
+        return res; // in metaclass hierarchy
+      }
+    }
   }
-  if (WizardMode) warning("could not find methodHolder of method %#x", m);
-  return NULL;	
+  if (WizardMode)
+    warning("could not find methodHolder of method %#x", m);
+  return NULL;
 }
-
 
 symbolOop Universe::find_global_key_for(oop value, bool* meta) {
   *meta = false;
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc =  associationOop(systemDictionaryObj()->obj_at(index));
-     if (assoc->is_constant() && assoc->value()->is_klass()) {
-       if (assoc->value() == value) {
-	 return assoc->key();
-       } else {
-         klassOop s = klassOop(assoc->value())->klass();
-         if (s == value) {
-           *meta = true;
-           return assoc->key();
-	 }
-       }
-     }
+    associationOop assoc = associationOop(systemDictionaryObj()->obj_at(index));
+    if (assoc->is_constant() && assoc->value()->is_klass()) {
+      if (assoc->value() == value) {
+        return assoc->key();
+      } else {
+        klassOop s = klassOop(assoc->value())->klass();
+        if (s == value) {
+          *meta = true;
+          return assoc->key();
+        }
+      }
+    }
   }
   return NULL;
 }
 
-
 oop Universe::find_global(char* name, bool must_be_constant) {
   if (!must_be_constant) {
-    if (strcmp(name, "true")  == 0 ) return trueObj();
-    if (strcmp(name, "false") == 0 ) return falseObj();
-    if (strcmp(name, "nil")   == 0 ) return nilObj();
+    if (strcmp(name, "true") == 0)
+      return trueObj();
+    if (strcmp(name, "false") == 0)
+      return falseObj();
+    if (strcmp(name, "nil") == 0)
+      return nilObj();
   }
 
   symbolOop sym = oopFactory::new_symbol(name);
 
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = associationOop(systemDictionaryObj()->obj_at(index));
-     if (assoc->key() == sym) {
-       if (!must_be_constant || assoc->is_constant()) {
-         return assoc->value();
-       }
-     }
+    associationOop assoc = associationOop(systemDictionaryObj()->obj_at(index));
+    if (assoc->key() == sym) {
+      if (!must_be_constant || assoc->is_constant()) {
+        return assoc->value();
+      }
+    }
   }
   return NULL;
 }
-
 
 associationOop Universe::find_global_association(char* name) {
   symbolOop sym = oopFactory::new_symbol(name);
 
   int l = systemDictionaryObj()->length();
   for (int index = 1; index <= l; index++) {
-     associationOop assoc = 
-       (associationOop) systemDictionaryObj()->obj_at(index);
-     if (assoc->key() == sym) return assoc;
+    associationOop assoc = (associationOop)systemDictionaryObj()->obj_at(index);
+    if (assoc->key() == sym)
+      return assoc;
   }
   return NULL;
 }
-
 
 void Universe::methods_in_array_do(objArrayOop array, void f(methodOop method)) {
   int length = array->length();
@@ -423,13 +414,10 @@ void Universe::methods_for_do(klassOop klass, void f(methodOop method)) {
 
 class MethodsClosure : public klassOopClosure {
   void (*f)(methodOop method);
-public:  
-  MethodsClosure(void f(methodOop method)) {
-    this->f = f; 
-  }
-  void do_klass(klassOop klass) {
-    Universe::methods_for_do(klass, f);
-  }
+
+public:
+  MethodsClosure(void f(methodOop method)) { this->f = f; }
+  void do_klass(klassOop klass) { Universe::methods_for_do(klass, f); }
 };
 
 void Universe::methods_do(void f(methodOop method)) {
@@ -441,15 +429,16 @@ void Universe::classes_for_do(klassOop klass, klassOopClosure* iterator) {
   // call f with the class
   iterator->do_klass(klass);
   // recurse if the super class is a anonymous class
-  if (!klass->klass_part()->has_superKlass()) return;
-  if (!klass->klass_part()->superKlass()->klass_part()->is_named_class()) return;
+  if (!klass->klass_part()->has_superKlass())
+    return;
+  if (!klass->klass_part()->superKlass()->klass_part()->is_named_class())
+    return;
   classes_for_do(klass->klass_part()->superKlass(), iterator);
 }
 
-
 void Universe::classes_do(klassOopClosure* iterator) {
-  objArrayOop array  = Universe::systemDictionaryObj();
-  int         length = array->length();
+  objArrayOop array = Universe::systemDictionaryObj();
+  int length = array->length();
   for (int index = 1; index <= length; index++) {
     associationOop assoc = associationOop(array->obj_at(index));
     assert(assoc->is_association(), "just checking");
@@ -463,9 +452,9 @@ void Universe::flush_inline_caches_in_method(methodOop method) {
   method->clear_inline_caches();
 }
 
-class FlushClosure: public ObjectClosure {
+class FlushClosure : public ObjectClosure {
   void do_object(memOop obj) {
-    if (obj->is_method()) 
+    if (obj->is_method())
       methodOop(obj)->clear_inline_caches();
   }
 };
@@ -475,13 +464,12 @@ void Universe::flush_inline_caches_in_methods() {
   object_iterate(&blk);
 }
 
-class AllMethodsClosure: public ObjectClosure {
+class AllMethodsClosure : public ObjectClosure {
   void (*f)(methodOop m);
- public:
-  AllMethodsClosure(void f(methodOop m)) {
-    this->f = f;
-  }
-   
+
+public:
+  AllMethodsClosure(void f(methodOop m)) { this->f = f; }
+
   void do_object(memOop obj) {
     if (obj->is_method())
       f(methodOop(obj));
@@ -511,8 +499,8 @@ newGeneration Universe::new_gen;
 oldGeneration Universe::old_gen;
 
 symbolTable* Universe::symbol_table;
-rSet*        Universe::remembered_set;
-ageTable*    Universe::age_table;
+rSet* Universe::remembered_set;
+ageTable* Universe::age_table;
 
 #ifdef DELTA_COMPILER
 zone* Universe::code;
@@ -524,43 +512,42 @@ int Universe::tenuring_threshold;
 int Universe::scavengeCount;
 
 // Classes
-klassOop smiKlassObj                           = klassOop(badOop);
-klassOop contextKlassObj                       = klassOop(badOop);
-klassOop doubleKlassObj                        = klassOop(badOop);
-klassOop Universe::_memOopKlassObj             = klassOop(badOop);
-klassOop Universe::_objArrayKlassObj           = klassOop(badOop);
-klassOop Universe::_byteArrayKlassObj          = klassOop(badOop);
-klassOop symbolKlassObj                        = klassOop(badOop);
-klassOop Universe::_associationKlassObj        = klassOop(badOop);
-klassOop zeroArgumentBlockKlassObj             = klassOop(badOop);
-klassOop oneArgumentBlockKlassObj              = klassOop(badOop);
-klassOop twoArgumentBlockKlassObj              = klassOop(badOop);
-klassOop threeArgumentBlockKlassObj            = klassOop(badOop);
-klassOop fourArgumentBlockKlassObj             = klassOop(badOop);
-klassOop fiveArgumentBlockKlassObj             = klassOop(badOop);
-klassOop sixArgumentBlockKlassObj              = klassOop(badOop);
-klassOop sevenArgumentBlockKlassObj            = klassOop(badOop);
-klassOop eightArgumentBlockKlassObj            = klassOop(badOop);
-klassOop nineArgumentBlockKlassObj             = klassOop(badOop);
-klassOop Universe::_methodKlassObj             = klassOop(badOop);
-klassOop Universe::_characterKlassObj          = klassOop(badOop);
-klassOop doubleValueArrayKlassObj              = klassOop(badOop);
-klassOop Universe::_vframeKlassObj             = klassOop(badOop);
+klassOop smiKlassObj = klassOop(badOop);
+klassOop contextKlassObj = klassOop(badOop);
+klassOop doubleKlassObj = klassOop(badOop);
+klassOop Universe::_memOopKlassObj = klassOop(badOop);
+klassOop Universe::_objArrayKlassObj = klassOop(badOop);
+klassOop Universe::_byteArrayKlassObj = klassOop(badOop);
+klassOop symbolKlassObj = klassOop(badOop);
+klassOop Universe::_associationKlassObj = klassOop(badOop);
+klassOop zeroArgumentBlockKlassObj = klassOop(badOop);
+klassOop oneArgumentBlockKlassObj = klassOop(badOop);
+klassOop twoArgumentBlockKlassObj = klassOop(badOop);
+klassOop threeArgumentBlockKlassObj = klassOop(badOop);
+klassOop fourArgumentBlockKlassObj = klassOop(badOop);
+klassOop fiveArgumentBlockKlassObj = klassOop(badOop);
+klassOop sixArgumentBlockKlassObj = klassOop(badOop);
+klassOop sevenArgumentBlockKlassObj = klassOop(badOop);
+klassOop eightArgumentBlockKlassObj = klassOop(badOop);
+klassOop nineArgumentBlockKlassObj = klassOop(badOop);
+klassOop Universe::_methodKlassObj = klassOop(badOop);
+klassOop Universe::_characterKlassObj = klassOop(badOop);
+klassOop doubleValueArrayKlassObj = klassOop(badOop);
+klassOop Universe::_vframeKlassObj = klassOop(badOop);
 
 // Objects
-oop         nilObj                             = oop(badOop);
-oop         trueObj                            = oop(badOop);
-oop         falseObj                           = oop(badOop);
-objArrayOop Universe::_asciiCharacters         = objArrayOop(badOop);
-objArrayOop Universe::_systemDictionaryObj     = objArrayOop(badOop);
-objArrayOop Universe::_objectIDTable           = objArrayOop(badOop);
-objArrayOop Universe::_pic_free_list           = objArrayOop(badOop); 
-oop         Universe::_callBack_receiver       = oop(badOop);
-symbolOop   Universe::_callBack_selector       = symbolOop(badOop);
-oop         Universe::_dll_lookup_receiver     = oop(badOop);
-symbolOop   Universe::_dll_lookup_selector     = symbolOop(badOop);
-methodOop   Universe::_sweeper_method          = NULL;
-
+oop nilObj = oop(badOop);
+oop trueObj = oop(badOop);
+oop falseObj = oop(badOop);
+objArrayOop Universe::_asciiCharacters = objArrayOop(badOop);
+objArrayOop Universe::_systemDictionaryObj = objArrayOop(badOop);
+objArrayOop Universe::_objectIDTable = objArrayOop(badOop);
+objArrayOop Universe::_pic_free_list = objArrayOop(badOop);
+oop Universe::_callBack_receiver = oop(badOop);
+symbolOop Universe::_callBack_selector = symbolOop(badOop);
+oop Universe::_dll_lookup_receiver = oop(badOop);
+symbolOop Universe::_dll_lookup_selector = symbolOop(badOop);
+methodOop Universe::_sweeper_method = NULL;
 
 void Universe::roots_do(void f(oop*)) {
   // External Objects
@@ -608,7 +595,6 @@ void Universe::roots_do(void f(oop*)) {
   f((oop*)&_vframeKlassObj);
 }
 
-
 void Universe::oops_do(void f(oop*)) {
   // Iterate over the local roots
   roots_do(f);
@@ -620,7 +606,6 @@ void Universe::oops_do(void f(oop*)) {
   InliningDatabase::oops_do(f);
 }
 
-
 void Universe::add_global(oop value) {
   _systemDictionaryObj = _systemDictionaryObj->copy_add(value);
 }
@@ -630,7 +615,7 @@ void Universe::remove_global_at(int index) {
 }
 
 bool Universe::on_page_boundary(void* addr) {
-  return ((intptr_t) addr) % page_size() == 0;
+  return ((intptr_t)addr) % page_size() == 0;
 }
 
 int Universe::page_size() {

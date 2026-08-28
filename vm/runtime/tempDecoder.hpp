@@ -30,34 +30,34 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the names of parameters and temporaries.
 
 class TempDecoder {
- private:
-   int num_of_params;
-   bool is_heap_parameter(byteArrayOop name, objArrayOop tempInfo);
- public:
+private:
+  int num_of_params;
+  bool is_heap_parameter(byteArrayOop name, objArrayOop tempInfo);
+
+public:
   virtual void decode(methodOop method, int bci = 0);
 
   // arguments are numbered from 1 to n
-  virtual void parameter        (byteArrayOop name, int index) {}
-  virtual void stack_temp       (byteArrayOop name, int no)    {}
-  virtual void stack_float_temp (byteArrayOop name, int fno)   {}
-  virtual void heap_temp        (byteArrayOop name, int no)    {}
-  virtual void heap_parameter   (byteArrayOop name, int no)    {}
+  virtual void parameter(byteArrayOop name, int index) {}
+  virtual void stack_temp(byteArrayOop name, int no) {}
+  virtual void stack_float_temp(byteArrayOop name, int fno) {}
+  virtual void heap_temp(byteArrayOop name, int no) {}
+  virtual void heap_parameter(byteArrayOop name, int no) {}
 
-  virtual void no_debug_info() {}      
+  virtual void no_debug_info() {}
 };
 
 class TempPrinter : public TempDecoder {
- private:
-   
- public:
+private:
+public:
   void decode(methodOop method, int bci = 0);
 
   // arguments are numbered from 1 to n
-  void parameter        (byteArrayOop name, int index);
-  void stack_temp       (byteArrayOop name, int no);
-  void stack_float_temp (byteArrayOop name, int fno);
-  void heap_temp        (byteArrayOop name, int no);
-  void heap_parameter   (byteArrayOop name, int no);
+  void parameter(byteArrayOop name, int index);
+  void stack_temp(byteArrayOop name, int no);
+  void stack_float_temp(byteArrayOop name, int fno);
+  void heap_temp(byteArrayOop name, int no);
+  void heap_parameter(byteArrayOop name, int no);
 
   void no_debug_info();
 };

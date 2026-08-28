@@ -26,9 +26,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
-  
+
 void doubleOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);
   set_value(st->read_double());
 }
- 

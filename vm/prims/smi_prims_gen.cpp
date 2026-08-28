@@ -25,8 +25,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
 
-
-
 // The interpreter's generated-primitive glue (call_primitive /
 // call_primitive_can_fail followed by call_C) uses different conventions on
 // the two backends:
@@ -37,11 +35,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //             (argument); the result must be left in x0 because call_C copies
 //             x0 -> eax after the call; nothing was pushed, so ret(0).
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-#  define PRIM_ARG_DECL()  Register argument = x1; Register receiver = x0;
-#  define PRIM_RETURN()    { masm->mov(x0, eax); masm->ret(0); }
+#define PRIM_ARG_DECL()                                                                                                \
+  Register argument = x1;                                                                                              \
+  Register receiver = x0;
+#define PRIM_RETURN()                                                                                                  \
+  {                                                                                                                    \
+    masm->mov(x0, eax);                                                                                                \
+    masm->ret(0);                                                                                                      \
+  }
 #else
-#  define PRIM_ARG_DECL()  Address argument = Address(esp, 4); Address receiver = Address(esp, 8);
-#  define PRIM_RETURN()    { masm->ret(8); }
+#define PRIM_ARG_DECL()                                                                                                \
+  Address argument = Address(esp, 4);                                                                                  \
+  Address receiver = Address(esp, 8);
+#define PRIM_RETURN()                                                                                                  \
+  { masm->ret(8); }
 #endif
 
 char* PrimitivesGenerator::smiOopPrimitives_add() {
@@ -57,7 +64,7 @@ char* PrimitivesGenerator::smiOopPrimitives_add() {
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   PRIM_RETURN();
 
- masm->bind(_overflow);
+  masm->bind(_overflow);
   masm->movl(eax, argument);
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
@@ -78,13 +85,12 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   PRIM_RETURN();
-  
- masm->bind(_overflow);
+
+  masm->bind(_overflow);
   masm->movl(eax, argument);
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->jmp(error_overflow);
-  
 
   return entry_point;
 }
@@ -92,7 +98,7 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
 char* PrimitivesGenerator::smiOopPrimitives_multiply() {
   PRIM_ARG_DECL();
   Label _overflow;
-  
+
   char* entry_point = masm->pc();
 
   masm->movl(edx, argument);
@@ -128,12 +134,12 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   char* entry_point = masm->pc();
 
   // PUBLIC _smiOopPrimitives_mod@8
-  // 
+  //
   // ; Intel definition of mod delivers:
   // ;   0 <= |x%y| < |y|
   // ;
   // ; Standard definition requires:
-  // ;   y>0: 
+  // ;   y>0:
   // ;     0 <= x mod y < y
   // ;   y<0:
   // ;     y <  x mod y <= 0
@@ -147,12 +153,12 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   // ;     x mod y = x%y + y
   // ;
 
-//  masm->int3();
+  //  masm->int3();
   masm->movl(eax, receiver);
   masm->movl(ecx, argument);
   masm->testl(ecx, ecx);
   masm->jcc(Assembler::equal, error_division_by_zero);
-  
+
   masm->testb(ecx, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
 
@@ -169,14 +175,14 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   masm->movl(eax, edx);
   masm->testl(eax, eax);
   masm->jcc(Assembler::equal, _equal);
-  
+
   masm->xorl(edx, ecx);
   masm->jcc(Assembler::negative, _positive);
-  
+
   masm->bind(_equal);
   masm->shll(eax, 2);
   PRIM_RETURN();
-  
+
   masm->bind(_positive);
   masm->addl(eax, ecx);
   masm->shll(eax, 2);
@@ -205,8 +211,8 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   // ;   sgn(y)#sgn(x%y):
   // ;     x div y = x/y-1
   // ;
-  // 
-  
+  //
+
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -232,11 +238,11 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   masm->xorl(ecx, edx);
   masm->jcc(Assembler::negative, _positive);
 
- masm->bind(_equal);
+  masm->bind(_equal);
   masm->shll(eax, 2);
   PRIM_RETURN();
 
- masm->bind(_positive);
+  masm->bind(_positive);
   masm->decl(eax);
   masm->shll(eax, 2);
   PRIM_RETURN();
@@ -281,7 +287,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   PRIM_ARG_DECL();
 
   char* entry_point = masm->pc();
-  
+
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -300,7 +306,6 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   masm->movl(eax, edx);
   masm->sarl(eax, 2);
   PRIM_RETURN();
-
 
   return entry_point;
 }

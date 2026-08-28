@@ -28,15 +28,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // symbols are immutable, canonicalized byteArrays.
 
-class symbolOopDesc: public byteArrayOopDesc {
- public:
+class symbolOopDesc : public byteArrayOopDesc {
+public:
   // constructor
-	friend symbolOop as_symbolOop(void* p);
-  
+  friend symbolOop as_symbolOop(void* p);
+
   // memory operations
   symbolOop scavenge();
   bool verify();
   void print_symbol_on(outputStream* st = NULL);
 };
-inline symbolOop as_symbolOop(void* p) { return symbolOop(as_byteArrayOop(p)); }
+inline symbolOop as_symbolOop(void* p) {
+  return symbolOop(as_byteArrayOop(p));
+}
 #endif // _SYMBOL_OOP_HPP

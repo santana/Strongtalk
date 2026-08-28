@@ -24,15 +24,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #ifndef _UNIVERSE_INLINE_HPP
 #define _UNIVERSE_INLINE_HPP
 
-inline oop* Universe::allocate_in_survivor_space(memOop p,
-						 int size,
-						 bool &is_new) {
+inline oop* Universe::allocate_in_survivor_space(memOop p, int size, bool& is_new) {
   if (p->mark()->age() < tenuring_threshold && new_gen.would_fit(size)) {
     is_new = true;
     return new_gen.allocate_in_survivor_space(size);
   } else {
     is_new = false;
     return old_gen.allocate(size);
-  } 
+  }
 }
 #endif // _UNIVERSE_INLINE_HPP

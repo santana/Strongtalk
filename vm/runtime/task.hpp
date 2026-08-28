@@ -34,12 +34,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   ...
 //   pf.deroll();
 
-class PeriodicTask: public CHeapObj {
- private:
+class PeriodicTask : public CHeapObj {
+private:
   int counter;
   int interval;
   friend void real_time_tick(int delay_time);
- public:
+
+public:
   PeriodicTask(int interval_time); // interval is in milliseconds of elapsed time
   ~PeriodicTask();
 

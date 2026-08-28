@@ -32,19 +32,18 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // A Closure is used for iterating over data structures; use it instead
 // of function pointers.
 template <class T> class Closure : StackObj {
- public:
+public:
   virtual void do_it(T t) = 0;
 };
-
 
 // ObjectClosure is used for iterating through object space
 // (see universe::object_iterate).
 class ObjectClosure : StackObj {
- public:
+public:
   // Called when entering a space.
   virtual void begin_space(space* s) {}
   // Called when exiting a space.
-  virtual void end_space(space* s)   {}
+  virtual void end_space(space* s) {}
   // Called for each object.
   virtual void do_object(memOop obj) {}
 };
@@ -52,7 +51,8 @@ class ObjectClosure : StackObj {
 // ObjectFilterClosure is an ObjectClosure with filtering.
 class ObjectFilterClosure : public ObjectClosure {
   void do_object(memOop obj);
- public:
+
+public:
   // Called for each object and returns whether
   // do_filteres_objects should be called.
   virtual bool include_object(memOop obj) { return true; }
@@ -63,10 +63,10 @@ class ObjectFilterClosure : public ObjectClosure {
 // ObjectLayoutClosure is a closure for iterating through the
 // layout of a memOop (see memOop::layout_iterate).
 class ObjectLayoutClosure : StackObj {
- public:
+public:
   // NON INDEXABLE PART
   // Called for the markOop
-  virtual void do_mark(markOop *m) {}
+  virtual void do_mark(markOop* m) {}
   // Called for each oop
   virtual void do_oop(char* title, oop* o) {}
   // Called for each byte
@@ -95,7 +95,7 @@ class ObjectLayoutClosure : StackObj {
 
 // A FrameClosure is used for iterating though frames
 class FrameClosure : StackObj {
- public:
+public:
   // Called before iterating through a process.
   virtual void begin_process(Process* p) {}
   // Called after iterating through a process.
@@ -106,22 +106,22 @@ class FrameClosure : StackObj {
 
 // A FrameLayoutClosure is used for iterating though the layout of frame
 class FrameLayoutClosure : StackObj {
- public:
-  // Called for each oop 
+public:
+  // Called for each oop
   virtual void do_stack(int index, oop* o) {}
   // Called for the hcode pointer
   virtual void do_hp(u_char** hp) {}
-  // Called for the receiver 
+  // Called for the receiver
   virtual void do_receiver(oop* o) {}
-  // Called for the link 
+  // Called for the link
   virtual void do_link(void** fp) {}
-  // Called for the return address 
+  // Called for the return address
   virtual void do_return_addr(char** pc) {}
 };
 
 // A ProcessClosure is used for iterating over Delta processes
 class ProcessClosure : StackObj {
- public:
+public:
   // Called for each process
   virtual void do_process(DeltaProcess* p) {}
 };
@@ -129,7 +129,7 @@ class ProcessClosure : StackObj {
 // A OopClosure is used for iterating through oops
 // (see memOop::oop_iterate, universe::root_iterate).
 class OopClosure : StackObj {
- public:
+public:
   // Called for each oop
   virtual void do_oop(oop* o) {}
 };
@@ -137,7 +137,7 @@ class OopClosure : StackObj {
 // A klassOopClosure is used for iterating through klassOops
 // (see memOop::oop_iterate, universe::root_iterate).
 class klassOopClosure : StackObj {
- public:
+public:
   // Called for each oop
   virtual void do_klass(klassOop klass) {}
 };

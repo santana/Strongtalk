@@ -53,26 +53,29 @@ TEST(SystemPrimTests, nurseryFreeSpaceShouldReturnEdenFreeSpaceAsSMI) {
 
 TEST(SystemPrimTests, shrinkMemoryShouldReduceOldSpaceCapacity) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  systemPrimitives::expandMemory(as_smiOop(ObjectHeapExpandSize *K));
-  systemPrimitives::shrinkMemory(as_smiOop(ObjectHeapExpandSize *K));
+  systemPrimitives::expandMemory(as_smiOop(ObjectHeapExpandSize * K));
+  systemPrimitives::shrinkMemory(as_smiOop(ObjectHeapExpandSize * K));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnValueOutOfRangeWhenInsufficientFreeSpace) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()), (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(freeSpace + 1)));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()),
+                (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(freeSpace + 1)));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnValueOutOfRangeWhenNegative) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()), (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(-1)));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::value_out_of_range()),
+                (intptr_t)systemPrimitives::shrinkMemory(as_smiOop(-1)));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
 TEST(SystemPrimTests, shrinkMemoryShouldReturnArgumentIsOfWrongType) {
   int freeSpace = smiOop(systemPrimitives::freeSpace())->value();
-  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::first_argument_has_wrong_type()), (intptr_t)systemPrimitives::shrinkMemory(vmSymbols::and1()));
+  ASSERT_EQUALS((intptr_t)markSymbol(vmSymbols::first_argument_has_wrong_type()),
+                (intptr_t)systemPrimitives::shrinkMemory(vmSymbols::and1()));
   ASSERT_EQUALS(freeSpace, smiOop(systemPrimitives::freeSpace())->value());
 }
 
@@ -115,7 +118,7 @@ TEST(SystemPrimTests, alienCallocShouldReturnAlignedValue) {
 TEST(SystemPrimTests, alienCallocContentsShouldBeZero) {
   char message[100];
   oop pointer = systemPrimitives::alienCalloc(as_smiOop(4));
-  char* address = (char*) smiOop(pointer)->value();
+  char* address = (char*)smiOop(pointer)->value();
   for (int index = 0; index < 4; index++) {
     snprintf(message, sizeof(message), "char %d should be zero", index);
     ASSERT_EQUALS_M((int)address[index], 0, message);
@@ -143,27 +146,27 @@ TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenNotSmi) {
 
 TEST(SystemPrimTests, alienCallocShouldReturnMarkedSymbolWhenAddressZero) {
   oop result = systemPrimitives::alienCalloc(as_smiOop(0));
-  
+
   ASSERT_TRUE_M(result->is_mark(), "return should be marked");
   ASSERT_EQUALS_M(markSymbol(vmSymbols::argument_is_invalid()), result, "wrong symbol returned");
 }
 
 TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenAddressZero) {
   oop result = systemPrimitives::alienFree(as_smiOop(0));
-  
+
   ASSERT_TRUE_M(result->is_mark(), "return should be marked");
   ASSERT_EQUALS_M(markSymbol(vmSymbols::argument_is_invalid()), result, "wrong symbol returned");
 }
 
 TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenAddressLargeIntegerZero) {
   oop result = systemPrimitives::alienFree(as_large_integer(0));
-  
+
   ASSERT_TRUE_M(result->is_mark(), "return should be marked");
   ASSERT_EQUALS_M(markSymbol(vmSymbols::argument_is_invalid()), result, "wrong symbol returned");
 }
 
 TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenLargeIntegerAddressTooBig) {
-  oop largeInteger = as_large_integer(256*256*256);
+  oop largeInteger = as_large_integer(256 * 256 * 256);
   oop tooBig = byteArrayPrimitives::largeIntegerMultiply(largeInteger, largeInteger);
   oop result = systemPrimitives::alienFree(tooBig);
 
@@ -172,9 +175,9 @@ TEST(SystemPrimTests, alienFreeShouldReturnMarkedSymbolWhenLargeIntegerAddressTo
 }
 
 TEST(SystemPrimTests, alienFreeShouldFreeLargeIntegerAddress) {
-  intptr_t address = (intptr_t) malloc(4);
+  intptr_t address = (intptr_t)malloc(4);
   oop result = systemPrimitives::alienFree(as_large_integer(address));
-  
+
   ASSERT_TRUE_M(!result->is_mark(), "should not be marked");
   ASSERT_TRUE_M(result == trueObj, "result should be true");
 }

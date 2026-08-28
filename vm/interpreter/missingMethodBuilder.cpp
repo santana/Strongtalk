@@ -85,13 +85,12 @@ void MissingMethodBuilder::build() {
       buffer.pushByte(Bytecodes::return_tos_pop_n);
       buffer.pushByte(argCount);
   }
-  methodKlass* k = (methodKlass*) Universe::methodKlassObj()->klass_part();
+  methodKlass* k = (methodKlass*)Universe::methodKlassObj()->klass_part();
   _method = k->constructMethod(selector,
-                               0,         // flags
-                               argCount,  // number of arguments
+                               0, // flags
+                               argCount, // number of arguments
                                oopFactory::new_objArray(0), // debug info
-                               bytes(),
-                               oops());
+                               bytes(), oops());
 }
 
 byteArrayOop MissingMethodBuilder::bytes() {

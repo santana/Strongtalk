@@ -59,16 +59,13 @@ extern "C" void UncommonTrap() {
   evaluator::read_eval_loop();
 }
 
-
 char* CompiledIC::normalLookupRoutine() {
   return StubRoutines::ic_normal_lookup_entry();
 }
 
-
 char* CompiledIC::superLookupRoutine() {
   return StubRoutines::ic_super_lookup_entry();
 }
-
 
 extern "C" char* icNormalLookup(oop recv, CompiledIC* ic) {
   // As soon as the lookup routine handles 'message not understood' correctly,
@@ -78,35 +75,32 @@ extern "C" char* icNormalLookup(oop recv, CompiledIC* ic) {
   return ic->normalLookup(recv);
 }
 
-
-bool CompiledIC::is_empty() const { 
-  char* d = destination(); 
-  return d == normalLookupRoutine() || d == superLookupRoutine(); 
+bool CompiledIC::is_empty() const {
+  char* d = destination();
+  return d == normalLookupRoutine() || d == superLookupRoutine();
 }
 
-
 int CompiledIC::ntargets() const {
-  if (is_empty()) return 0;
+  if (is_empty())
+    return 0;
   PIC* p = pic();
   return p != NULL ? p->number_of_targets() : 1;
 }
-
 
 void CompiledIC::set_call_destination(char* entry_point) {
   // if the IC has a PIC we deallocate the PIC before setting the entry_point
   PIC* p = pic();
   assert(p == NULL || p->entry() != entry_point, "replacing with same address -- shouldn't dealloc");
-  if (p != NULL) delete p;
+  if (p != NULL)
+    delete p;
   NativeCall::set_destination(entry_point);
 }
-
 
 extern "C" bool have_nlr_through_C;
 
 oop nmethod_substitute() {
   return Universe::nilObj();
 }
-
 
 char* CompiledIC::normalLookup(oop recv) {
   ResourceMark rm;
@@ -168,9 +162,11 @@ char* CompiledIC::normalLookup(oop recv) {
     symbolOop sel = oopFactory::new_symbol("doesNotUnderstand:");
     if (interpreter_normal_lookup(recv->klass(), sel).is_empty()) {
       // doesNotUnderstand: not found ==> process error
-      { ResourceMark rm;
+      {
+        ResourceMark rm;
         mystd->print("LOOKUP ERROR\n");
-        sel->print_value(); mystd->print(" not found\n");
+        sel->print_value();
+        mystd->print(" not found\n");
       }
       if (DeltaProcess::active()->is_scheduler()) {
         DeltaProcess::active()->trace_stack();
@@ -188,7 +184,7 @@ char* CompiledIC::normalLookup(oop recv) {
     }
     // return a substitute nmethod so that stub routine doesn't crash
     return (char*)nmethod_substitute;
-  
+
     /* Old code - keep around till completely fixed
 
     LookupKey key(klass, sel);
@@ -215,7 +211,8 @@ char* CompiledIC::normalLookup(oop recv) {
   }
 
   bool empty = is_empty();
-  if (empty) setDirty();
+  if (empty)
+    setDirty();
   if (!empty || result.is_method()) {
     PIC* pic = PIC::allocate(this, klass, result);
     if (pic == NULL) {
@@ -224,10 +221,9 @@ char* CompiledIC::normalLookup(oop recv) {
       assert(!UseMICs, "should return a MIC");
       clear();
       if (result.is_entry()) {
-        entry_point =  isReceiverStatic()
-                    ?  result.entry()->method()->verifiedEntryPoint()
-                    :  result.entry()->destination();
-      } else { 
+        entry_point = isReceiverStatic() ? result.entry()->method()->verifiedEntryPoint()
+                                         : result.entry()->destination();
+      } else {
         pic = PIC::allocate(this, klass, result);
         assert(pic != NULL, "pic must be present");
         entry_point = pic->entry();
@@ -242,21 +238,21 @@ char* CompiledIC::normalLookup(oop recv) {
     assert(empty && result.is_entry(), "just checking");
 
     // result is a jump table entry for an nmethod
-    if (TraceLookup2) lprintf("nmethod found, f = 0x%x\n", result.get_nmethod());
+    if (TraceLookup2)
+      lprintf("nmethod found, f = 0x%x\n", result.get_nmethod());
     // fetch the destination of the jump table entry to avoid the indirection
 
     // is the receiver is static we will use the verified entry point
-    entry_point =  isReceiverStatic()
-                ?  result.entry()->method()->verifiedEntryPoint()
-                :  result.entry()->destination();
+    entry_point = isReceiverStatic() ? result.entry()->method()->verifiedEntryPoint() : result.entry()->destination();
   }
-  assert(isDirty(), "must be dirty now");	// important invariant for type feedback: non-empty IC must be dirty
-  if (UseInlineCaching) set_call_destination(entry_point);
-  if (TraceLookup2) print();
+  assert(isDirty(), "must be dirty now"); // important invariant for type feedback: non-empty IC must be dirty
+  if (UseInlineCaching)
+    set_call_destination(entry_point);
+  if (TraceLookup2)
+    print();
   LOG_EVENT3("CompiledICLookup (%#x, %#x) --> %#x", klass, sel, entry_point);
   return entry_point;
 }
-
 
 extern "C" char* icSuperLookup(oop recv, CompiledIC* ic) {
   // As soon as the lookup routine handles 'message not understood' correctly,
@@ -265,7 +261,6 @@ extern "C" char* icSuperLookup(oop recv, CompiledIC* ic) {
   VerifyNoScavenge vna;
   return ic->superLookup(recv);
 }
-
 
 extern "C" char* zombie_nmethod(char* return_addr) {
   // Called from zombie nmethods. Determines if called from interpreted
@@ -280,7 +275,7 @@ extern "C" char* zombie_nmethod(char* return_addr) {
   VerifyNoScavenge vna;
   if (Interpreter::contains(return_addr)) {
     // nmethod called from interpreted code
-    frame          f  = DeltaProcess::active()->last_frame();
+    frame f = DeltaProcess::active()->last_frame();
     InterpretedIC* ic = f.current_interpretedIC();
     LOG_EVENT1("zombie nmethod called => interpreted IC 0x%x cleared", ic);
     ic->cleanup();
@@ -298,16 +293,15 @@ extern "C" char* zombie_nmethod(char* return_addr) {
   }
 }
 
-
 klassOop CompiledIC::targetKlass() const {
   nmethod* nm = target();
   if (nm) {
     return nm->key.klass();
   } else {
-    Unimplemented(); return NULL;
+    Unimplemented();
+    return NULL;
   }
 }
-
 
 klassOop CompiledIC::sending_method_holder() {
   char* addr = begin_addr();
@@ -317,7 +311,6 @@ klassOop CompiledIC::sending_method_holder() {
   return scope->selfKlass()->klass_part()->lookup_method_holder_for(scope->method());
 }
 
-
 char* CompiledIC::superLookup(oop recv) {
   ResourceMark rm;
   char* entry_point;
@@ -325,7 +318,7 @@ char* CompiledIC::superLookup(oop recv) {
 
   klassOop recv_klass = recv->klass();
   klassOop mhld_klass = sending_method_holder();
-  symbolOop       sel = selector();
+  symbolOop sel = selector();
 
   if (TraceLookup) {
     mystd->print("CompiledIC super lookup (");
@@ -345,42 +338,43 @@ char* CompiledIC::superLookup(oop recv) {
   assert(!result.is_empty(), "lookup cache error");
   if (result.is_method()) {
     // a methodOop
-    if (TraceLookup2) lprintf("methodOop found, m = 0x%x\n", result.method());
+    if (TraceLookup2)
+      lprintf("methodOop found, m = 0x%x\n", result.method());
     // result = (char*)&interpreter_call;
     // if (UseInlineCaching) set_call_destination(result);
     warning("CompiledIC::superLookup didn't find a nmethod - check this");
     Unimplemented();
   } else {
     // result is a jump table entry for an nmethod
-    if (TraceLookup2) lprintf("nmethod %#x found\n", result.get_nmethod());
+    if (TraceLookup2)
+      lprintf("nmethod %#x found\n", result.get_nmethod());
     // fetch the destination of the jump table entry to avoid the indirection
     entry_point = result.entry()->destination();
   }
-  if (UseInlineCaching) set_call_destination(entry_point);
-  if (TraceLookup2) print();
+  if (UseInlineCaching)
+    set_call_destination(entry_point);
+  if (TraceLookup2)
+    print();
   LOG_EVENT3("SuperLookup (%#x, %#x) --> %#x", recv_klass, sel, entry_point);
   return entry_point;
 }
 
-
-bool CompiledIC::is_monomorphic() const  {
-  if (target() != NULL) return true;
+bool CompiledIC::is_monomorphic() const {
+  if (target() != NULL)
+    return true;
   PIC* p = pic();
   return p != NULL && p->is_monomorphic();
 }
-
 
 bool CompiledIC::is_polymorphic() const {
   PIC* p = pic();
   return p != NULL && p->is_polymorphic();
 }
 
-
 bool CompiledIC::is_megamorphic() const {
   PIC* p = pic();
   return p != NULL && p->is_megamorphic();
 }
-
 
 void CompiledIC::replace(nmethod* nm) {
   assert(selector() == nm->key.selector(), "mismatched selector");
@@ -388,7 +382,7 @@ void CompiledIC::replace(nmethod* nm) {
 
   // MONO
   if (is_monomorphic()) {
-    if (pic()) { 
+    if (pic()) {
       assert(pic()->klasses()->at(0) == nm->key.klass(), "mismatched klass");
     } else {
       // verify the key in the old nmethod matches the new
@@ -411,11 +405,10 @@ void CompiledIC::replace(nmethod* nm) {
   ShouldNotReachHere();
 }
 
-
 void CompiledIC::clear() {
   // Fix this when compiler is more flexible
   assert(!isSuperSend() || UseNewBackend, "We cannot yet have super sends in nmethods");
-  
+
   // Clear destination
   set_call_destination(isSuperSend() ? superLookupRoutine() : normalLookupRoutine());
 
@@ -424,11 +417,10 @@ void CompiledIC::clear() {
   //    reset, otherwise the compiler may think it was never executed.	  -Urs 7/96
 }
 
-
 void CompiledIC::cleanup() {
   // Convert all entries using the following rules:
   //
-  //  nmethod   -> nmethod   (nothing changed) 
+  //  nmethod   -> nmethod   (nothing changed)
   //            or nmethod'  (new nmethod has been compiled)
   //            or methodOop (old nmethod is invalid)
   //
@@ -436,7 +428,8 @@ void CompiledIC::cleanup() {
   //            or nmethod   (new nmethod has been compiled)
 
   // EMPTY
-  if (is_empty()) return;
+  if (is_empty())
+    return;
 
   // MONOMORPHIC
   if (is_monomorphic()) {
@@ -446,11 +439,13 @@ void CompiledIC::cleanup() {
       assert(it.is_interpreted(), "must be interpreted send in monomorphic case");
       // Since it is impossible to retrieve the sending method for a methodOop
       // we leave the IC unchanged if we're in a super send.
-      if (isSuperSend()) return;
+      if (isSuperSend())
+        return;
       LookupKey key(it.get_klass(), selector());
       LookupResult result = lookupCache::lookup(&key);
       // Nothing to do if lookup result is the same
-      if (result.matches(it.interpreted_method())) return;
+      if (result.matches(it.interpreted_method()))
+        return;
       // Otherwise update IC depending on lookup result
       if (result.is_empty()) {
         clear();
@@ -465,13 +460,14 @@ void CompiledIC::cleanup() {
       nmethod* old_nm = findNMethod(destination());
       LookupResult result = lookupCache::lookup(&old_nm->key);
       // Nothing to do if lookup result is the same
-      if (result.matches(old_nm)) return;
+      if (result.matches(old_nm))
+        return;
       // Otherwise update IC depending on lookup result
       if (result.is_empty()) {
-	clear();
+        clear();
       } else if (result.is_method()) {
         // don't set to interpreted method -- may be "compiled only" send
-	clear();
+        clear();
       } else {
         assert(result.is_entry(), "lookup result should be a jump table entry");
         set_call_destination(result.get_nmethod()->entryPoint());
@@ -493,7 +489,7 @@ void CompiledIC::cleanup() {
       */
     }
     return;
-  } 
+  }
 
   // POLYMORPHIC
   PIC* p = pic();
@@ -508,10 +504,10 @@ void CompiledIC::cleanup() {
         if (nm) {
           // monomorphic
           set_call_destination(nm->entryPoint());
-	} else {
+        } else {
           // anamorphic
           clear();
-	}
+        }
       }
     }
     return;
@@ -521,21 +517,26 @@ void CompiledIC::cleanup() {
   ShouldNotReachHere();
 }
 
-
 void CompiledIC::print() {
-  ResourceMark rm;    // so we can print from debugger
+  ResourceMark rm; // so we can print from debugger
   lprintf("\t((CompiledIC*)%#x) ", this);
   if (is_empty()) {
     lprintf("(empty) ");
   } else {
     lprintf("(filled: %d targets) ", ntargets());
   }
-  if (isReceiverStatic()) lprintf("static ");
-  if (isDirty()) lprintf("dirty ");
-  if (isOptimized()) lprintf("optimized ");
-  if (isUninlinable()) lprintf("uninlinable ");
-  if (isSuperSend()) lprintf("super ");
-  if (isMegamorphic()) lprintf("megamorphic ");
+  if (isReceiverStatic())
+    lprintf("static ");
+  if (isDirty())
+    lprintf("dirty ");
+  if (isOptimized())
+    lprintf("optimized ");
+  if (isUninlinable())
+    lprintf("uninlinable ");
+  if (isSuperSend())
+    lprintf("super ");
+  if (isMegamorphic())
+    lprintf("megamorphic ");
   lprintf("\n");
 
   lprintf("\t- selector    : ");
@@ -553,7 +554,7 @@ void CompiledIC::print() {
     }
     it.advance();
   }
-  
+
   lprintf("\t- call address: ");
   char* dest = destination();
   if (dest == normalLookupRoutine()) {
@@ -568,7 +569,6 @@ void CompiledIC::print() {
   lprintf("\t- NLR testcode: 0x%x\n", NLR_testcode());
 }
 
-
 InterpretedIC* CompiledIC::inlineCache() const {
   // return interpreter inline cache in corresponding source method
   char* addr = begin_addr();
@@ -579,11 +579,9 @@ InterpretedIC* CompiledIC::inlineCache() const {
   return iter.ic();
 }
 
-
 symbolOop CompiledIC::selector() const {
   return inlineCache()->selector();
 }
-
 
 nmethod* CompiledIC::target() const {
   char* dest = destination();
@@ -597,12 +595,12 @@ nmethod* CompiledIC::target() const {
   }
 }
 
-
 klassOop CompiledIC::get_klass(int i) const {
   PIC* p = pic();
   if (p) {
     PIC_Iterator it(p);
-    for (int j = 0; j < i; j++) it.advance();
+    for (int j = 0; j < i; j++)
+      it.advance();
     return it.get_klass();
   } else {
     assert(i == 0, "have max. 1 target method");
@@ -610,12 +608,10 @@ klassOop CompiledIC::get_klass(int i) const {
   }
 }
 
-
 PIC* CompiledIC::pic() const {
   char* dest = destination();
   return PIC::find(dest);
 }
-
 
 LookupKey* CompiledIC::key(int i, bool is_normal_send) const {
   if (is_normal_send) {
@@ -627,22 +623,19 @@ LookupKey* CompiledIC::key(int i, bool is_normal_send) const {
   }
 }
 
-
 bool CompiledIC::wasNeverExecuted() const {
   return is_empty() && !isDirty();
 }
 
 primitive_desc* PrimitiveIC::primitive() {
-  return primitives::lookup((fntype) destination());
+  return primitives::lookup((fntype)destination());
 }
-
 
 char* PrimitiveIC::end_addr() {
   primitive_desc* pd = primitive();
   int offset = pd->can_perform_NLR() ? IC_Info::instruction_size : 0;
   return next_instruction_address() + offset;
 }
-
 
 void PrimitiveIC::print() {
   lprintf("\tPrimitive inline cache\n");

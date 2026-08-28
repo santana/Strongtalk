@@ -47,196 +47,181 @@ MethodInterval::MethodInterval(methodOop method, MethodInterval* parent, int beg
 }
 
 void MethodInterval::initialize(methodOop method, MethodInterval* parent, int begin_bci, int end_bci, bool failBlock) {
-  _method    = method;
-  _parent    = parent;
+  _method = method;
+  _parent = parent;
   _begin_bci = begin_bci;
-  _end_bci   = end_bci;
+  _end_bci = end_bci;
   _in_prim_failure = failBlock;
 #ifdef DELTA_COMPILER
   _info = NULL;
 #endif
 }
 
-
 // InlineSendNode
 
-InlineSendNode::InlineSendNode(methodOop method, MethodInterval* parent, int begin_bci, int end_bci)
-: MethodInterval(method, parent, begin_bci, end_bci) {}
-
+InlineSendNode::InlineSendNode(methodOop method, MethodInterval* parent, int begin_bci, int end_bci) :
+  MethodInterval(method, parent, begin_bci, end_bci) {}
 
 // CondNode
 
-CondNode::CondNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset)
-: InlineSendNode(method, parent, begin_bci, next_bci + dest_offset) {
+CondNode::CondNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset) :
+  InlineSendNode(method, parent, begin_bci, next_bci + dest_offset) {
   _expr_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, end_bci());
 }
 
-
 // AndNode
 
-AndNode::AndNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset)
-: CondNode(method, parent, begin_bci, next_bci, dest_offset) {}
+AndNode::AndNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset) :
+  CondNode(method, parent, begin_bci, next_bci, dest_offset) {}
 
 symbolOop AndNode::selector() const {
   return vmSymbols::and_();
 }
 
-
 // OrNode
 
-OrNode::OrNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset)
-: CondNode(method, parent, begin_bci, next_bci, dest_offset) {}
+OrNode::OrNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int dest_offset) :
+  CondNode(method, parent, begin_bci, next_bci, dest_offset) {}
 
 symbolOop OrNode::selector() const {
   return vmSymbols::or_();
 }
 
-
 // WhileNode
 
-WhileNode::WhileNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int cond_offset, 
-                     int end_offset)
-                     : InlineSendNode(method, parent, begin_bci) {
+WhileNode::WhileNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int cond_offset,
+                     int end_offset) : InlineSendNode(method, parent, begin_bci) {
 
-                       CodeIterator c(method, next_bci + cond_offset + end_offset);
-                       switch (c.code()) {
-    case Bytecodes::whileTrue_byte: 
-    case Bytecodes::whileTrue_word: 
+  CodeIterator c(method, next_bci + cond_offset + end_offset);
+  switch (c.code()) {
+    case Bytecodes::whileTrue_byte:
+    case Bytecodes::whileTrue_word:
       _cond = true;
       break;
     case Bytecodes::whileFalse_byte:
     case Bytecodes::whileFalse_word:
       _cond = false;
       break;
-    default: fatal("expecting while jump");
-                       }
-                       int jump_end = c.next_bci();
+    default:
+      fatal("expecting while jump");
+  }
+  int jump_end = c.next_bci();
 
-                       if (cond_offset == 0) {
-                         _body_code = NULL;
-                         _expr_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, jump_end);
-                       } else {
-                         int cond_dest = next_bci + cond_offset;
-                         _body_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, cond_dest);
-                         _expr_code = MethodIterator::factory->new_MethodInterval(method, this, cond_dest, jump_end);
-                       }
-                       set_end_bci(expr_code()->end_bci());
+  if (cond_offset == 0) {
+    _body_code = NULL;
+    _expr_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, jump_end);
+  } else {
+    int cond_dest = next_bci + cond_offset;
+    _body_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, cond_dest);
+    _expr_code = MethodIterator::factory->new_MethodInterval(method, this, cond_dest, jump_end);
+  }
+  set_end_bci(expr_code()->end_bci());
 }
 
 symbolOop WhileNode::selector() const {
-  if (is_whileTrue()) return body_code() ? vmSymbols::while_true_()  : vmSymbols::while_true();
-  else                return body_code() ? vmSymbols::while_false_() : vmSymbols::while_false();
+  if (is_whileTrue())
+    return body_code() ? vmSymbols::while_true_() : vmSymbols::while_true();
+  else
+    return body_code() ? vmSymbols::while_false_() : vmSymbols::while_false();
 }
-
 
 // IfNode
 
-IfNode::IfNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, bool cond, 
-               int else_offset, u_char structure)
-               : InlineSendNode(method, parent, begin_bci) {
-                 bool has_else_branch;
-                 int  else_jump_size;
-                 _cond                       = cond;
-                 _produces_result            = isSet(structure, 0);
-                 has_else_branch             = isSet(structure, 1);
-                 _ignore_else_while_printing = isSet(structure, 2);
-                 else_jump_size              = structure >> 4;
+IfNode::IfNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, bool cond, int else_offset,
+               u_char structure) : InlineSendNode(method, parent, begin_bci) {
+  bool has_else_branch;
+  int else_jump_size;
+  _cond = cond;
+  _produces_result = isSet(structure, 0);
+  has_else_branch = isSet(structure, 1);
+  _ignore_else_while_printing = isSet(structure, 2);
+  else_jump_size = structure >> 4;
 
-                 if (has_else_branch) {
-                   int else_jump = next_bci + else_offset - else_jump_size;
-                   _then_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, else_jump);
-                   CodeIterator c(method, else_jump);
-                   int end_offset;
-                   switch (c.code()) {
-      case Bytecodes::jump_else_byte: end_offset = c.byte_at(1); break;
-      case Bytecodes::jump_else_word: end_offset = c.word_at(1); break;
-      default: fatal("expecting an else jump");
-                   }
-                   _else_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci + else_offset, 
-                     next_bci + else_offset + end_offset);
-                   set_end_bci(else_code()->end_bci());
-                 } else {
-                   _then_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, next_bci + else_offset);
-                   _else_code = NULL;
-                   set_end_bci(then_code()->end_bci());
-                 }
+  if (has_else_branch) {
+    int else_jump = next_bci + else_offset - else_jump_size;
+    _then_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, else_jump);
+    CodeIterator c(method, else_jump);
+    int end_offset;
+    switch (c.code()) {
+      case Bytecodes::jump_else_byte:
+        end_offset = c.byte_at(1);
+        break;
+      case Bytecodes::jump_else_word:
+        end_offset = c.word_at(1);
+        break;
+      default:
+        fatal("expecting an else jump");
+    }
+    _else_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci + else_offset,
+                                                             next_bci + else_offset + end_offset);
+    set_end_bci(else_code()->end_bci());
+  } else {
+    _then_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, next_bci + else_offset);
+    _else_code = NULL;
+    set_end_bci(then_code()->end_bci());
+  }
 }
 
 symbolOop IfNode::selector() const {
-  if (is_ifTrue()) return else_code() ? vmSymbols::if_true_false() : vmSymbols::if_true();
-  else             return else_code() ? vmSymbols::if_false_true() : vmSymbols::if_false();
+  if (is_ifTrue())
+    return else_code() ? vmSymbols::if_true_false() : vmSymbols::if_true();
+  else
+    return else_code() ? vmSymbols::if_false_true() : vmSymbols::if_false();
 }
-
 
 // ExternalCallNode
 
-ExternalCallNode::ExternalCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci) 
-: MethodInterval(method, parent, begin_bci, next_bci) {
+ExternalCallNode::ExternalCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci) :
+  MethodInterval(method, parent, begin_bci, next_bci) {
   _failure_code = NULL;
 }
 
-ExternalCallNode::ExternalCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, int end_offset) 
-: MethodInterval(method, parent, begin_bci, next_bci + end_offset) {
+ExternalCallNode::ExternalCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                   int end_offset) : MethodInterval(method, parent, begin_bci, next_bci + end_offset) {
   assert(end_offset > 0, "wrong offset");
   _failure_code = MethodIterator::factory->new_MethodInterval(method, this, next_bci, end_bci(), true);
 }
 
-
 // PrimitiveCallNode
 
-PrimitiveCallNode::PrimitiveCallNode(methodOop       method, 
-                                     MethodInterval* parent,
-                                     int             begin_bci,
-                                     int             next_bci,
-                                     bool            has_receiver,
-                                     symbolOop       name,
-                                     primitive_desc* pdesc) 
-                                     : ExternalCallNode(method, parent, begin_bci, next_bci) {
-                                       assert( (name == NULL) != (pdesc == NULL), "we need one an only one kind");
-                                       _has_receiver = has_receiver;
-                                       _name  = (name  == NULL) ? pdesc->selector()        : name;
-                                       _pdesc = (pdesc == NULL) ? primitives::lookup(name) : pdesc;
+PrimitiveCallNode::PrimitiveCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                     bool has_receiver, symbolOop name, primitive_desc* pdesc) :
+  ExternalCallNode(method, parent, begin_bci, next_bci) {
+  assert((name == NULL) != (pdesc == NULL), "we need one an only one kind");
+  _has_receiver = has_receiver;
+  _name = (name == NULL) ? pdesc->selector() : name;
+  _pdesc = (pdesc == NULL) ? primitives::lookup(name) : pdesc;
 }
 
 // DLLCallNode
 
-PrimitiveCallNode::PrimitiveCallNode(methodOop       method, 
-                                     MethodInterval* parent,
-                                     int             begin_bci,
-                                     int             next_bci,
-                                     bool            has_receiver,
-                                     symbolOop       name,
-                                     primitive_desc* pdesc,
-                                     int             end_offset)
-                                     : ExternalCallNode(method, parent, begin_bci, next_bci, end_offset) {
-                                       assert( (name == NULL) != (pdesc == NULL), "we need one an only one kind");
-                                       _has_receiver = has_receiver;
-                                       _name  = (name  == NULL) ? pdesc->selector()        : name;
-                                       _pdesc = (pdesc == NULL) ? primitives::lookup(name) : pdesc;
+PrimitiveCallNode::PrimitiveCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                     bool has_receiver, symbolOop name, primitive_desc* pdesc, int end_offset) :
+  ExternalCallNode(method, parent, begin_bci, next_bci, end_offset) {
+  assert((name == NULL) != (pdesc == NULL), "we need one an only one kind");
+  _has_receiver = has_receiver;
+  _name = (name == NULL) ? pdesc->selector() : name;
+  _pdesc = (pdesc == NULL) ? primitives::lookup(name) : pdesc;
 }
 
 int PrimitiveCallNode::number_of_parameters() const {
-  int result = name()->number_of_arguments()
-    + (has_receiver() ? 1 : 0)
-    - (failure_code() ? 1 : 0);
+  int result = name()->number_of_arguments() + (has_receiver() ? 1 : 0) - (failure_code() ? 1 : 0);
   assert(_pdesc == NULL || pdesc()->number_of_parameters() == result, "checking result");
   return result;
 }
 
 void DLLCallNode::initialize(InterpretedDLL_Cache* cache) {
-  _dll_name      = cache->dll_name();
+  _dll_name = cache->dll_name();
   _function_name = cache->funct_name();
-  _nofArgs       = cache->number_of_arguments();
-  _function      = cache->entry_point();
-  _async         = cache->async();
+  _nofArgs = cache->number_of_arguments();
+  _function = cache->entry_point();
+  _async = cache->async();
 }
 
-DLLCallNode::DLLCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci, 
-                         InterpretedDLL_Cache* cache)
-                         : ExternalCallNode(method, parent, begin_bci, next_bci) {
-                           initialize(cache);
+DLLCallNode::DLLCallNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                         InterpretedDLL_Cache* cache) : ExternalCallNode(method, parent, begin_bci, next_bci) {
+  initialize(cache);
 }
-
 
 // MethodClosure
 
@@ -251,7 +236,7 @@ MethodClosure::MethodClosure() {
 void MethodClosure::set_method(methodOop method) {
   _method = method;
   assert(method->number_of_stack_temporaries() % 2 == 0 || !method->has_float_temporaries(), "inconsistency");
-  _float0_index = 256 - method->number_of_stack_temporaries()/2;
+  _float0_index = 256 - method->number_of_stack_temporaries() / 2;
 }
 
 int MethodClosure::float_at(int index) {
@@ -273,7 +258,6 @@ void CustomizedMethodClosure::store_instVar_name(symbolOop name) {
 void CustomizedMethodClosure::push_classVar_name(symbolOop name) {
   fatal("class variable not resolved");
 }
-
 
 void CustomizedMethodClosure::store_classVar_name(symbolOop name) {
   fatal("class variable not resolved");
@@ -331,7 +315,9 @@ void MethodIterator::should_never_encounter(u_char code) {
   fatal("aborting");
 }
 
-static inline u_char map0to256(u_char ch) { return (u_char)(ch ? ch : 256); }
+static inline u_char map0to256(u_char ch) {
+  return (u_char)(ch ? ch : 256);
+}
 
 void MethodIterator::dispatch(MethodClosure* blk) {
   bool oldFailState = blk->in_prim_failure_block();
@@ -348,7 +334,7 @@ void MethodIterator::dispatch(MethodClosure* blk) {
     next_bci = iter.next_bci();
     blk->set_next_bci(next_bci);
 
-    switch(iter.code()) {
+    switch (iter.code()) {
       case Bytecodes::push_temp_0:
         blk->push_temporary(0);
         break;
@@ -429,10 +415,10 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         blk->pop();
         break;
       case Bytecodes::push_neg_n:
-        blk->push_literal(as_smiOop(-(int) iter.byte_at(1)));
+        blk->push_literal(as_smiOop(-(int)iter.byte_at(1)));
         break;
       case Bytecodes::push_succ_n:
-        blk->push_literal(as_smiOop(iter.byte_at(1)+1));
+        blk->push_literal(as_smiOop(iter.byte_at(1) + 1));
         break;
       case Bytecodes::push_literal:
         blk->push_literal(iter.oop_at(1));
@@ -480,56 +466,48 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->push_instVar_name(name);
-        blk->method_return(0); 
-                                           }
-                                           break;
+        blk->method_return(0);
+      } break;
       case Bytecodes::push_classVar: {
         associationOop assoc = associationOop(iter.oop_at(1));
         assert(assoc->is_association(), "must be association");
-        blk->push_classVar(assoc); 
-                                     }
-                                     break;
+        blk->push_classVar(assoc);
+      } break;
       case Bytecodes::store_classVar_pop: {
         associationOop assoc = associationOop(iter.oop_at(1));
         assert(assoc->is_association(), "must be association");
         blk->store_classVar(assoc);
-        blk->pop(); 
-                                          }
-                                          break;
+        blk->pop();
+      } break;
       case Bytecodes::store_classVar: {
         associationOop assoc = associationOop(iter.oop_at(1));
         assert(assoc->is_association(), "must be association");
         blk->store_classVar(assoc);
-                                      }
-                                      break;
+      } break;
       case Bytecodes::return_instVar: {
         smiOop offset = smiOop(iter.oop_at(1));
         assert(offset->is_smi(), "must be smi");
         blk->push_instVar(offset->value());
-        blk->method_return(0); 
-                                      }
-                                      break;
+        blk->method_return(0);
+      } break;
       case Bytecodes::push_instVar: {
         smiOop offset = smiOop(iter.oop_at(1));
         assert(offset->is_smi(), "must be smi");
         blk->push_instVar(offset->value());
-                                    }
-                                    break;
+      } break;
       case Bytecodes::store_instVar_pop: {
         smiOop offset = smiOop(iter.oop_at(1));
         assert(offset->is_smi(), "must be smi");
         blk->store_instVar(offset->value());
         blk->pop();
-                                         }
-                                         break;
-      case Bytecodes::store_instVar:{
+      } break;
+      case Bytecodes::store_instVar: {
         smiOop offset = smiOop(iter.oop_at(1));
         assert(offset->is_smi(), "must be smi");
         blk->store_instVar(offset->value());
-                                    }
-                                    break;
+      } break;
       case Bytecodes::float_allocate:
-        blk->allocate_temporaries(1 + iter.byte_at(1)*2);
+        blk->allocate_temporaries(1 + iter.byte_at(1) * 2);
         blk->float_allocate(iter.byte_at(2), iter.byte_at(3));
         break;
       case Bytecodes::float_floatify_pop:
@@ -563,30 +541,27 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         unknown_code(Bytecodes::unimplemented_3a);
         break;
       case Bytecodes::unimplemented_3b:
-        unknown_code(Bytecodes::unimplemented_3b); 
+        unknown_code(Bytecodes::unimplemented_3b);
         break;
       case Bytecodes::unimplemented_3c:
-        unknown_code(Bytecodes::unimplemented_3c); 
+        unknown_code(Bytecodes::unimplemented_3c);
         break;
       case Bytecodes::push_instVar_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->push_instVar_name(name);
-                                         }
-                                         break;
-      case Bytecodes::store_instVar_pop_name:  {
+      } break;
+      case Bytecodes::store_instVar_pop_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->store_instVar_name(name);
         blk->pop();
-                                               }
-                                               break;
-      case Bytecodes::store_instVar_name:  {
+      } break;
+      case Bytecodes::store_instVar_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->store_instVar_name(name);
-                                           }
-                                           break;
+      } break;
       case Bytecodes::push_temp_0_context_0:
         blk->push_temporary(0, 0);
         break;
@@ -607,7 +582,7 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         blk->store_temporary(1, 0);
         blk->pop();
         break;
-      case Bytecodes::store_temp_2_context_0_pop: 
+      case Bytecodes::store_temp_2_context_0_pop:
         blk->store_temporary(2, 0);
         blk->pop();
         break;
@@ -726,7 +701,7 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 0);
         break;
       case Bytecodes::copy_2_into_context:
-        blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 0); 
+        blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 0);
         blk->copy_argument_into_context(lastArgNo - iter.byte_at(2), 1);
         break;
       case Bytecodes::copy_n_into_context: {
@@ -734,58 +709,58 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         for (int i = 0; i < len; i++)
           blk->copy_argument_into_context(lastArgNo - iter.byte_at(i + 2), i);
         break;
-                                           }
+      }
       case Bytecodes::copy_self_into_context:
         blk->copy_self_into_context();
         break;
       case Bytecodes::copy_self_1_into_context:
-        blk->copy_self_into_context(); 
+        blk->copy_self_into_context();
         blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 1);
         break;
       case Bytecodes::copy_self_2_into_context:
         blk->copy_self_into_context();
-        blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 1); 
+        blk->copy_argument_into_context(lastArgNo - iter.byte_at(1), 1);
         blk->copy_argument_into_context(lastArgNo - iter.byte_at(2), 2);
         break;
       case Bytecodes::copy_self_n_into_context: {
         blk->copy_self_into_context();
         int len = map0to256(iter.byte_at(1));
         for (int i = 0; i < len; i++)
-          blk->copy_argument_into_context(lastArgNo - iter.byte_at(i + 2), i+1);
+          blk->copy_argument_into_context(lastArgNo - iter.byte_at(i + 2), i + 1);
         break;
-                                                }
+      }
       case Bytecodes::ifTrue_byte: {
-        IfNode* node = MethodIterator::factory->new_IfNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), true, iter.byte_at(2), iter.byte_at(1));
+        IfNode* node = MethodIterator::factory->new_IfNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           true, iter.byte_at(2), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->if_node(node);
         next_bci = node->end_bci();
         break;
-                                   }
+      }
       case Bytecodes::ifFalse_byte: {
-        IfNode* node = MethodIterator::factory->new_IfNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), false, iter.byte_at(2), iter.byte_at(1));
+        IfNode* node = MethodIterator::factory->new_IfNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           false, iter.byte_at(2), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->if_node(node);
         next_bci = node->end_bci();
         break;
-                                    }
+      }
       case Bytecodes::and_byte: {
-        AndNode* node = MethodIterator::factory->new_AndNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.byte_at(1));
+        AndNode* node = MethodIterator::factory->new_AndNode(_interval->method(), _interval, iter.bci(),
+                                                             iter.next_bci(), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->cond_node(node);
         next_bci = node->end_bci();
         break;
-                                }
+      }
       case Bytecodes::or_byte: {
-        OrNode* node = MethodIterator::factory->new_OrNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.byte_at(1));
+        OrNode* node = MethodIterator::factory->new_OrNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->cond_node(node);
         next_bci = node->end_bci();
         break;
-                               }
+      }
       case Bytecodes::whileTrue_byte:
         // ignore since they are inside WhileNode expression body
         break;
@@ -796,47 +771,45 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         should_never_encounter(Bytecodes::jump_else_byte);
         break;
       case Bytecodes::jump_loop_byte: {
-        WhileNode* node = MethodIterator::factory->new_WhileNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.byte_at(2), iter.byte_at(1));
+        WhileNode* node = MethodIterator::factory->new_WhileNode(_interval->method(), _interval, iter.bci(),
+                                                                 iter.next_bci(), iter.byte_at(2), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->while_node(node);
         next_bci = node->end_bci();
         break;
-                                      }
+      }
       case Bytecodes::ifTrue_word: {
-        IfNode* node = MethodIterator::factory->new_IfNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), true, 
-          iter.word_at(2), iter.byte_at(1));
+        IfNode* node = MethodIterator::factory->new_IfNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           true, iter.word_at(2), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->if_node(node);
         next_bci = node->end_bci();
         break;
-                                   }
+      }
       case Bytecodes::ifFalse_word: {
-        IfNode* node = MethodIterator::factory->new_IfNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), false, 
-          iter.word_at(2), iter.byte_at(1));
+        IfNode* node = MethodIterator::factory->new_IfNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           false, iter.word_at(2), iter.byte_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->if_node(node);
         next_bci = node->end_bci();
         break;
-                                    }
+      }
       case Bytecodes::and_word: {
-        AndNode* node = MethodIterator::factory->new_AndNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.word_at(1));
+        AndNode* node = MethodIterator::factory->new_AndNode(_interval->method(), _interval, iter.bci(),
+                                                             iter.next_bci(), iter.word_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->cond_node(node);
         next_bci = node->end_bci();
         break;
-                                }
+      }
       case Bytecodes::or_word: {
-        OrNode* node = MethodIterator::factory->new_OrNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.word_at(1));
+        OrNode* node = MethodIterator::factory->new_OrNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                           iter.word_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->cond_node(node);
         next_bci = node->end_bci();
         break;
-                               }
+      }
       case Bytecodes::whileTrue_word:
         // Ignore since they are inside WhileNode expression body
         break;
@@ -848,85 +821,84 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         break;
       case Bytecodes::jump_loop_word: {
         WhileNode* node = MethodIterator::factory->new_WhileNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), 
-          iter.word_at(1 + oopSize), iter.word_at(1));
+          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.word_at(1 + oopSize), iter.word_at(1));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->while_node(node);
         next_bci = node->end_bci();
         break;
-                                      }
-      case Bytecodes::interpreted_send_0:		// fall through
-      case Bytecodes::interpreted_send_1:		// fall through
-      case Bytecodes::interpreted_send_2:		// fall through
-      case Bytecodes::interpreted_send_n:		// fall through
-      case Bytecodes::compiled_send_0:			// fall through
-      case Bytecodes::compiled_send_1:			// fall through
-      case Bytecodes::compiled_send_2:			// fall through
-      case Bytecodes::compiled_send_n:			// fall through
-      case Bytecodes::primitive_send_0:			// fall through
-      case Bytecodes::primitive_send_1:			// fall through
-      case Bytecodes::primitive_send_2:			// fall through
-      case Bytecodes::primitive_send_n:			// fall through
-      case Bytecodes::polymorphic_send_0:		// fall through
-      case Bytecodes::polymorphic_send_1:		// fall through
-      case Bytecodes::polymorphic_send_2:		// fall through
-      case Bytecodes::polymorphic_send_n:		// fall through
-      case Bytecodes::megamorphic_send_0: 		// fall through
-      case Bytecodes::megamorphic_send_1: 		// fall through
-      case Bytecodes::megamorphic_send_2:		// fall through
-      case Bytecodes::megamorphic_send_n:		// fall through
+      }
+      case Bytecodes::interpreted_send_0: // fall through
+      case Bytecodes::interpreted_send_1: // fall through
+      case Bytecodes::interpreted_send_2: // fall through
+      case Bytecodes::interpreted_send_n: // fall through
+      case Bytecodes::compiled_send_0: // fall through
+      case Bytecodes::compiled_send_1: // fall through
+      case Bytecodes::compiled_send_2: // fall through
+      case Bytecodes::compiled_send_n: // fall through
+      case Bytecodes::primitive_send_0: // fall through
+      case Bytecodes::primitive_send_1: // fall through
+      case Bytecodes::primitive_send_2: // fall through
+      case Bytecodes::primitive_send_n: // fall through
+      case Bytecodes::polymorphic_send_0: // fall through
+      case Bytecodes::polymorphic_send_1: // fall through
+      case Bytecodes::polymorphic_send_2: // fall through
+      case Bytecodes::polymorphic_send_n: // fall through
+      case Bytecodes::megamorphic_send_0: // fall through
+      case Bytecodes::megamorphic_send_1: // fall through
+      case Bytecodes::megamorphic_send_2: // fall through
+      case Bytecodes::megamorphic_send_n: // fall through
         blk->normal_send(iter.ic());
         break;
-      case Bytecodes::interpreted_send_0_pop:		// fall through
-      case Bytecodes::interpreted_send_1_pop:		// fall through
-      case Bytecodes::interpreted_send_2_pop:		// fall through
-      case Bytecodes::interpreted_send_n_pop:		// fall through
-      case Bytecodes::compiled_send_0_pop: 		// fall through
-      case Bytecodes::compiled_send_1_pop: 		// fall through
-      case Bytecodes::compiled_send_2_pop:		// fall through
-      case Bytecodes::compiled_send_n_pop:		// fall through
-      case Bytecodes::primitive_send_0_pop:		// fall through
-      case Bytecodes::primitive_send_1_pop:		// fall through
-      case Bytecodes::primitive_send_2_pop:		// fall through
-      case Bytecodes::primitive_send_n_pop:		// fall through
-      case Bytecodes::polymorphic_send_0_pop:		// fall through
-      case Bytecodes::polymorphic_send_1_pop:		// fall through
-      case Bytecodes::polymorphic_send_2_pop:		// fall through
-      case Bytecodes::polymorphic_send_n_pop:		// fall through
-      case Bytecodes::megamorphic_send_0_pop: 		// fall through
-      case Bytecodes::megamorphic_send_1_pop: 		// fall through
-      case Bytecodes::megamorphic_send_2_pop:		// fall through
-      case Bytecodes::megamorphic_send_n_pop:		// fall through
+      case Bytecodes::interpreted_send_0_pop: // fall through
+      case Bytecodes::interpreted_send_1_pop: // fall through
+      case Bytecodes::interpreted_send_2_pop: // fall through
+      case Bytecodes::interpreted_send_n_pop: // fall through
+      case Bytecodes::compiled_send_0_pop: // fall through
+      case Bytecodes::compiled_send_1_pop: // fall through
+      case Bytecodes::compiled_send_2_pop: // fall through
+      case Bytecodes::compiled_send_n_pop: // fall through
+      case Bytecodes::primitive_send_0_pop: // fall through
+      case Bytecodes::primitive_send_1_pop: // fall through
+      case Bytecodes::primitive_send_2_pop: // fall through
+      case Bytecodes::primitive_send_n_pop: // fall through
+      case Bytecodes::polymorphic_send_0_pop: // fall through
+      case Bytecodes::polymorphic_send_1_pop: // fall through
+      case Bytecodes::polymorphic_send_2_pop: // fall through
+      case Bytecodes::polymorphic_send_n_pop: // fall through
+      case Bytecodes::megamorphic_send_0_pop: // fall through
+      case Bytecodes::megamorphic_send_1_pop: // fall through
+      case Bytecodes::megamorphic_send_2_pop: // fall through
+      case Bytecodes::megamorphic_send_n_pop: // fall through
         blk->normal_send(iter.ic());
         blk->pop();
         break;
-      case Bytecodes::interpreted_send_self:		// fall through
-      case Bytecodes::compiled_send_self:		// fall through
-      case Bytecodes::primitive_send_self:		// fall through
-      case Bytecodes::polymorphic_send_self:		// fall through
-      case Bytecodes::megamorphic_send_self:		// fall through
+      case Bytecodes::interpreted_send_self: // fall through
+      case Bytecodes::compiled_send_self: // fall through
+      case Bytecodes::primitive_send_self: // fall through
+      case Bytecodes::polymorphic_send_self: // fall through
+      case Bytecodes::megamorphic_send_self: // fall through
         blk->self_send(iter.ic());
         break;
-      case Bytecodes::interpreted_send_self_pop:	// fall through
-      case Bytecodes::compiled_send_self_pop:		// fall through
-      case Bytecodes::primitive_send_self_pop:		// fall through
-      case Bytecodes::polymorphic_send_self_pop:	// fall through
-      case Bytecodes::megamorphic_send_self_pop:	// fall through
+      case Bytecodes::interpreted_send_self_pop: // fall through
+      case Bytecodes::compiled_send_self_pop: // fall through
+      case Bytecodes::primitive_send_self_pop: // fall through
+      case Bytecodes::polymorphic_send_self_pop: // fall through
+      case Bytecodes::megamorphic_send_self_pop: // fall through
         blk->self_send(iter.ic());
         blk->pop();
         break;
-      case Bytecodes::interpreted_send_super:		// fall through
-      case Bytecodes::compiled_send_super:		// fall through
-      case Bytecodes::primitive_send_super:		// fall through
-      case Bytecodes::polymorphic_send_super:		// fall through
-      case Bytecodes::megamorphic_send_super:		// fall through
+      case Bytecodes::interpreted_send_super: // fall through
+      case Bytecodes::compiled_send_super: // fall through
+      case Bytecodes::primitive_send_super: // fall through
+      case Bytecodes::polymorphic_send_super: // fall through
+      case Bytecodes::megamorphic_send_super: // fall through
         blk->super_send(iter.ic());
         break;
-      case Bytecodes::interpreted_send_super_pop:	// fall through
-      case Bytecodes::compiled_send_super_pop:		// fall through
-      case Bytecodes::primitive_send_super_pop:		// fall through
-      case Bytecodes::polymorphic_send_super_pop:	// fall through
-      case Bytecodes::megamorphic_send_super_pop:	// fall through
+      case Bytecodes::interpreted_send_super_pop: // fall through
+      case Bytecodes::compiled_send_super_pop: // fall through
+      case Bytecodes::primitive_send_super_pop: // fall through
+      case Bytecodes::polymorphic_send_super_pop: // fall through
+      case Bytecodes::megamorphic_send_super_pop: // fall through
         blk->super_send(iter.ic());
         blk->pop();
         break;
@@ -976,56 +948,43 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         break;
       case Bytecodes::prim_call: // fall through
       case Bytecodes::prim_call_self: {
-        primitive_desc* pdesc = primitives::lookup((fntype) iter.word_at(1));
-        PrimitiveCallNode* node = 
-          MethodIterator::factory->new_PrimitiveCallNode(_interval->method(),
-          _interval,
-          iter.bci(),
-          iter.next_bci(),
-          pdesc->has_receiver(),
-          NULL,
-          pdesc);
+        primitive_desc* pdesc = primitives::lookup((fntype)iter.word_at(1));
+        PrimitiveCallNode* node = MethodIterator::factory->new_PrimitiveCallNode(
+          _interval->method(), _interval, iter.bci(), iter.next_bci(), pdesc->has_receiver(), NULL, pdesc);
         // %hack: this assertion fails
         // assert(pdesc->has_receiver() == (iter.code() == Bytecodes::prim_call_self), "just checking");
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->primitive_call_node(node);
         next_bci = node->end_bci();
         break;
-                                      }
+      }
       case Bytecodes::predict_prim_call:
-        blk->predict_prim_call(primitives::lookup((fntype) iter.word_at(1)), -1);
+        blk->predict_prim_call(primitives::lookup((fntype)iter.word_at(1)), -1);
         break;
       case Bytecodes::prim_call_failure: // fall through
       case Bytecodes::prim_call_self_failure: {
-        primitive_desc* pdesc = primitives::lookup((fntype) iter.word_at(1));
-        PrimitiveCallNode* node = MethodIterator::factory->new_PrimitiveCallNode(
-          _interval->method(),
-          _interval,
-          iter.bci(), 
-          iter.next_bci(),
-          pdesc->has_receiver(),
-          NULL,
-          pdesc,
-          iter.word_at(1 + oopSize));
+        primitive_desc* pdesc = primitives::lookup((fntype)iter.word_at(1));
+        PrimitiveCallNode* node =
+          MethodIterator::factory->new_PrimitiveCallNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                         pdesc->has_receiver(), NULL, pdesc, iter.word_at(1 + oopSize));
         assert(pdesc->has_receiver() == (iter.code() == Bytecodes::prim_call_self_failure), "just checking");
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->primitive_call_node(node);
         next_bci = node->end_bci();
         break;
-                                              }
+      }
       case Bytecodes::predict_prim_call_failure:
-        blk->predict_prim_call(
-          primitives::lookup((fntype) iter.word_at(1)),
-          iter.next_bci() + iter.word_at(1 + oopSize));
+        blk->predict_prim_call(primitives::lookup((fntype)iter.word_at(1)),
+                               iter.next_bci() + iter.word_at(1 + oopSize));
         break;
       case Bytecodes::dll_call_sync: {
-        DLLCallNode* node = MethodIterator::factory->new_DLLCallNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.dll_cache());
+        DLLCallNode* node = MethodIterator::factory->new_DLLCallNode(_interval->method(), _interval, iter.bci(),
+                                                                     iter.next_bci(), iter.dll_cache());
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->dll_call_node(node);
         next_bci = node->end_bci();
         break;
-                                     }
+      }
       case Bytecodes::access_send_self:
         blk->self_send(iter.ic());
         break;
@@ -1036,19 +995,14 @@ void MethodIterator::dispatch(MethodClosure* blk) {
       case Bytecodes::prim_call_self_lookup: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "name must be symbolOop");
-        PrimitiveCallNode* node = 
-          MethodIterator::factory->new_PrimitiveCallNode(_interval->method(),
-          _interval, 
-          iter.bci(),
-          iter.next_bci(),
-          iter.code() == Bytecodes::prim_call_self_lookup,
-          name,
-          NULL);
+        PrimitiveCallNode* node =
+          MethodIterator::factory->new_PrimitiveCallNode(_interval->method(), _interval, iter.bci(), iter.next_bci(),
+                                                         iter.code() == Bytecodes::prim_call_self_lookup, name, NULL);
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->primitive_call_node(node);
         next_bci = node->end_bci();
         break;
-                                             }
+      }
       case Bytecodes::predict_prim_call_lookup:
         blk->predict_prim_call(primitives::lookup(symbolOop(iter.word_at(1))), -1);
         break;
@@ -1057,32 +1011,24 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "name must be symbolOop");
         PrimitiveCallNode* node = MethodIterator::factory->new_PrimitiveCallNode(
-          _interval->method(),
-          _interval, 
-          iter.bci(), 
-          iter.next_bci(),
-          iter.code() == Bytecodes::prim_call_self_failure_lookup, 
-          name,
-          NULL,
-          iter.word_at(1 + oopSize));
+          _interval->method(), _interval, iter.bci(), iter.next_bci(),
+          iter.code() == Bytecodes::prim_call_self_failure_lookup, name, NULL, iter.word_at(1 + oopSize));
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->primitive_call_node(node);
         next_bci = node->end_bci();
         break;
-                                                     }
+      }
       case Bytecodes::predict_prim_call_failure_lookup:
-        blk->predict_prim_call(
-          primitives::lookup(symbolOop(iter.word_at(1))),
-          iter.bci() + iter.word_at(1 + oopSize));
+        blk->predict_prim_call(primitives::lookup(symbolOop(iter.word_at(1))), iter.bci() + iter.word_at(1 + oopSize));
         break;
       case Bytecodes::dll_call_async: {
-        DLLCallNode* node = MethodIterator::factory->new_DLLCallNode(
-          _interval->method(), _interval, iter.bci(), iter.next_bci(), iter.dll_cache());
+        DLLCallNode* node = MethodIterator::factory->new_DLLCallNode(_interval->method(), _interval, iter.bci(),
+                                                                     iter.next_bci(), iter.dll_cache());
         assert(node->end_bci() <= _interval->end_bci(), "just checking");
         blk->dll_call_node(node);
         next_bci = node->end_bci();
         break;
-                                      }
+      }
       case Bytecodes::unimplemented_c7:
         unknown_code(Bytecodes::unimplemented_c7);
         break;
@@ -1104,24 +1050,24 @@ void MethodIterator::dispatch(MethodClosure* blk) {
       case Bytecodes::unimplemented_df:
         unknown_code(Bytecodes::unimplemented_df);
         break;
-      case Bytecodes::smi_add		: // fall through
-      case Bytecodes::smi_sub		: // fall through
-      case Bytecodes::smi_mult		: // fall through
-      case Bytecodes::smi_div		: // fall through
-      case Bytecodes::smi_mod		: // fall through
-      case Bytecodes::smi_create_point	: // fall through
-      case Bytecodes::smi_equal		: // fall through
-      case Bytecodes::smi_not_equal	: // fall through
-      case Bytecodes::smi_less		: // fall through
-      case Bytecodes::smi_less_equal	: // fall through
-      case Bytecodes::smi_greater	: // fall through
-      case Bytecodes::smi_greater_equal	: // fall through
-      case Bytecodes::objArray_at	: // fall through
-      case Bytecodes::objArray_at_put	: // fall through
-      case Bytecodes::smi_and		: // fall through
-      case Bytecodes::smi_or		: // fall through
-      case Bytecodes::smi_xor		: // fall through
-      case Bytecodes::smi_shift		:
+      case Bytecodes::smi_add: // fall through
+      case Bytecodes::smi_sub: // fall through
+      case Bytecodes::smi_mult: // fall through
+      case Bytecodes::smi_div: // fall through
+      case Bytecodes::smi_mod: // fall through
+      case Bytecodes::smi_create_point: // fall through
+      case Bytecodes::smi_equal: // fall through
+      case Bytecodes::smi_not_equal: // fall through
+      case Bytecodes::smi_less: // fall through
+      case Bytecodes::smi_less_equal: // fall through
+      case Bytecodes::smi_greater: // fall through
+      case Bytecodes::smi_greater_equal: // fall through
+      case Bytecodes::objArray_at: // fall through
+      case Bytecodes::objArray_at_put: // fall through
+      case Bytecodes::smi_and: // fall through
+      case Bytecodes::smi_or: // fall through
+      case Bytecodes::smi_xor: // fall through
+      case Bytecodes::smi_shift:
         blk->normal_send(iter.ic());
         break;
       case Bytecodes::double_equal:
@@ -1132,36 +1078,33 @@ void MethodIterator::dispatch(MethodClosure* blk) {
         break;
       case Bytecodes::push_global:
         assert(iter.oop_at(1)->is_association(), "must be an association");
-        blk->push_global(associationOop(iter.oop_at(1))); 
+        blk->push_global(associationOop(iter.oop_at(1)));
         break;
       case Bytecodes::store_global_pop:
         assert(iter.oop_at(1)->is_association(), "must be an association");
         blk->store_global(associationOop(iter.oop_at(1)));
-        blk->pop(); 
+        blk->pop();
         break;
       case Bytecodes::store_global:
         assert(iter.oop_at(1)->is_association(), "must be an association");
-        blk->store_global(associationOop(iter.oop_at(1)));  
+        blk->store_global(associationOop(iter.oop_at(1)));
         break;
       case Bytecodes::push_classVar_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->push_classVar_name(name);
-                                          }
-                                          break;
+      } break;
       case Bytecodes::store_classVar_pop_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->store_classVar_name(name);
         blk->pop();
-                                               }
-                                               break;
+      } break;
       case Bytecodes::store_classVar_name: {
         symbolOop name = symbolOop(iter.oop_at(1));
         assert(name->is_symbol(), "must be symbol");
         blk->store_classVar_name(name);
-                                           }
-                                           break;
+      } break;
       case Bytecodes::unimplemented_fa:
         unknown_code(Bytecodes::unimplemented_fa);
         break;
@@ -1187,18 +1130,16 @@ void MethodIterator::dispatch(MethodClosure* blk) {
   blk->set_prim_failure(oldFailState);
 }
 
-MethodIterator::MethodIterator(methodOop m, MethodClosure* blk, 
-                               AbstractMethodIntervalFactory* f) {
-                                 factory = f;
-                                 _interval = factory->new_MethodInterval(m, NULL);
-                                 dispatch(blk);
+MethodIterator::MethodIterator(methodOop m, MethodClosure* blk, AbstractMethodIntervalFactory* f) {
+  factory = f;
+  _interval = factory->new_MethodInterval(m, NULL);
+  dispatch(blk);
 }
 
-MethodIterator::MethodIterator(MethodInterval* interval, MethodClosure* blk, 
-                               AbstractMethodIntervalFactory* f) {
-                                 factory = f;
-                                 _interval = interval;
-                                 dispatch(blk);
+MethodIterator::MethodIterator(MethodInterval* interval, MethodClosure* blk, AbstractMethodIntervalFactory* f) {
+  factory = f;
+  _interval = interval;
+  dispatch(blk);
 }
 
 MethodIntervalFactory MethodIterator::defaultFactory;
@@ -1208,53 +1149,44 @@ MethodInterval* MethodIntervalFactory::new_MethodInterval(methodOop method, Meth
   return new MethodInterval(method, parent);
 }
 
-MethodInterval* MethodIntervalFactory::new_MethodInterval(methodOop method, MethodInterval* parent, 
-                                                          int begin_bci, int end_bci, bool failureBlock) {
-                                                            return new MethodInterval(method, parent, begin_bci, end_bci, failureBlock);
+MethodInterval* MethodIntervalFactory::new_MethodInterval(methodOop method, MethodInterval* parent, int begin_bci,
+                                                          int end_bci, bool failureBlock) {
+  return new MethodInterval(method, parent, begin_bci, end_bci, failureBlock);
 }
 
-AndNode* MethodIntervalFactory::new_AndNode(methodOop method, MethodInterval* parent, int begin_bci, 
-                                            int next_bci, int dest_offset) {
-                                              return new AndNode(method, parent, begin_bci, next_bci, dest_offset);
+AndNode* MethodIntervalFactory::new_AndNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                            int dest_offset) {
+  return new AndNode(method, parent, begin_bci, next_bci, dest_offset);
 }
 
-OrNode* MethodIntervalFactory::new_OrNode(methodOop method, MethodInterval* parent, int begin_bci, 
-                                          int next_bci, int dest_offset) {
-                                            return new OrNode(method, parent, begin_bci, next_bci, dest_offset);
+OrNode* MethodIntervalFactory::new_OrNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                          int dest_offset) {
+  return new OrNode(method, parent, begin_bci, next_bci, dest_offset);
 }
 
-
-WhileNode* MethodIntervalFactory::new_WhileNode(methodOop method, MethodInterval* parent, int begin_bci, 
-                                                int next_bci, int cond_offset, int end_offset) {
-                                                  return new WhileNode(method, parent, begin_bci, next_bci, cond_offset, end_offset);
+WhileNode* MethodIntervalFactory::new_WhileNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                                int cond_offset, int end_offset) {
+  return new WhileNode(method, parent, begin_bci, next_bci, cond_offset, end_offset);
 }
 
-
-IfNode*  MethodIntervalFactory::new_IfNode(methodOop method, MethodInterval* parent, int begin_bci, 
-                                           int next_bci, bool cond, int else_offset, u_char structure) {
-                                             return new IfNode(method, parent, begin_bci, next_bci, cond, else_offset, structure);
+IfNode* MethodIntervalFactory::new_IfNode(methodOop method, MethodInterval* parent, int begin_bci, int next_bci,
+                                          bool cond, int else_offset, u_char structure) {
+  return new IfNode(method, parent, begin_bci, next_bci, cond, else_offset, structure);
 }
 
-
-PrimitiveCallNode* MethodIntervalFactory::new_PrimitiveCallNode(methodOop method, MethodInterval* parent, 
-                                                                int begin_bci, int next_bci, bool has_receiver, 
-                                                                symbolOop name, primitive_desc* pdesc) {
-                                                                  return new PrimitiveCallNode(method, parent, begin_bci, next_bci, has_receiver, name, pdesc);
+PrimitiveCallNode* MethodIntervalFactory::new_PrimitiveCallNode(methodOop method, MethodInterval* parent, int begin_bci,
+                                                                int next_bci, bool has_receiver, symbolOop name,
+                                                                primitive_desc* pdesc) {
+  return new PrimitiveCallNode(method, parent, begin_bci, next_bci, has_receiver, name, pdesc);
 }
 
-
-PrimitiveCallNode* MethodIntervalFactory::new_PrimitiveCallNode(methodOop method, MethodInterval* parent, 
-                                                                int begin_bci, int next_bci, bool has_receiver, 
-                                                                symbolOop name, primitive_desc* pdesc, int end_offset) {
-                                                                  return new PrimitiveCallNode(method, parent, begin_bci, next_bci, has_receiver, name, pdesc, end_offset);
+PrimitiveCallNode* MethodIntervalFactory::new_PrimitiveCallNode(methodOop method, MethodInterval* parent, int begin_bci,
+                                                                int next_bci, bool has_receiver, symbolOop name,
+                                                                primitive_desc* pdesc, int end_offset) {
+  return new PrimitiveCallNode(method, parent, begin_bci, next_bci, has_receiver, name, pdesc, end_offset);
 }
 
-
-DLLCallNode* MethodIntervalFactory::new_DLLCallNode(methodOop method, MethodInterval* parent, int begin_bci, 
+DLLCallNode* MethodIntervalFactory::new_DLLCallNode(methodOop method, MethodInterval* parent, int begin_bci,
                                                     int next_bci, InterpretedDLL_Cache* cache) {
-                                                      return new DLLCallNode(method, parent, begin_bci, next_bci, cache);
+  return new DLLCallNode(method, parent, begin_bci, next_bci, cache);
 }
-
-
-
-

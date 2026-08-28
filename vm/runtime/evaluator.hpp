@@ -32,18 +32,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 class TokenStream;
 
 class evaluator : AllStatic {
- protected:
+protected:
   static bool get_line(char* line);
   static bool process_line();
   static void eval_message(TokenStream* st);
-  static bool get_oop(TokenStream* st,oop* addr);
+  static bool get_oop(TokenStream* st, oop* addr);
   static void print_mini_help();
   static void print_help();
   static void top_command(TokenStream* st);
   static void show_command(TokenStream* st);
   static void change_debug_flag(TokenStream* st, bool value);
   static void print_status();
- public:
+
+public:
   static void read_eval_loop();
   static void single_step(void** fr);
 };
