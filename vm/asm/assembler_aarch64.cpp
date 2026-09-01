@@ -458,6 +458,29 @@ void AArch64Assembler::adds(Register rd, Register rn, Register rm, ShiftType shi
 void AArch64Assembler::subs(Register rd, Register rn, Register rm, ShiftType shift, int amt, RegisterSize size) {
   addsub_shifted(rd, rn, rm, true, true, shift, amt, size);
 }
+
+// rd = base + index*2^scale. A shifted-register ADD treats a register operand
+// of 31 as xzr (zero), so when the base is the stack pointer (sp, also
+// register 31) it must be copied into rd via the immediate ADD form (which
+// encodes Rn == 31 as sp) before the shifted add is emitted.
+void AArch64Assembler::add_reg(Register rd, Register base, Register index, int scale) {
+  assert(rd.isValid() && base.isValid() && index.isValid(), "illegal register");
+  if (base.number() == 31) {
+    // Base is the stack pointer (register 31); a shifted ADD would read it as
+    // xzr, so copy it into rd first. rd must differ from index here, since
+    // that copy overwrites rd before the shifted add below.
+    assert(rd != index, "rd must differ from index when base is sp");
+    addsub_imm(rd, sp, 0, false, false, 0); // rd = sp
+    addsub_shifted(rd, rd, index, false, false, LSL, scale);
+  } else {
+    addsub_shifted(rd, base, index, false, false, LSL, scale);
+  }
+}
+
+void AArch64Assembler::mov_sp_to_reg(Register rd) {
+  assert(rd.isValid() && rd.number() != 31, "rd must be a general register");
+  addsub_imm(rd, sp, 0, false, false, 0); // rd = sp
+}
 void AArch64Assembler::neg(Register rd, Register rm, ShiftType shift, int amt, RegisterSize size) {
   addsub_shifted(rd, xzr, rm, true, false, shift, amt, size);
 }
@@ -699,6 +722,12 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
         // live register is clobbered as long as the base is not x16/x17;
         // if it is, pick the other scratch.
         Register scratch = (rn == x16 || rn == x17) ? (rn == x16 ? x17 : x16) : x16;
+        if (rn.number() == 31) {
+          // Base is the stack pointer (register 31); a shifted ADD would read
+          // it as xzr, so copy sp into the scratch register first.
+          mov_sp_to_reg(scratch);
+          rn = scratch;
+        }
         uint64_t value = (uint64_t)(intptr_t)disp;
         int hw = (63 - __builtin_clzll(value)) >> 4;
         movz(scratch, (int)((value >> (16 * hw)) & 0xFFFF), hw);
@@ -723,7 +752,7 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
         // [base + index*4]); materialize base + index*2^scale in the
         // reserved scratch register pair, then use a zero-displacement load.
         Register scratch = (adr._base == x16 || adr._base == x17) ? (adr._base == x16 ? x17 : x16) : x16;
-        add(scratch, adr._base, adr._index, LSL, (int)adr._scale);
+        add_reg(scratch, adr._base, adr._index, (int)adr._scale);
         load_store(rt, Address(scratch), size, isLoad);
         break;
       }
@@ -739,7 +768,7 @@ void AArch64Assembler::load_store(Register rt, Address adr, int size, bool isLoa
       int sh = (int)adr._scale; // times_1..times_8 = 0..3; no_scale = -1 -> 0
       if (sh < 0)
         sh = 0;
-      add(x16, adr._base, adr._index, LSL, sh);
+      add_reg(x16, adr._base, adr._index, sh);
       load_store(rt, Address(x16, adr._disp, adr._rtype), size, isLoad);
       break;
     }
@@ -1679,22 +1708,39 @@ void AArch64MacroAssembler::leal(Register dst, Address src) {
         return;
       }
       mov(x16, disp);
-      add(dst, src._base, x16);
+      if (src._base.number() == 31 || dst.number() == 31) {
+        if (src._base.number() == 31) {
+          mov_sp_to_reg(x17);   // x17 = sp
+          add(x16, x17, x16);   // x16 = sp + disp
+        } else {
+          add(x16, src._base, x16); // x16 = base + disp
+        }
+        write_leal_result(dst, x16);
+      } else {
+        add(dst, src._base, x16);
+      }
       break;
     }
     case Address::base_plus_reg: {
-      if (src._scale == Address::no_scale || src._scale == Address::times_1) {
-        add(dst, src._base, src._index);
+      int scale = (src._scale == Address::no_scale || src._scale == Address::times_1) ? 0 : (int)src._scale;
+      if (src._base.number() == 31 || dst.number() == 31) {
+        // Stack pointer in the base or destination: the shifted-register ADD
+        // treats register 31 as xzr, so materialize through the scratch
+        // register x16 and then write the result back with sp handled.
+        add_reg(x16, src._base, src._index, scale);
+        write_leal_result(dst, x16);
       } else {
-        add(dst, src._base, src._index, LSL, (int)src._scale);
+        add(dst, src._base, src._index, LSL, scale);
       }
       break;
     }
     case Address::base_plus_reg_disp: {
-      if (src._scale == Address::no_scale || src._scale == Address::times_1) {
-        add(dst, src._base, src._index);
+      int scale = (src._scale == Address::no_scale || src._scale == Address::times_1) ? 0 : (int)src._scale;
+      if (src._base.number() == 31 || dst.number() == 31) {
+        add_reg(x16, src._base, src._index, scale);
+        write_leal_result(dst, x16);
       } else {
-        add(dst, src._base, src._index, LSL, (int)src._scale);
+        add(dst, src._base, src._index, LSL, scale);
       }
       if (src._disp >= 0 && src._disp <= 0xFFF) {
         add(dst, dst, (int)src._disp);
@@ -1712,6 +1758,15 @@ void AArch64MacroAssembler::leal(Register dst, Address src) {
       emit_quad_data(src._disp, src._rtype); // .quad <abs>
       break;
   }
+}
+
+// dst = x16, handling a stack-pointer destination (the shifted ORR used by
+// mov() treats register 31 as xzr, so copy via the immediate ADD form).
+void AArch64MacroAssembler::write_leal_result(Register dst, Register x16_val) {
+  if (dst.number() == 31)
+    addsub_imm(sp, x16_val, 0, false, false, 0); // sp = x16_val
+  else
+    mov(dst, x16_val);
 }
 
 void AArch64MacroAssembler::cmpl(Register dst, int imm) {

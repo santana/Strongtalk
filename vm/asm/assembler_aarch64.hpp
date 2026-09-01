@@ -362,6 +362,17 @@ protected:
   void load_store(Register rt, Address adr, int size, bool isLoad);
   void load_store_float(FloatRegister rt, Address adr, bool doubleSize, bool isLoad);
 
+  // rd = base + index*2^scale, with a stack-pointer base handled correctly.
+  // The shifted-register ADD form encodes an operand register of 31 as xzr
+  // (zero), so when base is the stack pointer (sp, also register 31) it is
+  // first copied into rd using the immediate ADD form (which does encode
+  // Rn == 31 as sp). rd must be a general register distinct from index.
+  void add_reg(Register rd, Register base, Register index, int scale);
+
+  // rd = <sp>, used to move the stack pointer into a general scratch register
+  // (mov rd, sp; the shifted ORR used by mov() would treat Rm == 31 as xzr).
+  void mov_sp_to_reg(Register rd);
+
 public:
   AArch64Assembler(CodeBuffer* code);
 
@@ -697,6 +708,8 @@ public:
   // Address computation (leal/leaq both compute the 64-bit effective address)
   void leal(Register dst, Address src);
   void leaq(Register dst, Address src) { leal(dst, src); }
+  // dst = x16, handling a stack-pointer destination (see leal).
+  void write_leal_result(Register dst, Register x16_val);
 
   // Compare / test
   void cmpl(Register dst, int imm);
