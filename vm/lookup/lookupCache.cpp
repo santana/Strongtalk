@@ -152,10 +152,10 @@ public:
 static cacheElement primary[primary_cache_size];
 static cacheElement secondary[secondary_cache_size];
 
-int lookupCache::primary_cache_address() {
+intptr_t lookupCache::primary_cache_address() {
   return intptr_t(&primary[0]);
 }
-int lookupCache::secondary_cache_address() {
+intptr_t lookupCache::secondary_cache_address() {
   return intptr_t(&secondary[0]);
 }
 

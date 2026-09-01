@@ -786,6 +786,9 @@ Address InterpreterGenerator::field_addr(Register obj, int i) {
 }
 
 Address InterpreterGenerator::field_addr(Register obj, Register smi_offset) {
+  // The smi_offset register holds instVarIndex << Tag_Size (= instVarIndex*4
+  // since Tag_Size=2). Addressing is obj + smi_offset * 2^scale - Mem_Tag.
+  // times_2 (lsl#1) yields instVarIndex*4*2 = instVarIndex*8 = instVarIndex*oopSize.
   return Address(obj, smi_offset, Address::times_2, -Mem_Tag, relocInfo::none);
 }
 
@@ -1470,7 +1473,7 @@ char* InterpreterGenerator::copy_params_into_context(bool self, int paramsCount)
     masm->movl(edx, arg_addr(ebx)); // get parameter
     Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize * oneIfSelf);
     masm->movl(slot, edx); // store in context variable
-    masm->addl(ecx, 4);
+    masm->addl(ecx, oopSize);
     masm->incl(esi);
     masm->decb(eax);
     masm->jcc(Assembler::notZero, _loop);

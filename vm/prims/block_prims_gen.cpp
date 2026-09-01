@@ -107,6 +107,12 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->movl(ecx, length_addr); // load length  (remember this is a smiOop)
   masm->movl(eax, Address((intptr_t)&eden_top, relocInfo::external_word_type));
   masm->movl(edx, ecx);
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // ecx is a smi = nofVars << Tag_Size = nofVars*4, but the object needs
+  // nofVars*oopSize = nofVars*8 bytes. Scale by 2 to get the true byte count
+  // (on x86 oopSize==4 so the smi value already equals the byte count).
+  masm->shll(edx, 1); // edx = nofVars*8
+#endif
   masm->addl(edx, 3 * oopSize);
   masm->addl(edx, eax);
   // Equals? ==>  masm->leal(edx, Address(ecx, eax, Address::times_1, 3*oopSize));
@@ -154,6 +160,9 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->reset_last_Delta_frame();
   masm->movl(ecx, length_addr); // reload length  (remember this is a smiOop)
   masm->movl(edx, ecx);
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  masm->shll(edx, 1); // edx = nofVars*8 (see fast path above)
+#endif
   masm->addl(edx, 3 * oopSize);
   masm->addl(edx, eax);
   masm->jmp(fill_object);
