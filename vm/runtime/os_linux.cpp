@@ -457,7 +457,14 @@ void* os::malloc(int size) {
 char* os::exec_memory(int size) {
   void* p;
 
-  p = mmap(0, size, PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  // Map generated code regions fully R/W/X on Linux. On x86-64 there is no
+  // MAP_JIT/W^X enforcement (see os::jit_write_protect below, a no-op), so a
+  // resident-but-not-executable page would SIGSEGV on the first jump into a
+  // just-generated stub. Keeping the region both writable (for runtime code
+  // patching / inline-cache update) and executable guarantees the first
+  // instruction fetch into any stub never faults regardless of any protection
+  // rotation applied elsewhere.
+  p = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
   if (p == MAP_FAILED) {
     fatal2("Unable to reserve memory with size %d (errno = %d)", size, errno);
