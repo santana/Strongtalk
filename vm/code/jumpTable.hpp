@@ -114,13 +114,21 @@ private:
     return (char*)this;
   }
   char* state_addr() const { return ((char*)this) + jump_inst_size(); }
-  static int jump_inst_size() { return 1 + sizeof(char*); } // x86 specific
+  static int jump_inst_size() {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+    // AArch64 stub: ldr x16,[pc,#8] (4B) + br x16 (4B) + .quad literal (8B).
+    return 16;
+#else
+    return 1 + sizeof(char*); // x86 specific
+#endif
+  }
   char state() const { return *state_addr(); }
   void fill_entry(char instr, char* dest, char state);
   void initialize_as_unused(int index);
   void initialize_as_link(char* link);
   void initialize_nmethod_stub(char* dest);
   void initialize_block_closure_stub();
+  void initialize_aarch64_stub(char* dest, char state);
   inline jumpTableEntry* previous_stub() const;
   inline jumpTableEntry* next_stub() const;
   jumpTableEntry* parent_entry(int& index) const;

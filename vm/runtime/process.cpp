@@ -33,6 +33,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/oopFactory.hpp"
 #include "memory/vmSymbols.hpp"
 #include "runtime/os.hpp"
+#if defined(__APPLE__) && defined(__aarch64__)
+#include <pthread.h>
+#endif
 #include "oops/associationOop.hpp"
 #include "oops/blockOop.hpp"
 #include "oops/klassOop.hpp"
@@ -591,6 +594,7 @@ frame DeltaProcess::profile_top_frame() {
   return result;
 }
 static int interruptions = 0;
+
 void DeltaProcess::check_stack_overflow() {
   bool isInterrupted = false;
   if (EnableProcessPreemption) {

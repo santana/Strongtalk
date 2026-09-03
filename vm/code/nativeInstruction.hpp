@@ -48,6 +48,35 @@ protected:
 
 class NativeCall : public NativeInstruction {
 public:
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // AArch64 "call to absolute address" is emitted as:
+  //   ldr x16, [pc, #8]   (4 bytes)
+  //   b .+12              (4 bytes)
+  //   .quad target        (8 bytes)   <-- patchable absolute target literal
+  //   blr x16             (4 bytes)
+  // The NativeCall 'this' points at the return address (the instruction after
+  // the blr); the patchable literal lives 12 bytes before it and holds an
+  // absolute address. Unlike x86 the target is absolute, not relative.
+  enum AArch64_specific_constants {
+    instruction_code = 0x58000050, // ldr x16, [pc, #8] (exact emitted opcode)
+    instruction_size = 20,
+    instruction_offset = -20,
+    literal_offset = -12,       // '.quad target' is 12 bytes before the return addr
+    displacement_offset = -12,  // nativeCall_from_relocInfo reloc points at the literal
+    return_address_offset = 0,
+  };
+
+  char* instruction_address() const { return addr_at(instruction_offset); }
+  char* next_instruction_address() const { return addr_at(return_address_offset); }
+  // The literal stores an absolute pointer on AArch64.
+  intptr_t displacement() const { return *(intptr_t*)(addr_at(literal_offset)); }
+  char* return_address() const { return addr_at(return_address_offset); }
+  char* destination() const { return (char*)displacement(); }
+  void set_destination(char* dest) { *(intptr_t*)(addr_at(literal_offset)) = (intptr_t)dest; }
+
+  void verify();
+  void print();
+#else
   enum Intel_specific_constants {
     instruction_code = 0xE8,
     instruction_size = 5,
@@ -65,6 +94,7 @@ public:
 
   void verify();
   void print();
+#endif
 
   // Creation
   friend NativeCall* nativeCall_at(char* address);

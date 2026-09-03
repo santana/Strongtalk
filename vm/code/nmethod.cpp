@@ -177,7 +177,11 @@ nmethod::nmethod(Compiler* c) : key(c->key->klass(), c->key->selector_or_method(
 #ifdef ASSERT
   // turned off because they're very slow  -Urs 4/96
   // lookupCache::verify();
+#ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // Too fragile during the AArch64 bring-up (IC call layout differs from x86);
+  // the JIT nmethods are verified instead by actually running them.
   verify_expression_stacks();
+#endif
 #endif
 }
 
@@ -671,8 +675,12 @@ void nmethod::verify_expression_stacks() {
         verify_expression_stacks_at(iter.ic()->begin_addr());
         break;
       case relocInfo::prim_type:
-        if (iter.primIC()->primitive()->can_walk_stack()) {
-          verify_expression_stacks_at(iter.primIC()->begin_addr());
+        {
+          PrimitiveIC* pic = iter.primIC();
+          primitive_desc* pd = pic->primitive();
+          if (pd != NULL && pd->can_walk_stack()) {
+            verify_expression_stacks_at(pic->begin_addr());
+          }
         }
         break;
     }

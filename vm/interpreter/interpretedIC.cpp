@@ -461,7 +461,6 @@ void InterpretedIC::update_inline_cache(InterpretedIC* ic, frame* f, Bytecodes::
         new_send_code = method->special_primitive_code();
         method = methodOop(ic->selector()); // ic must stay empty
         klass = NULL; // ic must stay empty
-
       } else if (UsePrimitiveMethods && method->is_primitiveMethod()) {
         // primitive method found ==> switch to primitive send
         new_send_code = Bytecodes::primitive_send_code_for(send_code);

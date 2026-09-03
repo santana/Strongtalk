@@ -809,7 +809,7 @@ void NodeBuilder::nonlocal_return(int nofArgs) {
   materialize(src, NULL);
   if (scope()->isTop()) {
     // real NLR from nmethod
-    append(NodeFactory::new_AssignNode(src, scope()->resultPR));
+    append(NodeFactory::new_AssignNode(src, scope()->nlrResultPR));
     append(scope()->nlrPoint());
   } else {
     // NLR from inlined scope

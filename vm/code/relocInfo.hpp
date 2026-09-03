@@ -169,12 +169,20 @@ public:
 
   char* call_end() const {
     assert(type() != relocInfo::oop_type, "must be call");
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+    return addr + 12; // return address follows blr (after the 8-byte literal)
+#else
     return addr + 4; // INTEL-SPECIFIC
+#endif
   }
 
   char* callDestination() const {
     assert(type() != relocInfo::oop_type, "must be call");
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+    return *(char**)addr; // .quad literal holds the absolute target
+#else
     return *(char**)addr + intptr_t(addr) + 4; // INTEL-SPECIFIC
+#endif
   }
 
   // for uncommon traps only: was it ever executed?

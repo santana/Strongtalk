@@ -27,7 +27,10 @@
 #include "memory/allocation.hpp"
 #include "runtime/os.hpp"
 #include "runtime/debug.hpp"
+#include "runtime/frame.hpp"
 #include "utilities/growableArray.hpp"
+#include "oops/methodOop.hpp"
+#include "oops/symbolOop.hpp"
 #include <pthread.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -421,7 +424,7 @@ int os::get_nCmdShow() {
   return 0;
 }
 
-extern int bootstrapping;
+extern bool bootstrapping;
 
 // 1 reference - prims/debug_prims.cpp
 void os::timerStart() {}
@@ -665,7 +668,9 @@ void* watcherMain(void* ignored) {
   const int delay_interval = 1; // Delay 1 ms
   while (1) {
     int status = nanosleep(&delay, NULL);
-    if (!status)
+    // nanosleep returns 0 on success and -1 (EINTR) if interrupted; only give
+    // up on an error.
+    if (status != 0)
       return 0;
     real_time_tick(delay_interval);
   }
@@ -701,6 +706,41 @@ static void handler(int signum, siginfo_t* info, void* context) {
     printf("\n");
   }
 #endif
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  {
+    unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
+    unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
+    printf("  bytes at pc: ");
+    for (int i = 0; i < 16; i++) printf("%02x ", pc_ptr[i]);
+    printf("\n");
+    printf("  bytes at lr: ");
+    for (int i = 0; i < 16; i++) printf("%02x ", lr_ptr[i]);
+    printf("\n");
+    uint64_t hp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__x[14]; // esi == bytecode pointer
+    uint64_t fp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__fp;
+    frame top((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val, (char*)(uintptr_t)hp_val);
+    methodOop m = NULL;
+    u_char* hptr = NULL;
+    if (top.is_interpreted_frame()) {
+      hptr = top.hp();
+      m = top.method();
+    }
+    printf("  delta: esi(hp reg)=%#llx fp=%#llx", hp_val, fp_val);
+    if (m != NULL) {
+      int bci = m->bci_from(hptr);
+      printf(" method=\"");
+      m->selector()->print_symbol_on();
+      printf("\" bci=%d", bci);
+      u_char* codes = m->codes();
+      int rel = (int)(hptr - codes);
+      printf(" rel=%d codes[rel]=%d", rel, *hptr);
+    } else {
+      printf(" eff_hp=%p", hptr ? (void*)hptr : (void*)hp_val);
+      printf(" <no method>");
+    }
+    printf("\n");
+  }
+#endif
   fflush(stdout);
   _exit(1);
 }
@@ -708,197 +748,6 @@ static void handler(int signum, siginfo_t* info, void* context) {
 void handleTerminate(int signum) {
   pthread_exit(NULL);
 }
-
-#if defined(__x86_64__)
-extern "C" intptr_t diag_truncated_oop_value;
-extern "C" intptr_t diag_truncated_oop_pc;
-extern "C" intptr_t diag_truncated_oop_check_id;
-extern "C" intptr_t diag_last_eax_writer_pc;
-extern "C" intptr_t diag_last_eax_writer_id;
-extern "C" intptr_t diag_last_eax_writer_value;
-extern "C" intptr_t diag_pre_check_eax;
-extern "C" intptr_t diag_pre_check_id;
-
-static void trap_handler(int signum, siginfo_t* info, void* context) {
-  ucontext_t* uc = (ucontext_t*)context;
-  mcontext_t mc = uc->uc_mcontext;
-  if (diag_truncated_oop_check_id != 0) {
-    printf("\n** SIGTRAP: Truncated pointer detected!\n");
-    printf("   truncated_oop_value = 0x%llx\n", (unsigned long long)diag_truncated_oop_value);
-    printf("   bytecode_pc         = 0x%llx\n", (unsigned long long)diag_truncated_oop_pc);
-    printf("   check_id            = %lld\n", (long long)diag_truncated_oop_check_id);
-    printf("   last_eax_writer_pc  = 0x%llx\n", (unsigned long long)diag_last_eax_writer_pc);
-    printf("   last_eax_writer_id  = %lld\n", (unsigned long long)diag_last_eax_writer_id);
-    printf("   last_eax_writer_val = 0x%llx\n", (unsigned long long)diag_last_eax_writer_value);
-    printf("   pre_check_eax       = 0x%llx (at check_id=%lld)\n", (unsigned long long)diag_pre_check_eax,
-           (long long)diag_pre_check_id);
-    printf("   rax=0x%llx rbx=0x%llx rcx=0x%llx rdx=0x%llx\n", (unsigned long long)mc->__ss.__rax,
-           (unsigned long long)mc->__ss.__rbx, (unsigned long long)mc->__ss.__rcx, (unsigned long long)mc->__ss.__rdx);
-    printf("   rsi=0x%llx rdi=0x%llx rbp=0x%llx rsp=0x%llx\n", (unsigned long long)mc->__ss.__rsi,
-           (unsigned long long)mc->__ss.__rdi, (unsigned long long)mc->__ss.__rbp, (unsigned long long)mc->__ss.__rsp);
-    printf("   rip=0x%llx\n", (unsigned long long)mc->__ss.__rip);
-    // rbp is the current frame pointer - dump frame words
-    intptr_t rbp = (intptr_t)mc->__ss.__rbp;
-    printf("   frame at rbp=0x%llx:\n", (unsigned long long)rbp);
-    for (int i = -6; i <= 6; i++) {
-      intptr_t* addr = (intptr_t*)(rbp + i * sizeof(intptr_t));
-      printf("     [%+d] = 0x%llx  (addr %p)\n", i, (unsigned long long)*addr, (void*)addr);
-    }
-    // Dump stack at rsp
-    intptr_t rsp = (intptr_t)mc->__ss.__rsp;
-    printf("   stack at rsp=0x%llx:\n", (unsigned long long)rsp);
-    for (int i = 0; i < 8; i++) {
-      intptr_t* addr = (intptr_t*)(rsp + i * sizeof(intptr_t));
-      printf("     [rsp%+d] = 0x%llx\n", i * 8, (unsigned long long)*addr);
-    }
-    // Dump bytecodes: esi (from truncation check) = send opcode address (before advance_aligned)
-    // We need bytecodes BEFORE esi (push bytecodes) AND at/after esi (send opcode + IC)
-    intptr_t esi = (intptr_t)mc->__ss.__rsi;
-    printf("   bytecodes before esi=0x%llx (push bytecodes that loaded values):\n", (unsigned long long)esi);
-    unsigned char* bc_before = (unsigned char*)(esi - 48);
-    for (int i = 0; i < 48; i++) {
-      if (i % 16 == 0)
-        printf("     [%+3d]: ", i - 48);
-      printf("%02x ", bc_before[i]);
-      if (i % 16 == 15)
-        printf("\n");
-    }
-    // Dump bytecodes AT esi (send opcode) and after (IC data follows)
-    // BOO format: [opcode 1B] [padding 0-7B] [IC_method 8B] [IC_klass 8B]
-    printf("   bytecodes AT/after esi (send opcode + IC):\n");
-    unsigned char* bc_at = (unsigned char*)esi;
-    for (int i = 0; i < 32; i++) {
-      if (i % 16 == 0)
-        printf("     [%+3d]: ", i);
-      printf("%02x ", bc_at[i]);
-      if (i % 16 == 15)
-        printf("\n");
-    }
-    // Interpret: opcode byte, nargs byte (if BBOO), IC first_word, IC second_word
-    unsigned char opcode = bc_at[0];
-    printf("   send opcode = 0x%02x", opcode);
-    // Check if it's a recognized send code
-    if (opcode >= 0x80 && opcode <= 0x8f) {
-      const char* name = "unknown_send";
-      switch (opcode) {
-        case 0x80:
-          name = "interpreted_send_0";
-          break;
-        case 0x81:
-          name = "interpreted_send_1";
-          break;
-        case 0x82:
-          name = "interpreted_send_2";
-          break;
-        case 0x83:
-          name = "interpreted_send_n";
-          break;
-        case 0x84:
-          name = "compiled_send_0";
-          break;
-        case 0x85:
-          name = "compiled_send_1";
-          break;
-        case 0x86:
-          name = "compiled_send_2";
-          break;
-        case 0x87:
-          name = "compiled_send_n";
-          break;
-        case 0x88:
-          name = "polymorphic_send_0";
-          break;
-        case 0x89:
-          name = "polymorphic_send_1";
-          break;
-        case 0x8a:
-          name = "polymorphic_send_2";
-          break;
-        case 0x8b:
-          name = "polymorphic_send_n";
-          break;
-        case 0x8c:
-          name = "megamorphic_send_0";
-          break;
-        case 0x8d:
-          name = "megamorphic_send_1";
-          break;
-        case 0x8e:
-          name = "megamorphic_send_2";
-          break;
-        case 0x8f:
-          name = "megamorphic_send_n";
-          break;
-      }
-      printf(" (%s)", name);
-    } else if (opcode >= 0x90 && opcode <= 0x9f) {
-      const char* name = "unknown_pred";
-      switch (opcode) {
-        case 0x90:
-          name = "smi_add";
-          break;
-        case 0x91:
-          name = "smi_sub";
-          break;
-        case 0x92:
-          name = "smi_mul";
-          break;
-        case 0x93:
-          name = "smi_div";
-          break;
-        case 0x94:
-          name = "smi_mod";
-          break;
-        case 0x95:
-          name = "smi_equal";
-          break;
-        case 0x96:
-          name = "smi_not_equal";
-          break;
-        case 0x97:
-          name = "smi_less";
-          break;
-        case 0x98:
-          name = "smi_less_equal";
-          break;
-        case 0x99:
-          name = "smi_greater";
-          break;
-        case 0x9a:
-          name = "smi_greater_equal";
-          break;
-        case 0x9b:
-          name = "smi_bitAnd";
-          break;
-        case 0x9c:
-          name = "smi_bitOr";
-          break;
-        case 0x9d:
-          name = "smi_bitXor";
-          break;
-        case 0x9e:
-          name = "smi_bitShift";
-          break;
-      }
-      printf(" (%s)", name);
-    }
-    printf("\n");
-    // Dump IC: for BOO format, IC first_word at esi+8, second_word at esi+16
-    // For BBOO format (nargs byte), IC is at same offsets
-    intptr_t cur_ic_method = (intptr_t)*(intptr_t*)(esi + 8);
-    intptr_t cur_ic_klass = (intptr_t)*(intptr_t*)(esi + 16);
-    printf("   current IC: first_word(method/selector)=0x%llx  second_word(klass/0)=0x%llx\n",
-           (unsigned long long)cur_ic_method, (unsigned long long)cur_ic_klass);
-    fflush(stdout);
-    _exit(1);
-  } else {
-    // Non-truncation SIGTRAP (e.g., should_not_reach_here, StopInterpreterAt)
-    printf("** SIGTRAP (non-truncation) at rip=0x%llx\n", (unsigned long long)mc->__ss.__rip);
-    fflush(stdout);
-    _exit(1);
-  }
-}
-#endif
 
 void install_signal_handlers() {
   struct sigaction sa;
@@ -918,14 +767,9 @@ void install_signal_handlers() {
   sa.sa_sigaction = handler;
   if (sigaction(SIGSEGV, &sa, NULL) == -1)
     /* Handle error */;
-
-#if defined(__x86_64__)
-  // Install SIGTRAP handler for truncated pointer detection
-  sa.sa_flags = SA_SIGINFO | SA_RESTART;
-  sa.sa_sigaction = trap_handler;
-  if (sigaction(SIGTRAP, &sa, NULL) == -1)
+  sa.sa_sigaction = handler;
+  if (sigaction(SIGILL, &sa, NULL) == -1)
     /* Handle error */;
-#endif
 }
 
 void os_init() {

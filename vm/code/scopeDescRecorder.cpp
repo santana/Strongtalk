@@ -169,7 +169,26 @@ public:
   int length() { return index; }
   void extend(int newSize);
   int insertIfAbsent(int value); // returns index for value
-  void copy_to(int*& addr);
+  void copy_to(char*& addr);
+};
+
+// Array of oops. Unlike Array (which stores ints), elements are intptr_t so
+// that 64-bit oops are not truncated. copy_to advances the destination by the
+// full intptr_t width of every element.
+class OopArray : public ResourceObj {
+private:
+  int index;
+  int size;
+
+  intptr_t* values;
+
+public:
+  OopArray(int size);
+
+  int length() { return index; }
+  void extend(int newSize);
+  int insertIfAbsent(intptr_t value); // returns index for value
+  void copy_to(char*& addr);
 };
 
 class ByteArray : public ResourceObj {
@@ -211,7 +230,7 @@ public:
   }
 
   void alignToWord();
-  void copy_to(int*& addr);
+  void copy_to(char*& addr);
 };
 
 NameNode* newValueName(oop value) {
@@ -297,9 +316,41 @@ void Array::extend(int newSize) {
   size = newSize;
 }
 
-void Array::copy_to(int*& addr) {
+void Array::copy_to(char*& addr) {
   for (int i = 0; i < length(); i++) {
-    *addr++ = values[i];
+    *((int*)addr) = values[i];
+    addr += sizeof(int);
+  }
+}
+
+OopArray::OopArray(int sz) {
+  size = sz;
+  index = 0;
+  values = NEW_RESOURCE_ARRAY(intptr_t, sz);
+}
+
+int OopArray::insertIfAbsent(intptr_t value) {
+  for (int i = 0; i < index; i++)
+    if (values[i] == value)
+      return i;
+  if (index == size)
+    extend(size * 2);
+  values[index] = value;
+  return index++;
+}
+
+void OopArray::extend(int newSize) {
+  intptr_t* newValues = NEW_RESOURCE_ARRAY(intptr_t, newSize);
+  for (int i = 0; i < index; i++)
+    newValues[i] = values[i];
+  values = newValues;
+  size = newSize;
+}
+
+void OopArray::copy_to(char*& addr) {
+  for (int i = 0; i < length(); i++) {
+    *((intptr_t*)addr) = values[i];
+    addr += sizeof(intptr_t);
   }
 }
 
@@ -349,11 +400,12 @@ void ByteArray::alignToWord() {
     appendByte(0);
 }
 
-void ByteArray::copy_to(int*& addr) {
+void ByteArray::copy_to(char*& addr) {
   int* fromAddr = (int*)start();
   int len = size() / sizeof(int);
   for (int i = 0; i < len; i++) {
-    *addr++ = *fromAddr++;
+    *((int*)addr) = *fromAddr++;
+    addr += sizeof(int);
   }
 }
 
@@ -470,7 +522,7 @@ public:
   void extend(int newSize);
   void add(int pcOffset, ScopeInfo scope, int bci);
   void mark_scopes();
-  void copy_to(int*& addr);
+  void copy_to(char*& addr);
 };
 
 ScopeDescNode::ScopeDescNode(methodOop method, bool allocates_compiled_context, int scopeID, bool lite,
@@ -895,13 +947,13 @@ void PcDescInfoClass::mark_scopes() {
   }
 }
 
-void PcDescInfoClass::copy_to(int*& addr) {
+void PcDescInfoClass::copy_to(char*& addr) {
   for (int i = 0; i < end; i++) {
     PcDesc* pc = (PcDesc*)addr;
     pc->pc = nodes[i].pcOffset;
     pc->scope = nodes[i].scope ? nodes[i].scope->offset : IllegalBCI;
     pc->byteCode = nodes[i].bci;
-    addr += sizeof(PcDesc) / sizeof(int);
+    addr += sizeof(PcDesc);
   }
 }
 
@@ -951,14 +1003,25 @@ Location ScopeDescRecorder::convert_location(Location loc) {
 }
 
 int ScopeDescRecorder::size() {
-  return sizeof(nmethodScopes) + codes->size() + oops->length() * sizeof(oop) + values->length() * sizeof(int) +
-         pcs->length() * sizeof(PcDesc);
+  // Mirror copyTo() exactly: each section boundary is padded to BytesPerWord
+  // and the oop array advances by full intptr_t elements, so the recorded
+  // offsets (via pack_word_aligned) are 64-bit-aligned and oops are not
+  // truncated. On 32-bit builds BytesPerWord == sizeof(int), so this reduces
+  // to the original layout.
+  int off = sizeof(nmethodScopes) + codes->size();
+  off = roundTo(off, BytesPerWord);
+  off += oops->length() * sizeof(intptr_t);
+  off = roundTo(off, BytesPerWord);
+  off += values->length() * sizeof(int);
+  off = roundTo(off, BytesPerWord);
+  off += pcs->length() * sizeof(PcDesc);
+  return roundTo(off, BytesPerWord);
 }
 
 ScopeDescRecorder::ScopeDescRecorder(int byte_size, int pcDesc_size) {
   // size is the initial size of the byte array.
   root = NULL;
-  oops = new Array(INITIAL_OOPS_SIZE);
+  oops = new OopArray(INITIAL_OOPS_SIZE);
   values = new Array(INITIAL_VALUES_SIZE);
   codes = new ByteArray(byte_size);
   pcs = new PcDescInfoClass(pcDesc_size);
@@ -971,25 +1034,37 @@ ScopeDescRecorder::ScopeDescRecorder(int byte_size, int pcDesc_size) {
   nonInlinedBlockScopesTail = NULL;
 }
 
+static void alignForWord(char*& p) {
+  // Each section boundary must be aligned to BytesPerWord so that
+  // pack_word_aligned's "value % BytesPerWord == 0" assertion holds, and so
+  // the oop array is 64-bit aligned. On 64-bit builds (BytesPerWord == 8)
+  // byte arrays are only 4-byte aligned; pad the boundary by up to 4 bytes.
+  p = (char*)roundTo((intptr_t)p, BytesPerWord);
+}
+
 void ScopeDescRecorder::copyTo(nmethod* nm) {
   nmethodScopes* d = (nmethodScopes*)nm->scopes();
 
   // Copy the body part of the nmethodScopes
-  int* start = (int*)(d + 1);
-  int* p = start;
+  char* start = (char*)(d + 1);
+  char* p = start;
 
   d->set_nmethod_offset((char*)d - (char*)nm);
 
   codes->copy_to(p);
+  alignForWord(p);
 
   d->set_oops_offset((char*)p - (char*)start);
   oops->copy_to(p);
+  alignForWord(p);
 
   d->set_value_offset((char*)p - (char*)start);
   values->copy_to(p);
+  alignForWord(p);
 
   d->set_pcs_offset((char*)p - (char*)start);
   pcs->copy_to(p);
+  alignForWord(p);
 
   d->set_length((char*)p - (char*)start);
 

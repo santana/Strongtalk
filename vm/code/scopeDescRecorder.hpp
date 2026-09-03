@@ -35,6 +35,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // To retrieve the generated information, use nmethodScopes
 
 class Array;
+class OopArray;
 class ByteArray;
 class NonInlinedBlockScopeNode;
 
@@ -42,7 +43,7 @@ class NonInlinedBlockScopeNode;
 class ScopeDescRecorder : public ResourceObj {
 private:
   bool _hasCodeBeenGenerated;
-  Array* oops;
+  OopArray* oops;
   Array* values;
   ByteArray* codes;
   PcDescInfo pcs;

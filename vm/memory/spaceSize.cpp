@@ -34,10 +34,13 @@ static int scale_and_adjust(int value) {
 }
 
 void spaceSizes::initialize() {
-  reserved_object_size = scale_and_adjust(ReservedHeapSize);
-  eden_size = scale_and_adjust(EdenSize);
-  surv_size = scale_and_adjust(SurvivorSize);
-  old_size = scale_and_adjust(OldSize);
+  // The heap-size flags are expressed in "oops worth". On a 64-bit port each
+  // oop is twice as large, so reserve proportional physical memory or the old
+  // generation exhausts its reservation while expanding during bootstrap.
+  reserved_object_size = scale_and_adjust(ReservedHeapSize) * oopSize;
+  eden_size = scale_and_adjust(EdenSize) * oopSize;
+  surv_size = scale_and_adjust(SurvivorSize) * oopSize;
+  old_size = scale_and_adjust(OldSize) * oopSize;
 
   reserved_codes_size = scale_and_adjust(ReservedCodeSize); // not used?
   code_size = scale_and_adjust(CodeSize);

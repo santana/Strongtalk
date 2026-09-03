@@ -96,10 +96,15 @@ void InlinedScope::initialize(methodOop method, klassOop methodHolder, InlinedSc
   result = nlrResult = NULL; // these are set during compilation
   if (info && info->resReg) {
     resultPR = info->resReg;
+    nlrResultPR = NULL;
   } else {
     // potential bug: live range of resultPR is bogus
     assert(isTop(), "should have resReg for inlined scope");
     resultPR = new SAPReg(this, resultLoc, false, false, PrologueBCI, EpilogueBCI);
+    // the top scope's non-local-return result must live in NLRResultLoc (x13
+    // on AArch64), which differs from the normal-return resultLoc (x0). On x86
+    // the two registers coincide, which is why this used to share resultPR.
+    nlrResultPR = new SAPReg(this, NLRResultLoc, true, true, PrologueBCI, EpilogueBCI);
   }
   rscope = rs;
   rs->extend();
@@ -780,7 +785,7 @@ void InlinedScope::genCode() {
   int nofTemps = method()->number_of_stack_temporaries();
   if (isTop()) {
     _returnPoint->append(NodeFactory::new_ReturnNode(resultPR, EpilogueBCI));
-    _NLReturnPoint->append(NodeFactory::new_NLRSetupNode(resultPR, EpilogueBCI));
+    _NLReturnPoint->append(NodeFactory::new_NLRSetupNode(nlrResultPR, EpilogueBCI));
     Node* first = NodeFactory::new_PrologueNode(key(), nofArguments(), nofTemps);
     theCompiler->firstNode = first;
     gen()->setCurrent(first);

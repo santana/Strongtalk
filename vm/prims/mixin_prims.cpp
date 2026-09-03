@@ -30,7 +30,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/universe.store.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
-
+#include "runtime/process.hpp"
+#include "runtime/frame.hpp"
+#include "oops/methodOop.hpp"
+#include "interpreter/codeIterator.hpp"
+#include "interpreter/interpretedIC.hpp"
+#include "oops/mixinOop.hpp"
+#include "oops/klass.hpp"
+#include "memory/symbolTable.hpp"
+#include "prims/behavior_prims.hpp"
 TRACE_FUNC(TraceMixinPrims, "mixin")
 
 int mixinOopPrimitives::number_of_calls;

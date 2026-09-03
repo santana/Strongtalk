@@ -640,7 +640,9 @@ void* watcherMain(void* ignored) {
   const int delay_interval = 1; // Delay 1 ms
   while (1) {
     int status = nanosleep(&delay, NULL);
-    if (!status)
+    // nanosleep returns 0 on success and -1 (EINTR) if interrupted; only give
+    // up on an error.
+    if (status != 0)
       return 0;
     real_time_tick(delay_interval);
   }

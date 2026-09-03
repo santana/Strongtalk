@@ -189,6 +189,7 @@ public:
   Expr* result; // result of normal return (NULL if none)
   Expr* nlrResult; // NLR result (non-NULL only for blocks)
   PReg* resultPR; // pseudo register containing result
+  PReg* nlrResultPR; // pseudo register containing NLR result (top scope only)
 
 protected:
   InlinedScope();

@@ -24,6 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/compiler.hpp"
 #include "memory/markSweep.hpp"
 #include "runtime/abort.hpp"
+#include "runtime/os.hpp"
 #include "runtime/process.hpp"
 #include "runtime/vmOperations.hpp"
 #include "utilities/eventLog.hpp"
@@ -34,6 +35,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 void VM_Operation::evaluate() {
   EventMarker em("VM operation %s", name());
   ResourceMark rm;
+  // VM operations may emit code (compile nmethods, write the jump table, patch
+  // stubs) into MAP_JIT regions. Control usually reaches here with write
+  // protection enabled (set right before executing generated code), so disable
+  // it for the duration of the operation; the paths that run generated code
+  // (Delta::call_generic / Process::basic_transfer) re-enable it themselves.
+  os::jit_write_protect(false);
   doit();
 }
 

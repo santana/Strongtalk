@@ -1310,9 +1310,13 @@ methodOop methodOopDesc::methodOop_from_hcode(u_char* hp) {
 }
 
 int methodOopDesc::end_bci() const {
+  // The codes area is padded to a word boundary with halt (0xff) opcodes; the
+  // 64-bit bootstrap layout, however, zero-fills the tail of resized methods.
+  // Skip both types of trailing padding (a terminating opcode is never 0x00 or
+  // 0xff) so the extent returned is just past the last live bytecode.
   int last_entry = this->size_of_codes() * oopSize;
-  for (int index = 0; index < 4; index++)
-    if (byte_at(last_entry - index) != Bytecodes::halt)
+  for (int index = 0; index < last_entry; index++)
+    if (byte_at(last_entry - index) != Bytecodes::halt && byte_at(last_entry - index) != 0)
       return last_entry + 1 - index;
   fatal("should never reach the point");
   return 0;

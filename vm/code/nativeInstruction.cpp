@@ -26,11 +26,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Implementation of NativeCall
 
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+void NativeCall::verify() {
+  // make sure code pattern is a "call to absolute address":
+  //   ldr x16, [pc, #8]; b .+12; .quad target; blr x16
+  if (*(int*)instruction_address() != instruction_code)
+    fatal("not an AArch64 call (ldr x16,[pc,#8])");
+}
+#else
 void NativeCall::verify() {
   // make sure code pattern is actually a call imm32 instruction
   if (*(u_char*)instruction_address() != instruction_code)
     fatal("not a call imm32");
 }
+#endif
 
 void NativeCall::print() {
   mystd->print_cr("0x%x: call 0x%x", instruction_address(), destination());

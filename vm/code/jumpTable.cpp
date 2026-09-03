@@ -194,12 +194,36 @@ void jumpTableEntry::initialize_as_link(char* link) {
 }
 
 void jumpTableEntry::initialize_nmethod_stub(char* dest) {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  initialize_aarch64_stub(dest, nmethod_entry);
+#else
   fill_entry(jump_instruction, dest - (intptr_t)state_addr(), nmethod_entry);
+#endif
 }
 
 void jumpTableEntry::initialize_block_closure_stub() {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  initialize_aarch64_stub(StubRoutines::compile_block_entry(), block_closure_entry);
+#else
   fill_entry(jump_instruction, StubRoutines::compile_block_entry() - (intptr_t)state_addr(), block_closure_entry);
+#endif
 }
+
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+void jumpTableEntry::initialize_aarch64_stub(char* dest, char state) {
+  // Emit an absolute-branch stub that the interpreter can jump/call to:
+  //   ldr x16, [pc, #8]      (load the absolute literal below)
+  //   br  x16                (branch)
+  //   .quad dest             (8-byte absolute destination == destination_addr())
+  //   state
+  static const uint32_t ldr_x16_pc8 = 0x58000050; // ldr x16, [pc, #8]
+  static const uint32_t br_x16      = 0xD61F0200; // br  x16
+  memcpy(jump_inst_addr(),            &ldr_x16_pc8, 4);
+  memcpy(jump_inst_addr() + 4,        &br_x16,      4);
+  *destination_addr() = dest;
+  *state_addr() = state;
+}
+#endif
 
 bool jumpTableEntry::is_nmethod_stub() const {
   return state() == nmethod_entry;
@@ -222,15 +246,27 @@ char* jumpTableEntry::link() const {
 }
 
 char** jumpTableEntry::destination_addr() const {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  return (char**)(((char*)this) + 8); // the .quad literal slot of the AArch64 stub
+#else
   return (char**)(((char*)this) + sizeof(char));
+#endif
 }
 
 char* jumpTableEntry::destination() const {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  return *destination_addr();
+#else
   return *destination_addr() + (intptr_t)state_addr();
+#endif
 }
 
 void jumpTableEntry::set_destination(char* dest) {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+  *destination_addr() = dest;
+#else
   *destination_addr() = dest - (intptr_t)state_addr();
+#endif
 }
 
 intptr_t jumpTableEntry::next_free() const {
