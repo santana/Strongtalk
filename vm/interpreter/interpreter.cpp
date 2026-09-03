@@ -3216,7 +3216,8 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // on 64-bit. The old hard-coded -<<4- encoded a 16-byte stride and misindexed
   // the cache on 64-bit, where elements are 32 bytes.
   int cacheElementShift = 0;
-  for (int s = 4 * oopSize; s > 1; s >>= 1) cacheElementShift++;
+  for (int s = 4 * oopSize; s > 1; s >>= 1)
+    cacheElementShift++;
 
   masm->bind(is_smi); // smi case (assumed to be infrequent)
   masm->movl(ecx, smiKlass_addr()); // load smi klass

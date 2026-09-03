@@ -1710,8 +1710,8 @@ void AArch64MacroAssembler::leal(Register dst, Address src) {
       mov(x16, disp);
       if (src._base.number() == 31 || dst.number() == 31) {
         if (src._base.number() == 31) {
-          mov_sp_to_reg(x17);   // x17 = sp
-          add(x16, x17, x16);   // x16 = sp + disp
+          mov_sp_to_reg(x17); // x17 = sp
+          add(x16, x17, x16); // x16 = sp + disp
         } else {
           add(x16, src._base, x16); // x16 = base + disp
         }

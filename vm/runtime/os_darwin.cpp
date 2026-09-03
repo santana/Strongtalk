@@ -711,14 +711,17 @@ static void handler(int signum, siginfo_t* info, void* context) {
     unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
     unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
     printf("  bytes at pc: ");
-    for (int i = 0; i < 16; i++) printf("%02x ", pc_ptr[i]);
+    for (int i = 0; i < 16; i++)
+      printf("%02x ", pc_ptr[i]);
     printf("\n");
     printf("  bytes at lr: ");
-    for (int i = 0; i < 16; i++) printf("%02x ", lr_ptr[i]);
+    for (int i = 0; i < 16; i++)
+      printf("%02x ", lr_ptr[i]);
     printf("\n");
     uint64_t hp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__x[14]; // esi == bytecode pointer
     uint64_t fp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__fp;
-    frame top((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val, (char*)(uintptr_t)hp_val);
+    frame top((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val,
+              (char*)(uintptr_t)hp_val);
     methodOop m = NULL;
     u_char* hptr = NULL;
     if (top.is_interpreted_frame()) {

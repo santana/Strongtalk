@@ -61,8 +61,8 @@ public:
     instruction_code = 0x58000050, // ldr x16, [pc, #8] (exact emitted opcode)
     instruction_size = 20,
     instruction_offset = -20,
-    literal_offset = -12,       // '.quad target' is 12 bytes before the return addr
-    displacement_offset = -12,  // nativeCall_from_relocInfo reloc points at the literal
+    literal_offset = -12, // '.quad target' is 12 bytes before the return addr
+    displacement_offset = -12, // nativeCall_from_relocInfo reloc points at the literal
     return_address_offset = 0,
   };
 

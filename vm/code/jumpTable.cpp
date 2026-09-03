@@ -217,9 +217,9 @@ void jumpTableEntry::initialize_aarch64_stub(char* dest, char state) {
   //   .quad dest             (8-byte absolute destination == destination_addr())
   //   state
   static const uint32_t ldr_x16_pc8 = 0x58000050; // ldr x16, [pc, #8]
-  static const uint32_t br_x16      = 0xD61F0200; // br  x16
-  memcpy(jump_inst_addr(),            &ldr_x16_pc8, 4);
-  memcpy(jump_inst_addr() + 4,        &br_x16,      4);
+  static const uint32_t br_x16 = 0xD61F0200; // br  x16
+  memcpy(jump_inst_addr(), &ldr_x16_pc8, 4);
+  memcpy(jump_inst_addr() + 4, &br_x16, 4);
   *destination_addr() = dest;
   *state_addr() = state;
 }

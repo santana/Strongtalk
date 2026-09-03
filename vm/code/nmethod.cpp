@@ -674,15 +674,13 @@ void nmethod::verify_expression_stacks() {
       case relocInfo::ic_type:
         verify_expression_stacks_at(iter.ic()->begin_addr());
         break;
-      case relocInfo::prim_type:
-        {
-          PrimitiveIC* pic = iter.primIC();
-          primitive_desc* pd = pic->primitive();
-          if (pd != NULL && pd->can_walk_stack()) {
-            verify_expression_stacks_at(pic->begin_addr());
-          }
+      case relocInfo::prim_type: {
+        PrimitiveIC* pic = iter.primIC();
+        primitive_desc* pd = pic->primitive();
+        if (pd != NULL && pd->can_walk_stack()) {
+          verify_expression_stacks_at(pic->begin_addr());
         }
-        break;
+      } break;
     }
   }
 }
