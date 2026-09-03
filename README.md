@@ -13,17 +13,24 @@ The VM is a work in progress as a project. The C++ code builds on **Linux
 (x86-64)** and **macOS (Apple Silicon)** via the portable `build.unix` makefiles,
 and a CI build runs on every push.
 
-The JIT/code generator emits **x86-64 machine code only**:
+The JIT/code generator has a **single frontend with per-architecture
+backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
+code** on Apple Silicon. The AArch64 backend is ported and exercising the full
+JIT pipeline (compiler, scope-description recording, inline caches, and jumps) —
+enough that the VM boots, loads the image, and installs JIT-compiled frames on
+arm64. It currently stops at an indirect-call fault inside JIT dispatch
+(`blr x16` to a tagged oop), the active blocker.
 
-| Platform                      | Build | Runtime                                                          |
-| ----------------------------- | ----- | ---------------------------------------------------------------- |
-| Linux x86-64 (native)         | yes   | boots, loads the image, reaches interpreter codegen; stops at a VM assert (`interpreter.cpp:279`) |
-| macOS arm64                   | yes   | blocked: the x86-64 codegen cannot execute on Apple Silicon      |
-| Windows                       | yes   | via `build.win32` (Visual Studio, x86 only)                       |
+| Platform                  | Build | Runtime                                                          |
+| ------------------------- | ----- | ---------------------------------------------------------------- |
+| Linux x86-64 (native)     | yes   | boots, loads the image, runs JIT-compiled code                   |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, installs JIT frames; blocked at an indirect-call (`blr x16`) fault during dispatch |
+| Windows                   | yes   | via `build.win32` (Visual Studio, x86 only)                       |
 
-Getting the VM running end-to-end on any of these platforms requires fixing the
-remaining runtime asserts, and (for Apple Silicon) porting the code generator to
-AArch64.
+Getting the VM running end-to-end on Apple Silicon requires resolving that
+remaining dispatch fault. The portable `build.unix` tree is verified by building
+**both** the native arm64 configuration and a **forced x86-64** configuration
+(`make ARCH_FLAGS=-arch x86_64`).
 
 ## Repository layout
 
