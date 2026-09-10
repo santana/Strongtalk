@@ -28,9 +28,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The interpreter's generated-primitive glue (call_primitive /
 // call_primitive_can_fail followed by call_C) uses different conventions on
 // the two backends:
-//   x86:      receiver/argument live on the stack at [esp+8]/[esp+4], the
-//             result is returned in eax, and ret(8) pops the two argument
-//             slots.
+//   x86-64:   the 8-byte return address is on top of the stack, so the last
+//             pushed slot (the receiver) is at [esp+oopSize] and the argument
+//             at [esp+2*oopSize]; return pops both slots. The historic 32-bit
+//             offsets were [esp+4]/[esp+8]/ret(8).
 //   AArch64:  AAPCS64 arguments arrive in x0 (receiver/self) and x1
 //             (argument); the result must be left in x0 because call_C copies
 //             x0 -> eax after the call; nothing was pushed, so ret(0).
@@ -45,10 +46,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   }
 #else
 #define PRIM_ARG_DECL()                                                                                                \
-  Address argument = Address(esp, 4);                                                                                  \
-  Address receiver = Address(esp, 8);
+  Address argument = Address(esp, 2 * oopSize);                                                                        \
+  Address receiver = Address(esp, oopSize);
 #define PRIM_RETURN()                                                                                                  \
-  { masm->ret(8); }
+  { masm->ret(2 * oopSize); }
 #endif
 
 char* PrimitivesGenerator::smiOopPrimitives_add() {
@@ -57,6 +58,21 @@ char* PrimitivesGenerator::smiOopPrimitives_add() {
 
   char* entry_point = masm->pc();
 
+#if defined(DELTA_X86_64)
+  masm->movq(eax, receiver);
+  masm->movq(edx, argument);
+  masm->addq(eax, edx);
+  masm->jcc(Assembler::overflow, _overflow);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  PRIM_RETURN();
+
+  masm->bind(_overflow);
+  masm->movq(eax, argument);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  masm->jmp(error_overflow);
+#else
   masm->movl(eax, receiver);
   masm->addl(eax, argument);
   masm->jcc(Assembler::overflow, _overflow);
@@ -69,6 +85,7 @@ char* PrimitivesGenerator::smiOopPrimitives_add() {
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->jmp(error_overflow);
+#endif
 
   return entry_point;
 }
@@ -79,6 +96,21 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
 
   char* entry_point = masm->pc();
 
+#if defined(DELTA_X86_64)
+  masm->movq(eax, receiver);
+  masm->movq(edx, argument);
+  masm->subq(eax, edx);
+  masm->jcc(Assembler::overflow, _overflow);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  PRIM_RETURN();
+
+  masm->bind(_overflow);
+  masm->movq(eax, argument);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  masm->jmp(error_overflow);
+#else
   masm->movl(eax, receiver);
   masm->subl(eax, argument);
   masm->jcc(Assembler::overflow, _overflow);
@@ -91,6 +123,7 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->jmp(error_overflow);
+#endif
 
   return entry_point;
 }
@@ -101,6 +134,26 @@ char* PrimitivesGenerator::smiOopPrimitives_multiply() {
 
   char* entry_point = masm->pc();
 
+#if defined(DELTA_X86_64)
+  // (a<<1) * b  ==  (a*b)<<1  with the tag bit preserved. 64-bit multiply
+  // with OF -> true smi-range overflow -> big-int fallback.
+  masm->movq(edx, argument);
+  masm->movq(eax, receiver);
+  masm->testb(edx, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  masm->sarq(edx, 2);
+  masm->imulq(eax, edx);
+  masm->jcc(Assembler::overflow, _overflow);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  PRIM_RETURN();
+
+  masm->bind(_overflow);
+  masm->movq(eax, argument);
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  masm->jmp(error_overflow);
+#else
   masm->movl(edx, argument);
   masm->movl(eax, receiver);
   masm->testb(edx, 0x03);
@@ -123,6 +176,7 @@ char* PrimitivesGenerator::smiOopPrimitives_multiply() {
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->jmp(error_overflow);
+#endif
 
   return entry_point;
 }
@@ -153,6 +207,37 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   // ;     x mod y = x%y + y
   // ;
 
+#if defined(DELTA_X86_64)
+  masm->movq(eax, receiver);
+  masm->movq(ecx, argument);
+  masm->testq(ecx, ecx);
+  masm->jcc(Assembler::equal, error_division_by_zero);
+
+  masm->testb(ecx, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+
+  masm->sarq(ecx, 2);
+  masm->sarq(eax, 2);
+  masm->cqo();
+  masm->idivq(ecx);
+  masm->jcc(Assembler::overflow, error_overflow);
+
+  masm->movq(eax, edx);
+  masm->testq(eax, eax);
+  masm->jcc(Assembler::equal, _equal);
+
+  masm->xorq(edx, ecx);
+  masm->jcc(Assembler::negative, _positive);
+
+  masm->bind(_equal);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+
+  masm->bind(_positive);
+  masm->addq(eax, ecx);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+#else
   //  masm->int3();
   masm->movl(eax, receiver);
   masm->movl(ecx, argument);
@@ -187,6 +272,7 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   masm->addl(eax, ecx);
   masm->shll(eax, 2);
   PRIM_RETURN();
+#endif
 
   return entry_point;
 }
@@ -211,8 +297,37 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   // ;   sgn(y)#sgn(x%y):
   // ;     x div y = x/y-1
   // ;
-  //
 
+#if defined(DELTA_X86_64)
+  masm->movq(ecx, argument);
+  masm->movq(eax, receiver);
+  masm->testq(ecx, ecx);
+  masm->jcc(Assembler::equal, error_division_by_zero);
+
+  masm->testb(ecx, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+
+  masm->sarq(ecx, 2);
+  masm->sarq(eax, 2);
+  masm->cqo();
+  masm->idivq(ecx);
+  masm->jcc(Assembler::overflow, error_overflow);
+
+  masm->testq(edx, edx);
+  masm->jcc(Assembler::equal, _equal);
+
+  masm->xorq(ecx, edx);
+  masm->jcc(Assembler::negative, _positive);
+
+  masm->bind(_equal);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+
+  masm->bind(_positive);
+  masm->decq(eax);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+#else
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -246,6 +361,7 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   masm->decl(eax);
   masm->shll(eax, 2);
   PRIM_RETURN();
+#endif
 
   return entry_point;
 }
@@ -255,6 +371,27 @@ char* PrimitivesGenerator::smiOopPrimitives_quo() {
 
   char* entry_point = masm->pc();
 
+#if defined(DELTA_X86_64)
+  masm->movq(ecx, argument);
+  masm->movq(eax, receiver);
+
+  masm->testb(eax, 0x03);
+  masm->jcc(Assembler::notEqual, error_receiver_has_wrong_type);
+
+  masm->testq(ecx, ecx);
+  masm->jcc(Assembler::equal, error_division_by_zero);
+
+  masm->testb(ecx, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+
+  masm->sarq(ecx, 2);
+  masm->sarq(eax, 2);
+  masm->cqo();
+  masm->idivq(ecx);
+  masm->jcc(Assembler::overflow, error_overflow);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+#else
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
 
@@ -279,6 +416,7 @@ char* PrimitivesGenerator::smiOopPrimitives_quo() {
 #endif
   masm->shll(eax, 2);
   PRIM_RETURN();
+#endif
 
   return entry_point;
 }
@@ -288,6 +426,22 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
 
   char* entry_point = masm->pc();
 
+#if defined(DELTA_X86_64)
+  masm->movq(ecx, argument);
+  masm->movq(eax, receiver);
+  masm->testq(ecx, ecx);
+  masm->jcc(Assembler::equal, error_division_by_zero);
+  masm->testb(ecx, 0x03);
+  masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
+  masm->sarq(ecx, 2);
+  masm->sarq(eax, 2);
+  masm->cqo();
+  masm->idivq(ecx);
+  masm->jcc(Assembler::overflow, error_overflow);
+  masm->movq(eax, edx);
+  masm->shlq(eax, 2);
+  PRIM_RETURN();
+#else
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -306,6 +460,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   masm->movl(eax, edx);
   masm->sarl(eax, 2);
   PRIM_RETURN();
+#endif
 
   return entry_point;
 }

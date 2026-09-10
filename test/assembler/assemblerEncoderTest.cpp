@@ -10,13 +10,12 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* Test harness for the x86 encoder (both the 32-bit and 64-bit encoders).
+/* Test harness for the x86 encoder (64-bit only; 32-bit support was dropped).
  *
- * The same source is compiled twice: once with the native (64-bit) encoder
- * and once with -DDELTA_X86_32 forcing the 32-bit encoder. Every test
+ * The source is compiled once against the 64-bit encoder. Every test
  * encodes a single instruction (or a short instruction sequence) and checks
  * the emitted bytes against the expected x86 encoding, so the golden bytes
- * below are the ground truth for both encoders.
+ * below are the ground truth for the encoder.
  *
  * The harness is standalone: it does not link the rest of the VM. The
  * minimal runtime needed by the encoder (CodeBuffer, debug flags, error
@@ -356,20 +355,9 @@ static void test_moves() {
     CHECK_HEX(e, sizeof(e));
     TEST_END
   }
-#if !DELTA_X86_64
   {
-    // no-base indexed addressing: only encodable on 32-bit. On x86-64 the
-    // encoder refuses it (Rosetta decodes it as RIP-relative, not absolute).
-    static const unsigned char e[] = {0x8B, 0x04, 0x95, 0x00, 0x01, 0x00, 0x00};
-    TEST_BEGIN("movl eax, [edx*4+0x100] (index only)")
-    __a.movl(eax, Address(noreg, edx, Address::times_4, 0x100));
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-#endif
-  {
-    // On a 64-bit build this is RIP-relative; on a 32-bit build it is an
-    // absolute address. The emitted bytes are identical either way.
+    // On a 64-bit build this is RIP-relative (mod=00 r/m=101 includes the
+    // disp32 disp field).
     static const unsigned char e[] = {0x8B, 0x05, 0x78, 0x56, 0x34, 0x12};
     TEST_BEGIN("movl eax, [0x12345678] (mod=00 r/m=101)")
     __a.movl(eax, Address(0x12345678, relocInfo::none));
@@ -1187,7 +1175,6 @@ static void test_labels() {
 }
 
 static void test_x86_64() {
-#if DELTA_X86_64
   {
     static const unsigned char e[] = {0x48, 0x8B, 0xC3};
     TEST_BEGIN("movq eax, ebx")
@@ -1465,54 +1452,10 @@ static void test_x86_64() {
     CHECK_HEX(e, sizeof(e));
     TEST_END
   }
-#else
-  {
-    static const unsigned char e[] = {0x60};
-    TEST_BEGIN("pushad")
-    __a.pushad();
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-  {
-    static const unsigned char e[] = {0x61};
-    TEST_BEGIN("popad")
-    __a.popad();
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-  {
-    static const unsigned char e[] = {0x40};
-    TEST_BEGIN("incl eax (32-bit encoding)")
-    __a.incl(eax);
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-  {
-    static const unsigned char e[] = {0x48};
-    TEST_BEGIN("decl eax (32-bit encoding)")
-    __a.decl(eax);
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-  {
-    static const unsigned char e[] = {0x55, 0x8B, 0xEC};
-    TEST_BEGIN("enter (32-bit)")
-    __a.enter();
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-  {
-    static const unsigned char e[] = {0x8B, 0xE5, 0x5D};
-    TEST_BEGIN("leave (32-bit)")
-    __a.leave();
-    CHECK_HEX(e, sizeof(e));
-    TEST_END
-  }
-#endif // DELTA_X86_64
 }
 
 int main() {
-  std::printf("x86 encoder test (%s)\n", DELTA_X86_64 ? "64-bit" : "32-bit");
+  std::printf("x86 encoder test (64-bit)\n");
 
   test_moves();
   test_arith();

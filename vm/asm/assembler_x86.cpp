@@ -142,12 +142,8 @@ private:
   }
 
 // Implementation of Register
-#if DELTA_X86_64
 const char* registerNames[nofRegisters] = {"rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi",
                                            "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15"};
-#else
-const char* registerNames[nofRegisters] = {"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"};
-#endif
 
 char* Register::name() const {
   return (char*)(isValid() ? registerNames[_number] : "noreg");
@@ -198,14 +194,12 @@ X86Assembler::X86Assembler(CodeBuffer* code) : AbstractAssembler(code) {
 
 int X86Assembler::rex_bits(Register reg, Register base, Register index) {
   int rex = 0;
-  if (DELTA_X86_64) {
-    if (reg.isValid() && (reg.number() & 8))
-      rex |= 0x04; // REX.R
-    if (index.isValid() && (index.number() & 8))
-      rex |= 0x02; // REX.X
-    if (base.isValid() && (base.number() & 8))
-      rex |= 0x01; // REX.B
-  }
+  if (reg.isValid() && (reg.number() & 8))
+    rex |= 0x04; // REX.R
+  if (index.isValid() && (index.number() & 8))
+    rex |= 0x02; // REX.X
+  if (base.isValid() && (base.number() & 8))
+    rex |= 0x01; // REX.B
   return rex;
 }
 
@@ -357,21 +351,16 @@ void X86Assembler::emit_operand(Register reg, Register base, Register index, Add
       assert(index != esp, "illegal addressing mode");
       emit_byte(0x04 | r << 3);
       emit_byte(scale << 6 | ix << 3 | 0x05);
-      if (DELTA_X86_64) {
-        // WARNING: on x86-64 this form is nominally [index*scale + RIP-relative
-        // disp32], but the Rosetta 2 emulator decodes it as ABSOLUTE disp32.
-        // Do NOT use this addressing form in 64-bit code; load the base via the
-        // [rip+disp] form into a register and use [base + index*scale] instead.
-        assert(false, "no-base indexed addressing is unusable on x86-64 (Rosetta)");
-        emit_data(disp, rtype);
-      } else {
-        // On 32-bit this is absolute addressing.
-        emit_data(disp, rtype);
-      }
+      // WARNING: on x86-64 this form is nominally [index*scale + RIP-relative
+      // disp32], but the Rosetta 2 emulator decodes it as ABSOLUTE disp32.
+      // Do NOT use this addressing form in 64-bit code; load the base via the
+      // [rip+disp] form into a register and use [base + index*scale] instead.
+      assert(false, "no-base indexed addressing is unusable on x86-64 (Rosetta)");
+      emit_data(disp, rtype);
     } else {
       // [disp]
       // [00 reg 101] imm32
-      if (DELTA_X86_64 && rtype != relocInfo::none) {
+      if (rtype != relocInfo::none) {
         // On x86-64 mod=00 r/m=101 is RIP-relative addressing, so an
         // absolute address (e.g. &last_Delta_fp) cannot be encoded directly.
         // Emit the displacement relative to the end of the disp32 field; the
@@ -384,8 +373,7 @@ void X86Assembler::emit_operand(Register reg, Register base, Register index, Add
         intptr_t next_pc = (intptr_t)pc() + 4;
         emit_long((int)(disp - next_pc));
       } else {
-        // On 32-bit mod=00 r/m=101 is absolute addressing; on 64-bit a
-        // non-relocated disp32 is a RIP-relative offset.
+        // On 64-bit a non-relocated disp32 is a RIP-relative offset.
         emit_byte(0x05 | r << 3);
         emit_data(disp, rtype);
       }
@@ -451,25 +439,21 @@ void X86Assembler::pushl(oop obj) {
 }
 
 void X86Assembler::pushl(Register src) {
-  emit_rex(rex_bits(noreg, src, noreg)); // REX.B for r8..r15
-  emit_byte(0x50 | (src.number() & 7));
+  // The macro layer (and AArch64's pushl) treat stack slots as word-sized;
+  // on x86-64 a 32-bit push would truncate oops and mismatch 8-byte slots.
+  pushq(src);
 }
 
 void X86Assembler::pushl(Address src) {
-  emit_rex(rex_bits(noreg, src._base, src._index));
-  emit_byte(0xFF);
-  emit_operand(esi, src);
+  pushq(src);
 }
 
 void X86Assembler::popl(Register dst) {
-  emit_rex(rex_bits(noreg, dst, noreg)); // REX.B for r8..r15
-  emit_byte(0x58 | (dst.number() & 7));
+  popq(dst);
 }
 
 void X86Assembler::popl(Address dst) {
-  emit_rex(rex_bits(noreg, dst._base, dst._index));
-  emit_byte(0x8F);
-  emit_operand(eax, dst);
+  popq(dst);
 }
 
 // 64-bit stack operations (x86-64)
@@ -480,19 +464,35 @@ void X86Assembler::pushq(Register src) {
   emit_byte(0x50 | (src.number() & 7));
 }
 
+void X86Assembler::pushq(Address src) {
+  assert(BytesPerNativeWord == 8, "pushq is only available on 64-bit");
+  emit_rex_w(noreg, src._base, src._index);
+  emit_byte(0xFF);
+  emit_operand(esi, src);
+}
+
 void X86Assembler::popq(Register dst) {
   assert(BytesPerNativeWord == 8, "popq is only available on 64-bit");
   emit_rex_w(noreg, dst, noreg);
   emit_byte(0x58 | (dst.number() & 7));
 }
 
+void X86Assembler::popq(Address dst) {
+  assert(BytesPerNativeWord == 8, "popq is only available on 64-bit");
+  emit_rex_w(noreg, dst._base, dst._index);
+  emit_byte(0x8F);
+  emit_operand(eax, dst);
+}
+
 void X86Assembler::movb(Register dst, Address src) {
   guarantee(dst.hasByteRegister(), "must have byte register");
+  emit_rex(rex_bits(dst, src._base, src._index));
   emit_byte(0x8A);
   emit_operand(dst, src);
 }
 
 void X86Assembler::movb(Address dst, int imm8) {
+  emit_rex(rex_bits(noreg, dst._base, dst._index));
   emit_byte(0xC6);
   emit_operand(eax, dst);
   emit_byte(imm8);
@@ -500,17 +500,20 @@ void X86Assembler::movb(Address dst, int imm8) {
 
 void X86Assembler::movb(Address dst, Register src) {
   guarantee(src.hasByteRegister(), "must have byte register");
+  emit_rex(rex_bits(src, dst._base, dst._index));
   emit_byte(0x88);
   emit_operand(src, dst);
 }
 
 void X86Assembler::movw(Register dst, Address src) {
+  emit_rex(rex_bits(dst, src._base, src._index));
   emit_byte(0x66);
   emit_byte(0x8B);
   emit_operand(dst, src);
 }
 
 void X86Assembler::movw(Address dst, Register src) {
+  emit_rex(rex_bits(src, dst._base, dst._index));
   emit_byte(0x66);
   emit_byte(0x89);
   emit_operand(src, dst);
@@ -523,16 +526,11 @@ void X86Assembler::movl(Register dst, int imm32) {
 }
 
 void X86Assembler::movl(Register dst, oop obj) {
-  if (DELTA_X86_64) {
-    // On a 64-bit build an oop is a full 64-bit value; load it with a
-    // 64-bit immediate (movabs) instead of truncating it to 32 bits.
-    emit_rex_w(noreg, dst, noreg);
-    emit_byte(0xB8 | (dst.number() & 7));
-    emit_quad_data((intptr_t)obj, relocInfo::oop_type);
-  } else {
-    emit_byte(0xB8 | dst.number());
-    emit_data((intptr_t)obj, relocInfo::oop_type);
-  }
+  // On a 64-bit build an oop is a full 64-bit value; load it with a
+  // 64-bit immediate (movabs) instead of truncating it to 32 bits.
+  emit_rex_w(noreg, dst, noreg);
+  emit_byte(0xB8 | (dst.number() & 7));
+  emit_quad_data((intptr_t)obj, relocInfo::oop_type);
 }
 
 void X86Assembler::movl(Register dst, Register src) {
@@ -713,11 +711,13 @@ void X86Assembler::cmpl(Address dst, int imm32) {
 }
 
 void X86Assembler::cmpl(Address dst, oop obj) {
-  assert(BytesPerNativeWord == 4,
-         "an oop does not fit into a cmp r/m32, imm32 on 64-bit - materialize the oop in a register (movq) first");
-  emit_byte(0x81);
-  emit_operand(edi, dst);
-  emit_data((intptr_t)obj, relocInfo::oop_type);
+  // An oop is a full 8-byte value on 64-bit; there is no cmp r/m32, imm32
+  // form that can hold it. Materialize the oop in r11 (never mapped by the
+  // D-I) and do a 64-bit compare.
+  movq(r11, obj);
+  cmpq(r11, dst);
+  // Note: cmp r64, r/m64 subtracts the memory operand (the klass field) from
+  // the oop; equality flags are as before.
 }
 
 void X86Assembler::cmpl(Register dst, int imm32) {
@@ -725,7 +725,11 @@ void X86Assembler::cmpl(Register dst, int imm32) {
 }
 
 void X86Assembler::cmpl(Register dst, oop obj) {
-  emit_arith(0x81, 0xF8, dst, obj);
+  // An oop is a full 8-byte value on 64-bit; there is no cmp r32, imm32 form
+  // that can hold it. Materialize the oop in r11 (never mapped by the D-I)
+  // and do a 64-bit compare.
+  movq(r11, obj);
+  cmpq(dst, r11);
 }
 
 void X86Assembler::cmpl(Register dst, Register src) {
@@ -745,15 +749,11 @@ void X86Assembler::decb(Register dst) {
 }
 
 void X86Assembler::decl(Register dst) {
-#if DELTA_X86_64
   // the single-byte 0x48+rd form is a REX prefix in 64-bit mode, so use the
   // FF /1 (dec r/m32) encoding instead
   emit_rex(rex_bits(noreg, dst, noreg));
   emit_byte(0xFF);
   emit_byte(0xC8 | (dst.number() & 7));
-#else
-  emit_byte(0x48 | dst.number());
-#endif
 }
 
 void X86Assembler::decl(Address dst) {
@@ -795,15 +795,11 @@ void X86Assembler::imull(Register dst, Register src, int value) {
 }
 
 void X86Assembler::incl(Register dst) {
-#if DELTA_X86_64
   // the single-byte 0x40+rd form is a REX prefix in 64-bit mode, so use the
   // FF /0 (inc r/m32) encoding instead
   emit_rex(rex_bits(noreg, dst, noreg));
   emit_byte(0xFF);
   emit_byte(0xC0 | (dst.number() & 7));
-#else
-  emit_byte(0x40 | dst.number());
-#endif
 }
 
 void X86Assembler::incl(Address dst) {
@@ -1751,23 +1747,13 @@ void X86MacroAssembler::test(Register dst, int imm8) {
 }
 
 void X86MacroAssembler::enter() {
-#if DELTA_X86_64
   pushq(ebp);
   movq(ebp, esp);
-#else
-  pushl(ebp);
-  movl(ebp, esp);
-#endif
 }
 
 void X86MacroAssembler::leave() {
-#if DELTA_X86_64
   movq(esp, ebp);
   popq(ebp);
-#else
-  movl(esp, ebp);
-  popl(ebp);
-#endif
 }
 
 // Support for inlined data
@@ -1787,35 +1773,20 @@ void X86MacroAssembler::set_last_Delta_frame_before_call() {
   // Note: the absolute addresses of last_Delta_fp/sp are emitted as disp32
   // external_word_type references; on a 64-bit build these must be fixed up
   // to RIP-relative addresses by the relocation machinery (64-bit port item).
-#if DELTA_X86_64
   movq(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
   movq(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
-#else
-  movl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
-  movl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
-#endif
 }
 
 void X86MacroAssembler::set_last_Delta_frame_after_call() {
-#if DELTA_X86_64
   addq(esp, oopSize); // sets esp to value before call (i.e., before pushing the return address)
   set_last_Delta_frame_before_call();
   subq(esp, oopSize); // resets esp to original value
-#else
-  addl(esp, oopSize); // sets esp to value before call (i.e., before pushing the return address)
-  set_last_Delta_frame_before_call();
-  subl(esp, oopSize); // resets esp to original value
-#endif
 }
 
 void X86MacroAssembler::reset_last_Delta_frame() {
   // Note: see the note in set_last_Delta_frame_before_call() about the
   // absolute address on 64-bit builds.
-#if DELTA_X86_64
   movq(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), 0);
-#else
-  movl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), 0);
-#endif
 }
 
 void X86MacroAssembler::call_C(Label& L) {
@@ -1877,29 +1848,14 @@ void X86MacroAssembler::call_C(Register entry, Label& nlrTestPoint) {
 // stub. However, currently the assembler doesn't support label pushes.
 
 void X86MacroAssembler::call_C(char* entry, Register arg1) {
-#if DELTA_X86_64
   // x86-64 SysV: first argument in rdi
   set_last_Delta_frame_before_call();
   movq(edi, arg1); // edi == rdi on a 64-bit build
   call(entry, relocInfo::runtime_call_type);
   reset_last_Delta_frame();
-#else
-  Label L1, L2;
-  jmp(L1);
-
-  bind(L2);
-  pushl(arg1);
-  call(entry, relocInfo::runtime_call_type);
-  addl(esp, 1 * oopSize);
-  ret(0);
-
-  bind(L1);
-  call_C(L2);
-#endif
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2) {
-#if DELTA_X86_64
   // x86-64 SysV: arguments in rdi, rsi (arg registers must be distinct from
   // rdi/rsi so that the moves do not clobber each other)
   assert(arg1 != esi && arg2 != edi, "argument register overlap");
@@ -1908,24 +1864,9 @@ void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2) {
   movq(esi, arg2);
   call(entry, relocInfo::runtime_call_type);
   reset_last_Delta_frame();
-#else
-  Label L1, L2;
-  jmp(L1);
-
-  bind(L2);
-  pushl(arg2);
-  pushl(arg1);
-  call(entry, relocInfo::runtime_call_type);
-  addl(esp, 2 * oopSize);
-  ret(0);
-
-  bind(L1);
-  call_C(L2);
-#endif
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3) {
-#if DELTA_X86_64
   // x86-64 SysV: arguments in rdi, rsi, rdx
   assert(arg1 != esi && arg1 != edx && arg2 != edi && arg2 != edx && arg3 != edi && arg3 != esi,
          "argument register overlap");
@@ -1935,25 +1876,9 @@ void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Regist
   movq(edx, arg3);
   call(entry, relocInfo::runtime_call_type);
   reset_last_Delta_frame();
-#else
-  Label L1, L2;
-  jmp(L1);
-
-  bind(L2);
-  pushl(arg3);
-  pushl(arg2);
-  pushl(arg1);
-  call(entry, relocInfo::runtime_call_type);
-  addl(esp, 3 * oopSize);
-  ret(0);
-
-  bind(L1);
-  call_C(L2);
-#endif
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
-#if DELTA_X86_64
   // x86-64 SysV: arguments in rdi, rsi, rdx, rcx
   assert(arg1 != esi && arg1 != edx && arg1 != ecx && arg2 != edi && arg2 != edx && arg2 != ecx && arg3 != edi &&
            arg3 != esi && arg3 != ecx && arg4 != edi && arg4 != esi && arg4 != edx,
@@ -1965,22 +1890,6 @@ void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Regist
   movq(ecx, arg4);
   call(entry, relocInfo::runtime_call_type);
   reset_last_Delta_frame();
-#else
-  Label L1, L2;
-  jmp(L1);
-
-  bind(L2);
-  pushl(arg4);
-  pushl(arg3);
-  pushl(arg2);
-  pushl(arg1);
-  call(entry, relocInfo::runtime_call_type);
-  addl(esp, 4 * oopSize);
-  ret(0);
-
-  bind(L1);
-  call_C(L2);
-#endif
 }
 
 void X86MacroAssembler::store_check(Register obj, Register tmp) {
@@ -1991,7 +1900,6 @@ void X86MacroAssembler::store_check(Register obj, Register tmp) {
   // base changes. Advantage: only one instead of two instructions.
   assert(obj != tmp, "registers must be different");
   Label no_store;
-#if DELTA_X86_64
   // On 64-bit the boundary and the byte map base are full 64-bit pointers;
   // load them with movabs (they are code-generation-time constants).
   movq(tmp, (intptr_t)Universe::new_gen.boundary()); // assumes boundary between new_gen and old_gen is fixed
@@ -2001,13 +1909,6 @@ void X86MacroAssembler::store_check(Register obj, Register tmp) {
   movq(tmp, Address(tmp));
   shrq(obj, card_shift);
   movb(Address(tmp, obj, Address::times_1), 0);
-#else
-  cmpl(obj, (intptr_t)Universe::new_gen.boundary()); // assumes boundary between new_gen and old_gen is fixed
-  jcc(X86Assembler::less, no_store); // avoid marking dirty if target is a new object
-  movl(tmp, Address((intptr_t)&byte_map_base, relocInfo::external_word_type));
-  shrl(obj, card_shift);
-  movb(Address(tmp, obj, Address::times_1), 0);
-#endif
   bind(no_store);
 }
 

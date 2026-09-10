@@ -26,8 +26,10 @@ ifeq ($(UNAME),Darwin)
 # define; on Intel hosts the JIT emits x86-64 machine code.
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_M),arm64)
+ifneq ($(origin ARCH_FLAGS),command line)
 ARCH_FLAGS	= -arch arm64
 DEFINES		+= -DDELTA_ASSEMBLER_BACKEND_AARCH64
+endif
 else
 ARCH_FLAGS	= -arch x86_64
 endif
@@ -36,6 +38,21 @@ LIBRARY_PATH_VAR = DYLD_LIBRARY_PATH
 else
 SHLIB_FLAG	= -shared
 LIBRARY_PATH_VAR = LD_LIBRARY_PATH
+endif
+
+# Select the assembler/mapping backend by the *target* architecture.
+# This logic runs on BOTH macOS and Linux so either host builds the correct
+# backend:
+#   - macOS: the target arch comes from ARCH_FLAGS, which may be overridden on
+#     the command line (e.g. forcing an x86-64 build on an arm64 host).
+#   - Linux: there is no -arch flag, so the host architecture (uname -m)
+#     selects the backend (x86_64 -> x86 assembler, arm64/aarch64 -> AArch64).
+ifeq ($(findstring x86_64,$(ARCH_FLAGS)),x86_64)
+TARGET_ARCH_X86_64 = 1
+else ifeq ($(shell uname -m),x86_64)
+TARGET_ARCH_X86_64 = 1
+else
+TARGET_ARCH_AARCH64 = 1
 endif
 
 PROGRAMS = strongtalk stest
@@ -111,10 +128,10 @@ format-check: $(CLANG_FORMAT_STYLE)
 define PROGRAM_template
 $(1)_SRCS       := $$(foreach dir,$$($(1)_DIRS),$$(wildcard $$(dir)/*/*.cpp))
 $(1)_SRCS	:= $$(if $$(filter stest,$(1)),$$(filter-out $(TEST_DIR)/assembler/%,$$($(1)_SRCS)),$$($(1)_SRCS))
-ifeq ($(UNAME_M),arm64)
-$(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp,$$($(1)_SRCS))
-else
+ifeq ($(TARGET_ARCH_X86_64),1)
 $(1)_SRCS	:= $$(filter-out %/mapping_aarch64.cpp %/assembler_aarch64.cpp,$$($(1)_SRCS))
+else
+$(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp,$$($(1)_SRCS))
 endif
 $(1)_OBJS	:= $$($(1)_SRCS:%.cpp=%.o)
 $(1)_DEPFILES	:= $$($(1)_SRCS:%.cpp=%.d)

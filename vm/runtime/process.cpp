@@ -63,7 +63,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // the delta call. This is necessary for a consistent stack during the delta call.
 extern "C" char* C_frame_return_addr;
 extern "C" bool have_nlr_through_C;
-extern "C" int nlr_home;
+extern "C" intptr_t nlr_home;
 extern "C" int nlr_home_id;
 extern "C" oop nlr_result;
 

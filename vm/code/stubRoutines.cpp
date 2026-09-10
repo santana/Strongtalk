@@ -474,6 +474,24 @@ char* StubRoutines::generate_compile_block(MacroAssembler* masm) {
 
 extern "C" char* nlr_testpoint_entry; // set by InterpreterGenerator::generate_nonlocal_return_code
 
+// Decode the 32-bit ic_info word that follows a return address into a
+// full-width NLR offset. On x86-64 the MacroAssembler's movl/sarl/addl are
+// 64-bit (movq/sarq/addq), so the 4-byte immediate must be sign-extended to
+// 64 bits before the flag shift to preserve the original 32-bit semantics;
+// otherwise the following stub bytes bleed into the shift and the computed
+// NLR target is garbage.
+static void decode_ic_info(MacroAssembler* masm, Register offset, Address info) {
+#ifdef DELTA_X86_64
+  masm->movl_32(offset, info); // 32-bit load (zero-extends the ic_info word)
+  masm->movsxq(offset, offset); // sign-extend the ic_info word to 64 bits
+#else
+  masm->movl(offset, info);
+#endif
+  if (IC_Info::number_of_flags > 0) {
+    masm->sarl(offset, IC_Info::number_of_flags); // shift ic info flags out
+  }
+}
+
 char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
   // Entry point jumped to from compiled code. Initiates (or continues an ongoing) NLR.
   // Originally this code has been generated in nmethods, using a stub reduces code size.
@@ -496,10 +514,7 @@ char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
 #else
   masm->leave(); // remove stack frame
   masm->popl(ret_addr); // get (local) return address
-  masm->movl(offset, Address(ret_addr, IC_Info::info_offset)); // get ic info
-  if (IC_Info::number_of_flags > 0) {
-    masm->sarl(offset, IC_Info::number_of_flags); // shift ic info flags out
-  }
+  decode_ic_info(masm, offset, Address(ret_addr, IC_Info::info_offset)); // get ic info
   masm->addl(ret_addr, offset); // compute non-local return address
   masm->jmp(ret_addr); // do NLR
 #endif
@@ -824,7 +839,7 @@ extern "C" char* method_entry_point;
 
 extern "C" bool have_nlr_through_C;
 extern "C" oop nlr_result;
-extern "C" int nlr_home;
+extern "C" intptr_t nlr_home;
 extern "C" int nlr_home_id;
 
 extern "C" char* C_frame_return_addr;
@@ -1006,6 +1021,24 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   //  char* nlr_return_from_Delta_addr = StubRoutines::nlr_return_from_Delta();
   //  assert(nlr_return_from_Delta_addr, "nlr_return_from_Delta not initialized yet");
   // patch return address (after popStackHandles, using edx to load the full 64-bit address)
+#ifdef DELTA_X86_64
+  // x86-64 SysV: popStackHandles's argument goes in rdi (not on the stack)
+  // and the register saves must be 8 bytes wide.
+  masm->movq(edi, ecx); // SysV arg1 = nextFrame (the C stack frame to pop handles below)
+  masm->pushq(eax);
+  masm->pushq(ebx);
+  masm->pushq(edx);
+  masm->pushq(ecx);
+  masm->pushq(esi);
+  masm->pushq(edi);
+  masm->call((char*)&popStackHandles, relocInfo::external_word_type);
+  masm->popq(edi);
+  masm->popq(esi);
+  masm->popq(ecx);
+  masm->popq(edx);
+  masm->popq(ebx);
+  masm->popq(eax);
+#else
   masm->pushl(eax);
   masm->pushl(ebx);
   masm->pushl(edx);
@@ -1019,6 +1052,7 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->popl(edx);
   masm->popl(ebx);
   masm->popl(eax);
+#endif
   masm->movq(edx, (intptr_t)nlr_return_from_Delta_entry);
   masm->movq(Address(ecx, -oopSize), edx);
 
@@ -1026,7 +1060,12 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   // setup global NLR variables
   masm->movl(Address((intptr_t)&have_nlr_through_C, relocInfo::external_word_type), 1);
   masm->movq(Address((intptr_t)&nlr_result, relocInfo::external_word_type), eax);
+#ifdef DELTA_X86_64
+  // nlr_home is a full 64-bit frame pointer on x86-64; movl truncates it
+  masm->movq(Address((intptr_t)&nlr_home, relocInfo::external_word_type), edi);
+#else
   masm->movl(Address((intptr_t)&nlr_home, relocInfo::external_word_type), edi);
+#endif
   masm->movl(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), esi);
   masm->jmp(_return);
 
@@ -1044,13 +1083,18 @@ char* StubRoutines::generate_nlr_return_from_Delta(MacroAssembler* masm) {
 
   masm->reset_last_Delta_frame();
   masm->movq(eax, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+#ifdef DELTA_X86_64
+  // nlr_home is a full 64-bit frame pointer on x86-64; movl truncates it
+  // (the C global is intptr_t so the 64-bit load reads exactly it)
+  masm->movq(edi, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#else
   masm->movl(edi, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#endif
   masm->movl(esi, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   // get return address
   masm->movq(ebx, Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type));
-  masm->movl(ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
-  masm->sarl(ecx, IC_Info::number_of_flags); // shift ic info flags out
+  decode_ic_info(masm, ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
   masm->addq(ebx, ecx); // compute NLR test point address
   masm->jmp(ebx); // return to nlr test point
 
@@ -1168,12 +1212,23 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->cmpl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
   masm->jcc(Assembler::equal, _return);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
+#ifdef DELTA_X86_64
+  // nlr_result/nlr_home are full-width oops/pointers on x86-64
+  masm->movq(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->movq(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#else
   masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#endif
   masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   masm->bind(_return);
+#ifdef DELTA_X86_64
+  // enter() above pushed a full 64-bit rbp
+  masm->popq(ebp);
+#else
   masm->popl(ebp);
+#endif
   masm->ret(0);
 
   Label common_unpack_unoptimized_frames;
@@ -1187,6 +1242,15 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->movl(ebx, real_fp); // 2nd arg: frame pointer link
   masm->movl(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
   masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, ecx, edx);
+#elif defined(DELTA_X86_64)
+  // x86-64 SysV: pass the four arguments in rdi/rsi/rdx/rcx (the 64-bit
+  // call_C maps arg1..arg4 to edi/esi/edx/ecx, and its asserts require
+  // arg3 != ecx, arg4 != edx, hence the edx/ecx order below).
+  masm->movq(ecx, ebp); // 4th arg: old frame pointer
+  masm->movq(edx, frame_array); // 3rd arg: array with the packed frames
+  masm->movq(ebx, real_fp); // 2nd arg: frame pointer link
+  masm->movq(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
+  masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, edx, ecx);
 #else
   masm->pushl(ebp); // Push the old   frame pointer
   masm->pushl(frame_array); // Push the array with the packed frames
@@ -1196,8 +1260,14 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   // Compute the new stack pointer
   masm->call((char*)setup_deoptimization_and_return_new_sp, relocInfo::runtime_call_type);
 #endif
+#ifdef DELTA_X86_64
+  // new sp and real fp are full 64-bit pointers on x86-64
+  masm->movq(esp, eax); // Set the new stack pointer
+  masm->movq(ebp, real_fp); // Set the frame pointer to the link
+#else
   masm->movl(esp, eax); // Set the new stack pointer
   masm->movl(ebp, real_fp); // Set the frame pointer to the link
+#endif
   masm->pushl(-1); // Push invalid return address
   masm->jmp(wrapper_for_unpack_frame_array); // Call the unpacking function
 
@@ -1205,8 +1275,14 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
 
   masm->bind(nlr_unpack_unoptimized_frames);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 1);
+#ifdef DELTA_X86_64
+  // nlr_result/nlr_home are full-width oops/pointers on x86-64
+  masm->movq(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
+  masm->movq(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
+#else
   masm->movl(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
   masm->movl(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
+#endif
   masm->movl(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), nlr_home_id_reg);
   masm->jmp(common_unpack_unoptimized_frames);
 
@@ -1231,17 +1307,35 @@ char* StubRoutines::generate_provoke_nlr_at(MacroAssembler* masm) {
 
   char* entry_point = masm->pc();
 
+#ifdef DELTA_X86_64
+  // x86-64 SysV: the two arguments arrive in rdi/rsi, not on the stack; the
+  // interrupted Delta frame's ebp/esp are full 64-bit pointers. After
+  // switching esp to the Delta sp, old_ret_addr reads the return address of
+  // the Delta frame from below it.
+  masm->movq(ebp, edi); // set new frame pointer (from SysV arg1)
+  masm->movq(esp, esi); // set new stack pointer (from SysV arg2)
+  masm->movq(ebx, old_ret_addr); // find old return address
+#else
   masm->movl(ebp, frame_pointer); // set new frame pointer
   masm->movl(esp, stack_pointer); // set new stack pointer
   masm->movl(ebx, old_ret_addr); // find old return address
+#endif
 
+#ifdef DELTA_X86_64
+  masm->movq(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->movq(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#else
   masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#endif
   masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
-  masm->movl(ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
-  masm->sarl(ecx, IC_Info::number_of_flags); // shift ic info flags out
+  decode_ic_info(masm, ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
+#ifdef DELTA_X86_64
+  masm->addq(ebx, ecx); // compute NLR test point address (64-bit code ptr)
+#else
   masm->addl(ebx, ecx); // compute NLR test point address
+#endif
   masm->jmp(ebx); // return to nlr test point
 
   return entry_point;
@@ -1259,12 +1353,27 @@ char* StubRoutines::generate_continue_nlr_in_delta(MacroAssembler* masm) {
 
   char* entry_point = masm->pc();
 
+#ifdef DELTA_X86_64
+  // x86-64 SysV: the two arguments arrive in rdi/rsi, not on the stack; the
+  // interrupted Delta frame's ebp/esp are full 64-bit pointers. After
+  // switching esp to the Delta sp, old_ret_addr reads the return address of
+  // the Delta frame from below it.
+  masm->movq(ebp, edi); // set new frame pointer (from SysV arg1)
+  masm->movq(esp, esi); // set new stack pointer (from SysV arg2)
+  masm->movq(ebx, old_ret_addr); // find old return address
+#else
   masm->movl(ebp, frame_pointer); // set new frame pointer
   masm->movl(esp, stack_pointer); // set new stack pointer
   masm->movl(ebx, old_ret_addr); // find old return address
+#endif
 
+#ifdef DELTA_X86_64
+  masm->movq(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->movq(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#else
   masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+#endif
   masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   masm->jmp(ebx); // continue

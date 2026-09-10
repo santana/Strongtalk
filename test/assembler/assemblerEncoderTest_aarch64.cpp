@@ -139,6 +139,7 @@ extern "C" char* byte_map_base = NULL;
 
 extern "C" void** last_Delta_fp = NULL;
 extern "C" oop* last_Delta_sp = NULL;
+extern "C" char* last_Delta_pc = NULL;
 
 VirtualSpace::VirtualSpace() {
   _low_boundary = NULL;

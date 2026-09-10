@@ -1346,7 +1346,7 @@ static void floatArithROp(ArithOpCode op, Register reg, Register temp) {
       Label is_smi, is_float, done;
       theMacroAssm->test(reg, Mem_Tag); // check if smi
       theMacroAssm->jcc(Assembler::zero, is_smi);
-      theMacroAssm->movl(temp, Address(reg, memOopDesc::klass_byte_offset())); // get object klass
+      theMacroAssm->movq(temp, Address(reg, memOopDesc::klass_byte_offset())); // get object klass
       theMacroAssm->cmpl(temp, doubleKlass_addr()); // check if floatOop
       theMacroAssm->jcc(Assembler::equal, is_float);
       theMacroAssm->hlt(); // not yet implemented		// cannot be converted
@@ -1586,7 +1586,7 @@ static void testForSingleKlass(Register obj, klassOop klass, Register klassReg, 
     // compare against obj's klass - must check if smi first
     theMacroAssm->test(obj, Mem_Tag);
     theMacroAssm->jcc(Assembler::zero, failure);
-    theMacroAssm->movl(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
+    theMacroAssm->movq(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
     theMacroAssm->cmpl(klassReg, klass);
   }
   theMacroAssm->jcc(Assembler::notEqual, failure);
@@ -1667,7 +1667,7 @@ static void generalTypeTest(Register obj, Register klassReg, bool hasUnknown, Gr
       // compare with class
       assert(klass != Universe::smiKlassObj(), "should have been excluded");
       if (!klassHasBeenLoaded) {
-        theMacroAssm->movl(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
+        theMacroAssm->movq(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
         klassHasBeenLoaded = true;
       }
       theMacroAssm->cmpl(klassReg, klass);
@@ -1750,7 +1750,7 @@ void TypeTestNode::gen() {
         // compare against obj's klass - must check if smi first
 	theMacroAssm->test(obj, Mem_Tag);
 	theMacroAssm->jcc(Assembler::zero, next()->label);
-        theMacroAssm->movl(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
+        theMacroAssm->movq(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
         theMacroAssm->cmpl(klassReg, klass);
       }
       theMacroAssm->jcc(Assembler::notEqual, next()->label);
@@ -1831,7 +1831,7 @@ void TypeTestNode::gen() {
       // compare with class
       assert(klass != Universe::smiKlassObj(), "should have been excluded");
       if (!klassHasBeenLoaded) {
-        theMacroAssm->movl(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
+        theMacroAssm->movq(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
 	klassHasBeenLoaded = true;
       }
       theMacroAssm->cmpl(klassReg, klass);
@@ -2362,7 +2362,7 @@ void InlinedPrimitiveNode::gen() {
       theMacroAssm->movl(klass, Universe::smiKlassObj());
       theMacroAssm->test(obj, Mem_Tag);
       theMacroAssm->jcc(Assembler::zero, is_smi);
-      theMacroAssm->movl(klass, Address(obj, memOopDesc::klass_byte_offset()));
+      theMacroAssm->movq(klass, Address(obj, memOopDesc::klass_byte_offset()));
       theMacroAssm->bind(is_smi);
       store(klass, _dest, temp1, temp3);
     } break;

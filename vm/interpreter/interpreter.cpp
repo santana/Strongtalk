@@ -1894,6 +1894,9 @@ char* InterpreterGenerator::call_primitive() {
   masm->movq(r8, Address(esp, 4 * oopSize));
   masm->movq(r9, Address(esp, 5 * oopSize));
   call_C(eax);
+  // PRIM_API=__stdcall is a no-op on SysV x86-64, so the pushed argument
+  // scaffolding is popped here by the caller (same as the AArch64 branch).
+  masm->addl(esp, slotSize);
   masm->movq(esi, r12); // restore bytecode ptr
 #elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   masm->pushl(eax); // push last argument
@@ -1945,6 +1948,9 @@ char* InterpreterGenerator::call_primitive_can_fail() {
   masm->movq(r8, Address(esp, 4 * oopSize));
   masm->movq(r9, Address(esp, 5 * oopSize));
   call_C(eax);
+  // PRIM_API=__stdcall is a no-op on SysV x86-64, so the pushed argument
+  // scaffolding is popped here by the caller (same as the AArch64 branch).
+  masm->addl(esp, slotSize);
   // Restore bytecode ptr before using it for jump offset / dispatch.
   masm->movq(esi, r12);
 #elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
@@ -2710,18 +2716,38 @@ void InterpreterGenerator::return_tos(Bytecodes::ArgumentSpec arg_spec) {
   masm->leave();
   switch (arg_spec) {
     case Bytecodes::recv_0_args:
+#if DELTA_X86_64
+      // x86-64: the D-I send pushes the receiver as an extra word in the arg
+      // region ([fp+2..]); pop it too or every interp return leaves an 8-byte
+      // esp skew in the caller's delta.
+      masm->ret(1 * slotSize);
+#else
       masm->ret(0 * slotSize);
+#endif
       break;
     case Bytecodes::recv_1_args:
+#if DELTA_X86_64
+      masm->ret(2 * slotSize);
+#else
       masm->ret(1 * slotSize);
+#endif
       break;
     case Bytecodes::recv_2_args:
+#if DELTA_X86_64
+      masm->ret(3 * slotSize);
+#else
       masm->ret(2 * slotSize);
+#endif
       break;
     case Bytecodes::recv_n_args: {
       // no. of arguments is in the next byte
       masm->movb(ebx, Address(esi, 1)); // get no. of arguments
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#if DELTA_X86_64
+      masm->popl(ecx); // get return address
+      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // remove arguments
+      masm->addl(esp, oopSize); // also remove the receiver word (see above)
+      masm->jmp(ecx); // return
+#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
       // AArch64: after leave() the return address lives in x30, not on the
       // stack, and [sp] holds the first argument. Skip all n argument slots
       // and branch back through x30.
@@ -3167,7 +3193,14 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
     Address primitive_addr = Address(ecx, methodOopDesc::codes_byte_offset() + oopSize);
 
     masm->movl(edx, primitive_addr); // get primitive address
+#ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
+    // x86-64: call_C clobbers esi (SysV rsi = bytecode pointer); preserve it.
+    masm->movq(r12, esi);
     call_C(edx); // eax := primitive call
+    masm->movq(esi, r12);
+#else
+    call_C(edx); // eax := primitive call
+#endif
     masm->test(eax, Mark_Tag_Bit);
     masm->jcc(Assembler::notZero, _failed);
     load_ebx();

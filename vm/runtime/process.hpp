@@ -35,7 +35,7 @@ template <class E> class GrowableArray;
 class unwindInfo : public StackObj {
 private:
   // NLR state
-  int _nlr_home;
+  intptr_t _nlr_home; // frame pointer of the NLR target (word-sized on LP64)
   int _nlr_home_id;
   contextOop _nlr_home_context;
 
@@ -60,7 +60,7 @@ public:
   unwindInfo* next() const { return _next; }
   void set_next(unwindInfo* next) { _next = next; }
 
-  int nlr_home() const { return _nlr_home; }
+  intptr_t nlr_home() const { return _nlr_home; }
   int nlr_home_id() const { return _nlr_home_id; }
   contextOop nlr_home_context() const { return _nlr_home_context; }
   void update_nlr_targets(compiledVFrame* f, contextOop con);

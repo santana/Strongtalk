@@ -24,47 +24,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
 
-// The x86 assembler encodes both 32-bit and 64-bit instructions. The word
-// size is selected at compile time from the platform pointer size, so that
-// -m32 / -m64 (or LP64) builds automatically pick the right encoding. The
-// 32-bit path can be forced on a 64-bit host by defining DELTA_X86_32 (the
-// encoder tests use this to exercise both encoders). DELTA_X86_64 is defined
-// on 64-bit builds, DELTA_X86_32 on 32-bit builds.
+// The x86 backend targets 64-bit only; 32-bit support has been dropped.
+// DELTA_X86_64 is therefore always defined (as 1), so existing
+// '#if DELTA_X86_64' guards keep working.
 //
-// On a 64-bit build all pointer-sized operations (register moves, stack
-// pushes, arithmetic) must use the explicit 64-bit instruction forms (the
-// *q variants). The 32-bit forms are still available and emit true 32-bit
-// instructions.
+// All pointer-sized operations (register moves, stack pushes, arithmetic)
+// use the explicit 64-bit *q instruction forms. The 32-bit *l forms remain
+// available for genuine 32-bit data operations (e.g. boxed Smi arithmetic)
+// and emit true 32-bit instructions.
 
-#if defined(DELTA_X86_32) && defined(DELTA_X86_64)
-#error "define only one of DELTA_X86_32 / DELTA_X86_64"
-#endif
-
-#if !defined(DELTA_X86_32) && !defined(DELTA_X86_64)
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__) || defined(__LP64__) || defined(_LP64) ||    \
-  defined(_M_X64)
-#define DELTA_X86_64 1
-#else
-#define DELTA_X86_32 1
-#endif
-#endif
-
-// Both macros are always defined (as 0/1) so that tests like
-// "if (DELTA_X86_64)" work on either build.
-#ifndef DELTA_X86_32
-#define DELTA_X86_32 0
-#endif
 #ifndef DELTA_X86_64
-#define DELTA_X86_64 0
+#define DELTA_X86_64 1
 #endif
 
-#if DELTA_X86_64
 const int BytesPerNativeWord = 8; // size of a native word (pointer) in bytes
 const int nofRegisters = 16; // total number of registers
-#else
-const int BytesPerNativeWord = 4; // size of a native word (pointer) in bytes
-const int nofRegisters = 8; // total number of registers
-#endif
 
 class Register : public ValueObj {
 private:
@@ -102,8 +76,6 @@ const Register esp = Register(4, ' ');
 const Register ebp = Register(5, ' ');
 const Register esi = Register(6, ' ');
 const Register edi = Register(7, ' ');
-
-#if DELTA_X86_64
 const Register r8 = Register(8, ' ');
 const Register r9 = Register(9, ' ');
 const Register r10 = Register(10, ' ');
@@ -112,7 +84,6 @@ const Register r12 = Register(12, ' ');
 const Register r13 = Register(13, ' ');
 const Register r14 = Register(14, ' ');
 const Register r15 = Register(15, ' ');
-#endif
 
 const Register noreg; // Dummy register used in Load, LoadAddr, and Store.
 
@@ -229,7 +200,9 @@ public:
 
   // 64-bit stack operations (x86-64 only)
   void pushq(Register src);
+  void pushq(Address src);
   void popq(Register dst);
+  void popq(Address dst);
 
   // Moves
   void movb(Register dst, Address src);
@@ -503,7 +476,6 @@ class X86MacroAssembler : public X86Assembler {
 public:
   X86MacroAssembler(CodeBuffer* code) : X86Assembler(code) {}
 
-#if DELTA_X86_64
   // On 64-bit x86, oops are 64-bit pointers.  The low-level X86Assembler
   // *l methods emit 32-bit instructions (no REX.W), which silently
   // truncate pointers to 32 bits and zero-extend.  Override the forms
@@ -561,6 +533,22 @@ public:
   void shrl(Register dst, int imm) { shrq(dst, imm); }
   void shrl(Register dst) { shrq(dst); }
 
+  using X86Assembler::imull;
+  // 32-bit *l multiply/divide would truncate 64-bit oop results (and their
+  // overflow flag would mis-detect smi overflow); route to the *q forms.
+  void imull(Register src) { imulq(eax, src); } // 1-operand: rax *= src
+  void imull(Register dst, Register src) { imulq(dst, src); }
+  void imull(Register dst, Register src, int value) { imulq(dst, src, value); }
+
+  using X86Assembler::idivl;
+  void idivl(Register src) { idivq(src); }
+
+  using X86Assembler::cdq;
+  void cdq() { cqo(); }
+
+  using X86Assembler::negl;
+  void negl(Register dst) { negq(dst); }
+
   using X86Assembler::incl;
   void incl(Register dst) { incq(dst); }
 
@@ -573,8 +561,6 @@ public:
   // the counter always look overflowed).
   void movl_32(Register dst, const Address& src) { X86Assembler::movl(dst, src); }
   void movl_32(const Address& dst, Register src) { X86Assembler::movl(dst, src); }
-
-#endif
 
   // Alignment
   void align(int modulus);

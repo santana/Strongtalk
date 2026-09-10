@@ -123,6 +123,28 @@ public:
     while (!_signalled)
       pthread_cond_wait(&notifier, &mutex);
   }
+  // Returns true if the event is signaled within timeout_in_ms; a
+  // non-positive timeout polls without blocking. Used to implement
+  // os::wait_for_event_or_timer for DeltaProcess::wait_for_async_dll.
+  bool waitForWithTimeout(int timeout_in_ms) {
+    if (timeout_in_ms <= 0) {
+      Lock mark(&mutex);
+      return _signalled;
+    }
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct timespec ts;
+    ts.tv_sec = tv.tv_sec + timeout_in_ms / 1000;
+    long nsec = (long)tv.tv_usec * 1000L + (long)(timeout_in_ms % 1000) * 1000000L;
+    ts.tv_sec += nsec / 1000000000L;
+    ts.tv_nsec = nsec % 1000000000L;
+    Lock mark(&mutex);
+    while (!_signalled) {
+      if (pthread_cond_timedwait(&notifier, &mutex, &ts) == ETIMEDOUT)
+        return false;
+    }
+    return true;
+  }
   Event(bool state) {
     _signalled = state;
     int result;
@@ -564,7 +586,7 @@ void os::signal_event(Event* event) {
 
 // 1 reference - process.cpp
 bool os::wait_for_event_or_timer(Event* event, int timeout_in_ms) {
-  return false;
+  return event->waitForWithTimeout(timeout_in_ms);
 }
 
 extern "C" bool WizardMode;

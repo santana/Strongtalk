@@ -431,8 +431,17 @@ void CodeGenerator::finalize(InlinedScope* scope) {
       assert(self_reg != temp1, "choose another register");
       _masm->testl(self_reg, Mem_Tag);			// testl instead of test => no alignment nop's needed later
       _masm->jcc(Assembler::zero, CompiledIC::normalLookupRoutine());
+#if DELTA_X86_64
+      // 64-bit: compare the 8-byte klass field against a materialized klass oop
+      // (cmpl(Address, oop) can't embed a 64-bit oop in a cmp r/m32, imm32).
+      Temporary scratch(_currentMapping);
+      _masm->movq(scratch.reg(), klass);
+      _masm->cmpq(scratch.reg(), Address(self_reg, memOopDesc::klass_byte_offset()));
+      _masm->jcc(Assembler::notEqual, CompiledIC::normalLookupRoutine());
+#else
       _masm->cmpl(Address(self_reg, memOopDesc::klass_byte_offset()), klass);
       _masm->jcc(Assembler::notEqual, CompiledIC::normalLookupRoutine());
+#endif
     }
   } else {
     // If this is a block method and we expect a context
@@ -887,8 +896,16 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
     } else {
       _masm->test(use(recv), Mem_Tag);
       _masm->jcc(Assembler::zero, CompiledIC::normalLookupRoutine());
+#if DELTA_X86_64
+      // 64-bit: see the verify-receiver snippet in the epilogue generator.
+      Temporary scratch(_currentMapping);
+      _masm->movq(scratch.reg(), klass);
+      _masm->cmpq(scratch.reg(), Address(use(recv), memOopDesc::klass_byte_offset()));
+      _masm->jcc(Assembler::notEqual, CompiledIC::normalLookupRoutine());
+#else
       _masm->cmpl(Address(use(recv), memOopDesc::klass_byte_offset()), klass);
       _masm->jcc(Assembler::notEqual, CompiledIC::normalLookupRoutine());
+#endif
     }
   } else {
     // If this is a block method and we expect a context
@@ -1600,7 +1617,7 @@ void CodeGenerator::testForSingleKlass(Register obj, klassOop klass, Register kl
     // compare against obj's klass - must check if smi first
     _masm->test(obj, Mem_Tag);
     _masm->jcc(Assembler::zero, failure);
-    _masm->movl(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
+    _masm->movq(klassReg, Address(obj, memOopDesc::klass_byte_offset()));
     _masm->cmpl(klassReg, klass);
   }
   _masm->jcc(Assembler::notEqual, failure);
@@ -2019,7 +2036,7 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
         Temporary objKlass(_currentMapping);
         _masm->test(obj, Mem_Tag);
         _masm->jcc(Assembler::zero, node->next()->label);
-        _masm->movl(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
+        _masm->movq(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
         _masm->cmpl(objKlass.reg(), klass);
       }
       jcc(Assembler::notEqual, node, node->next());
@@ -2113,7 +2130,7 @@ void CodeGenerator::aTypeTestNode(TypeTestNode* node) {
           }
           smiHasBeenChecked = true;
         }
-        _masm->movl(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
+        _masm->movq(objKlass.reg(), Address(obj, memOopDesc::klass_byte_offset()));
         klassHasBeenLoaded = true;
       }
       _masm->cmpl(objKlass.reg(), klass);
@@ -2414,7 +2431,7 @@ void CodeGenerator::anInlinedPrimitiveNode(InlinedPrimitiveNode* node) {
       _masm->movl(klass_reg, Universe::smiKlassObj());
       _masm->test(obj_reg, Mem_Tag);
       _masm->jcc(Assembler::zero, is_smi);
-      _masm->movl(klass_reg, Address(obj_reg, memOopDesc::klass_byte_offset()));
+      _masm->movq(klass_reg, Address(obj_reg, memOopDesc::klass_byte_offset()));
       _masm->bind(is_smi);
     }; break;
     case InlinedPrimitiveNode::obj_hash: {
