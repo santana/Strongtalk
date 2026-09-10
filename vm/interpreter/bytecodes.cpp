@@ -1190,6 +1190,7 @@ static char* arguments_as_string(Bytecodes::ArgumentSpec spec) {
 static void generate_HTML_for(Bytecodes::Code code) {
   mystd->print("<TD>%02X<SUB>H</SUB><TD><B>%s</B><TD>", int(code), Bytecodes::name(code));
   print_format(Bytecodes::format(code));
+  mystd->print("<TD>%s", Bytecodes::pop_tos(code) ? "pop" : "");
   mystd->print("<TD>%s", Bytecodes::single_step(code) ? "intercepted" : "");
   if (Bytecodes::code_type(code) == Bytecodes::message_send) {
     mystd->print("<TD>%s", Bytecodes::send_type_as_string(Bytecodes::send_type(code)));
@@ -1201,11 +1202,12 @@ static void generate_HTML_for(Bytecodes::Code code) {
 static void generate_HTML_for(Bytecodes::CodeType type) {
   {
     Markup tag("H3");
-    mystd->print("%s bytecodes\n", Bytecodes::code_type_as_string(type));
+    mystd->print("<A NAME=\"%s\">%s bytecodes</A>\n", Bytecodes::code_type_as_string(type),
+                 Bytecodes::code_type_as_string(type));
   }
   {
     Markup tag("TABLE");
-    mystd->print("<TH>Code<TH>Name<TH>Format<TH>Single step");
+    mystd->print("<TH>Code<TH>Name<TH>Format<TH>Pop<TH>Single step");
     if (type == Bytecodes::message_send)
       mystd->print("<TH>Send type<TH>Arguments");
     mystd->print("<TR>\n");
@@ -1216,6 +1218,27 @@ static void generate_HTML_for(Bytecodes::CodeType type) {
     }
   }
   mystd->print("<HR>\n");
+}
+
+static void generate_HTML_legend() {
+  mystd->print("<P>Operand widths: <B>byte</B> = one unsigned byte after the "
+               "opcode; <B>long</B> = one word-sized signed operand (jump/"
+               "instVar offset, primitive id) aligned to the word size; "
+               "<B>oop</B> = one word-sized reference into the method's oop "
+               "table (literal, selector, inline cache, ...); <B>{byte}</B> = "
+               "a counted run of bytes. Padding between byte operands and "
+               "aligned operands is filled with <TT>0xFF</TT> (<TT>halt</TT>)."
+               " <B>Pop</B> means the instruction pops the result from the "
+               "expression stack.</P>");
+}
+
+static void generate_HTML_toc() {
+  mystd->print("<P>Index:");
+  for (int i = 0; i < Bytecodes::number_of_code_types; i++) {
+    Bytecodes::CodeType type = Bytecodes::CodeType(i);
+    mystd->print(" <A HREF=\"#%s\">%s</A>", Bytecodes::code_type_as_string(type), Bytecodes::code_type_as_string(type));
+  }
+  mystd->print("</P>\n");
 }
 
 static void generate_HTML_docu() {
@@ -1231,6 +1254,13 @@ static void generate_HTML_docu() {
       Markup tag("H2");
       mystd->print("Delta Bytecodes (Version %d)\n", Bytecodes::version());
     }
+    generate_HTML_legend();
+    generate_HTML_toc();
+    mystd->print("<P>A human-written developer guide lives in the repository at "
+                 "<A HREF=\"../../../BYTECODES.md\">BYTECODES.md</A> (instruction "
+                 "layouts, inline-cache transitions, interpreter architecture, "
+                 "and how to add a bytecode). The original Digitalk table is "
+                 "<A HREF=\"bctable.pdf\">bctable.pdf</A>.</P>\n");
     for (int i = 0; i < Bytecodes::number_of_code_types; i++)
       generate_HTML_for(Bytecodes::CodeType(i));
   }

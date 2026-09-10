@@ -19,6 +19,7 @@ ROOT_DIR	:= $(abspath $(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
 TEST_DIR 	:= $(ROOT_DIR)/test
 VM_DIR 		:= $(ROOT_DIR)/vm
 EASYUNIT_DIR	:= $(ROOT_DIR)/easyunit
+DOC_DIR		:= $(ROOT_DIR)/documentation
 
 CC		?= cc
 CXX		?= c++
@@ -106,13 +107,23 @@ stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
-.PHONY: all vm test clean pristine format format-check
+.PHONY: all vm test clean pristine format format-check docs
 all: $(addprefix $(BUILD_DIR)/,$(PROGRAMS))
 
 vm: $(BUILD_DIR)/strongtalk
 
 test: $(BUILD_DIR)/stest
 	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest -b $(ROOT_DIR)/strongtalk.bst
+
+# Regenerate the bytecode reference from the VM's built-in generator
+# (debug build only: the +GenerateHTML path lives under #ifndef PRODUCT).
+# Writes to a temp file first so a failed generation never truncates the
+# committed documentation.
+$(DOC_DIR)/internal/vm/bytecodes.html: $(BUILD_DIR)/strongtalk
+	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk +GenerateHTML > $@.tmp
+	mv $@.tmp $@
+
+docs: $(DOC_DIR)/internal/vm/bytecodes.html
 
 # Files clang-format should operate on (sorted, excludes build artifacts).
 # *.inl/.ixx patterns are not used here; add them if introduced.
