@@ -1,6 +1,6 @@
 # Strongtalk
 
-[![Build status](https://github.com/santana/Strongtalk/actions/workflows/build-unix.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build-unix.yml)
+[![Build status](https://github.com/santana/Strongtalk/actions/workflows/build.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build.yml)
 
 An optionally-typed Smalltalk with a high-performance optimizing JIT, developed
 by LongView Technologies LLC (1994-1997) and open-sourced by Sun Microsystems in
@@ -10,8 +10,8 @@ garbage collector.
 ## Status
 
 The VM is a work in progress as a project. The C++ code builds on **Linux
-(x86-64)** and **macOS (Apple Silicon)** via the portable `build.unix` makefiles,
-and a CI build runs on every push.
+(x86-64)** and **macOS (Apple Silicon)** via the portable root `Makefile`
+(out-of-tree builds), and a CI build runs on every push.
 
 The JIT/code generator has a **single frontend with per-architecture
 backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
@@ -28,9 +28,9 @@ arm64. It currently stops at an indirect-call fault inside JIT dispatch
 | Windows                   | yes   | via `build.win32` (Visual Studio, x86 only)                       |
 
 Getting the VM running end-to-end on Apple Silicon requires resolving that
-remaining dispatch fault. The portable `build.unix` tree is verified by building
-**both** the native arm64 configuration and a **forced x86-64** configuration
-(`make ARCH_FLAGS=-arch x86_64`).
+remaining dispatch fault. Every configuration is verified by building from the
+root `Makefile`: the native arm64 config and a **forced x86-64** config
+(`make ARCH=x86_64`).
 
 ## Repository layout
 
@@ -40,7 +40,7 @@ remaining dispatch fault. The portable `build.unix` tree is verified by building
 | `source/` `StrongtalkSource/` | Two snapshots of the Smalltalk library source |
 | `strongtalk.bst`    | The Smalltalk image file                          |
 | `test/` `easyunit/` | C++ test suite (easyunit) for the VM              |
-| `build.unix/`       | Portable makefiles (Linux + macOS)                |
+| `build/`           | Out-of-tree per-config build dirs (`build/<arch>-<os>-<compiler>`) |
 | `build.win32/`      | Visual Studio project (Windows)                   |
 | `bin/`              | Legacy Windows build scripts and prebuilt objects |
 | `documentation/`    | HTML docs (typed Smalltalk, bytecodes, primitives)|
@@ -54,8 +54,7 @@ remaining dispatch fault. The portable `build.unix` tree is verified by building
 ## Building
 
 ```sh
-cd build.unix
-make all          # builds strongtalk (VM) and stest (test runner)
+make          # defaults to build/<arch>-<os>-<compiler>, e.g. build/arm64-macos-clang
 ```
 
 Useful targets:
@@ -63,26 +62,31 @@ Useful targets:
 - `make` / `make vm` — build just the `strongtalk` VM
 - `make stest` — build the test runner
 - `make test` — run the C++ test suite (loads `strongtalk.bst`)
-- `make clean` — remove objects and binaries
-- `make -j$(nproc) all` — parallel build (nproc on Linux; `sysctl -n hw.ncpu` on macOS)
+- `make clean` — remove that config's build directory
+- `make BUILD_DIR=/custom/path` — build into a custom directory
+- `make ARCH=x86_64` — force the x86-64 backend (e.g. on an arm64 host)
+- `make -j$(nproc)` — parallel build (nproc on Linux; `sysctl -n hw.ncpu` on macOS)
 
 The resulting binaries (`strongtalk`, `stest`, and their shared libraries) are
-written into `build.unix/`.
+written into the per-config `build/<arch>-<os>-<compiler>/` directory. Different
+configs never share objects, so switching configs needs no clean.
 
 ## Running
 
 The VM needs the image file in the working directory:
 
 ```sh
-cd build.unix
-./strongtalk            # needs strongtalk.bst and optionally a source/ directory
+cd build/arm64-macos-clang
+DYLD_LIBRARY_PATH=. ./strongtalk   # needs strongtalk.bst at the repo root
 ```
+
+On Linux use `LD_LIBRARY_PATH` instead of `DYLD_LIBRARY_PATH`.
 
 `strongtalk.bst` is included at the repository root.
 
 ## Continuous integration
 
-`.github/workflows/build-unix.yml` builds on `ubuntu-latest` (x86-64) and
+`.github/workflows/build.yml` builds on `ubuntu-latest` (x86-64) and
 `macos-latest` (arm64) for every push and pull request.
 
 ## Documentation

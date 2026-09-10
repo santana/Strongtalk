@@ -1,12 +1,27 @@
 # Portable make rules for the Strongtalk VM (Linux and macOS).
 # The platform is auto-detected. ROOT_DIR is derived from this file's
-# directory, so the build works from any checkout.
+# location, so the build works from any checkout.
+#
+# Every build is fully described by a (compiler, OS, architecture) triple
+# and lands in its own out-of-tree build directory:
+#
+#     BUILD_DIR default:  build/<arch>-<os>-<compiler>
+#
+# Examples:
+#     make                          # native: e.g. build/arm64-macos-clang
+#     make ARCH=x86_64              # forced x86-64 on macOS: build/x86_64-macos-clang
+#     make CXX=clang++ build/...    # alternate compiler
+#     make BUILD_DIR=/tmp/cfg ...   # fully custom location
+#
+# Different configs never share objects, so switching configs needs no clean.
 
-ROOT_DIR	:= $(abspath $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/..)
+ROOT_DIR	:= $(abspath $(dir $(realpath $(firstword $(MAKEFILE_LIST)))))
 TEST_DIR 	:= $(ROOT_DIR)/test
 VM_DIR 		:= $(ROOT_DIR)/vm
 EASYUNIT_DIR	:= $(ROOT_DIR)/easyunit
-BUILD_DIR	:= $(ROOT_DIR)/build
+
+CC		?= cc
+CXX		?= c++
 
 ASM		= $(CC)
 
@@ -20,46 +35,68 @@ CXXFLAGS	= -std=gnu++17 -fno-rtti -Wno-write-strings -fno-operator-names \
 
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),Darwin)
+OS		= macos
 # On Apple Silicon the VM builds natively for arm64 using the AArch64 assembler
 # backend (the MAP_JIT runtime handles the W+X restriction). x86-64 is still
-# available by overriding ARCH_FLAGS=-arch x86_64 and removing the AArch64
-# define; on Intel hosts the JIT emits x86-64 machine code.
-UNAME_M := $(shell uname -m)
-ifeq ($(UNAME_M),arm64)
-ifneq ($(origin ARCH_FLAGS),command line)
-ARCH_FLAGS	= -arch arm64
-DEFINES		+= -DDELTA_ASSEMBLER_BACKEND_AARCH64
-endif
-else
-ARCH_FLAGS	= -arch x86_64
-endif
+# available by overriding ARCH=x86_64; on Intel hosts the JIT emits x86-64
+# machine code.
 SHLIB_FLAG	= -dynamiclib -undefined dynamic_lookup
 LIBRARY_PATH_VAR = DYLD_LIBRARY_PATH
 else
+OS		= linux
 SHLIB_FLAG	= -shared
 LIBRARY_PATH_VAR = LD_LIBRARY_PATH
 endif
 
-# Select the assembler/mapping backend by the *target* architecture.
-# This logic runs on BOTH macOS and Linux so either host builds the correct
-# backend:
-#   - macOS: the target arch comes from ARCH_FLAGS, which may be overridden on
-#     the command line (e.g. forcing an x86-64 build on an arm64 host).
-#   - Linux: there is no -arch flag, so the host architecture (uname -m)
-#     selects the backend (x86_64 -> x86 assembler, arm64/aarch64 -> AArch64).
+# Target architecture: explicit ARCH wins, otherwise the legacy ARCH_FLAGS
+# override, otherwise the native host architecture.
+ifeq ($(ARCH),)
 ifeq ($(findstring x86_64,$(ARCH_FLAGS)),x86_64)
-TARGET_ARCH_X86_64 = 1
-else ifeq ($(shell uname -m),x86_64)
+ARCH		= x86_64
+else ifeq ($(findstring arm64,$(ARCH_FLAGS)),arm64)
+ARCH		= arm64
+else
+UNAME_M		:= $(shell uname -m)
+ifeq ($(UNAME_M),aarch64)
+ARCH		= arm64
+else
+ARCH		= $(UNAME_M)
+endif
+endif
+endif
+
+# Compiler token for the build-directory name (clang vs gcc, else basename).
+COMPILER_VERSION := $(shell $(CXX) --version 2>/dev/null | head -1)
+COMPILER	:= $(shell echo "$(COMPILER_VERSION)" | grep -qi clang && echo clang || \
+		    (echo "$(COMPILER_VERSION)" | grep -qiE 'gcc|g\+\+|GCC' && echo gcc || basename $(CXX)))
+
+# Out-of-tree build directory; mkdir in case it does not exist yet.
+BUILD_DIR	?= $(ROOT_DIR)/build/$(ARCH)-$(OS)-$(COMPILER)
+$(shell mkdir -p $(BUILD_DIR))
+
+# Select the assembler/mapping backend by the *target* architecture.
+ifeq ($(ARCH),x86_64)
 TARGET_ARCH_X86_64 = 1
 else
 TARGET_ARCH_AARCH64 = 1
+endif
+
+# macOS -arch flag (Linux compiles for the host via the toolchain directly).
+ifeq ($(UNAME),Darwin)
+ifeq ($(origin ARCH_FLAGS),command line)
+else
+ARCH_FLAGS	= -arch $(ARCH)
+endif
+ifeq ($(ARCH),arm64)
+DEFINES		+= -DDELTA_ASSEMBLER_BACKEND_AARCH64
+endif
 endif
 
 PROGRAMS = strongtalk stest
 
 strongtalk_DIRS = $(VM_DIR)
 strongtalk_INCLUDEDIRS = $(strongtalk_DIRS)
-strongtalk_SO = strongtalk.so
+strongtalk_SO = $(BUILD_DIR)/strongtalk.so
 strongtalk_LDLIBS = -lpthread -ldl
 ifneq ($(UNAME),Darwin)
 strongtalk_LDLIBS += -lrt
@@ -67,17 +104,15 @@ endif
 
 stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
-stest_SO = strongtalk.so stest.so
-
-WRK=$(shell pwd)
+stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
 .PHONY: all vm test clean pristine format format-check
-all: $(PROGRAMS)
+all: $(addprefix $(BUILD_DIR)/,$(PROGRAMS))
 
-vm: strongtalk
+vm: $(BUILD_DIR)/strongtalk
 
-test: stest
-	$(LIBRARY_PATH_VAR)=$(WRK) ./$< -b ../strongtalk.bst
+test: $(BUILD_DIR)/stest
+	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest -b $(ROOT_DIR)/strongtalk.bst
 
 # Files clang-format should operate on (sorted, excludes build artifacts).
 # *.inl/.ixx patterns are not used here; add them if introduced.
@@ -123,8 +158,8 @@ format-check: $(CLANG_FORMAT_STYLE)
 		fi; \
 	fi
 
-%.o : %.cpp %.d
-
+# Objects and dependency files live in the build directory, mirroring the
+# source tree under $(BUILD_DIR)/obj. mkdir each needed subdirectory.
 define PROGRAM_template
 $(1)_SRCS       := $$(foreach dir,$$($(1)_DIRS),$$(wildcard $$(dir)/*/*.cpp))
 $(1)_SRCS	:= $$(if $$(filter stest,$(1)),$$(filter-out $(TEST_DIR)/assembler/%,$$($(1)_SRCS)),$$($(1)_SRCS))
@@ -133,34 +168,41 @@ $(1)_SRCS	:= $$(filter-out %/mapping_aarch64.cpp %/assembler_aarch64.cpp,$$($(1)
 else
 $(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp,$$($(1)_SRCS))
 endif
-$(1)_OBJS	:= $$($(1)_SRCS:%.cpp=%.o)
-$(1)_DEPFILES	:= $$($(1)_SRCS:%.cpp=%.d)
+$(1)_OBJS	:= $$(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_DIR)/obj/%.o,$$($(1)_SRCS))
+$(1)_DEPFILES	:= $$(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_DIR)/obj/%.d,$$($(1)_SRCS))
 $(1)_INCLUDES	:= $$($(1)_INCLUDEDIRS:%=-I%)
-
 INCLUDES += $$($(1)_INCLUDES)
 
 .PHONY: $(1)-objs
 $(1)-objs: $$($(1)_OBJS)
 
-$(1).so: $$($(1)_OBJS)
+$(BUILD_DIR)/$(1).so: $$($(1)_OBJS)
 	$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$(filter-out %/main.o,$$($(1)_OBJS)) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
 
-$(1): $$($(1)_SO)
+$(BUILD_DIR)/$(1): $$($(1)_SO)
 	$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$(filter %/main.o,$$($(1)_OBJS)) $$($(1)_SO)
 
 $$($(1)_DEPFILES):
 
 ALL_OBJS	+= $$($(1)_OBJS)
 ALL_DEPFILES	+= $$($(1)_DEPFILES)
-ALL_SHLIBS	+= $(1).so
+ALL_SHLIBS	+= $$($(1)_SO)
+ALL_BINS	+= $(BUILD_DIR)/$(1)
 
 include $$(wildcard $$($(1)_DEPFILES))
 endef
 
 $(foreach prog,$(PROGRAMS),$(eval $(call PROGRAM_template,$(prog))))
 
+# mkdir every object directory inside the build dir (single parse-time pass).
+$(shell mkdir -p $(sort $(dir $(ALL_OBJS))))
+
+# Compile rule: each object mirrors a source under $(BUILD_DIR)/obj.
+$(ALL_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 clean:
-	rm -f $(ALL_OBJS) $(ALL_SHLIBS) $(PROGRAMS)
+	rm -rf $(BUILD_DIR)
 
 pristine:
 	rm -f $(ALL_DEPFILES)
