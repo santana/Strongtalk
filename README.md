@@ -112,8 +112,11 @@ default and logs every token of the `.bst` read-in as it parses it.
 
 ## Continuous integration
 
-`.github/workflows/build.yml` builds on `ubuntu-latest` (x86-64) and
-`macos-latest` (arm64) for every push and pull request.
+`.github/workflows/build.yml` builds on `ubuntu-latest` (x86-64),
+`macos-latest` (arm64), and — on `ubuntu-latest` with the MinGW-w64 cross
+toolchain — Windows (x86-64) for every push and pull request. A native
+`windows-latest` job also builds and runs the Windows binaries with
+MSYS2/MinGW-W64.
 
 ## Documentation
 

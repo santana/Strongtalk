@@ -1,0 +1,4 @@
+# LF line endings everywhere: this is a UNIX-first project, and GNU make
+# under MSYS2/MSYS on Windows requires LF in the Makefile regardless of
+# git's autocrlf default on the GitHub Actions windows-latest checkout.
+* text=auto eol=lf

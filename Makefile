@@ -42,14 +42,20 @@ UNAME := $(shell uname -s)
 # OS: an explicit OS= override wins, otherwise auto-detect from uname.
 #   macos ... native macOS (DYLD_LIBRARY_PATH, -dynamiclib)
 #   linux ... native Linux (glibc)
-#   mingw ... cross-build for Windows with a *-w64-mingw32-g++ toolchain:
-#             native PE binaries via vm/runtime/os_nt.cpp (guarded by WIN32,
-#             which this branch defines).
+#   mingw ... Windows PE output via vm/runtime/os_nt.cpp (guarded by WIN32,
+#             which this branch defines). Reached when OS=mingw is given
+#             (cross-build on Linux with a *-w64-mingw32-g++ toolchain) or
+#             when running natively under MSYS2/MinGW where uname reports
+#             something like MINGW64_NT-10.0-22631.
 ifeq ($(OS),)
 ifeq ($(UNAME),Darwin)
 OS		= macos
 else
+ifneq (,$(findstring MINGW,$(UNAME)))
+OS		= mingw
+else
 OS		= linux
+endif
 endif
 endif
 
