@@ -764,6 +764,23 @@ static void handler(int signum, siginfo_t* info, void* context) {
       printf(" <no method>");
     }
     printf("\n");
+    // fp-chain walk: dladdr each saved LR so C frames below the JIT frames can
+    // be identified (the DWARF unwinder cannot cross the JIT boundary).
+    {
+      uint64_t f = fp_val;
+      printf("  fp-chain:");
+      for (int i = 0; i < 32 && (f & 7) == 0 && f >= 0x150000000ULL && f <= 0x200000000ULL; i++) {
+        uint64_t lr = ((uint64_t*)f)[1]; // frame[+1] = saved x30
+        uint64_t nxt = ((uint64_t*)f)[0]; // frame[+0] = saved x29
+        Dl_info dli;
+        if (lr != 0 && dladdr((void*)lr, &dli) != 0 && dli.dli_sname != NULL)
+          printf("  [%d] %llx: %s()", i, lr, dli.dli_sname);
+        if (nxt <= f || nxt == 0)
+          break;
+        f = nxt;
+      }
+      printf("\n");
+    }
   }
 #endif
   fflush(stdout);

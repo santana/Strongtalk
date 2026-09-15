@@ -72,6 +72,31 @@ extern "C" char* icNormalLookup(oop recv, CompiledIC* ic) {
   // allocation may take place. Then we have to fix the lookup stub as well.
   // (receiver cannot be saved/restored within the C frame).
   VerifyNoScavenge vna;
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // TEMP DIAG (sent-receiver recovery): dump the IC info word, the bytes
+  // around the send, and the containing nmethod so a corrupted receiver can
+  // be traced to its frame slot. Remove once the recompile/activation blocker
+  // is resolved.
+  {
+    static int icmiss_no = 0;
+    fprintf(stderr, "ICFRESH[%d]: this=%p lowbyte=0x%x word=0x%x dest=%p\n", ++icmiss_no, ic,
+            *(unsigned char*)((char*)ic + 0), *(unsigned int*)((char*)ic + 0), *(void**)((char*)ic - 12));
+    fprintf(stderr, "  CALL: ");
+    for (int k = -24; k < 24; k += 4)
+      fprintf(stderr, "%08x ", *(unsigned int*)((char*)ic + k));
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  CALLWIN (this-0x68..this-0x10): ");
+    for (int k = -0x68; k <= -0x10; k += 4)
+      fprintf(stderr, "%08x ", *(unsigned int*)((char*)ic + k));
+    fprintf(stderr, "\n");
+    nmethod* sndr = findNMethod((char*)ic);
+    if (sndr != NULL) {
+      fprintf(stderr, "  SENDER recv(%p) in nmethod %p is_block=%d sel=", recv, sndr, sndr->is_block());
+      sndr->method()->selector()->print_symbol_on();
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
   return ic->normalLookup(recv);
 }
 
@@ -93,7 +118,15 @@ void CompiledIC::set_call_destination(char* entry_point) {
   assert(p == NULL || p->entry() != entry_point, "replacing with same address -- shouldn't dealloc");
   if (p != NULL)
     delete p;
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // MAP_JIT W^X: patching the call-target literal in generated code requires
+  // the writable state; generated code runs with protection enabled.
+  os::jit_write_protect(false);
+#endif
   NativeCall::set_destination(entry_point);
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  os::jit_write_protect(true);
+#endif
 }
 
 extern "C" bool have_nlr_through_C;
@@ -132,6 +165,16 @@ char* CompiledIC::normalLookup(oop recv) {
     mystd->cr();
   }
   klassOop klass = recv->klass();
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // TEMP DIAG: IC state before the inline-cache update (restored after the
+  // accidental working-tree reset; exact format drift from original is OK).
+  {
+    fprintf(stderr, "ICOPT: this=%p optimized=%d megamorphic=%d dirty=%d\n", this, isOptimized(), isMegamorphic(),
+            isDirty());
+    fprintf(stderr, "ICBYTES: info_word=0x%x dest=%p\n", *(unsigned int*)((char*)next_instruction_address()),
+            *(void**)((char*)next_instruction_address() - 12));
+  }
+#endif
   symbolOop sel = selector();
   LookupResult result = lookupCache::ic_normal_lookup(klass, sel);
 

@@ -157,6 +157,26 @@ char* StubRoutines::generate_ic_lookup(MacroAssembler* masm, char* lookup_routin
 
   // eax: receiver
   // tos: return address
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // AArch64: the receiver is passed in x0 (as for all compiled sends) and
+  // the ic address is the return address kept in x30 (the `call` into the
+  // stub is a `bl`, so there is no return address pushed on the stack).
+  // icNormalLookup(oop receiver, char* ic) expects the two C arguments in
+  // x0/x1, so all we need to do is spill the receiver (x0 is the C result
+  // register and will be overwritten), build the x1 argument, call, save
+  // the returned jump target away from eax, then restore the receiver and
+  // jump.
+  char* entry_point = masm->pc();
+  masm->set_last_Delta_frame_after_call();
+  masm->movl(x1, x30); // ic = return address
+  masm->pushl(x0); // save receiver (stre_pre by slotSize, keeps 16-byte alignment)
+  masm->call_C(lookup_routine_entry, x0, x1); // eax = icNormalLookup(receiver, ic)
+  masm->movl(ebx, eax); // ebx = method code entry
+  masm->popl(x0); // restore receiver (ldr_post by slotSize)
+  masm->reset_last_Delta_frame();
+  masm->jmp(ebx); // jump to target
+  return entry_point;
+#else
   char* entry_point = masm->pc();
   masm->set_last_Delta_frame_after_call();
   masm->movl(ebx, Address(esp)); // get return address (= ic address)
@@ -171,6 +191,7 @@ char* StubRoutines::generate_ic_lookup(MacroAssembler* masm, char* lookup_routin
   masm->reset_last_Delta_frame();
   masm->jmp(ebx); // jump to target
   return entry_point;
+#endif
 }
 
 extern "C" char* icNormalLookup(oop recv, CompiledIC* ic);

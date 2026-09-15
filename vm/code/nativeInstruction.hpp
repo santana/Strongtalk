@@ -167,6 +167,18 @@ inline NativeMov* nativeMov_at(char* address) {
 
 class NativeTest : public NativeInstruction {
 public:
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // On AArch64 there is no `test eax, imm32`; the IC info is a 4-byte
+  // hint-encoded NOP (see MacroAssembler::ic_info) located AT the return
+  // address, so the info word is at offset 0 and the next instruction four
+  // bytes later.
+  enum AArch64_specific_constants {
+    instruction_size = 4,
+    instruction_offset = 0,
+    data_offset = 0,
+    next_instruction_offset = 4,
+  };
+#else
   enum Intel_specific_constants {
     instruction_code = 0xA9,
     instruction_size = 5,
@@ -174,6 +186,7 @@ public:
     data_offset = 1,
     next_instruction_offset = 5,
   };
+#endif
 
   char* instruction_address() const { return addr_at(instruction_offset); }
   char* next_instruction_address() const { return addr_at(next_instruction_offset); }
@@ -199,7 +212,32 @@ inline NativeTest* nativeTest_at(char* address) {
 
 class IC_Info : public NativeTest {
 public:
-  enum IC_Info_specific_constants {
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // The info word is a hint-encoded NOP carrying the (up to 6) flag bits in
+  // hint-imm positions 5..11; MacroAssembler::ic_info remaps imm values
+  // 0x07..0x0f (+9) to dodge the PAC pointer-auth aliases, mirror that here.
+  static int dec_flags(long v) {
+    long f = (v >> 5) & 0x3f;
+    return f >= 16 ? (int)(f - 9) : (int)f;
+  }
+  static long enc_flags(int flags) {
+    long f = flags & 0x3f;
+    return f >= 7 ? f + 9 : f;
+  }
+  enum AArch64_specific_constants {
+    info_offset = 0,
+    number_of_flags = 8, // for decode_ic_info (stubRoutines.cpp); NLR is register-homed on AArch64
+    flags_mask = (1 << number_of_flags) - 1, // x86 reader uses this; kept for parity
+  };
+
+  char* NLR_target() const { return instruction_address(); } // NLR home is a register on AArch64
+  int flags() const { return dec_flags(long_at(info_offset)); }
+  void set_flags(int flags) {
+    long w = long_at(info_offset);
+    set_long_at(info_offset, (w & ~0xfe0L) | (enc_flags(flags) << 5));
+  }
+#else
+  enum Intel_specific_constants {
     info_offset = data_offset,
     number_of_flags = 8,
     flags_mask = (1 << number_of_flags) - 1,
@@ -208,6 +246,7 @@ public:
   char* NLR_target() const { return instruction_address() + (data() >> number_of_flags); }
   int flags() const { return data() & flags_mask; }
   void set_flags(int flags) { set_data((data() & ~flags_mask) | (flags & flags_mask)); }
+#endif
 
   // Creation
   friend IC_Info* ic_info_at(char* address);

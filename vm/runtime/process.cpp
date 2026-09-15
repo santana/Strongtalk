@@ -815,6 +815,8 @@ static objArrayOop frame_array;
 extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_fp, objArrayOop frame_array,
                                                        void** current_frame) {
   ResourceMark rm;
+  fprintf(stderr, "DIAG setup: enter old_sp=%p old_fp=%p frame_array=%p cur_fp=%p\n", old_sp, old_fp, frame_array,
+          current_frame);
 
   // Save all parameters for later use (check unpack_frame_array)
   ::old_sp = old_sp;
@@ -829,6 +831,8 @@ extern "C" oop* setup_deoptimization_and_return_new_sp(oop* old_sp, void** old_f
   assert(number_of_locals->is_smi(), "must be smi");
 
   new_sp = old_sp - frame::interpreter_stack_size(number_of_vframes->value(), number_of_locals->value());
+  fprintf(stderr, "DIAG setup: new_sp=%p vframes=%d locals=%d\n", new_sp, (int)number_of_vframes->value(),
+          (int)number_of_locals->value());
   return new_sp;
 }
 
@@ -912,6 +916,7 @@ inline void unpack_first_frame(char*& current_pc, frame& current, CodeIterator& 
 extern "C" void unpack_frame_array() {
   BlockScavenge bs;
   ResourceMark rm;
+  fprintf(stderr, "DIAG unpack: enter nlr=%d redo=%d\n", (int)nlr_through_unpacking, (int)redo_the_send);
 
   int* pc_addr = (int*)new_sp - 1;
   assert(*pc_addr = -1, "just checking");
@@ -997,6 +1002,7 @@ extern "C" void unpack_frame_array() {
     fatal("Target for NLR not found when unpacking frame");
   }
 
+  fprintf(stderr, "DIAG unpack: done current_sp=%p\n", current_sp);
   assert(current_sp == old_sp, "We have not reached the end");
   current.set_link(old_fp);
 }

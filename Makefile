@@ -27,7 +27,11 @@ CXX		?= c++
 ASM		= $(CC)
 
 DEFINES		= -DDELTA_COMPILER -DASSERT -DDEBUG
-DEPFLAGS        = -MT $@ -MMD -MP -MF $*.d
+# -MF must target the build dir (alongside the .o), not the source tree: the
+# static pattern rule's $* is the source-relative stem, so writing $*.d would
+# drop the depfiles into vm/** (unmatched by the $(BUILD_DIR)/obj *.d glob) and
+# header edits would never trigger rebuilds.
+DEPFLAGS        = -MT $@ -MMD -MP -MF $(BUILD_DIR)/obj/$*.d
 # gnu++17 matches the default used by recent g++ (Linux build); needed for
 # std::is_same_v / if constexpr in growableArray.hpp
 CXXFLAGS	= -std=gnu++17 -fno-rtti -Wno-write-strings -fno-operator-names \

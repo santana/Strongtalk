@@ -703,12 +703,20 @@ PIC* PIC::allocate(CompiledIC* ic, klassOop klass, LookupResult result) {
          "no PIC required for only 1 compiled target");
 
   PIC* new_pic = NULL;
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // MAP_JIT W^X: the PIC entry code is generated into picHeap below, which
+  // requires the writable state (generated code runs with protection on).
+  os::jit_write_protect(false);
+#endif
   if (switch_to_MIC) {
     new_pic = new (MIC_code_size) PIC(ic);
   } else {
     int allocated_code_size = contents.code_size();
     new_pic = new (allocated_code_size) PIC(ic, &contents, allocated_code_size);
   }
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  os::jit_write_protect(true);
+#endif
 
 #ifdef ASSERT
   new_pic->verify();

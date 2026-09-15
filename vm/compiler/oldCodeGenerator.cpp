@@ -936,6 +936,17 @@ void SendNode::gen() {
   if (isCounting())
     incCounter();
   char* entry = _superSend ? CompiledIC::superLookupRoutine() : CompiledIC::normalLookupRoutine();
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // AArch64: generate_ic_lookup expects the receiver in x0 (receiver_reg),
+  // matching the new backend's CodeGenerator::aSendNode
+  // (_currentMapping->use(recv, receiver_reg)). The old codegen does not
+  // position it otherwise. movePRegToReg collapses to a no-op when recv is
+  // already assigned to x0.
+  if (recv() != NULL) {
+    Register r = movePRegToReg(recv(), temp1);
+    theMacroAssm->movl(x0, r);
+  }
+#endif
   theMacroAssm->call(entry, relocInfo::ic_type);
   inlineCache(scope()->nlrTestPoint()->label, _info, _superSend);
   assert(_dest->loc == resultLoc, "assignment missing");
@@ -1414,6 +1425,14 @@ void BranchNode::gen() {
 
 void ContextCreateNode::gen() {
   BasicNode::gen();
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // TEMP DIAG: rely on when a recompile is allocating contexts (restored.
+  // after the accidental working-tree reset).
+  fprintf(stderr, "DIAG ContextCreateNode::gen: size=%d pdesc=%s\n", _contextSize,
+          _pdesc != NULL                             ? _pdesc->name()
+          : _pdesc == primitives::context_allocate() ? "context_allocate"
+                                                     : "lookup-later");
+#endif
 
   switch (_contextSize) {
     case 0:

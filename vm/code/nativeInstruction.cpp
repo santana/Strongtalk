@@ -58,9 +58,17 @@ void NativeMov::print() {
 
 // Implementation of NativeTest
 void NativeTest::verify() {
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+  // On AArch64 the info word is a hint-encoded NOP (see
+  // MacroAssembler::ic_info); there is no fixed opcode to check. The call
+  // structure itself (ldr x16,[pc,#8]; blr x16) is verified by NativeCall.
+  // Keep this a no-op so ic_info_at/nativeTest_at work at every indicational
+  // IC return address.
+#else
   // make sure code pattern is actually a test eax, imm32 instruction
   if (*(u_char*)instruction_address() != instruction_code)
     fatal("not a test eax, imm32");
+#endif
 }
 
 void NativeTest::print() {

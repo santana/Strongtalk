@@ -751,11 +751,21 @@ public:
   void int3() { hlt(); }
   void ret(int imm = 0); // ret (imm is the x86 pop count, ignored)
 
-  // NLR inline-cache info. On x86 this emits a 5-byte marker that the frame
-  // walker scans for; on AArch64 the runtime scanning is redesigned in the
-  // retarget phase - for now emit a NOP placeholder (all referenced labels
-  // are bound elsewhere).
-  void ic_info(Label& L, int flags) { nop(); }
+  // NLR inline-cache info. On x86 this emits a 5-byte `test eax, imm32` marker
+  // that the frame walker scans for AND that survives being executed when a
+  // send returns (the send's return address lands on the info word). On
+  // AArch64 the word is likewise executed after `blr x16` returns, so it must
+  // be a no-op -- but it also has to carry the flags. Emit a hint-encoded NOP
+  // (hint #imm, base 0xd503201f) with the 6 used flag bits (0..63) in the imm
+  // field. imm values 0x07..0x0f are reserved for PAC pointer-auth ops that
+  // clobber x30, so those are remapped (+9) to 0x10..0x2f; `IC_Info`
+  // (nativeInstruction.hpp) decodes this symmetricly.
+  void ic_info(Label& L, int flags) {
+    long v = flags & 0x3f;
+    if (v >= 7)
+      v += 9;
+    emit_long(0xd503201f | (int)(v << 5));
+  }
 
   // Runtime frame bookkeeping (used around C calls so NLRs can unwind)
   void set_last_Delta_frame_before_call();
