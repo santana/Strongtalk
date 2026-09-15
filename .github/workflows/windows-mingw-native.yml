@@ -25,16 +25,16 @@ jobs:
           update: false
 
       - name: Install MinGW-W64 toolchain (resync + retry)
-        # `pacman -S` currently fails intermittently with "target not found:
-        # mingw-w64-x86-64-gcc" because the mingw64 repo DB the runner's
-        # mirror serves is mis-synced. Force `-Syy` (re-download the DBs) and
-        # retry a few times so the job self-heals once upstream recovers.
+        # The MINGW64 GCC package is `mingw-w64-x86_64-gcc` (underscore), not
+        # `mingw-w64-x86-64-gcc` (hyphen) -- the hyphenated name does not exist
+        # in MSYS2, so each install failed with "target not found". Retry a few
+        # times (with `-Syy`) to ride out transient mirror/DB hiccups.
         run: |
           set +e
           ok=0
           for i in 1 2 3 4 5; do
             pacman -Syy --noconfirm
-            pacman -S --noconfirm --needed --overwrite '*' mingw-w64-x86-64-gcc make
+            pacman -S --noconfirm --needed --overwrite '*' mingw-w64-x86_64-gcc make
             if [ $? -eq 0 ]; then
               ok=1
               break

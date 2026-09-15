@@ -92,7 +92,7 @@ libraries live alongside the executables.
 Building natively on Windows (x86-64) under MSYS2/MinGW-W64:
 
 ```sh
-# from an MSYS2 MINGW64 shell with mingw-w64-x86-64-gcc and make installed:
+# from an MSYS2 MINGW64 shell with mingw-w64-x86_64-gcc and make installed:
 make -j"$(nproc)" all
 ```
 
