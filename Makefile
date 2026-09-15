@@ -39,8 +39,26 @@ CXXFLAGS	= -std=gnu++17 -fno-rtti -Wno-write-strings -fno-operator-names \
 		  $(ARCH_FLAGS) $(DEFINES) $(DEPFLAGS) $(INCLUDES)
 
 UNAME := $(shell uname -s)
+# OS: an explicit OS= override wins, otherwise auto-detect from uname.
+#   macos ... native macOS (DYLD_LIBRARY_PATH, -dynamiclib)
+#   linux ... native Linux (glibc)
+#   mingw ... cross-build for Windows with a *-w64-mingw32-g++ toolchain:
+#             native PE binaries via vm/runtime/os_nt.cpp (guarded by WIN32,
+#             which this branch defines).
+ifeq ($(OS),)
 ifeq ($(UNAME),Darwin)
 OS		= macos
+else
+OS		= linux
+endif
+endif
+
+ifeq ($(OS),mingw)
+DEFINES		+= -DWIN32
+SHLIB_FLAG	= -shared -Wl,--export-all-symbols
+EXE_SUFFIX	= .exe
+LIBRARY_PATH_VAR = LD_LIBRARY_PATH
+else ifeq ($(OS),macos)
 # On Apple Silicon the VM builds natively for arm64 using the AArch64 assembler
 # backend (the MAP_JIT runtime handles the W+X restriction). x86-64 is still
 # available by overriding ARCH=x86_64; on Intel hosts the JIT emits x86-64
@@ -48,7 +66,6 @@ OS		= macos
 SHLIB_FLAG	= -dynamiclib -undefined dynamic_lookup
 LIBRARY_PATH_VAR = DYLD_LIBRARY_PATH
 else
-OS		= linux
 SHLIB_FLAG	= -shared
 LIBRARY_PATH_VAR = LD_LIBRARY_PATH
 endif
@@ -104,7 +121,18 @@ strongtalk_INCLUDEDIRS = $(strongtalk_DIRS)
 strongtalk_SO = $(BUILD_DIR)/strongtalk.so
 strongtalk_LDLIBS = -lpthread -ldl
 ifneq ($(UNAME),Darwin)
+ifneq ($(OS),mingw)
 strongtalk_LDLIBS += -lrt
+endif
+endif
+ifeq ($(OS),mingw)
+strongtalk_LDLIBS := $(filter-out -ldl,$(strongtalk_LDLIBS))
+# PE DLLs cannot carry undefined symbols the way ELF .so files can: the test
+# library needs the VM's exports resolved at link time, so link it against the
+# VM shared library directly (mingw auto-generates the import table). The
+# dependency ensures the VM DLL exists before the test DLL links.
+stest_LDFLAGS = $(BUILD_DIR)/strongtalk.so
+$(BUILD_DIR)/stest.so: $(BUILD_DIR)/strongtalk.so
 endif
 
 stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
@@ -112,19 +140,20 @@ stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
 .PHONY: all vm test clean pristine format format-check docs
-all: $(addprefix $(BUILD_DIR)/,$(PROGRAMS))
+.DEFAULT_GOAL := all
+all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 
-vm: $(BUILD_DIR)/strongtalk
+vm: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
 
-test: $(BUILD_DIR)/stest
-	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest -b $(ROOT_DIR)/strongtalk.bst
+test: $(BUILD_DIR)/stest$(EXE_SUFFIX)
+	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest$(EXE_SUFFIX) -b $(ROOT_DIR)/strongtalk.bst
 
 # Regenerate the bytecode reference from the VM's built-in generator
 # (debug build only: the +GenerateHTML path lives under #ifndef PRODUCT).
 # Writes to a temp file first so a failed generation never truncates the
 # committed documentation.
-$(DOC_DIR)/internal/vm/bytecodes.html: $(BUILD_DIR)/strongtalk
-	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk +GenerateHTML > $@.tmp
+$(DOC_DIR)/internal/vm/bytecodes.html: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
+	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) +GenerateHTML > $@.tmp
 	mv $@.tmp $@
 
 docs: $(DOC_DIR)/internal/vm/bytecodes.html
@@ -194,7 +223,7 @@ $(1)-objs: $$($(1)_OBJS)
 $(BUILD_DIR)/$(1).so: $$($(1)_OBJS)
 	$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$(filter-out %/main.o,$$($(1)_OBJS)) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
 
-$(BUILD_DIR)/$(1): $$($(1)_SO)
+$(BUILD_DIR)/$(1)$(EXE_SUFFIX): $$($(1)_SO)
 	$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$(filter %/main.o,$$($(1)_OBJS)) $$($(1)_SO)
 
 $$($(1)_DEPFILES):
@@ -202,7 +231,7 @@ $$($(1)_DEPFILES):
 ALL_OBJS	+= $$($(1)_OBJS)
 ALL_DEPFILES	+= $$($(1)_DEPFILES)
 ALL_SHLIBS	+= $$($(1)_SO)
-ALL_BINS	+= $(BUILD_DIR)/$(1)
+ALL_BINS	+= $(BUILD_DIR)/$(1)$(EXE_SUFFIX)
 
 include $$(wildcard $$($(1)_DEPFILES))
 endef

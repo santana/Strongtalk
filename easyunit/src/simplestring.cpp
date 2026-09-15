@@ -95,6 +95,20 @@ SimpleString easyunit::StringFrom(long value) {
   return SimpleString(buffer);
 }
 
+SimpleString easyunit::StringFrom(long long value) {
+  char buffer[DEFAULT_SIZE];
+  snprintf(buffer, sizeof(buffer), "%lld", value);
+
+  return SimpleString(buffer);
+}
+
+SimpleString easyunit::StringFrom(unsigned long long value) {
+  char buffer[DEFAULT_SIZE];
+  snprintf(buffer, sizeof(buffer), "%llu", value);
+
+  return SimpleString(buffer);
+}
+
 SimpleString easyunit::StringFrom(int value) {
   char buffer[DEFAULT_SIZE];
   snprintf(buffer, sizeof(buffer), "%d", value);

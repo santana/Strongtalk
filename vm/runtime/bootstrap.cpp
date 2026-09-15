@@ -83,7 +83,7 @@ oop bootstrap::at(int index) {
     error("bootstrap oop table overflow");
   oop o = oop_table[index];
   if ((intptr_t)o != 0 && (intptr_t)o < 64)
-    lprintf("SUSPICIOUS at(%d) = 0x%lx (n_oops=%d)\n", index, (long)o, number_of_oops);
+    lprintf("SUSPICIOUS at(%d) = 0x%tx (n_oops=%d)\n", index, (intptr_t)o, number_of_oops);
   return o;
 }
 
@@ -249,7 +249,7 @@ oop bootstrap::get_object() {
   m->raw_at_put(size - 1, smiOop_zero);
 
   if (TraceBootstrap)
-    lprintf("%c %d = 0x%lx\n", type, size, (unsigned long)m);
+    lprintf("%c %d = 0x%tx\n", type, size, (intptr_t)m);
 
   add(m);
   int my_index = number_of_oops - 1;

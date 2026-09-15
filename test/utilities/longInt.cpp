@@ -1,5 +1,6 @@
 #include "easyunit/test.h"
 #include "utilities/longInt.hpp"
+#include <stdint.h>
 
 using namespace easyunit;
 

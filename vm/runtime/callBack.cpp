@@ -68,7 +68,7 @@ void* callBack::registerPascalCall(int index, int nofArgs) {
 
   // JMP _handleCCallStub
   chunk = store_byte(chunk, '\xE9');
-  chunk = store_long(chunk, ((long)StubRoutines::handle_pascal_callback_stub()) - (4 + (long)chunk));
+  chunk = store_long(chunk, (intptr_t)StubRoutines::handle_pascal_callback_stub() - (4 + (intptr_t)chunk));
 
   return result;
 }
@@ -83,7 +83,7 @@ void* callBack::registerCCall(int index) {
 
   // JMP _handleCCallStub
   chunk = store_byte(chunk, '\xE9');
-  chunk = store_long(chunk, ((long)StubRoutines::handle_C_callback_stub()) - (4 + (long)chunk));
+  chunk = store_long(chunk, (intptr_t)StubRoutines::handle_C_callback_stub() - (4 + (intptr_t)chunk));
 
   return result;
 }

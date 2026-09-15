@@ -38,13 +38,7 @@ class bootstrap;
 
 typedef intptr_t smi;
 
-#ifdef WIN32
-typedef long int32_t;
-typedef unsigned long uint32_t;
-typedef unsigned char uint8_t;
-#else
 #include <inttypes.h>
-#endif
 
 typedef unsigned char u_char;
 typedef unsigned short doubleByte;

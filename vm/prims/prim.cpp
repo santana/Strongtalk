@@ -70,7 +70,7 @@ typedef oop(PRIM_API* prim_fntype9)(oop, oop, oop, oop, oop, oop, oop, oop, oop)
 oop primitive_desc::eval(oop* a) {
   const bool reverseArgs = true; // change this when changing primitive calling convention
   oop res;
-  long rbx_on_stack;
+  intptr_t rbx_on_stack;
 
   // %hack: see below
 #ifndef __GNUC__
@@ -159,7 +159,7 @@ oop primitive_desc::eval(oop* a) {
   }
 
   // %hack: some primitives alter EBX and crash the compiler's constant propagation
-  long rbx_now;
+  intptr_t rbx_now;
 #ifndef __GNUC__
   __asm mov rbx_now, rbx __asm mov rbx,
     rbx_on_stack
@@ -178,7 +178,7 @@ oop primitive_desc::eval(oop* a) {
 #endif
 
     if (rbx_now != rbx_on_stack) {
-    mystd->print_cr("rbx changed (%lX -> %lX) in :", rbx_on_stack, rbx_now);
+    mystd->print_cr("rbx changed (%#tx -> %#tx) in :", (intptr_t)rbx_on_stack, (intptr_t)rbx_now);
     print();
   }
 

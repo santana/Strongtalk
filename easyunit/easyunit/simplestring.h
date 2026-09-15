@@ -67,6 +67,8 @@ bool operator!=(const SimpleString& left, const SimpleString& right);
 SimpleString StringFrom(bool value);
 SimpleString StringFrom(const char* value);
 SimpleString StringFrom(long value);
+SimpleString StringFrom(long long value);
+SimpleString StringFrom(unsigned long long value);
 SimpleString StringFrom(int value);
 SimpleString StringFrom(double value);
 SimpleString StringFrom(const SimpleString& other);

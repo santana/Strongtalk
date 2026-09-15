@@ -49,7 +49,7 @@ private:
 
   // friend void oldSpace::switch_pointers_by_card(oop, oop);
   char* byte_for(void* p) const {
-    return (char*)&byte_map[(((unsigned long)p) >> card_shift) - (((unsigned long)low_boundary) >> card_shift)];
+    return (char*)&byte_map[(((uintptr_t)p) >> card_shift) - (((uintptr_t)low_boundary) >> card_shift)];
   }
   //  char* byte_for(void *p) const { return (char*)&byte_map[int((char*)p - low_boundary) >> card_shift]; }
   oop* oop_for(char* p) const { return (oop*)(low_boundary + ((p - byte_map) << card_shift)); }

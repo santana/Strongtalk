@@ -10,8 +10,9 @@ garbage collector.
 ## Status
 
 The VM is a work in progress as a project. The C++ code builds on **Linux
-(x86-64)** and **macOS (Apple Silicon)** via the portable root `Makefile`
-(out-of-tree builds), and a CI build runs on every push.
+(x86-64)**, **macOS (Apple Silicon)**, and **Windows (x86-64, MinGW
+cross-build)** via the portable root `Makefile` (out-of-tree builds), and a CI
+build runs on every push.
 
 The JIT/code generator has a **single frontend with per-architecture
 backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
@@ -27,13 +28,16 @@ It currently aborts during a hot-method recompile on
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | loads the image, then spins in the interpreter bootstrap loop (repeated `error:` re-raise in `runBaseClassInitializers`); no JIT code yet |
 | macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; blocked at a `findNMethod` "not in zone" assert (`zone.cpp:622`) during recompile |
-| Windows                   | yes   | via `build.win32` (Visual Studio, x86 only)                       |
+| Windows x86-64 (MinGW cross-build) | yes | builds `strongtalk.exe`/`stest.exe` (PE32+); runtime not yet exercised (needs Wine or Windows) |
+| Windows (legacy)          | yes   | via `build.win32` (Visual Studio, x86 only)                       |
 
 Getting the VM running end-to-end on Apple Silicon requires resolving that
 remaining zone-heap walk fault in `findNMethod`. Every configuration is
 verified by building from the root `Makefile`: the native arm64 config, a
-**forced x86-64** config (`make ARCH=x86_64`) on macOS, and the Linux/amd64
-build in Docker. All three configurations compile with zero warnings.
+**forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
+build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw
+CXX=x86_64-w64-mingw32-g++`, in a Docker container with MinGW-w64). All four
+configurations compile with zero warnings.
 
 ## Repository layout
 
@@ -71,6 +75,19 @@ Useful targets:
 - `make BUILD_DIR=/custom/path` — build into a custom directory
 - `make ARCH=x86_64` — force the x86-64 backend (e.g. on an arm64 host)
 - `make -j$(nproc)` — parallel build (nproc on Linux; `sysctl -n hw.ncpu` on macOS)
+
+Cross-compiling Windows binaries (x86-64) with MinGW-w64:
+
+```sh
+# from a Linux/amd64 container that has g++-mingw-w64-x86-64 installed:
+docker run --rm --platform linux/amd64 \
+  -v "$PWD":/src -w /src \
+  strongtalk:mingw make OS=mingw CXX=x86_64-w64-mingw32-g++ -j8
+```
+
+This writes `strongtalk.exe`, `stest.exe` and their DLLs (`strongtalk.so`,
+`stest.so`, PE DLLs) into `build/x86_64-mingw-gcc/`. On Windows the shared
+libraries live alongside the executables.
 
 The resulting binaries (`strongtalk`, `stest`, and their shared libraries) are
 written into the per-config `build/<arch>-<os>-<compiler>/` directory. Different

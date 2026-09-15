@@ -23,7 +23,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifdef WIN32
 #define STACK_SIZE ThreadStackSize* K
-#include "incls/_os.cpp.incl"
+
+#include "memory/allocation.hpp"
+#include "runtime/os.hpp"
+#include "runtime/debug.hpp"
+#include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 #include <windows.h>
 #include <signal.h>
@@ -96,7 +101,12 @@ class Thread : public CHeapObj {
 
 int WINAPI startThread(void* params) {
   char* spptr;
-  __asm mov spptr, esp;
+  // MSVC and MinGW dropped 32-bit inline asm; read the native stack pointer.
+#if defined(_WIN64) || defined(__x86_64__)
+  __asm__("movq %%rsp, %0;" : "=r"(spptr));
+#else
+  __asm__("movl %%esp, %0;" : "=r"(spptr));
+#endif
   int stackHeadroom = 2 * os::vm_page_size();
   ((thread_start*)params)->stackLimit = spptr - STACK_SIZE + stackHeadroom;
 
@@ -203,7 +213,7 @@ double os::user_time_for(Thread* thread) {
   FILETIME exit_time;
   FILETIME user_time;
   FILETIME kernel_time;
-  if (GetThreadTimes(main_process, &creation_time, &exit_time, &kernel_time, &user_time)) {
+  if (GetThreadTimes(thread->thread_handle, &creation_time, &exit_time, &kernel_time, &user_time)) {
     return fileTimeAsDouble(&user_time);
   }
   return 0.0;
@@ -214,7 +224,7 @@ double os::system_time_for(Thread* thread) {
   FILETIME exit_time;
   FILETIME user_time;
   FILETIME kernel_time;
-  if (GetThreadTimes(main_process, &creation_time, &exit_time, &kernel_time, &user_time)) {
+  if (GetThreadTimes(thread->thread_handle, &creation_time, &exit_time, &kernel_time, &user_time)) {
     return fileTimeAsDouble(&kernel_time);
   }
   return 0.0;
@@ -269,7 +279,7 @@ double os::currentTime() {
 }
 
 void os::fatalExit(int num) {
-  FatalExit(num);
+  ExitProcess(num);
 }
 
 dll_func os::dll_lookup(char* name, DLL* library) {
@@ -289,7 +299,7 @@ bool os::dll_unload(DLL* library) {
 char* os::dll_extension() {
   return ".dll";
 }
-char* exception_name(int code) {
+char* exception_name(DWORD code) {
   switch (code) {
     case EXCEPTION_ACCESS_VIOLATION:
       return "Access violation";
@@ -339,10 +349,10 @@ char* exception_name(int code) {
 }
 
 void trace_stack_at_exception(int* sp, int* fp, char* pc);
-void suspend_process_at_stack_overflow(int* sp, int* fp, char* pc);
+void suspend_process_at_stack_overflow(int* sp, void** fp, char* pc);
 
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
-  int code = exceptionInfo->ExceptionRecord->ExceptionCode;
+  DWORD code = exceptionInfo->ExceptionRecord->ExceptionCode;
 
   if (code == EXCEPTION_BREAKPOINT) {
     // This exception is called when an assertion fails (__asm { int 3} is executed).
@@ -356,8 +366,15 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   if (code == EXCEPTION_STACK_OVERFLOW) {
     lprintf("  Oops, we encounted a stack overflow.\n");
     lprintf("  You should check your program for infinite recursion!\n");
-    suspend_process_at_stack_overflow((int*)exceptionInfo->ContextRecord->Esp, (int*)exceptionInfo->ContextRecord->Ebp,
+#if defined(_WIN64)
+    suspend_process_at_stack_overflow((int*)exceptionInfo->ContextRecord->Rsp,
+                                      (void**)exceptionInfo->ContextRecord->Rbp,
+                                      (char*)exceptionInfo->ContextRecord->Rip);
+#else
+    suspend_process_at_stack_overflow((int*)exceptionInfo->ContextRecord->Esp,
+                                      (void**)exceptionInfo->ContextRecord->Ebp,
                                       (char*)exceptionInfo->ContextRecord->Eip);
+#endif
     lprintf("  Coutinue execution ??????????????\n");
   } else {
     // Do not report vm state when getting stack overflow
@@ -365,8 +382,13 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   }
 
   if (os::message_box("Exception caught", "Do you want a stack trace?")) {
+#if defined(_WIN64)
+    trace_stack_at_exception((int*)exceptionInfo->ContextRecord->Rsp, (int*)exceptionInfo->ContextRecord->Rbp,
+                             (char*)exceptionInfo->ContextRecord->Rip);
+#else
     trace_stack_at_exception((int*)exceptionInfo->ContextRecord->Esp, (int*)exceptionInfo->ContextRecord->Ebp,
                              (char*)exceptionInfo->ContextRecord->Eip);
+#endif
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -416,13 +438,22 @@ int os::get_nCmdShow() {
 }
 
 extern int bootstrapping;
-static CONTEXT context;
 
 void os::timerStart() {}
 
 void os::timerStop() {}
 
 void os::timerPrintBuffer() {}
+
+// Windows has no MAP_JIT/W^X enforcement; these toggles are no-ops that keep
+// the "enabled" state for the debug output, mirroring the Linux backend.
+static bool jit_write_protected_state = false;
+void os::jit_write_protect(bool protect) {
+  jit_write_protected_state = protect;
+}
+bool os::jit_write_protect_enabled() {
+  return jit_write_protected_state;
+}
 
 // Virtual Memory
 
@@ -510,9 +541,15 @@ void os::fetch_top_frame(Thread* thread, int** sp, int** fp, char** pc) {
   CONTEXT context;
   context.ContextFlags = CONTEXT_CONTROL;
   if (GetThreadContext(thread->thread_handle, &context)) {
+#if defined(_WIN64)
+    *sp = (int*)context.Rsp;
+    *fp = (int*)context.Rbp;
+    *pc = (char*)context.Rip;
+#else
     *sp = (int*)context.Esp;
     *fp = (int*)context.Ebp;
     *pc = (char*)context.Eip;
+#endif
   } else {
     *sp = NULL;
     *fp = NULL;
@@ -629,8 +666,13 @@ LONG WINAPI testVectoredHandler(struct _EXCEPTION_POINTERS* exceptionInfo) {
   //lprintf("Caught exception.\n");
   if (false && handler && !handling_exception) {
     handling_exception = true;
+#if defined(_WIN64)
+    handler((void*)exceptionInfo->ContextRecord->Rbp, (void*)exceptionInfo->ContextRecord->Rsp,
+            (void*)exceptionInfo->ContextRecord->Rip);
+#else
     handler((void*)exceptionInfo->ContextRecord->Ebp, (void*)exceptionInfo->ContextRecord->Esp,
             (void*)exceptionInfo->ContextRecord->Eip);
+#endif
     handling_exception = false;
   }
   return EXCEPTION_CONTINUE_SEARCH;
@@ -657,16 +699,16 @@ void os_init() {
   os::initialize_system_info();
 
   //%todo: remove this processor affinity stuff
-  ULONG systemMask;
-  ULONG processMask;
+  DWORD_PTR systemMask;
+  DWORD_PTR processMask;
   GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask);
 
-  ULONG processorId = 1;
+  DWORD_PTR processorId = 1;
   while (!(processMask & processorId) && processorId < processMask)
     processorId >>= 1;
-  mystd->print_cr("processor: %ld", processorId);
+  _mystd->print_cr("processor: %lu", (unsigned long)processorId);
   if (!SetProcessAffinityMask(GetCurrentProcess(), processorId))
-    mystd->print_cr("error code: %d", GetLastError());
+    _mystd->print_cr("error code: %d", GetLastError());
   // end processor affinity - for removal
 
   SetConsoleCtrlHandler(&HandlerRoutine, TRUE);

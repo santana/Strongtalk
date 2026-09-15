@@ -148,7 +148,7 @@ void GenericGrowableArray::print() {
   print_short();
   lprintf(": length %ld (max %ld) { ", len, max);
   for (int i = 0; i < len; i++)
-    lprintf("%#lx ", (long)data[i]);
+    lprintf("%#tx ", (intptr_t)data[i]);
   lprintf("}\n");
 }
 

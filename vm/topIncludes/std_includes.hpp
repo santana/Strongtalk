@@ -52,7 +52,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // declarations below don't emit noise on the ports this VM actually builds.
 #if defined(__i386__) || defined(_M_IX86)
 #define __stdcall __attribute__((stdcall))
-#else
+#elif !defined(__stdcall)
 #define __stdcall
 #endif
 #define mystd _mystd

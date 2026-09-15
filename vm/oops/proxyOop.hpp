@@ -74,8 +74,8 @@ public:
   void byte_at_put(int offset, unsigned char c) { *addr_at(offset) = c; }
   doubleByte doubleByte_at(int offset) const { return *((doubleByte*)addr_at(offset)); }
   void doubleByte_at_put(int offset, doubleByte db) { *((doubleByte*)addr_at(offset)) = db; }
-  long long_at(int offset) const { return *((long*)addr_at(offset)); }
-  void long_at_put(int offset, long l) { *((long*)addr_at(offset)) = l; }
+  intptr_t long_at(int offset) const { return *((intptr_t*)addr_at(offset)); }
+  void long_at_put(int offset, intptr_t l) { *((intptr_t*)addr_at(offset)) = l; }
 
   float float_at(int offset) const { return *((float*)addr_at(offset)); }
   void float_at_put(int offset, float f) { *((float*)addr_at(offset)) = f; }

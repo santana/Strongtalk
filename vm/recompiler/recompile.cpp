@@ -86,7 +86,7 @@ char* Recompilation::methodOop_invocation_counter_overflow(oop rcvr, methodOop m
     if (dbg_n++ < 20) {
       stringStream buf;
       method->selector()->print_symbol_on(&buf);
-      fprintf(stderr, "DBG overflow rcvr=%#lx method=%#lx counters=%#x sel=%s\n", (long)rcvr, (long)method,
+      fprintf(stderr, "DBG overflow rcvr=%#tx method=%#tx counters=%#x sel=%s\n", (intptr_t)rcvr, (intptr_t)method,
               method->counters(), buf.as_string());
       fflush(stderr);
     }
