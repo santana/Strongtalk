@@ -212,17 +212,17 @@ oop bootstrap::get_object() {
 
   if (type == '0') {
     int v = get_integer();
-    // if (TraceBootstrap) mystd->print_cr("i %d", v);
+    if (TraceBootstrap) lprintf("i %d\n", v);
     return as_smiOop(v);
   }
   if (type == '-') {
     int v = get_integer();
-    // if (TraceBootstrap) mystd->print_cr("i %d", -v);
+    if (TraceBootstrap) lprintf("i %d\n", -v);
     return as_smiOop(-v);
   }
   if (type == '3') {
     int v = get_integer();
-    // if (TraceBootstrap) mystd->print_cr("r %d", v);
+    if (TraceBootstrap) lprintf("r %d\n", v);
     return at(v);
   }
 
@@ -245,7 +245,7 @@ oop bootstrap::get_object() {
   // Clear eventual padding area for byteArray, symbol, doubleByteArray.
   m->raw_at_put(size - 1, smiOop_zero);
 
-  // if (TraceBootstrap) lprintf("%c %d = 0x%lx\n", type, size, m);
+  if (TraceBootstrap) lprintf("%c %d = 0x%lx\n", type, size, (unsigned long)m);
 
   add(m);
   int my_index = number_of_oops - 1;
