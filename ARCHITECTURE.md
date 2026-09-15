@@ -519,7 +519,7 @@ Repo-root developer docs:
 | macOS arm64 (native)  | Yes    | Boots, loads image; hits the `zone.cpp:622` `methodHeap->contains()` assert (last blocker) |
 | macOS x86-64 (forced) | Yes    | Boots startup; SIGSEGVs at boot end (same signature as the shared-dir builds) |
 | Linux x86-64 (Docker) | Yes    | Boots, loads image; `stest` spins in `os::suspend_thread`/`os_dump_context` (wait-stub) |
-| Windows x86           | legacy | `build.win32` (Visual Studio) project still in tree; 32-bit x86 was dropped from the C++ sources -- not maintained |
+| Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call (see X86_64_PORT_NOTES.md) |
 
 ### Platform Abstraction
 

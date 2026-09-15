@@ -13,9 +13,9 @@ garbage collector.
 ## Status
 
 The VM is a work in progress as a project. The C++ code builds on **Linux
-(x86-64)**, **macOS (Apple Silicon)**, and **Windows (x86-64, MinGW
-cross-build)** via the portable root `Makefile` (out-of-tree builds), and a CI
-build runs on every push.
+(x86-64)**, **macOS (Apple Silicon)**, and **Windows (x86-64, MinGW cross-built
+and native MSYS2)** via the portable root `Makefile` (out-of-tree builds), and
+a CI build runs on every push.
 
 The JIT/code generator has a **single frontend with per-architecture
 backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
@@ -27,12 +27,11 @@ It currently aborts during a hot-method recompile on
 `assert(methodHeap->contains(n), "not in zone")` in `zone::findNMethod`
 (`zone.cpp:622`), the active blocker.
 
-| Platform                  | Build | Runtime                                                          |
+| Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | loads the image, then spins in the interpreter bootstrap loop (repeated `error:` re-raise in `runBaseClassInitializers`); no JIT code yet |
 | macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; blocked at a `findNMethod` "not in zone" assert (`zone.cpp:622`) during recompile |
-| Windows x86-64 (MinGW cross-build) | yes | builds `strongtalk.exe`/`stest.exe` (PE32+); runtime not yet exercised (needs Wine or Windows) |
-| Windows (legacy)          | yes   | via `build.win32` (Visual Studio, x86 only)                       |
+| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows) for status |
 
 Getting the VM running end-to-end on Apple Silicon requires resolving that
 remaining zone-heap walk fault in `findNMethod`. Every configuration is
@@ -51,8 +50,6 @@ configurations compile with zero warnings.
 | `strongtalk.bst`    | The Smalltalk image file                          |
 | `test/` `easyunit/` | C++ test suite (easyunit) for the VM              |
 | `build/`           | Out-of-tree per-config build dirs (`build/<arch>-<os>-<compiler>`) |
-| `build.win32/`      | Visual Studio project (Windows)                   |
-| `bin/`              | Legacy Windows build scripts and prebuilt objects |
 | `documentation/`    | HTML docs (typed Smalltalk, bytecodes, primitives)|
 | `resources/`        | IDE resources (bitmaps, etc.)                     |
 
@@ -92,6 +89,18 @@ This writes `strongtalk.exe`, `stest.exe` and their DLLs (`strongtalk.so`,
 `stest.so`, PE DLLs) into `build/x86_64-mingw-gcc/`. On Windows the shared
 libraries live alongside the executables.
 
+Building natively on Windows (x86-64) under MSYS2/MinGW-W64:
+
+```sh
+# from an MSYS2 MINGW64 shell with mingw-w64-x86-64-gcc and make installed:
+make -j"$(nproc)" all
+```
+
+The MSYS2 shell exports `OS=Windows_NT`, which would fool the Makefile's
+uname detection; `make` neuters the environment variable first (`ifeq ($(origin
+OS),environment)` -> `OS :=`), so the build is detected as `mingw` and lands
+in `build/x86_64-mingw-gcc/`.
+
 The resulting binaries (`strongtalk`, `stest`, and their shared libraries) are
 written into the per-config `build/<arch>-<os>-<compiler>/` directory. Different
 configs never share objects, so switching configs needs no clean.
@@ -112,6 +121,30 @@ Debug flags are toggled on the command line with `+Name`/`-Name` (for example
 default and logs every token of the `.bst` read-in as it parses it.
 
 `strongtalk.bst` is included at the repository root.
+
+## Windows runtime status
+
+The Windows x86-64 configuration **builds, links, and runs far enough to read
+the image**: the full `strongtalk.bst` read-in completes (the Linux/amd64
+config, by comparison, never leaves the interpreter bootstrap). Both
+`strongtalk.exe` and `stest.exe` then die in the **first Delta call**
+(`DeltaProcess::launch_delta`, right after the spawned Delta thread starts).
+Depending on how the binaries are executed:
+
+- **Under Wine on Apple Silicon (via Rosetta)**: the VM faults with
+  `rosetta error: invalid gdt selector index 5` (SIGTRAP) — a host-emulation
+  artifact of Rosetta translating the first JIT'd x86-64 code inside the Wine
+  process, not a PE/runtime defect (the same generated code runs cleanly under
+  Rosetta in the forced macOS x86-64 config).
+- **Under native Wine on a real amd64 machine (CI)**: the VM catches an Access
+  Violation in its own handler and then **hangs** — a genuine
+  Windows/x86-64 port defect still to be diagnosed (needs a
+  `winedbg`/backtrace capture). A run on a real Windows host would settle
+  whether anything else is platform-specific.
+
+The MSYS2 native job and the MinGW cross-build both pass their build steps in
+CI; the smoke runs are best-effort (`continue-on-error`) and capped with
+`timeout` so a hung process does not stall a pipeline.
 
 ## Continuous integration
 
