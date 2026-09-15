@@ -1,4 +1,4 @@
-name: build
+name: build-linux
 
 on:
   push:
@@ -37,13 +37,9 @@ jobs:
       - name: Check formatting (make format-check)
         run: make format-check
 
-  build:
-    name: Build on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  build-linux:
+    name: Build on Linux (x86-64)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,16 +50,9 @@ jobs:
           c++ --version | head -1
 
       - name: Build (make all)
-        run: |
-          if [ "$(uname)" = "Darwin" ]; then
-            JOBS=$(sysctl -n hw.ncpu)
-          else
-            JOBS=$(nproc)
-          fi
-          make -j"$JOBS" all
+        run: make -j"$(nproc)" all
 
-      - name: Run tests (Linux)
-        if: runner.os == 'Linux'
+      - name: Run tests
         # The VM runtime may hit platform issues; don't fail the build over it.
         continue-on-error: true
         timeout-minutes: 10
@@ -72,7 +61,7 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: strongtalk-${{ matrix.os }}
+          name: strongtalk-linux
           path: |
             build/*/strongtalk
             build/*/stest

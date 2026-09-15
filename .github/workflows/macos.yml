@@ -1,0 +1,32 @@
+name: build-macos
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build on macOS (arm64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          make --version | head -1
+          c++ --version | head -1
+
+      - name: Build (make all)
+        run: make -j"$(sysctl -n hw.ncpu)" all
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: strongtalk-macos
+          path: |
+            build/*/strongtalk
+            build/*/stest
+            build/*/strongtalk.so
+            build/*/stest.so

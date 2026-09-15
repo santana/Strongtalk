@@ -1,6 +1,9 @@
 # Strongtalk
 
-[![Build status](https://github.com/santana/Strongtalk/actions/workflows/build.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build.yml)
+[![macOS build](https://github.com/santana/Strongtalk/actions/workflows/macos.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/macos.yml)
+[![Linux build](https://github.com/santana/Strongtalk/actions/workflows/linux.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/linux.yml)
+[![Windows build (MinGW cross)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml)
+[![Windows build (native MSYS2)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml)
 
 An optionally-typed Smalltalk with a high-performance optimizing JIT, developed
 by LongView Technologies LLC (1994-1997) and open-sourced by Sun Microsystems in
@@ -112,12 +115,9 @@ default and logs every token of the `.bst` read-in as it parses it.
 
 ## Continuous integration
 
-[![macOS/Linux build](https://github.com/santana/Strongtalk/actions/workflows/build.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build.yml)
-[![Windows build (MinGW cross)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml)
-[![Windows build (native MSYS2)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml)
-
-- `build.yml` — clang-format check plus builds on `ubuntu-latest` (x86-64) and
-  `macos-latest` (arm64).
+- `linux.yml` — clang-format check plus the native `ubuntu-latest` (x86-64)
+  build and test.
+- `macos.yml` — native `macos-latest` (arm64) build.
 - `windows-mingw.yml` — Windows (x86-64) cross-built on `ubuntu-latest` with
   the MinGW-w64 toolchain, smoke-tested under Wine.
 - `windows-mingw-native.yml` — Windows (x86-64) built and run natively on
