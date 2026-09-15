@@ -214,6 +214,66 @@ executed methods from bytecodes to native machine code (nmethods).
 **Optimization levels** (0-15, stored in `nmFlags.level`): higher levels
 apply more aggressive optimizations.
 
+### 2.3.1 Code Generation Backends
+
+The JIT exposes **two code-generation backends** that turn the compiler's IR
+(nodes/basic blocks) into machine code. Both are `NodeVisitor`s driven by the
+same `bbIterator->apply(...)` call (`compiler.cpp:489-501`), so they share the
+front end (inlining, node builder, register allocation, debug-info
+generation) and differ only in how machine code is emitted:
+
+| | OldCodeGenerator | CodeGenerator (new backend) |
+|---|---|---|
+| Where codegen lives | In each IR node's own `gen()` method | In the generator class itself (`aXxxNode()` methods) |
+| Files | `compiler/oldCodeGenerator.cpp` | `compiler/codeGenerator.cpp` + `PRegMapping` |
+| State | Stateless adapter over global `theMacroAssm` | Owns `_masm`, `_currentMapping`, merge stubs, `DebugInfoWriter`, `_maxNofStackTmps`, ... |
+| Register/location use | Direct `Mapping::load/store` from allocator-assigned locations | `def`/`use` through a `PRegMapping` plus merge stubs & debug-info tracking |
+
+**OldCodeGenerator** is a thin compatibility shim: the header describes it as
+*"the new interface to the gen() routines in x86_node.cpp. It allows to call
+the old code generation routines via the new apply method"* (`oldCodeGenerator.hpp:31`).
+Every `aXxxNode()` handler just calls `node->gen()` (`oldCodeGenerator.cpp:87-194`);
+code emission lives in each `I_Node` subclass, and basic-block fall-through vs.
+explicit jumps are decided by a global `bb_needs_jump` flag
+(`oldCodeGenerator.cpp:56`).
+
+**CodeGenerator** is the newer backend. Code generation is implemented as
+methods on the generator class, which owns the full emission state: the
+`PRegMapping` tracking where pseudo-registers live, a stack of pending **merge
+stubs** (deferred control-flow merges emitted at the end), a
+`DebugInfoWriter` kept in sync as PReg locations change, and stack-temp
+accounting. See `compiler/codeGenerator.hpp:39-170`.
+
+#### Selecting a backend
+
+The active backend is chosen at compile time by the `UseNewBackend` develop
+flag, **default off** (debug.hpp:196):
+
+```cpp
+// compiler.cpp
+if (UseNewBackend) {
+  PRegMapping* mapping = new PRegMapping(theMacroAssm, ...);
+  CodeGenerator* cgen = new CodeGenerator(theMacroAssm, mapping);
+  ...
+} else {
+  OldCodeGenerator* cgen = new OldCodeGenerator();   // default
+  ...
+}
+```
+
+- Start the VM with `-UseNewBackend` to enable the new backend.
+- `-TryNewBackend` is a transitional helper: it flips `UseNewBackend` on and
+  additionally forces `LocalCopyPropagate=false`, `OptimizeLoops=false`,
+  `OptimizeIntegerLoops=false` for temporary-use testing
+  (`NewBackendGuard`, compiler.cpp:327-366). The comment notes the old
+  backend is eventually meant to be removed once `UseNewBackend` is
+  stable.
+- Startup prints `- VM using new backend (...)` when either flag is set
+  (universe.cpp:80).
+
+Caveat: **super sends require the new backend** — the old backend cannot yet
+emit them (`compiledIC.cpp:453` asserts `!isSuperSend() || UseNewBackend`).
+
 ### 2.4 Deoptimization
 
 When assumptions made by the compiler are invalidated (e.g., a class is
