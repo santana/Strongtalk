@@ -379,6 +379,42 @@ static void report_exception_address(void* addr) {
   lprintf("  ExceptionAddress %p: in %s at offset 0x%lx\n", addr, name, (long)((char*)addr - (char*)module));
 }
 
+// Dump up to n instruction bytes at a fault site. Guarded by a VirtualQuery
+// so we never re-fault while trying to report the original fault.
+static void dump_bytes_at(void* addr, int n) {
+  MEMORY_BASIC_INFORMATION mbi;
+  if (addr == NULL || !VirtualQuery(addr, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT ||
+      (mbi.Protect & PAGE_GUARD) != 0 ||
+      (mbi.Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
+                      PAGE_EXECUTE_WRITECOPY)) == 0) {
+    lprintf("  <unreadable>\n");
+    return;
+  }
+  const unsigned char* p = (const unsigned char*)addr;
+  lprintf("    ");
+  for (int i = 0; i < n; i++)
+    lprintf("%02x ", p[i]);
+  lprintf("\n");
+}
+
+// Dump a return-address chain if the faulting thread's stack is readable.
+static void dump_return_chain(void* rsp, int words) {
+  MEMORY_BASIC_INFORMATION mbi;
+  if (rsp == NULL || !VirtualQuery(rsp, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT ||
+      (mbi.Protect & PAGE_GUARD) != 0) {
+    lprintf("  <stack unreadable>\n");
+    return;
+  }
+  for (int i = 0; i < words; i++) {
+    void** slot = (void**)rsp + i;
+    // If the walk leaves the committed region, stop.
+    if (slot >= (void**)((char*)mbi.BaseAddress + mbi.RegionSize)) {
+      break;
+    }
+    lprintf("  [rsp+%d] %p\n", i * 8, slot[0]);
+  }
+}
+
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   // Guard against re-entry: tracing/walking a corrupt frame from inside the
   // handler can fault again, which would loop forever (seen as a hang).
@@ -403,8 +439,16 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   report_exception_address(rec->ExceptionAddress);
 
 #if defined(_WIN64)
-  lprintf("  Rip=%p Rsp=%p Rbp=%p\n", (void*)exceptionInfo->ContextRecord->Rip,
-          (void*)exceptionInfo->ContextRecord->Rsp, (void*)exceptionInfo->ContextRecord->Rbp);
+  CONTEXT* c = exceptionInfo->ContextRecord;
+  lprintf("  Rip=%p Rsp=%p Rbp=%p\n", (void*)c->Rip, (void*)c->Rsp, (void*)c->Rbp);
+  lprintf("  Rax=%p Rbx=%p Rcx=%p Rdx=%p Rsi=%p Rdi=%p\n", (void*)c->Rax, (void*)c->Rbx, (void*)c->Rcx, (void*)c->Rdx,
+          (void*)c->Rsi, (void*)c->Rdi);
+  lprintf("  R8=%p R9=%p R10=%p R11=%p R12=%p R13=%p R14=%p R15=%p\n", (void*)c->R8, (void*)c->R9, (void*)c->R10,
+          (void*)c->R11, (void*)c->R12, (void*)c->R13, (void*)c->R14, (void*)c->R15);
+  lprintf("  Instructions at Rip:\n");
+  dump_bytes_at((void*)c->Rip, 32);
+  lprintf("  Return chain:\n");
+  dump_return_chain((void*)c->Rsp, 5);
 #else
   lprintf("  Eip=%p Esp=%p Ebp=%p\n", (void*)exceptionInfo->ContextRecord->Eip,
           (void*)exceptionInfo->ContextRecord->Esp, (void*)exceptionInfo->ContextRecord->Ebp);
