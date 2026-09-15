@@ -20,7 +20,11 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw64
-          update: true
+          # update:true does a full `pacman -Syu` that can race the mirrors
+          # and leave the mingw64 repo DB unresolvable ("target not found").
+          # The action already extracts a fresh MSYS2 base release, so no
+          # system-wide upgrade is needed here.
+          update: false
           install: >-
             mingw-w64-x86-64-gcc
             make
@@ -36,15 +40,15 @@ jobs:
       - name: Run VM smoke test (strongtalk.exe)
         # The VM runtime may hit platform issues; don't fail the build over it
         # (same policy as the Linux test job). Run under a timeout so a hung
-        # process stops quickly instead of stalling the step.
+        # process stops quickly; stream stdout directly to the CI log (a
+        # redirect loses buffered output when the process dies), and capture
+        # the exit code with `||` so bash -e does not abort before printing.
         continue-on-error: true
         timeout-minutes: 10
         run: |
           cd build/x86_64-mingw-gcc
-          timeout 120 ./strongtalk.exe -b ../../strongtalk.bst > smoke.log 2>&1
-          rc=$?
-          echo "=== strongtalk.exe finished, timeout(1) exit code: $rc (124 = timed out) ==="
-          tail -60 smoke.log
+          timeout 120 ./strongtalk.exe -b ../../strongtalk.bst || rc=$?
+          echo "=== strongtalk.exe exit code: ${rc:-0} (124 = timed out) ==="
 
       - name: Run tests (make test)
         continue-on-error: true
