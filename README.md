@@ -112,11 +112,16 @@ default and logs every token of the `.bst` read-in as it parses it.
 
 ## Continuous integration
 
-`.github/workflows/build.yml` builds on `ubuntu-latest` (x86-64),
-`macos-latest` (arm64), and — on `ubuntu-latest` with the MinGW-w64 cross
-toolchain — Windows (x86-64) for every push and pull request. A native
-`windows-latest` job also builds and runs the Windows binaries with
-MSYS2/MinGW-W64.
+[![macOS/Linux build](https://github.com/santana/Strongtalk/actions/workflows/build.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/build.yml)
+[![Windows build (MinGW cross)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw.yml)
+[![Windows build (native MSYS2)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml/badge.svg)](https://github.com/santana/Strongtalk/actions/workflows/windows-mingw-native.yml)
+
+- `build.yml` — clang-format check plus builds on `ubuntu-latest` (x86-64) and
+  `macos-latest` (arm64).
+- `windows-mingw.yml` — Windows (x86-64) cross-built on `ubuntu-latest` with
+  the MinGW-w64 toolchain, smoke-tested under Wine.
+- `windows-mingw-native.yml` — Windows (x86-64) built and run natively on
+  `windows-latest` under MSYS2/MinGW-W64.
 
 ## Documentation
 

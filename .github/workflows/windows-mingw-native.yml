@@ -1,0 +1,62 @@
+name: build-windows-native
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows-native:
+    name: Build and run Windows (native, MinGW-W64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 with MinGW-W64 GCC
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            mingw-w64-x86-64-gcc
+            make
+
+      - name: Show toolchain
+        run: |
+          g++ --version | head -1
+          make --version | head -1
+
+      - name: Build (make all)
+        run: make -j"$(nproc)" all
+
+      - name: Run VM smoke test (strongtalk.exe)
+        # The VM runtime may hit platform issues; don't fail the build over it
+        # (same policy as the Linux test job). Run under a timeout so a hung
+        # process stops quickly instead of stalling the step.
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          cd build/x86_64-mingw-gcc
+          timeout 120 ./strongtalk.exe -b ../../strongtalk.bst > smoke.log 2>&1
+          rc=$?
+          echo "=== strongtalk.exe finished, timeout(1) exit code: $rc (124 = timed out) ==="
+          tail -60 smoke.log
+
+      - name: Run tests (make test)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: make test
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: strongtalk-windows-native
+          path: |
+            build/x86_64-mingw-gcc/strongtalk.exe
+            build/x86_64-mingw-gcc/stest.exe
+            build/x86_64-mingw-gcc/strongtalk.so
+            build/x86_64-mingw-gcc/stest.so
