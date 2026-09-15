@@ -30,6 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "utilities/growableArray.hpp"
 #include "utilities/ostream.hpp"
 
+#include <cstdlib>
 #include <windows.h>
 #include <signal.h>
 typedef struct _thread_start {
@@ -351,8 +352,45 @@ char* exception_name(DWORD code) {
 void trace_stack_at_exception(int* sp, int* fp, char* pc);
 void suspend_process_at_stack_overflow(int* sp, void** fp, char* pc);
 
+// Describe a fault address: module base + offset when it falls inside a
+// loaded image (the VM exe or the strongtalk silhouette DLL), otherwise say
+// it lives outside the modules -- i.e. in JIT-generated code or heap.
+static void report_exception_address(void* addr) {
+  HMODULE module = NULL;
+  GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                     (LPCSTR)addr, &module);
+  if (module == NULL) {
+    MEMORY_BASIC_INFORMATION mbi;
+    const char* region = "unknown";
+    SIZE_T size = 0;
+    if (VirtualQuery(addr, &mbi, sizeof(mbi))) {
+      region = (mbi.State == MEM_COMMIT) ? "committed" : "unmapped";
+      size = mbi.RegionSize;
+    }
+    lprintf("  ExceptionAddress %p: outside loaded modules "
+            "(%s allocation, size %lu) -- likely JIT-generated code or heap\n",
+            addr, region, (unsigned long)size);
+    return;
+  }
+  char name[BUFSIZ];
+  if (GetModuleFileNameA(module, name, sizeof(name)) == 0) {
+    snprintf(name, sizeof(name), "module @%p", (void*)module);
+  }
+  lprintf("  ExceptionAddress %p: in %s at offset 0x%lx\n", addr, name, (long)((char*)addr - (char*)module));
+}
+
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
-  DWORD code = exceptionInfo->ExceptionRecord->ExceptionCode;
+  // Guard against re-entry: tracing/walking a corrupt frame from inside the
+  // handler can fault again, which would loop forever (seen as a hang).
+  static bool in_exception_handler = false;
+  if (in_exception_handler) {
+    lprintf("Exception while handling exception; aborting.\n");
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+  in_exception_handler = true;
+
+  struct _EXCEPTION_RECORD* rec = exceptionInfo->ExceptionRecord;
+  DWORD code = rec->ExceptionCode;
 
   if (code == EXCEPTION_BREAKPOINT) {
     // This exception is called when an assertion fails (__asm { int 3} is executed).
@@ -362,6 +400,25 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   }
 
   lprintf("Exception caught \"%s\".\n", exception_name(code));
+  report_exception_address(rec->ExceptionAddress);
+
+#if defined(_WIN64)
+  lprintf("  Rip=%p Rsp=%p Rbp=%p\n", (void*)exceptionInfo->ContextRecord->Rip,
+          (void*)exceptionInfo->ContextRecord->Rsp, (void*)exceptionInfo->ContextRecord->Rbp);
+#else
+  lprintf("  Eip=%p Esp=%p Ebp=%p\n", (void*)exceptionInfo->ContextRecord->Eip,
+          (void*)exceptionInfo->ContextRecord->Esp, (void*)exceptionInfo->ContextRecord->Ebp);
+#endif
+
+  if (code == EXCEPTION_ACCESS_VIOLATION && rec->NumberParameters >= 2) {
+    // ExceptionInformation[0]: 0 = read, 1 = write, 8 = execute.
+    // ExceptionInformation[1]:  the address that was accessed.
+    lprintf("  Access violation: %s at %p\n",
+            rec->ExceptionInformation[0] == 0   ? "reading"
+            : rec->ExceptionInformation[0] == 1 ? "writing"
+                                                : "executing",
+            (void*)rec->ExceptionInformation[1]);
+  }
 
   if (code == EXCEPTION_STACK_OVERFLOW) {
     lprintf("  Oops, we encounted a stack overflow.\n");
@@ -381,7 +438,11 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
     report_vm_state();
   }
 
-  if (os::message_box("Exception caught", "Do you want a stack trace?")) {
+  // The vframe trace needs a sane Delta stack; on the faulting thread the
+  // last_Delta_* liveness may be garbage, and walking it can hang. Only do
+  // it when explicitly requested (os::message_box is stubbed to always
+  // answer "yes" on this build).
+  if (getenv("STRONGTALK_EXCEPTION_TRACE")) {
 #if defined(_WIN64)
     trace_stack_at_exception((int*)exceptionInfo->ContextRecord->Rsp, (int*)exceptionInfo->ContextRecord->Rbp,
                              (char*)exceptionInfo->ContextRecord->Rip);
