@@ -102,7 +102,9 @@ jobs:
 
       - name: Smoke test Windows binaries under Wine
         # The VM runtime may hit platform/emulation issues; don't fail the
-        # build over it (same policy as the Linux test job).
+        # build over it (same policy as the Linux test job). Run under a
+        # timeout so a hung process stops quickly instead of stalling the
+        # step for timeout-minutes.
         continue-on-error: true
         timeout-minutes: 10
         run: |
@@ -111,7 +113,10 @@ jobs:
           cp "$GCDLL/libgcc_s_seh-1.dll" "$SCDLL/libstdc++-6.dll" build/x86_64-mingw-gcc/
           cp /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll build/x86_64-mingw-gcc/
           cd build/x86_64-mingw-gcc
-          WINEDEBUG=-all xvfb-run -a /usr/lib/wine/wine64 ./strongtalk.exe -b ../../strongtalk.bst 2>&1 | head -40
+          WINEDEBUG=-all timeout 120 xvfb-run -a /usr/lib/wine/wine64 ./strongtalk.exe -b ../../strongtalk.bst > smoke.log 2>&1
+          rc=$?
+          echo "=== strongtalk.exe finished, timeout(1) exit code: $rc (124 = timed out) ==="
+          tail -60 smoke.log
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
@@ -152,12 +157,16 @@ jobs:
 
       - name: Run VM smoke test (strongtalk.exe)
         # The VM runtime may hit platform issues; don't fail the build over it
-        # (same policy as the Linux test job).
+        # (same policy as the Linux test job). Run under a timeout so a hung
+        # process stops quickly instead of stalling the step.
         continue-on-error: true
         timeout-minutes: 10
         run: |
           cd build/x86_64-mingw-gcc
-          ./strongtalk.exe -b ../../strongtalk.bst 2>&1 | head -40
+          timeout 120 ./strongtalk.exe -b ../../strongtalk.bst > smoke.log 2>&1
+          rc=$?
+          echo "=== strongtalk.exe finished, timeout(1) exit code: $rc (124 = timed out) ==="
+          tail -60 smoke.log
 
       - name: Run tests (make test)
         continue-on-error: true
