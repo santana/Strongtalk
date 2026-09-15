@@ -39,6 +39,12 @@ CXXFLAGS	= -std=gnu++17 -fno-rtti -Wno-write-strings -fno-operator-names \
 		  $(ARCH_FLAGS) $(DEFINES) $(DEPFLAGS) $(INCLUDES)
 
 UNAME := $(shell uname -s)
+# Windows/MSYS2 exports OS=Windows_NT in the environment; GNU make would
+# import that and defeat both the explicit-OS checks and the uname detection
+# below. Drop an environment-only OS so `make OS=...` and the detection win.
+ifeq ($(origin OS),environment)
+OS :=
+endif
 # OS: an explicit OS= override wins, otherwise auto-detect from uname.
 #   macos ... native macOS (DYLD_LIBRARY_PATH, -dynamiclib)
 #   linux ... native Linux (glibc)
