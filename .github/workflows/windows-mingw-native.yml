@@ -20,14 +20,29 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: mingw64
-          # update:true does a full `pacman -Syu` that can race the mirrors
-          # and leave the mingw64 repo DB unresolvable ("target not found").
-          # The action already extracts a fresh MSYS2 base release, so no
-          # system-wide upgrade is needed here.
+          # No whole-system upgrade: the action extracts a fresh MSYS2 base
+          # release that already fits our needs.
           update: false
-          install: >-
-            mingw-w64-x86-64-gcc
-            make
+
+      - name: Install MinGW-W64 toolchain (resync + retry)
+        # `pacman -S` currently fails intermittently with "target not found:
+        # mingw-w64-x86-64-gcc" because the mingw64 repo DB the runner's
+        # mirror serves is mis-synced. Force `-Syy` (re-download the DBs) and
+        # retry a few times so the job self-heals once upstream recovers.
+        run: |
+          set +e
+          ok=0
+          for i in 1 2 3 4 5; do
+            pacman -Syy --noconfirm
+            pacman -S --noconfirm --needed --overwrite '*' mingw-w64-x86-64-gcc make
+            if [ $? -eq 0 ]; then
+              ok=1
+              break
+            fi
+            echo "pacman install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          [ $ok -eq 1 ]
 
       - name: Show toolchain
         run: |
