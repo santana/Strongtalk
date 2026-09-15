@@ -1511,7 +1511,7 @@ void X86Assembler::jmp(Label& L) {
 }
 
 void X86Assembler::jcc(Condition cc, Label& L) {
-  assert((0 <= cc) && (cc < 16), "illegal cc");
+  assert((int)cc >= 0 && (int)cc < 16, "illegal cc");
   if (L.is_bound()) {
     const int short_size = 2;
     const int long_size = 6;
@@ -1538,7 +1538,7 @@ void X86Assembler::jcc(Condition cc, Label& L) {
 }
 
 void X86Assembler::jcc(Condition cc, char* dst, relocInfo::relocType rtype) {
-  assert((0 <= cc) && (cc < 16), "illegal cc");
+  assert((int)cc >= 0 && (int)cc < 16, "illegal cc");
   // 0000 1111 1000 tttn #32-bit disp
   emit_byte(0x0F);
   emit_byte(0x80 | cc);

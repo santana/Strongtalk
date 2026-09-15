@@ -22,6 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "memory/vmSymbols.hpp"
+#include "memory/generation.inline.hpp"
 #include "oops/mixinOop.hpp"
 #include "oops/smiOop.hpp"
 #include "prims/mixin_prims.hpp"

@@ -25,11 +25,15 @@
 #ifdef __APPLE__
 #define _XOPEN_SOURCE
 #include "memory/allocation.hpp"
+#include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
 #include "runtime/os.hpp"
 #include "runtime/debug.hpp"
 #include "runtime/frame.hpp"
 #include "utilities/growableArray.hpp"
 #include "oops/methodOop.hpp"
+#include "oops/oop.inline.hpp"
+#include "oops/memOop.inline.hpp"
 #include "oops/symbolOop.hpp"
 #include <pthread.h>
 #include <unistd.h>
