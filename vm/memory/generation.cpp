@@ -143,7 +143,10 @@ void newGeneration::verify() {
 #undef FOR_EACH_OLD_SPACE
 // this version used with old_gen
 // ensure that you surround the call with {} to prevent s leaking out!
-#define FOR_EACH_OLD_SPACE(s) for (oldSpace* s = first_space; s != NULL; s = s->next_space)
+#define FOR_EACH_OLD_SPACE(s)                                             \
+  for (oldSpace* s = first_space;                                         \
+       s != NULL;                                                         \
+       s = s->next_space)
 
 void oldGeneration::initialize(ReservedSpace rs, int initial_size) {
 

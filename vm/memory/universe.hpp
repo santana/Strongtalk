@@ -399,9 +399,15 @@ public:
 
 #define RELOCATE_TEMPLATE(p) *((oop*)p) = oop(*p)->relocate();
 
-#define APPLY_TO_YOUNG_SPACE_NAMES(template) template(eden()) template(from()) template(to())
+#define APPLY_TO_YOUNG_SPACE_NAMES(template) \
+  template(eden())                           \
+  template(from())                           \
+  template(to())
 
-#define APPLY_TO_YOUNG_SPACES(template) template(new_gen.eden()) template(new_gen.from()) template(new_gen.to())
+#define APPLY_TO_YOUNG_SPACES(template) \
+  template(new_gen.eden())              \
+  template(new_gen.from())              \
+  template(new_gen.to())
 
 #define APPLY_TO_OLD_SPACES(template)                                                                                  \
   {FOR_EACH_OLD_SPACE(s){template(s);                                                                                  \

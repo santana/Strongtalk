@@ -17,6 +17,13 @@ BasedOnStyle: LLVM
 
 Language: Cpp
 
+# Do not reformat the bodies of #define macros (clang-format treats the whole
+# backslash-continued body as one logical line and crushes hand-aligned tables
+# like vmSymbols::VMSYMBOLS and the debug flag tables). Macro bodies become
+# author-authored again; only the #define header line is normalized.
+# Requires clang-format >= 18.
+SkipMacroDefinitionBody: true
+
 # --- Indentation (2-space, spaces not tabs) ---
 UseTab: Never
 IndentWidth: 2
