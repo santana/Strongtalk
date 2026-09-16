@@ -122,6 +122,20 @@ private:
     return 1 + sizeof(char*); // x86 specific
 #endif
   }
+  // The E9 relative jump's displacement is PC-relative to the byte after the
+  // 4-byte displacement (i.e. jump_inst_addr() + 5). On LP64 state_addr() is
+  // jump_inst_addr() + 9 (it sits after the widened 8-byte destination slot),
+  // so using state_addr() as the displacement base would land every dispatch
+  // 4 bytes short of its target. See vm-code-review.md #7.
+  char* jump_rel32_end() const {
+#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+    ShouldNotReachHere();
+    return NULL;
+#else
+    return jump_inst_addr() + (1 + sizeof(int32_t)); // E9 + disp32
+#endif
+  }
+  void fill_jump(char* dest, char state);
   char state() const { return *state_addr(); }
   void fill_entry(char instr, char* dest, char state);
   void initialize_as_unused(int index);

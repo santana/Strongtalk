@@ -197,7 +197,7 @@ void jumpTableEntry::initialize_nmethod_stub(char* dest) {
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   initialize_aarch64_stub(dest, nmethod_entry);
 #else
-  fill_entry(jump_instruction, dest - (intptr_t)state_addr(), nmethod_entry);
+  fill_jump(dest, nmethod_entry);
 #endif
 }
 
@@ -205,7 +205,7 @@ void jumpTableEntry::initialize_block_closure_stub() {
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   initialize_aarch64_stub(StubRoutines::compile_block_entry(), block_closure_entry);
 #else
-  fill_entry(jump_instruction, StubRoutines::compile_block_entry() - (intptr_t)state_addr(), block_closure_entry);
+  fill_jump(StubRoutines::compile_block_entry(), block_closure_entry);
 #endif
 }
 
@@ -222,6 +222,24 @@ void jumpTableEntry::initialize_aarch64_stub(char* dest, char state) {
   memcpy(jump_inst_addr() + 4, &br_x16, 4);
   *destination_addr() = dest;
   *state_addr() = state;
+}
+
+// AArch64 uses absolute stubs, so fill_jump is never called.
+void jumpTableEntry::fill_jump(char* dest, char state) {
+  ShouldNotReachHere();
+}
+#else
+void jumpTableEntry::fill_jump(char* dest, char state) {
+  // Emit an E9 relative jump to dest. The displacement is 32-bit and relative
+  // to jump_rel32_end(); the jump table and the code zone must therefore live
+  // within +/-2GB of each other (always true for 32-bit builds). Landing 4
+  // bytes off (the old state_addr()-based math on LP64) or wrapped around a
+  // >2GB gap both produce exactly the "first JIT'd method executes garbage"
+  // crashes seen on Linux/macOS x86-64 and native Windows MinGW.
+  intptr_t disp = (intptr_t)dest - (intptr_t)jump_rel32_end();
+  if (disp != (intptr_t)(int32_t)disp)
+    fatal("jump table destination out of E9 rel32 range (code zone and jump table more than 2GB apart)");
+  fill_entry(jump_instruction, (char*)disp, state);
 }
 #endif
 
@@ -257,7 +275,7 @@ char* jumpTableEntry::destination() const {
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   return *destination_addr();
 #else
-  return *destination_addr() + (intptr_t)state_addr();
+  return *destination_addr() + (intptr_t)jump_rel32_end();
 #endif
 }
 
@@ -265,7 +283,10 @@ void jumpTableEntry::set_destination(char* dest) {
 #if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   *destination_addr() = dest;
 #else
-  *destination_addr() = dest - (intptr_t)state_addr();
+  intptr_t disp = (intptr_t)dest - (intptr_t)jump_rel32_end();
+  if (disp != (intptr_t)(int32_t)disp)
+    fatal("jump table destination out of E9 rel32 range (code zone and jump table more than 2GB apart)");
+  *destination_addr() = (char*)disp;
 #endif
 }
 
