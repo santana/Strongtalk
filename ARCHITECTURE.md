@@ -144,7 +144,7 @@ in `vm/interpreter/bytecodes.cpp` carrying an operand *format* and one of 14
 *code types* (local/instVar/classVar/global/context access, closure/context
 creation, control flow, message sends, non-local returns, primitive calls,
 DLL calls, float ops, miscellaneous). The authoritative reference is the
-developer guide `BYTECODES.md` at the repo root (17 operand formats, the
+developer guide [BYTECODES.md](BYTECODES.md) at the repo root (17 operand formats, the
 complete opcode table, inline-cache transitions, and interpreter
 architecture); a generated HTML rendering lives at
 `documentation/internal/vm/bytecodes.html` and is refreshed with `make docs`.
