@@ -137,7 +137,10 @@ public:
       return root();
     int offset = s->next_offset();
 
-    if (offset + (sizeof(int) - (offset % sizeof(int))) % sizeof(int) >= (_oops_offset) * sizeof(oop))
+    // _oops_offset is packed in BytesPerWord units (pack_word_aligned), so the
+    // oops array boundary is oops_offset() byte offset; multiplying by
+    // sizeof(oop) instead would over-run the scope table on LP64.
+    if (offset + (sizeof(int) - (offset % sizeof(int))) % sizeof(int) >= oops_offset())
       return NULL;
     return at(offset, ScopeDesc::invalid_pc);
   }

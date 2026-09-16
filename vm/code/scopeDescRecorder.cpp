@@ -23,6 +23,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifdef DELTA_COMPILER
 
+#include <limits.h>
+
 #include "code/nmethod.hpp"
 #include "code/nmethodScopes.hpp"
 #include "code/pcDesc.hpp"
@@ -255,11 +257,14 @@ bool NameNode::genHeaderByte(ScopeDescRecorder* rec, u_char code, bool is_last, 
   return can_inline;
 }
 
-inline int ScopeDescRecorder::getValueIndex(int v) {
+inline int ScopeDescRecorder::getValueIndex(intptr_t v) {
+  // The values sub-array is int-typed (offsets/bcis/locations all fit);
+  // assert so a full-width value can never be silently truncated.
+  assert(v >= INT_MIN && v <= INT_MAX, "value does not fit the int values array");
   // if v fits into 7 bits inline the value instead of creating index
   if (0 <= v && v <= MAX_INLINE_VALUE)
-    return v;
-  return MAX_INLINE_VALUE + 1 + values->insertIfAbsent(v);
+    return (int)v;
+  return MAX_INLINE_VALUE + 1 + values->insertIfAbsent((int)v);
 }
 
 inline int ScopeDescRecorder::getOopIndex(oop o) {

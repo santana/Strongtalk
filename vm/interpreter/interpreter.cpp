@@ -2954,7 +2954,14 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   masm->movb(ebx, Address(esi, 1)); // get no. of arguments to pop
   masm->popl(eax); // get NLR result back
   masm->movl(esi, ebx); // keep no. of arguments in esi
-  masm->notl(esi); // make negative to distinguish from compiled NLRs
+#ifdef DELTA_X86_64
+  // 64-bit NOT: nlr_home_id is an intptr_t, so the 1s-complemented argument
+  // count must stay negative (a 32-bit NOT would zero-extend and read back
+  // positive, hiding the "interpreted NLR" marker).
+  masm->notq(esi);
+#else
+  masm->notl(esi); // make negative to distinguish from compiled NLRs (AArch64 notl is already 64-bit)
+#endif
 
   // entry point for all methods to do NLR test & continuation,
   // first check if context zap is necessary
@@ -3276,12 +3283,32 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   masm->movl(edi, ecx);
   masm->xorl(edi, edx);
   masm->andl(edi, (primary_cache_size - 1) << cacheElementShift);
+#ifdef DELTA_X86_64
+  // A [reg + disp32] address cannot reach the cacheElement array on x86-64:
+  // the static __BSS array regularly lands above 4 GB, truncating the
+  // displacement to a wrong address. Materialize the full 64-bit base in eax
+  // (sparing the receiver, which must survive for the method/nm entry
+  // convention) and fold the element byte offset in, then probe [edi+0/8/16].
+  // AArch64 needs no such fix: its assembler already materializes the
+  // absolute displacement through the reserved scratch register pair.
+  masm->pushq(eax); // save receiver
+  masm->movq(eax, lookupCache::primary_cache_address()); // full 64-bit cache base
+  masm->addq(edi, eax); // edi = full element address
+  masm->popq(eax); // restore receiver
+  // probe cache
+  masm->cmpl(ecx, Address(edi, 0 * oopSize));
+  masm->jcc(Assembler::notEqual, probe_secondary_cache);
+  masm->cmpl(edx, Address(edi, 1 * oopSize));
+  masm->jcc(Assembler::notEqual, probe_secondary_cache);
+  masm->movl(ecx, Address(edi, 2 * oopSize));
+#else
   // probe cache
   masm->cmpl(ecx, Address(edi, lookupCache::primary_cache_address() + 0 * oopSize));
   masm->jcc(Assembler::notEqual, probe_secondary_cache);
   masm->cmpl(edx, Address(edi, lookupCache::primary_cache_address() + 1 * oopSize));
   masm->jcc(Assembler::notEqual, probe_secondary_cache);
   masm->movl(ecx, Address(edi, lookupCache::primary_cache_address() + 2 * oopSize));
+#endif
   masm->test(ecx, Mem_Tag); // check if nmethod
   masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
 
@@ -3314,6 +3341,23 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // edi: primary cache index
   // esi: next instruction
   masm->bind(probe_secondary_cache);
+#ifdef DELTA_X86_64
+  // edi holds the primary element *address*; recompute the secondary byte
+  // offset from the still-live klass (ecx) and selector (edx), then fold in
+  // the full 64-bit secondary cache base as above.
+  masm->movl(edi, ecx);
+  masm->xorl(edi, edx);
+  masm->pushq(eax); // save receiver
+  masm->movq(eax, lookupCache::secondary_cache_address()); // full 64-bit cache base
+  masm->addq(edi, eax); // edi = full element address
+  masm->popq(eax); // restore receiver
+  // probe cache
+  masm->cmpl(ecx, Address(edi, 0 * oopSize));
+  masm->jcc(Assembler::notEqual, _inline_cache_miss);
+  masm->cmpl(edx, Address(edi, 1 * oopSize));
+  masm->jcc(Assembler::notEqual, _inline_cache_miss);
+  masm->movl(ecx, Address(edi, 2 * oopSize));
+#else
   masm->andl(edi, (secondary_cache_size - 1) << cacheElementShift);
   // probe cache
   masm->cmpl(ecx, Address(edi, lookupCache::secondary_cache_address() + 0 * oopSize));
@@ -3321,6 +3365,7 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   masm->cmpl(edx, Address(edi, lookupCache::secondary_cache_address() + 1 * oopSize));
   masm->jcc(Assembler::notEqual, _inline_cache_miss);
   masm->movl(ecx, Address(edi, lookupCache::secondary_cache_address() + 2 * oopSize));
+#endif
   masm->test(ecx, Mem_Tag); // check if nmethod
   masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
   masm->jmp(is_methodOop);

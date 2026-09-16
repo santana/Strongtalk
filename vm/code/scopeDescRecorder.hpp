@@ -149,7 +149,7 @@ private:
 
   void updateExtScopeDescHeader(int offset, int next);
 
-  inline int getValueIndex(int v);
+  inline int getValueIndex(intptr_t v);
   inline int getOopIndex(oop o);
 
   inline void genIndex(int index);

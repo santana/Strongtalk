@@ -343,19 +343,25 @@ void IntegerOps::unsigned_mul(Integer& x, Integer& y, Integer& z) {
     Digit d = x[i];
     if (d != 0) {
       int j = 0;
-      k = i;
+      // k tracks the high-water mark of the most-significant nonzero row.
+      // On the previous implementation k was reset to the current row base
+      // (i), so it did not survive a zero digit in x: the result length was
+      // wrong and -> i++ lived inside the d != 0 arm, freezing the loop.
+      int row = i;
       Digit c = 0;
       while (j < yl) {
-        z[k] = axpy(d, y[j], z[k], c);
+        z[row] = axpy(d, y[j], z[row], c);
         j++;
-        k++;
+        row++;
       }
       if (c != 0) {
-        z[k] = c;
-        k++;
+        z[row] = c;
+        row++;
       }
-      i++;
+      if (row > k)
+        k = row;
     }
+    i++;
   }
   z.set_length(k);
 }

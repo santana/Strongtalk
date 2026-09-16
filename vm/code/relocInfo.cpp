@@ -53,7 +53,7 @@ int relocInfo::print(nmethod* m, int last_offset) {
 #ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
     char* target = *(char**)addr; // .quad literal holds the absolute target
 #else
-    char* target = (char*)(*addr + (intptr_t)addr + oopSize);
+    char* target = (char*)(*addr + (intptr_t)addr + 4); // 4-byte rel32 displacement
 #endif
     if (isIC()) {
       mystd->print("inline cache   @0x%lx", addr);

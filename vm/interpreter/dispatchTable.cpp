@@ -181,9 +181,10 @@ void dispatchTable::intercept_for_step(void** fr) {
     patch_with_sst_stub();
     mode = step_mode;
     //slr mod - the original value depends on the memory addresses of method bytecodes
-    //    being < 0x80000000 as in 32 bit Windows
-    //    frame_breakpoint = (int*) -1;
-    frame_breakpoint = (void**)0x80000000;
+    //    being < 0x80000000 as in 32 bit Windows.
+    //    0x80000000 is a valid frame address only on 32-bit; use -1 (never a
+    //    live frame pointer on LP64) so single-step never spuriously breaks.
+    frame_breakpoint = (void**)-1;
     //end slr mod
   }
 }
@@ -215,7 +216,7 @@ void dispatchTable::intercept_for_return(void** fr) {
       if (Bytecodes::single_step(code)) {
         dispatch_table[code] = (doFn)StubRoutines::single_step_stub();
       } else {
-        dispatch_table[index] = original_table[index];
+        dispatch_table[code] = original_table[code];
       }
     }
     mode = next_mode;

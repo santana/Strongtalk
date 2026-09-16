@@ -63,7 +63,9 @@ static uint32_t prefer = 0; // select instruction set; 0 = Intel (default)
 
 static void initialize(void) {
   DLL* library_handle;
-  char libname[13];
+  // "libnasm" + extension (.dylib/.so/.dll) ; the old 13-byte buffer was
+  // overrun by one byte on macOS (7+7 > 13).
+  char libname[32];
   char* extension = os::dll_extension();
   strcpy(libname, DISASM_LIBRARY);
   strcpy(libname + 7, extension);
@@ -123,7 +125,11 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
 
     case relocInfo::prim_type:
       st->print("%p, primitive call, ", addr);
-      target = (char*)(*addr + (intptr_t)addr + oopSize);
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+      target = *(char**)addr; // .quad literal holds the absolute target
+#else
+      target = (char*)(*addr + (intptr_t)addr + 4); // 4-byte rel32 displacement
+#endif
       pd = primitives::lookup((fntype)target);
       if (pd != NULL) {
         st->print("(%s)", pd->name());

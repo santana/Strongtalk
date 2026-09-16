@@ -90,7 +90,7 @@ public:
   bool isInternalWord() const { return type() == internal_word_type; }
   // is external word reference?
   bool isExternalWord() const { return type() == external_word_type; }
-  // is external word reference?
+  // is DLL call?
   bool isDLL() const { return type() == dll_type; }
 
   // marks any call?
@@ -144,6 +144,11 @@ public:
   bool is_call() const { return current->isCall(); }
 
   int* word_addr() const { return (int*)addr; }
+
+  // 8-byte (intptr_t) view of the reloc word; used by backends whose
+  // position-dependent data lives in an 8-byte literal (AArch64 .quad) rather
+  // than a 4-byte disp32 (x86 internal_word).
+  intptr_t* quad_addr() const { return (intptr_t*)addr; }
 
   oop* oop_addr() const {
     assert(type() == relocInfo::oop_type, "must be oop");

@@ -39,7 +39,7 @@ const intptr_t Tag_Size = 2;
 const intptr_t Tag_Mask = nthMask(Tag_Size);
 const intptr_t Num_Tags = nthBit(Tag_Size);
 
-#define clearTag(oop) (int(oop) & ~Tag_Mask)
+#define clearTag(oop) (intptr_t(oop) & ~Tag_Mask)
 
 inline int byteOffset(int offset) {
   // Computes the byte offset from the beginning of an oop

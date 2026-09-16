@@ -326,12 +326,11 @@ int primitive_desc::compare(char* str, int len) {
 
 primitive_desc* primitives::lookup(char* s, int len) {
   int first = 0;
-  int last = size_of_primitive_table;
+  int last = size_of_primitive_table - 1;
 
-  primitive_desc* element;
-  do {
+  while (first <= last) {
     int middle = first + (last - first) / 2;
-    element = primitive_table[middle];
+    primitive_desc* element = primitive_table[middle];
     int sign = element->compare(s, len);
     if (sign == -1)
       first = middle + 1;
@@ -339,17 +338,12 @@ primitive_desc* primitives::lookup(char* s, int len) {
       last = middle - 1;
     else
       return element;
-  } while (first < last);
+  }
 
-  // This should not be an assertion as it is possible to compile a reference
-  // to a non-existent primitive (for an example see
-  // ProcessPrimitiveLookupError>>provoke), in which case the lookup should
-  // fail and signal a PrimitiveLookupError - slr 24/09/2008
-
-  // assert(first == last, "check for one element");
-  element = primitive_table[first];
-
-  return element->compare(s, len) == 0 ? element : NULL;
+  // No match: it is possible to compile a reference to a non-existent primitive
+  // (for an example see ProcessPrimitiveLookupError>>provoke), in which case
+  // the lookup should fail and signal a PrimitiveLookupError - slr 24/09/2008
+  return NULL;
 }
 
 primitive_desc* primitives::lookup(fntype fn) {

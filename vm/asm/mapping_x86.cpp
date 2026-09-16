@@ -90,7 +90,7 @@ int Mapping::localTemporaryIndex(Location l) {
 Location Mapping::floatTemporary(int scope_id, int i) {
   InlinedScope* scope = theCompiler->scopes->at(scope_id);
   assert(scope->firstFloatIndex() >= 0, "firstFloatIndex not computed yet");
-  assert(floatSize == 2 * oopSize, "check this code");
+  assert(floatSize == oopSize || floatSize == 2 * oopSize, "check this code");
   Location loc = Location::stackLocation(first_float_offset - (scope->firstFloatIndex() + i) * (floatSize / oopSize));
   assert((loc.offset() * oopSize) % floatSize == 0, "offset is not correctly aligned");
   return loc;

@@ -861,7 +861,7 @@ extern "C" char* method_entry_point;
 extern "C" bool have_nlr_through_C;
 extern "C" oop nlr_result;
 extern "C" intptr_t nlr_home;
-extern "C" int nlr_home_id;
+extern "C" intptr_t nlr_home_id;
 
 extern "C" char* C_frame_return_addr;
 

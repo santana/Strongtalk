@@ -35,14 +35,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // The following variables are used to do NLRs through C code
 extern "C" bool have_nlr_through_C;
 extern "C" oop nlr_result;
-extern "C" int nlr_home;
-extern "C" int nlr_home_id;
+extern "C" intptr_t nlr_home;
+extern "C" intptr_t nlr_home_id;
 extern "C" contextOop nlr_home_context;
 
 bool have_nlr_through_C = false;
 oop nlr_result;
-int nlr_home;
-int nlr_home_id;
+intptr_t nlr_home;
+intptr_t nlr_home_id;
 contextOop nlr_home_context;
 
 void ErrorHandler::abort_compilation() {

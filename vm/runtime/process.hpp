@@ -36,7 +36,7 @@ class unwindInfo : public StackObj {
 private:
   // NLR state
   intptr_t _nlr_home; // frame pointer of the NLR target (word-sized on LP64)
-  int _nlr_home_id;
+  intptr_t _nlr_home_id;
   contextOop _nlr_home_context;
 
 public:
@@ -61,7 +61,7 @@ public:
   void set_next(unwindInfo* next) { _next = next; }
 
   intptr_t nlr_home() const { return _nlr_home; }
-  int nlr_home_id() const { return _nlr_home_id; }
+  intptr_t nlr_home_id() const { return _nlr_home_id; }
   contextOop nlr_home_context() const { return _nlr_home_context; }
   void update_nlr_targets(compiledVFrame* f, contextOop con);
 };

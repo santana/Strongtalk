@@ -41,8 +41,8 @@ int smiOopPrimitives::number_of_calls;
 #define SMI_RELATIONAL_OP(op)                                                                                          \
   if (!argument->is_smi())                                                                                             \
     return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
-  int a = (intptr_t)receiver;                                                                                          \
-  int b = (intptr_t)argument;                                                                                          \
+  intptr_t a = (intptr_t)receiver;                                                                                     \
+  intptr_t b = (intptr_t)argument;                                                                                     \
   return a op b ? trueObj : falseObj
 
 PRIM_DECL_2(smiOopPrimitives::lessThan, oop receiver, oop argument) {
@@ -111,15 +111,18 @@ PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   assert(Int_Tag == 0, "check this code");
-  const int bitsPerWord = oopSize * 8;
+  // The smi range is deliberately 29-bit (BitsPerWord, not oopSize, since the
+  // 64-bit build keeps 29-bit smis for snapshot compatibility), so the overflow
+  // check below must use BitsPerWord and wide masks to avoid UB on the shift.
+  const int bitsPerWord = BitsPerWord;
   const int maxShiftCnt = bitsPerWord - Tag_Size - 1;
   int n = smiOop(argument)->value();
   if (n > 0) {
     // arithmetic shift left
     if (n < maxShiftCnt) {
       // 0 < n < maxShiftCnt < bitsPerWord	// |<- n ->|<- 1 ->|<- 32-(n+1) ->|
-      int mask1 = 1 << (bitsPerWord - (n + 1)); // |00...00|   1   |00..........00|
-      int mask2 = -1 << (bitsPerWord - n); // |11...11|   0   |00..........00|
+      intptr_t mask1 = intptr_t(1) << (bitsPerWord - (n + 1)); // |00...00|   1   |00..........00|
+      intptr_t mask2 = intptr_t(-1) << (bitsPerWord - n); // |11...11|   0   |00..........00|
       if (((intptr_t(receiver) + mask1) & mask2) == 0) {
         // i.e., the bit at position (32-(n+1)) is the same as the upper n bits, thus
         // after shifting out the upper n bits the sign hasn't changed -> no overflow

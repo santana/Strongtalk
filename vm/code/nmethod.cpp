@@ -239,7 +239,15 @@ void nmethod::fix_relocation_at_move(int delta) {
   while (iter.next()) {
     if (iter.is_position_dependent()) {
       if (iter.type() == relocInfo::internal_word_type) {
+        // AArch64 embeds this as an 8-byte absolute literal (read/written via
+        // quad_addr); x86-64 embeds it as a 4-byte disp32 inside the
+        // instruction (word_addr) - writing 8 bytes there would overrun the
+        // next instruction.
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+        *iter.quad_addr() -= delta;
+#else
         *iter.word_addr() -= delta;
+#endif
       } else {
         *iter.word_addr() += delta;
       }

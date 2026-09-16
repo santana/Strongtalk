@@ -97,7 +97,13 @@ public:
   char* specialHandlerCall() const { return insts() + _special_handler_call_offset; } // call to special handler
   char* entryPoint() const { return insts() + _entry_point_offset; } // normal entry point
   char* verifiedEntryPoint() const { return insts() + _verified_entry_point_offset; } // e.p. if klass is correct
-  bool isFree() { return Universe::code->contains((void*)(intptr_t)_instsLen); } // has this nmethod been freed
+  // Reads _instsLen as a full pointer word: freed nmethods have their header
+  // (vptr + _instsLen) overwritten by the zone free-list HeapChunk node, so the
+  // 4-byte field holds the low half of an 8-byte free-list pointer. A 32-bit
+  // read would never match the code-heap range on LP64.
+  bool isFree() {
+    return Universe::code->contains((void*)(intptr_t)*(intptr_t*)&_instsLen);
+  } // has this nmethod been freed
 
   // debugging information
   nmethodScopes* scopes() const { return (nmethodScopes*)locsEnd(); }

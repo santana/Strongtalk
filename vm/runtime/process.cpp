@@ -64,7 +64,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 extern "C" char* C_frame_return_addr;
 extern "C" bool have_nlr_through_C;
 extern "C" intptr_t nlr_home;
-extern "C" int nlr_home_id;
+extern "C" intptr_t nlr_home_id;
 extern "C" oop nlr_result;
 
 unwindInfo::unwindInfo() {

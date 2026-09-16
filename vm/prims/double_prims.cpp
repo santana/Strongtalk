@@ -236,10 +236,10 @@ PRIM_DECL_1(doubleOopPrimitives::smi_floor, oop receiver) {
   double result = ::floor(doubleOop(receiver)->value());
   if (result < 0.0) {
     if (result > smi_min)
-      return as_smiOop((int)result);
+      return as_smiOop((intptr_t)result);
   } else {
     if (result < (double)smi_max)
-      return as_smiOop((int)result);
+      return as_smiOop((intptr_t)result);
   }
   return markSymbol(vmSymbols::conversion_failed());
 }
@@ -287,11 +287,11 @@ PRIM_DECL_1(doubleOopPrimitives::roundedAsSmallInteger, oop receiver) {
   if (doubleOop(receiver)->value() < 0.0) {
     double result = ::ceil(doubleOop(receiver)->value() - 0.5);
     if (result > smi_min)
-      return as_smiOop((int)result);
+      return as_smiOop((intptr_t)result);
   } else {
     double result = ::floor(doubleOop(receiver)->value() + 0.5);
     if (result < (double)smi_max)
-      return as_smiOop((int)result);
+      return as_smiOop((intptr_t)result);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
 }
@@ -304,10 +304,10 @@ PRIM_DECL_1(doubleOopPrimitives::asSmallInteger, oop receiver) {
     return markSymbol(vmSymbols::smi_conversion_failed());
   if (value < 0.0) {
     if (value > smi_min)
-      return as_smiOop((int)value);
+      return as_smiOop((intptr_t)value);
   } else {
     if (value < (double)smi_max)
-      return as_smiOop((int)value);
+      return as_smiOop((intptr_t)value);
   }
   return markSymbol(vmSymbols::smi_conversion_failed());
 }
