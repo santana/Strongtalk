@@ -21,6 +21,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "asm/assembler.hpp"
+#include "asm/interpreterBackend.hpp"
 #include "prims/generatedPrimitives.hpp"
 #include "oops/oop.inline.hpp"
 #include "memory/universe.store.hpp"
@@ -95,15 +96,10 @@ char* PrimitivesGenerator::allocateContext_var() {
 
   char* entry_point = masm->pc();
 
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // install_context passes the length in the top stack slot: the interpreter
-  // calls this prim with a direct call (blr), so the return address lives in
-  // x30 rather than on the stack. On x86 the return address occupies [esp],
-  // hence the +oopSize below.
-  Address length_addr = Address(esp, 0);
-#else
-  Address length_addr = Address(esp, +oopSize);
-#endif
+  // install_context passes the length in the top stack slot: on AArch64 the
+  // interpreter calls this prim with a direct blr (return address in x30),
+  // on x86-64 the return address occupies [esp], hence the +oopSize there.
+  Address length_addr = InterpreterBackend::contextLengthArgument();
   masm->movl(ecx, length_addr); // load length  (remember this is a smiOop)
   masm->movl(eax, Address((intptr_t)&eden_top, relocInfo::external_word_type));
   masm->movl(edx, ecx);
@@ -147,16 +143,7 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->set_last_Delta_frame_after_call();
   masm->shrl(ecx, Tag_Size); // smiOop->value()
   masm->addl(ecx, 3);
-#if DELTA_X86_64
-  masm->movl(edi, ecx); // x86-64 SysV: first argument in rdi
-  masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->call_C((char*)&scavenge_and_allocate, ecx);
-#else
-  masm->pushl(ecx);
-  masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-  masm->addl(esp, oopSize);
-#endif
+  InterpreterBackend::callScavengeAndAllocate(masm, ecx);
   masm->reset_last_Delta_frame();
   masm->movl(ecx, length_addr); // reload length  (remember this is a smiOop)
   masm->movl(edx, ecx);

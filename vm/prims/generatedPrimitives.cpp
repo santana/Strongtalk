@@ -21,9 +21,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "asm/codeBuffer.hpp"
+#include "asm/interpreterBackend.hpp"
 #include "memory/vmSymbols.hpp"
 #include "prims/generatedPrimitives.hpp"
 #include "prims/prim.hpp"
+#include "runtime/debug.hpp"
 #include "runtime/os.hpp"
 #include "topIncludes/std_includes.hpp"
 
@@ -61,17 +63,7 @@ extern "C" void scavenge_and_allocate(int size);
 
 void PrimitivesGenerator::scavenge(int size) {
   masm->set_last_Delta_frame_after_call();
-#if DELTA_X86_64
-  masm->movl(edi, size); // x86-64 SysV: first argument in rdi
-  masm->call_C((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->movl(edx, size); // pass argument in x0 (AAPCS64)
-  masm->call_C((char*)&scavenge_and_allocate, edx); // result copied back to eax
-#else
-  masm->pushl(size);
-  masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
-  masm->addl(esp, oopSize);
-#endif
+  InterpreterBackend::callScavengeAndAllocate(masm, size);
   masm->reset_last_Delta_frame();
   masm->addl(eax, size * oopSize);
 }
@@ -105,18 +97,7 @@ void PrimitivesGenerator::error_jumps() {
 #undef VMSYMBOL_POSTFIX
 #undef VMSYMBOL_ENUM_NAME
 
-  // The failure marker is a marked symbol oop (bit 2 set) in eax; on AArch64
-  // the result must be left in x0 since call_C copies x0 -> eax afterwards.
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-#define ERROR_RETURN()                                                                                                 \
-  {                                                                                                                    \
-    masm->mov(x0, eax);                                                                                                \
-    masm->ret(0);                                                                                                      \
-  }
-#else
-#define ERROR_RETURN()                                                                                                 \
-  { masm->ret(2 * oopSize); }
-#endif
+#define ERROR_RETURN() InterpreterBackend::returnErrorToInterpreter(masm)
 
   masm->bind(error_receiver_has_wrong_type);
   masm->movl(eax, _receiver_has_wrong_type);
@@ -338,6 +319,21 @@ void GeneratedPrimitives::init() {
 
   masm->finalize();
   _is_initialized = true;
+  if (DumpInterpreterCode) {
+    FILE* f = fopen("generated_primitives.bin", "wb");
+    if (f != NULL) {
+      fwrite(_code, 1, masm->pc() - _code, f);
+      fclose(f);
+      FILE* base = fopen("generated_primitives.base.txt", "w");
+      if (base != NULL) {
+        fprintf(base, "%p\n", _code);
+        fclose(base);
+      }
+      mystd->print_cr("dumped %d bytes of generated primitive code to generated_primitives.bin", masm->pc() - _code);
+    } else {
+      mystd->print_cr("could not open generated_primitives.bin for writing");
+    }
+  }
 };
 
 // patch some primitives defined in the interpreter

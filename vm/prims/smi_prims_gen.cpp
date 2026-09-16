@@ -20,6 +20,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 */
 
+#include "asm/interpreterBackend.hpp"
 #include "prims/generatedPrimitives.hpp"
 #include "oops/oop.inline.hpp"
 #include "memory/universe.store.hpp"
@@ -27,7 +28,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // The interpreter's generated-primitive glue (call_primitive /
 // call_primitive_can_fail followed by call_C) uses different conventions on
-// the two backends:
+// the two backends (see InterpreterBackend):
 //   x86-64:   the 8-byte return address is on top of the stack, so the last
 //             pushed slot (the receiver) is at [esp+oopSize] and the argument
 //             at [esp+2*oopSize]; return pops both slots. The historic 32-bit
@@ -35,22 +36,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //   AArch64:  AAPCS64 arguments arrive in x0 (receiver/self) and x1
 //             (argument); the result must be left in x0 because call_C copies
 //             x0 -> eax after the call; nothing was pushed, so ret(0).
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
 #define PRIM_ARG_DECL()                                                                                                \
-  Register argument = x1;                                                                                              \
-  Register receiver = x0;
+  auto receiver = InterpreterBackend::primReceiver();                                                              \
+  auto argument = InterpreterBackend::primArgument();
 #define PRIM_RETURN()                                                                                                  \
-  {                                                                                                                    \
-    masm->mov(x0, eax);                                                                                                \
-    masm->ret(0);                                                                                                      \
-  }
-#else
-#define PRIM_ARG_DECL()                                                                                                \
-  Address argument = Address(esp, 2 * oopSize);                                                                        \
-  Address receiver = Address(esp, oopSize);
-#define PRIM_RETURN()                                                                                                  \
-  { masm->ret(2 * oopSize); }
-#endif
+  { InterpreterBackend::returnToInterpreter(masm); }
 
 char* PrimitivesGenerator::smiOopPrimitives_add() {
   PRIM_ARG_DECL();

@@ -103,6 +103,7 @@ public:
   develop(PrintStackAtScavenge               , false, "Print stack at Scavenge"                                                     ) \
   develop(PrintInterpreter                   , false, "Prints the generated interpreter's code"                                     ) \
   develop(PrintStubRoutines                  , false, "Prints the stub routine's code"                                              ) \
+  develop(DumpInterpreterCode                , false, "Dump the generated interpreter and primitive stub bytes to files at init"    ) \
   product(UseInliningDatabase                , false, "Use the inlining database for recompilation"                                 ) \
   product(UseInliningDatabaseEagerly         , false, "Use the inlining database eagerly at lookup"                                 ) \
   develop(UseSlidingSystemAverage            , true , "Compute sliding system average on the fly"                                   ) \

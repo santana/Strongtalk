@@ -220,9 +220,9 @@ define PROGRAM_template
 $(1)_SRCS       := $$(foreach dir,$$($(1)_DIRS),$$(wildcard $$(dir)/*/*.cpp))
 $(1)_SRCS	:= $$(if $$(filter stest,$(1)),$$(filter-out $(TEST_DIR)/assembler/%,$$($(1)_SRCS)),$$($(1)_SRCS))
 ifeq ($(TARGET_ARCH_X86_64),1)
-$(1)_SRCS	:= $$(filter-out %/mapping_aarch64.cpp %/assembler_aarch64.cpp,$$($(1)_SRCS))
+$(1)_SRCS	:= $$(filter-out %/mapping_aarch64.cpp %/assembler_aarch64.cpp %/interpreterBackend_aarch64.cpp,$$($(1)_SRCS))
 else
-$(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp,$$($(1)_SRCS))
+$(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp %/interpreterBackend_x86.cpp,$$($(1)_SRCS))
 endif
 $(1)_OBJS	:= $$(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_DIR)/obj/%.o,$$($(1)_SRCS))
 $(1)_DEPFILES	:= $$(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_DIR)/obj/%.d,$$($(1)_SRCS))

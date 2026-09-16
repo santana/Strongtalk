@@ -151,7 +151,10 @@ architecture); a generated HTML rendering lives at
 
 Send bytecodes come in multiple specializations: interpreted, compiled,
 primitive, accessor, polymorphic, megamorphic. The interpreter picks the
-appropriate variant based on inline cache state at method entry.
+appropriate variant based on inline cache state at method entry. Machine-code
+handlers are emitted by `InterpreterGenerator` through two layers:
+`MacroAssembler` for raw instructions and `InterpreterBackend` (§2.5.1) for the
+per-arch slot/call conventions, keeping the handler bodies `#ifdef`-free.
 
 ### 2.2 Inline Caches and Lookup
 
@@ -317,6 +320,64 @@ Each backend implements:
 - **Mapping**: register allocation conventions (which registers map to
   which VM roles)
 
+### 2.5.1 InterpreterBackend: the per-arch layer above the MacroAssembler
+
+A second, higher layer of the same split — `InterpreterBackend`
+(`vm/asm/interpreterBackend.hpp` + `interpreterBackend_x86.cpp` /
+`interpreterBackend_aarch64.cpp`) — centralizes what the **frontend** codegen
+(interpreter.cpp bytecode handlers, the generated primitives in `*_prims_gen.cpp`
+/ `generatedPrimitives.cpp`, and `StubRoutines`) needs to know about the per-arch
+shape of the delta stack and the piece of the calling convention that
+`MacroAssembler::call_C` does NOT already express. The frontend files are
+`#ifdef`-free; each arch-specific convention is one named method/constant here,
+selected by the same `DELTA_ASSEMBLER_BACKEND_AARCH64` define as the assemblers.
+
+The virtual interpreter frame layout itself (`frame_*_offset` in
+`runtime/frame.hpp`) stays where it is — it is shared with the GC/frame walkers.
+`InterpreterBackend` covers only the *slot model* and call/return conventions:
+
+- **Delta stack slot scaling** — a delta slot holds `oopSize` bytes on x86-64
+  but `2*oopSize` on AArch64, so register-held slot counts scale the index by
+  `times_8` / `times_16` (`deltaStackScale`, `slotScaled`).
+- **Invocation counters** — the methodOop counter is a 32-bit field on both
+  backends; accesses must stay 32-bit (`movl_32` / `ldr_w`,`str_w`) or the 4
+  padding bytes can fake an over-limit counter on every entry
+  (`loadMethodCounter`, `storeMethodCounter`, `incrementMethodCounter`,
+  `emitInvocationCounterLimitTest`).
+- **Primitive call ABI** — x86-64: args arrive on the hardware stack, esi (the
+  bytecode pointer) is parked in r12 for the call (SysV rsi clash), caller pops
+  (`savePrimitiveBytecodePtr`, `passPrimitiveCallArgs`, `primReceiver`/
+  `primArgument` as `Address`). AArch64: args go in x0..x7 loaded from delta
+  slots, entry read from the bytecode stream, esi untouched, result copied
+  eax→x0 before `ret(0)` (`primReceiver`/`primArgument` as `Register`).
+- **call_delta / NLR / return conventions** — `spillCallDeltaArgs`,
+  `returnToCallDeltaCaller`, `callPopStackHandles`; the NLR stub pieces
+  (`decodeICInfo`, `continueNonLocalReturn`, `enterNLRFrame`); and the
+  interpreted method-return/NLR epilogues (`interpretReceiverWordBytes`,
+  `popArgsAndReturn`, `popDeltaSlotsAndReturn`, `negateNLRArgumentCount`).
+- **Megamorphic lookup-cache probes** — x86-64 must materialize the full 64-bit
+  static cache base (BSS may sit above 4GB) plus `addq`, consuming edi; AArch64
+  folds the absolute base into the address displacements
+  (`probePrimaryLookupCache`, `probeSecondaryLookupCache`).
+- **Misc constants** the two ABIs force apart — `contextTempScale`, `interpreterCodeSize`.
+
+Two ABI facts drive most of the divergence: **(a)** where a live return address
+lives (x86-64: the hardware stack, popped and branched to; AArch64: the link
+register `x30`), and **(b)** whether an interpreted send pushes an extra receiver
+word below its argument slots (x86-64: one `oopSize` slot; AArch64: none — its
+delta slots are 16 bytes).
+
+**Invariant:** a migration into this backend must be byte-neutral — the per-arch
+machine output of an untouched feature must stay identical before/after. The
+interpreter dump gates (`interpreter.bin`, `generated_primitives*.bin`) enforce
+this: x86-64 interpreter = 18951 B, AArch64 = 37812 B, structural disassembly
+diff = 0 modulo relocation addresses. One regression this caught in practice:
+a `primitive_send` migrated to a raw `masm->call_C` silently dropped the four
+instructions `InterpreterGenerator::call_C` emits on x86 (esi save/restore +
+the NLR-testpoint `ic_info`, `restore_ebx`), costing −192 B and a real
+NLR-handling bug. The primitive-call hooks therefore wrap the frontend's
+request around `InterpreterGenerator::call_C`, never replacing it.
+
 ---
 
 ## 3. Memory Management
@@ -479,7 +540,8 @@ When a method is recompiled:
 
 ```
 vm/
-  asm/              Assembler backends (x86-64, AArch64)
+  asm/              Assembler backends + InterpreterBackend per-arch layer
+                    (assembler_{x86,aarch64}.*, interpreterBackend{,_x86,_aarch64}.*)
   code/             Compiled code management (nmethods, inline caches,
                     PICs, code table, relocation, stub routines)
   compiler/         (absorbed into recompiler/)
@@ -517,9 +579,9 @@ Repo-root developer docs:
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
 | macOS arm64 (native)  | Yes    | Boots, loads image; hits the `zone.cpp:622` `methodHeap->contains()` assert (last blocker) |
-| macOS x86-64 (forced) | Yes    | Boots startup; SIGSEGVs at boot end (same signature as the shared-dir builds) |
+| macOS x86-64 (forced) | Yes    | Boots startup; dies at the first JIT compile (`Array::receiver:selector:arguments:`) with the `jumpTable` E9-rel32 "more than 2GB apart" fatal (known P1/P2 boot blocker) |
 | Linux x86-64 (Docker) | Yes    | Boots, loads image; `stest` spins in `os::suspend_thread`/`os_dump_context` (wait-stub) |
-| Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call (see X86_64_PORT_NOTES.md) |
+| Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call |
 
 ### Platform Abstraction
 

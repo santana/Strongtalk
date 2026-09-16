@@ -22,6 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include "asm/codeBuffer.hpp"
+#include "asm/interpreterBackend.hpp"
 #include "asm/mapping.hpp"
 #include "code/stubRoutines.hpp"
 #include "interpreter/codeIterator.hpp"
@@ -79,13 +80,8 @@ static const int max_nof_temps = 256;
 static const int max_nof_floats = 256;
 
 // Register-scaled stack access: one delta stack slot per register count.
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-static const Address::ScaleFactor deltaStackScale = Address::times_16;
-#elif defined(DELTA_X86_64)
-static const Address::ScaleFactor deltaStackScale = Address::times_8;
-#else
-static const Address::ScaleFactor deltaStackScale = Address::times_4;
-#endif
+// The per-arch slot model lives in InterpreterBackend (asm/interpreterBackend*).
+static const Address::ScaleFactor deltaStackScale = InterpreterBackend::deltaStackScale;
 
 // Interpreter boundaries
 bool Interpreter::_is_initialized = false;
@@ -704,11 +700,7 @@ Address InterpreterGenerator::arg_addr(int i) {
 }
 
 Address InterpreterGenerator::arg_addr(Register arg_no) {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  return Address(ebp, arg_no, Address::times_16, arg_n_offset, relocInfo::none);
-#else
-  return Address(ebp, arg_no, Address::times_8, arg_n_offset, relocInfo::none);
-#endif
+  return InterpreterBackend::slotScaled(ebp, arg_no, arg_n_offset);
 }
 
 Address InterpreterGenerator::temp_addr(int i) {
@@ -717,11 +709,7 @@ Address InterpreterGenerator::temp_addr(int i) {
 }
 
 Address InterpreterGenerator::temp_addr(Register temp_no) {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  return Address(ebp, temp_no, Address::times_16, temp_0_offset - (max_nof_temps - 1) * slotSize, relocInfo::none);
-#else
-  return Address(ebp, temp_no, Address::times_8, temp_0_offset - (max_nof_temps - 1) * oopSize, relocInfo::none);
-#endif
+  return InterpreterBackend::slotScaled(ebp, temp_no, temp_0_offset - (max_nof_temps - 1) * slotSize);
 }
 
 Address InterpreterGenerator::float_addr(Register float_no) {
@@ -1188,11 +1176,7 @@ char* InterpreterGenerator::with_context_temp(bool store, int tempNo, int contex
   Address slot;
   if (tempNo == -1) {
     masm->movb(ebx, Address(esi, 1));
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-    slot = Address(ecx, ebx, Address::times_8, contextOopDesc::temp0_byte_offset());
-#else
-    slot = Address(ecx, ebx, Address::times_4, contextOopDesc::temp0_byte_offset());
-#endif
+    slot = Address(ecx, ebx, InterpreterBackend::contextTempScale, contextOopDesc::temp0_byte_offset());
   } else {
     slot = Address(ecx, contextOopDesc::temp0_byte_offset() + tempNo * oopSize);
   }
@@ -1323,19 +1307,13 @@ char* InterpreterGenerator::push_closure(int nofArgs, bool use_context) {
   // edx: context
   masm->movl(ebx, Address(ecx, methodOopDesc::selector_or_method_byte_offset())); // get parent (= running) methodOop
   masm->movl(Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()), ecx); // set block method
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  masm->ldr_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // get counter of parent methodOop
-#else
-  masm->movl(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // get counter of parent methodOop
-#endif
+  InterpreterBackend::loadMethodCounter(
+    masm, ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // get counter of parent methodOop
   masm->movl(Address(eax, blockClosureOopDesc::context_byte_offset()), edx); // set context
   masm->addl(ecx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter of parent methodOop
   masm->movl(edx, eax); // make sure eax is not destroyed
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  masm->str_w(ecx, Address(ebx, methodOopDesc::counters_byte_offset())); // store counter of parent methodOop
-#else
-  masm->movl(Address(ebx, methodOopDesc::counters_byte_offset()), ecx); // store counter of parent methodOop
-#endif
+  InterpreterBackend::storeMethodCounter(masm, Address(ebx, methodOopDesc::counters_byte_offset()),
+                                         ecx); // store counter of parent methodOop
   restore_ebx();
   load_ebx(); // get next instruction
   masm->store_check(edx, ecx); // do a store check on edx, use ecx as scratch register
@@ -1879,47 +1857,15 @@ char* InterpreterGenerator::lookup_primitive() {
 char* InterpreterGenerator::call_primitive() {
   char* ep = entry_point();
   advance_aligned(1 + oopSize);
-#if DELTA_X86_64
-  // On x86-64, esi (bytecode ptr) aliases rsi (SysV arg #2).
-  // Save it to r12 (callee-saved, preserved by C call) first.
-  masm->movq(r12, esi); // r12 = bytecode ptr
+  InterpreterBackend::savePrimitiveBytecodePtr(masm);
   masm->pushl(eax); // push last argument
-  // Load primitive entry point from saved bytecode ptr (before esi is clobbered).
-  masm->movl(eax, Address(r12, -oopSize)); // eax = entry point
-  // SysV AMD64 ABI: first 6 args in rdi, rsi, rdx, rcx, r8, r9
-  masm->movq(edi, Address(esp, 0 * oopSize));
-  masm->movq(esi, Address(esp, 1 * oopSize));
-  masm->movq(edx, Address(esp, 2 * oopSize));
-  masm->movq(ecx, Address(esp, 3 * oopSize));
-  masm->movq(r8, Address(esp, 4 * oopSize));
-  masm->movq(r9, Address(esp, 5 * oopSize));
+  InterpreterBackend::passPrimitiveCallArgs(masm, -oopSize);
   call_C(eax);
-  // PRIM_API=__stdcall is a no-op on SysV x86-64, so the pushed argument
-  // scaffolding is popped here by the caller (same as the AArch64 branch).
+  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the pushed
+  // argument scaffolding is popped here by the caller. Result stays in eax
+  // as the new tos.
   masm->addl(esp, slotSize);
-  masm->movq(esi, r12); // restore bytecode ptr
-#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->pushl(eax); // push last argument
-  // AAPCS64 wants args in x0-x7.
-  masm->movl(x0, Address(sp, 0));
-  masm->movl(x1, Address(sp, slotSize));
-  masm->movl(x2, Address(sp, 2 * slotSize));
-  masm->movl(x3, Address(sp, 3 * slotSize));
-  masm->movl(x4, Address(sp, 4 * slotSize));
-  masm->movl(x5, Address(sp, 5 * slotSize));
-  masm->movl(x6, Address(sp, 6 * slotSize));
-  masm->movl(x7, Address(sp, 7 * slotSize));
-  masm->movl(eax, Address(esi, -oopSize)); // get primitive entry point
-  call_C(eax);
-  // AAPCS64 is caller-pops (PRIM_API=__stdcall is a no-op on AArch64), so the
-  // argument scaffolding pushed above must be removed by the caller; on x86 the
-  // primitive (callee) pops it. Keep the result in eax as the new tos.
-  masm->addl(esp, slotSize);
-#else
-  masm->pushl(eax); // push last argument
-  masm->movl(eax, Address(esi, -oopSize)); // get primitive entry point
-  call_C(eax);
-#endif
+  InterpreterBackend::restorePrimitiveBytecodePtr(masm);
   if (_debug) { // (Pascal calling conv. => args are popped by callee)
     masm->testb(eax, Mark_Tag_Bit);
     masm->jcc(Assembler::notZero, _primitive_result_wrong);
@@ -1933,45 +1879,14 @@ char* InterpreterGenerator::call_primitive_can_fail() {
   Label failed;
   char* ep = entry_point();
   advance_aligned(1 + 2 * oopSize);
-#if DELTA_X86_64
-  // On x86-64, esi (bytecode ptr) aliases rsi (SysV arg #2).
-  // Save it to r12 (callee-saved) before it gets clobbered.
-  masm->movq(r12, esi); // r12 = bytecode ptr
+  InterpreterBackend::savePrimitiveBytecodePtr(masm);
   masm->pushl(eax); // push last argument
-  // Load primitive entry point from saved bytecode ptr (before esi is clobbered).
-  masm->movl(eax, Address(r12, -2 * oopSize)); // eax = entry point
-  // SysV AMD64 ABI: first 6 args in rdi, rsi, rdx, rcx, r8, r9
-  masm->movq(edi, Address(esp, 0 * oopSize));
-  masm->movq(esi, Address(esp, 1 * oopSize));
-  masm->movq(edx, Address(esp, 2 * oopSize));
-  masm->movq(ecx, Address(esp, 3 * oopSize));
-  masm->movq(r8, Address(esp, 4 * oopSize));
-  masm->movq(r9, Address(esp, 5 * oopSize));
+  InterpreterBackend::passPrimitiveCallArgs(masm, -2 * oopSize);
   call_C(eax);
-  // PRIM_API=__stdcall is a no-op on SysV x86-64, so the pushed argument
-  // scaffolding is popped here by the caller (same as the AArch64 branch).
+  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the pushed
+  // argument scaffolding is popped here by the caller.
   masm->addl(esp, slotSize);
-  // Restore bytecode ptr before using it for jump offset / dispatch.
-  masm->movq(esi, r12);
-#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-  masm->pushl(eax); // push last argument
-  // AAPCS64 wants args in x0-x7.
-  masm->movl(x0, Address(sp, 0));
-  masm->movl(x1, Address(sp, slotSize));
-  masm->movl(x2, Address(sp, 2 * slotSize));
-  masm->movl(x3, Address(sp, 3 * slotSize));
-  masm->movl(x4, Address(sp, 4 * slotSize));
-  masm->movl(x5, Address(sp, 5 * slotSize));
-  masm->movl(x6, Address(sp, 6 * slotSize));
-  masm->movl(x7, Address(sp, 7 * slotSize));
-  masm->movl(eax, Address(esi, -2 * oopSize)); // get primitive entry point
-  call_C(eax);
-  // AAPCS64 is caller-pops (PRIM_API=__stdcall is a no-op on AArch64), so the
-  // argument scaffolding pushed above must be removed by the caller; on x86 the
-  // primitive (callee) pops it. Result stays in eax as the new tos.
-  masm->addl(esp, slotSize);
-#else
-#endif
+  InterpreterBackend::restorePrimitiveBytecodePtr(masm);
   masm->testb(eax, Mark_Tag_Bit); // if not marked then
   masm->jcc(Assembler::notZero, failed);
   masm->movl(ecx, Address(esi, -oopSize)); // get jump offset
@@ -2236,15 +2151,7 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
 void InterpreterGenerator::generate_primitiveValue(int i) {
   GeneratedPrimitives::set_primitiveValue(i, masm->pc());
   masm->movl(eax, Address(esp, (i + 1) * slotSize)); // load recv (= block)
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // call_C pushed the 16-byte return address, so the block's arguments sit one
-  // slot too high for the block frame (arg1 would read [fp+16] = the saved
-  // x30). Shift the i arguments down one slot so the block sees them at [fp+16].
-  for (int j = i; j >= 1; j--) {
-    masm->movl(x0, Address(esp, j * slotSize));
-    masm->movl(Address(esp, (j - 1) * slotSize), x0);
-  }
-#endif
+  InterpreterBackend::shiftBlockValueArgs(masm, i);
   masm->jmp(_block_entry);
 }
 
@@ -2265,13 +2172,8 @@ void InterpreterGenerator::generate_forStubRountines() {
   masm->movl(edx, Address(eax, blockClosureOopDesc::method_or_entry_byte_offset()));
   masm->pushl(ecx); // save recv (initialize with context)
   restore_ebx(); // if value... is called from compiled code
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  masm->ldr_w(x16, Address(edx, methodOopDesc::counters_byte_offset()));
-  masm->addl(x16, invocation_counter_inc);
-  masm->str_w(x16, Address(edx, methodOopDesc::counters_byte_offset()));
-#else
-  masm->addl(Address(edx, methodOopDesc::counters_byte_offset()), invocation_counter_inc);
-#endif
+  InterpreterBackend::incrementMethodCounter(masm, Address(edx, methodOopDesc::counters_byte_offset()),
+                                             invocation_counter_inc);
   masm->leal(esi, Address(edx, methodOopDesc::codes_byte_offset()));
   masm->movl(eax, ecx); // initialize temp 1 with context
   masm->pushl(esi); // initialize esi save
@@ -2379,34 +2281,20 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->bind(start_setup);
   masm->enter(); // setup new stack frame
   masm->pushl(eax); // install receiver
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // The invocation counter is a 32-bit field and the x86 generator only ever
-  // touches 32 bits of it. Use 32-bit accesses here so the 4 padding bytes
-  // after _counters are never read or written; a 64-bit read would pick up
-  // whatever garbage sits in those bytes and make the counter look >= the
-  // limit on every entry (infinite counter-overflow loop).
-  masm->ldr_w(edx, Address(ecx, counter_offset)); // get method invocation counter
+  // The invocation counter is a 32-bit field (only its upper word carries the
+  // count); 32-bit accesses are forced so the 4 padding bytes after _counters
+  // are never read or written and the counter can never look >= the limit.
+  InterpreterBackend::loadMethodCounter(masm, edx, Address(ecx, counter_offset)); // get method invocation counter
   masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
   masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
   masm->pushl(esi); // initialize esi stack location for profiler
-  masm->str_w(edx, Address(ecx, counter_offset)); // store method invocation counter
+  InterpreterBackend::storeMethodCounter(masm, Address(ecx, counter_offset), edx); // store method invocation counter
   load_ebx(); // get first byte code of method
-  // No compare-with-large-immediate; load the limit from the global that
-  // set_invocation_counter_limit patches (data, not code).
-  masm->load_absolute_address(x16, Address((intptr_t)&invocation_counter_limit_value, relocInfo::external_word_type));
-  masm->ldr_w(x16, Address(x16));
-  masm->cmp(edx, x16, LSL, 0, sz_32);
-  Interpreter::_invocation_counter_addr = &invocation_counter_limit_value;
-#else
-  masm->movl_32(edx, Address(ecx, counter_offset)); // get method invocation counter (32-bit!)
-  masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
-  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
-  masm->pushl(esi); // initialize esi stack location for profiler
-  masm->movl_32(Address(ecx, counter_offset), edx); // store method invocation counter (32-bit!)
-  load_ebx(); // get first byte code of method
-  masm->cmpl(edx, 0xFFFF << methodOopDesc::_invocation_count_offset); // make sure cmpl uses imm32 field
-  Interpreter::_invocation_counter_addr = (int*)(masm->pc() - sizeof(int)); // compute invocation counter address
-#endif
+  // The limit is patched by set_invocation_counter_limit: on x86-64 an imm32
+  // field of the emitted compare, on AArch64 the invocation_counter_limit_value
+  // global the compare loads.
+  Interpreter::_invocation_counter_addr = InterpreterBackend::emitInvocationCounterLimitTest(
+    masm, edx, 0xFFFF << methodOopDesc::_invocation_count_offset, &invocation_counter_limit_value);
   masm->jcc(Assembler::aboveEqual, counter_overflow); // treat invocation counter overflow
   masm->bind(start_execution); // continuation point after overflow
   masm->movq(eax, edi); // initialize temp0
@@ -2716,48 +2604,18 @@ void InterpreterGenerator::return_tos(Bytecodes::ArgumentSpec arg_spec) {
   masm->leave();
   switch (arg_spec) {
     case Bytecodes::recv_0_args:
-#if DELTA_X86_64
-      // x86-64: the D-I send pushes the receiver as an extra word in the arg
-      // region ([fp+2..]); pop it too or every interp return leaves an 8-byte
-      // esp skew in the caller's delta.
-      masm->ret(1 * slotSize);
-#else
-      masm->ret(0 * slotSize);
-#endif
+      InterpreterBackend::popArgsAndReturn(masm, 0);
       break;
     case Bytecodes::recv_1_args:
-#if DELTA_X86_64
-      masm->ret(2 * slotSize);
-#else
-      masm->ret(1 * slotSize);
-#endif
+      InterpreterBackend::popArgsAndReturn(masm, 1);
       break;
     case Bytecodes::recv_2_args:
-#if DELTA_X86_64
-      masm->ret(3 * slotSize);
-#else
-      masm->ret(2 * slotSize);
-#endif
+      InterpreterBackend::popArgsAndReturn(masm, 2);
       break;
     case Bytecodes::recv_n_args: {
       // no. of arguments is in the next byte
       masm->movb(ebx, Address(esi, 1)); // get no. of arguments
-#if DELTA_X86_64
-      masm->popl(ecx); // get return address
-      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // remove arguments
-      masm->addl(esp, oopSize); // also remove the receiver word (see above)
-      masm->jmp(ecx); // return
-#elif defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-      // AArch64: after leave() the return address lives in x30, not on the
-      // stack, and [sp] holds the first argument. Skip all n argument slots
-      // and branch back through x30.
-      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // adjust esp (remove arguments)
-      masm->ret(0);
-#else
-      masm->popl(ecx); // get return address
-      masm->leal(esp, Address(esp, ebx, deltaStackScale)); // adjust esp (remove arguments)
-      masm->jmp(ecx); // return
-#endif
+      InterpreterBackend::popDeltaSlotsAndReturn(masm, ebx, InterpreterBackend::interpretReceiverWordBytes);
       break;
     }
     default:
@@ -2954,14 +2812,7 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   masm->movb(ebx, Address(esi, 1)); // get no. of arguments to pop
   masm->popl(eax); // get NLR result back
   masm->movl(esi, ebx); // keep no. of arguments in esi
-#ifdef DELTA_X86_64
-  // 64-bit NOT: nlr_home_id is an intptr_t, so the 1s-complemented argument
-  // count must stay negative (a 32-bit NOT would zero-extend and read back
-  // positive, hiding the "interpreted NLR" marker).
-  masm->notq(esi);
-#else
-  masm->notl(esi); // make negative to distinguish from compiled NLRs (AArch64 notl is already 64-bit)
-#endif
+  InterpreterBackend::negateNLRArgumentCount(masm, esi); // make negative to distinguish from compiled NLRs
 
   // entry point for all methods to do NLR test & continuation,
   // first check if context zap is necessary
@@ -3003,16 +2854,7 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   restore_ebx(); // make sure ebx = 0
   masm->leave(); // remove stack frame
   masm->notl(esi); // make positive again
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // AArch64: after leave() the return address lives in x30, not on the
-  // stack; [sp] holds the first argument.
-  masm->leal(esp, Address(esp, esi, deltaStackScale)); // pop arguments
-  masm->ret(0); // return
-#else
-  masm->popl(ecx); // get return address
-  masm->leal(esp, Address(esp, esi, deltaStackScale)); // pop arguments
-  masm->jmp(ecx); // return
-#endif
+  InterpreterBackend::popDeltaSlotsAndReturn(masm, esi, 0); // pop arguments and return to the NLR home
 
   // error handler for compiled code NLRs - can be removed as soon
   // as that test has been removed. For now just use magic imm32 to
@@ -3200,14 +3042,10 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
     Address primitive_addr = Address(ecx, methodOopDesc::codes_byte_offset() + oopSize);
 
     masm->movl(edx, primitive_addr); // get primitive address
-#ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
-    // x86-64: call_C clobbers esi (SysV rsi = bytecode pointer); preserve it.
-    masm->movq(r12, esi);
+    InterpreterBackend::savePrimitiveBytecodePtr(
+      masm); // x86-64: esi = bytecode ptr collides with the SysV arg #2 register
     call_C(edx); // eax := primitive call
-    masm->movq(esi, r12);
-#else
-    call_C(edx); // eax := primitive call
-#endif
+    InterpreterBackend::restorePrimitiveBytecodePtr(masm);
     masm->test(eax, Mark_Tag_Bit);
     masm->jcc(Assembler::notZero, _failed);
     load_ebx();
@@ -3282,33 +3120,8 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // compute hash value
   masm->movl(edi, ecx);
   masm->xorl(edi, edx);
-  masm->andl(edi, (primary_cache_size - 1) << cacheElementShift);
-#ifdef DELTA_X86_64
-  // A [reg + disp32] address cannot reach the cacheElement array on x86-64:
-  // the static __BSS array regularly lands above 4 GB, truncating the
-  // displacement to a wrong address. Materialize the full 64-bit base in eax
-  // (sparing the receiver, which must survive for the method/nm entry
-  // convention) and fold the element byte offset in, then probe [edi+0/8/16].
-  // AArch64 needs no such fix: its assembler already materializes the
-  // absolute displacement through the reserved scratch register pair.
-  masm->pushq(eax); // save receiver
-  masm->movq(eax, lookupCache::primary_cache_address()); // full 64-bit cache base
-  masm->addq(edi, eax); // edi = full element address
-  masm->popq(eax); // restore receiver
-  // probe cache
-  masm->cmpl(ecx, Address(edi, 0 * oopSize));
-  masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->cmpl(edx, Address(edi, 1 * oopSize));
-  masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->movl(ecx, Address(edi, 2 * oopSize));
-#else
-  // probe cache
-  masm->cmpl(ecx, Address(edi, lookupCache::primary_cache_address() + 0 * oopSize));
-  masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->cmpl(edx, Address(edi, lookupCache::primary_cache_address() + 1 * oopSize));
-  masm->jcc(Assembler::notEqual, probe_secondary_cache);
-  masm->movl(ecx, Address(edi, lookupCache::primary_cache_address() + 2 * oopSize));
-#endif
+  masm->andl(edi, (primary_cache_size - 1) << cacheElementShift); // edi = scaled element index
+  InterpreterBackend::probePrimaryLookupCache(masm, probe_secondary_cache);
   masm->test(ecx, Mem_Tag); // check if nmethod
   masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
 
@@ -3341,31 +3154,7 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
   // edi: primary cache index
   // esi: next instruction
   masm->bind(probe_secondary_cache);
-#ifdef DELTA_X86_64
-  // edi holds the primary element *address*; recompute the secondary byte
-  // offset from the still-live klass (ecx) and selector (edx), then fold in
-  // the full 64-bit secondary cache base as above.
-  masm->movl(edi, ecx);
-  masm->xorl(edi, edx);
-  masm->pushq(eax); // save receiver
-  masm->movq(eax, lookupCache::secondary_cache_address()); // full 64-bit cache base
-  masm->addq(edi, eax); // edi = full element address
-  masm->popq(eax); // restore receiver
-  // probe cache
-  masm->cmpl(ecx, Address(edi, 0 * oopSize));
-  masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->cmpl(edx, Address(edi, 1 * oopSize));
-  masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->movl(ecx, Address(edi, 2 * oopSize));
-#else
-  masm->andl(edi, (secondary_cache_size - 1) << cacheElementShift);
-  // probe cache
-  masm->cmpl(ecx, Address(edi, lookupCache::secondary_cache_address() + 0 * oopSize));
-  masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->cmpl(edx, Address(edi, lookupCache::secondary_cache_address() + 1 * oopSize));
-  masm->jcc(Assembler::notEqual, _inline_cache_miss);
-  masm->movl(ecx, Address(edi, lookupCache::secondary_cache_address() + 2 * oopSize));
-#endif
+  InterpreterBackend::probeSecondaryLookupCache(masm, _inline_cache_miss);
   masm->test(ecx, Mem_Tag); // check if nmethod
   masm->jcc(Assembler::zero, is_nmethod); // nmethods (jump table entries) are 4-byte aligned
   masm->jmp(is_methodOop);
@@ -4087,6 +3876,22 @@ void InterpreterGenerator::generate_all() {
 
   masm->finalize();
   Interpreter::_code_end_addr = masm->pc();
+  if (DumpInterpreterCode) {
+    FILE* f = fopen("interpreter.bin", "wb");
+    if (f != NULL) {
+      fwrite(Interpreter::_code_begin_addr, 1, Interpreter::_code_end_addr - Interpreter::_code_begin_addr, f);
+      fclose(f);
+      FILE* base = fopen("interpreter.base.txt", "w");
+      if (base != NULL) {
+        fprintf(base, "%p\n", Interpreter::_code_begin_addr);
+        fclose(base);
+      }
+      mystd->print_cr("dumped %d bytes of interpreter code to interpreter.bin",
+                      Interpreter::_code_end_addr - Interpreter::_code_begin_addr);
+    } else {
+      mystd->print_cr("could not open interpreter.bin for writing");
+    }
+  }
 }
 
 InterpreterGenerator::InterpreterGenerator(CodeBuffer* code, bool debug) {
@@ -4098,13 +3903,7 @@ InterpreterGenerator::InterpreterGenerator(CodeBuffer* code, bool debug) {
 
 // Interpreter initialization
 
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
-// AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
-// bytes), so the interpreter needs a larger code buffer.
-static const int interpreter_size = 200000;
-#else
-static const int interpreter_size = 40000;
-#endif
+static const int interpreter_size = InterpreterBackend::interpreterCodeSize;
 //static char interpreter_code[interpreter_size];
 static char* interpreter_code;
 

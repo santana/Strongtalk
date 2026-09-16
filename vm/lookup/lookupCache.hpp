@@ -137,5 +137,6 @@ public:
   friend class InterpreterGenerator;
   friend class StubRoutines;
   friend class debugPrimitives;
+  friend class InterpreterBackend;
 };
 #endif // _LOOKUP_CACHE_HPP

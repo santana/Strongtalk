@@ -19,13 +19,18 @@ a CI build runs on every push.
 
 The JIT/code generator has a **single frontend with per-architecture
 backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
-code** on Apple Silicon. The AArch64 backend is ported and exercising the full
-JIT pipeline (compiler, scope-description recording, inline caches, jumps,
-deoptimization, and recompilation): the VM boots, the image read-in completes
-fully, JIT-compiled frames install and run, and recompile/deopt cycles execute.
-It currently aborts during a hot-method recompile on
-`assert(methodHeap->contains(n), "not in zone")` in `zone::findNMethod`
-(`zone.cpp:622`), the active blocker.
+code** on Apple Silicon. The same frontend/backend split extends to the
+**interpreter**: bytecode handlers are emitted `#ifdef`-free through a
+per-arch `InterpreterBackend` layer that centralizes the delta-stack slot
+model, primitive-call/return ABI, NLR and method-return conventions, and
+megamorphic lookup-cache probing (see ARCHITECTURE.md §2.5.1), with the
+per-arch machine output gated to stay byte-identical. The AArch64 backend is
+ported and exercising the full JIT pipeline (compiler, scope-description
+recording, inline caches, jumps, deoptimization, and recompilation): the VM
+boots, the image read-in completes fully, JIT-compiled frames install and run,
+and recompile/deopt cycles execute. It currently aborts during a hot-method
+recompile on `assert(methodHeap->contains(n), "not in zone")` in
+`zone::findNMethod` (`zone.cpp:622`), the active blocker.
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
@@ -39,7 +44,9 @@ verified by building from the root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
 build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw
 CXX=x86_64-w64-mingw32-g++`, in a Docker container with MinGW-w64). All four
-configurations compile with zero warnings.
+configurations compile with zero errors; the only warnings are pre-existing
+`-Wundefined-inline` reports from `oop.hpp`/`generation.hpp` and a MinGW-only
+`long`-width shift warning in `smiOop.hpp`, all in untouched files.
 
 ## Repository layout
 
