@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install MinGW toolchain and Wine
         run: |
@@ -46,7 +46,7 @@ jobs:
           echo "=== strongtalk.exe exit code: ${rc:-0} (124 = timed out) ==="
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: strongtalk-windows-mingw
           path: |

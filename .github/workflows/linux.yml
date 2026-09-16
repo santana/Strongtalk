@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Pin clang-format to the same release developers use, via the PyPI
       # package. The default clang-format on ubuntu-latest lags upstream, and
@@ -24,7 +24,7 @@ jobs:
       # ...). Installing an exact version keeps the check reproducible and
       # identical to the local toolchain.
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Show toolchain
         run: |
@@ -59,7 +59,7 @@ jobs:
         run: make test
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: strongtalk-linux
           path: |
