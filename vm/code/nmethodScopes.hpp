@@ -140,7 +140,14 @@ public:
     // _oops_offset is packed in BytesPerWord units (pack_word_aligned), so the
     // oops array boundary is oops_offset() byte offset; multiplying by
     // sizeof(oop) instead would over-run the scope table on LP64.
-    if (offset + (sizeof(int) - (offset % sizeof(int))) % sizeof(int) >= oops_offset())
+    //
+    // The last scope's `_next` is the *unaligned* end of the scope bytes; the
+    // recorder then pads each section boundary to BytesPerWord before the oops
+    // array (see ScopeDescRecorder::copyTo/alignForWord and alignToWord).
+    // Round the candidate offset up by BytesPerWord (not sizeof(int)) so the
+    // sentinel is detected on LP64; on 32-bit builds the two are equal.
+    int aligned = offset + (BytesPerWord - (offset % BytesPerWord)) % BytesPerWord;
+    if (aligned >= oops_offset())
       return NULL;
     return at(offset, ScopeDesc::invalid_pc);
   }
