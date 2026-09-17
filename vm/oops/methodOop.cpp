@@ -1269,11 +1269,11 @@ GrowableArray<intptr_t>* methodOopDesc::expression_stack_mapping(int bci) {
 }
 
 static void lookup_primitive_and_patch(u_char* p, u_char byte) {
-  assert((intptr_t)p % 4 == 0, "first instruction supposed to be aligned");
+  assert((intptr_t)p % oopSize == 0, "first instruction supposed to be aligned");
   *p = byte; // patch byte
-  p += 4; // advance to primitive name
+  p += oopSize; // advance to primitive name
   //(*(symbolOop*)p)->print_symbol_on();
-  *(int*)p = (intptr_t)primitives::lookup(*(symbolOop*)p)->fn();
+  *(intptr_t*)p = (intptr_t)primitives::lookup(*(symbolOop*)p)->fn();
 }
 
 bool methodOopDesc::is_primitiveMethod() const {

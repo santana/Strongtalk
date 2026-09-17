@@ -139,28 +139,28 @@ inline int sub_sign(int a, int b) {
 
 inline int compare_as_bytes(const unsigned char* a, const unsigned char* b) {
   // machine dependent code; little endian code
-  if (a[0] - b[0])
-    return sub_sign(a[0], b[0]);
-  if (a[1] - b[1])
-    return sub_sign(a[1], b[1]);
-  if (a[2] - b[2])
-    return sub_sign(a[2], b[2]);
-  return sub_sign(a[3], b[3]);
+  for (int i = 0; i < oopSize; i++) {
+    if (a[i] - b[i])
+      return sub_sign(a[i], b[i]);
+  }
+  return 0;
 }
 
 int byteArrayOopDesc::compare(byteArrayOop arg) {
-  // Get the addresses of the length fields
-  const unsigned int* a = (unsigned int*)length_addr();
-  const unsigned int* b = (unsigned int*)arg->length_addr();
+  // The data starts right after the oop-sized length field
+  const oop* a = (const oop*)bytes();
+  const oop* b = (const oop*)arg->bytes();
 
   // Get the word sizes of the arays
-  int a_size = roundTo(smiOop((intptr_t)(*a++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
-  int b_size = roundTo(smiOop((intptr_t)(*b++))->value() * sizeof(char), sizeof(int)) / sizeof(int);
+  int a_size = roundTo(length(), oopSize) / oopSize;
+  int b_size = roundTo(arg->length(), oopSize) / oopSize;
 
-  const unsigned int* a_end = a + min(a_size, b_size);
+  const oop* a_end = a + min(a_size, b_size);
   while (a < a_end) {
-    if (*b++ != *a++)
-      return compare_as_bytes((const unsigned char*)(a - 1), (const unsigned char*)(b - 1));
+    if (*b != *a)
+      return compare_as_bytes((const unsigned char*)a, (const unsigned char*)b);
+    ++a;
+    ++b;
   }
   return sub_sign(a_size, b_size);
 }
