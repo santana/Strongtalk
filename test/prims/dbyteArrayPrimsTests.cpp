@@ -16,6 +16,14 @@ using namespace easyunit;
 extern "C" int expansion_count;
 DECLARE(DByteArrayPrimsTests)
 klassOop dByteArrayClass;
+
+// Allocate a doubleByteArray of the given length and fill it with data.
+oop newDoubleByteArray(int len, const char* data) {
+  oop result = dByteArrayClass->klass_part()->allocateObjectSize(len);
+  for (int i = 0; i < len; i++)
+    doubleByteArrayOop(result)->doubleByte_at_put(i + 1, (doubleByte)data[i]);
+  return result;
+}
 END_DECLARE
 
 SETUP(DByteArrayPrimsTests) {
@@ -91,4 +99,40 @@ TESTF(DByteArrayPrimsTests, allocateSize2ShouldFailWhenTooBigForOldGen) {
   oop result = doubleByteArrayPrimitives::allocateSize2(trueObj, as_smiOop(size + 1), dByteArrayClass);
   ASSERT_TRUE(result->is_mark());
   ASSERT_EQUALS_M(markSymbol(vmSymbols::failed_allocation()), result, unmarkSymbol(result)->as_string());
+}
+
+TESTF(DByteArrayPrimsTests, compareShouldDistinguishSingleDoubleByteArrays) {
+  HandleMark handles;
+  Handle a(newDoubleByteArray(1, "A"));
+  Handle b(newDoubleByteArray(1, "B"));
+  ASSERT_EQUALS(-1, doubleByteArrayOop(a.as_oop())->compare(doubleByteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, doubleByteArrayOop(b.as_oop())->compare(doubleByteArrayOop(a.as_oop())));
+}
+
+TESTF(DByteArrayPrimsTests, compareShouldBeZeroForEqualDoubleByteArrays) {
+  HandleMark handles;
+  Handle a(newDoubleByteArray(1, "A"));
+  Handle b(newDoubleByteArray(1, "A"));
+  ASSERT_EQUALS(0, doubleByteArrayOop(a.as_oop())->compare(doubleByteArrayOop(b.as_oop())));
+}
+
+TESTF(DByteArrayPrimsTests, compareShouldDistinguishArraysAcrossOopWordBoundary) {
+  HandleMark handles;
+  Handle a(newDoubleByteArray(5, "aaaaX"));
+  Handle b(newDoubleByteArray(5, "aaaaY"));
+  ASSERT_EQUALS(-1, doubleByteArrayOop(a.as_oop())->compare(doubleByteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, doubleByteArrayOop(b.as_oop())->compare(doubleByteArrayOop(a.as_oop())));
+}
+
+TESTF(DByteArrayPrimsTests, compareShouldShortCircuitOnIdenticalReceiver) {
+  HandleMark handles;
+  Handle a(newDoubleByteArray(3, "abc"));
+  ASSERT_EQUALS(0, doubleByteArrayOop(a.as_oop())->compare(doubleByteArrayOop(a.as_oop())));
+}
+
+TESTF(DByteArrayPrimsTests, comparePrimShouldOrderDoubleByteArrays) {
+  HandleMark handles;
+  Handle a(newDoubleByteArray(1, "A"));
+  Handle b(newDoubleByteArray(1, "B"));
+  ASSERT_EQUALS(-1, smiOop(doubleByteArrayPrimitives::compare(a.as_oop(), b.as_oop()))->value());
 }

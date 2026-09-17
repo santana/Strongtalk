@@ -51,6 +51,14 @@ int asInteger(oop largeInteger, bool& ok) {
   Integer* number = &byteArrayOop(largeInteger)->number();
   return number->as_int(ok);
 }
+
+// Allocate a byteArray of the given length and fill it with data.
+oop newByteArray(int len, const char* data) {
+  oop result = Universe::byteArrayKlassObj()->klass_part()->allocateObjectSize(len);
+  for (int i = 0; i < len; i++)
+    byteArrayOop(result)->byte_at_put(i + 1, (u_char)data[i]);
+  return result;
+}
 END_DECLARE
 
 SETUP(ByteArrayPrimsTests) {
@@ -328,4 +336,56 @@ TESTF(ByteArrayPrimsTests, alienUnsignedByteAtShouldReturnMarkedSymbolWhenIndexN
 
   result = byteArrayPrimitives::alienUnsignedByteAt(as_smiOop(0), alien);
   checkMarkedSymbol("invalid argument", result, vmSymbols::index_not_valid());
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldDistinguishSingleByteArrays) {
+  HandleMark handles;
+  Handle a(newByteArray(1, "A"));
+  Handle b(newByteArray(1, "B"));
+  ASSERT_EQUALS(-1, byteArrayOop(a.as_oop())->compare(byteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, byteArrayOop(b.as_oop())->compare(byteArrayOop(a.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldBeZeroForEqualSingleByteArrays) {
+  HandleMark handles;
+  Handle a(newByteArray(1, "A"));
+  Handle b(newByteArray(1, "A"));
+  ASSERT_EQUALS(0, byteArrayOop(a.as_oop())->compare(byteArrayOop(b.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldDistinguishShortArraysDifferingInLastByte) {
+  HandleMark handles;
+  Handle a(newByteArray(3, "abc"));
+  Handle b(newByteArray(3, "abd"));
+  ASSERT_EQUALS(-1, byteArrayOop(a.as_oop())->compare(byteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, byteArrayOop(b.as_oop())->compare(byteArrayOop(a.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldDistinguishArraysAcrossOopWordBoundary) {
+  HandleMark handles;
+  Handle a(newByteArray(9, "aaaaaaaaX"));
+  Handle b(newByteArray(9, "aaaaaaaaY"));
+  ASSERT_EQUALS(-1, byteArrayOop(a.as_oop())->compare(byteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, byteArrayOop(b.as_oop())->compare(byteArrayOop(a.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldReportShorterPrefixAsSmaller) {
+  HandleMark handles;
+  Handle a(newByteArray(8, "abcdefgh"));
+  Handle b(newByteArray(9, "abcdefghi"));
+  ASSERT_EQUALS(-1, byteArrayOop(a.as_oop())->compare(byteArrayOop(b.as_oop())));
+  ASSERT_EQUALS(1, byteArrayOop(b.as_oop())->compare(byteArrayOop(a.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, compareShouldShortCircuitOnIdenticalReceiver) {
+  HandleMark handles;
+  Handle a(newByteArray(4, "abcd"));
+  ASSERT_EQUALS(0, byteArrayOop(a.as_oop())->compare(byteArrayOop(a.as_oop())));
+}
+
+TESTF(ByteArrayPrimsTests, comparePrimShouldOrderByteArrays) {
+  HandleMark handles;
+  Handle a(newByteArray(1, "A"));
+  Handle b(newByteArray(1, "B"));
+  ASSERT_EQUALS(-1, smiOop(byteArrayPrimitives::compare(a.as_oop(), b.as_oop()))->value());
 }
