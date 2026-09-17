@@ -50,7 +50,6 @@
 
 void os_dump_context2(ucontext_t* context) {
 #ifdef __aarch64__
-#ifdef __APPLE__
   mcontext_t mcontext = context->uc_mcontext;
   printf("\n");
   for (int r = 0; r < 29; r++)
@@ -59,8 +58,7 @@ void os_dump_context2(ucontext_t* context) {
   printf("fp=0x%llx lr=0x%llx sp=0x%llx pc=0x%llx\n", mcontext->__ss.__fp, mcontext->__ss.__lr, mcontext->__ss.__sp,
          mcontext->__ss.__pc);
 #endif
-#endif
-#if defined(__APPLE__) && defined(__x86_64__)
+#ifdef __x86_64__
   _STRUCT_MCONTEXT* mcontext = context->uc_mcontext;
   printf("\nrax=0x%llx rbx=0x%llx rcx=0x%llx rdx=0x%llx\n", mcontext->__ss.__rax, mcontext->__ss.__rbx,
          mcontext->__ss.__rcx, mcontext->__ss.__rdx);
@@ -247,7 +245,7 @@ bool os::check_directory(char* dir_name) {
 
 // 1 reference (memory/util.cpp)
 void os::breakpoint() {
-#if defined(__aarch64__)
+#ifdef __aarch64__
   __builtin_trap();
 #else
   asm("int3");
@@ -272,7 +270,7 @@ static Event* threadCreated = NULL;
 
 char* calcStackLimit() {
   char* stackptr;
-#if defined(__aarch64__)
+#ifdef __aarch64__
   __asm__ volatile("mov %0, sp" : "=r"(stackptr));
 #else
   asm("movq %%rsp, %0;" : "=r"(stackptr));
@@ -478,7 +476,7 @@ bool os::release_memory(char* addr, int size) {
 }
 
 char* os::exec_memory(int size) {
-#if defined(__arm64__)
+#ifdef __arm64__
   // On Apple Silicon, W+X pages require the MAP_JIT flag and the region is
   // subject to the W^X enforcement of pthread_jit_write_protect_np: writes
   // fault while protection is on, execution faults while it is off. Map the
@@ -504,7 +502,7 @@ static bool jit_write_protected_state = false;
 
 void os::jit_write_protect(bool protect) {
   jit_write_protected_state = protect;
-#if defined(__arm64__)
+#ifdef __arm64__
   pthread_jit_write_protect_np(protect ? 1 : 0);
 #endif
 }
@@ -723,7 +721,7 @@ void trace_stack(int thread_id);
 static void handler(int signum, siginfo_t* info, void* context) {
   printf("\nsignal: %d  fault_addr: %p\n", signum, info->si_addr);
   os_dump_context2((ucontext_t*)context);
-#if defined(__APPLE__) && defined(__x86_64__)
+#ifdef __x86_64__
   {
     unsigned char* rip_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__rip;
     printf("  bytes at rip: ");
@@ -732,7 +730,7 @@ static void handler(int signum, siginfo_t* info, void* context) {
     printf("\n");
   }
 #endif
-#if defined(__aarch64__)
+#ifdef __aarch64__
   {
     unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
     unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
@@ -840,5 +838,5 @@ void os_init() {
 void os_exit() {
   ThreadCritical::release();
 }
-#endif /* __GNUC__ */
+#endif /* __APPLE__ */
 #endif
