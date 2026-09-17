@@ -28,7 +28,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifndef _ARCHITECTURE_HPP
 #define _ARCHITECTURE_HPP
 
-#if defined(DELTA_BACKEND_AARCH64) || defined(DELTA_BACKEND_X86_64)
+#if defined(DELTA_BACKEND_AARCH64) && defined(DELTA_BACKEND_X86_64)
+#error "only one backend selector may be defined: DELTA_BACKEND_AARCH64 or DELTA_BACKEND_X86_64, not both"
+#elif defined(DELTA_BACKEND_AARCH64) || defined(DELTA_BACKEND_X86_64)
 // explicit override selected on the command line
 #elif defined(__aarch64__) || defined(_M_ARM64)
 #define DELTA_BACKEND_AARCH64
