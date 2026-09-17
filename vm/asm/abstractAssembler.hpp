@@ -23,6 +23,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include "code/relocInfo.hpp"
 #include "memory/allocation.hpp"
+#include "topIncludes/architecture.hpp"
 
 class CodeBuffer;
 
@@ -69,7 +70,7 @@ public:
   ~Label() { assert(!is_unbound(), "unbound label"); }
 
   friend class AbstractAssembler;
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   friend class AArch64Assembler;
   friend class AArch64MacroAssembler;
   friend class AArch64Displacement;

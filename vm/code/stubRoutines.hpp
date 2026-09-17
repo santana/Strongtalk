@@ -35,19 +35,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _STUB_ROUTINES_HPP
 #define _STUB_ROUTINES_HPP
+#include "topIncludes/architecture.hpp"
 
 #include "asm/assembler.hpp"
 #include "runtime/os.hpp"
 
 class StubRoutines : AllStatic {
 private:
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   // AArch64 instructions are 4 bytes each (vs. the x86 average of ~1.5-2
   // bytes), so the stub routines need a larger code buffer.
   enum {
     _code_size = 60000
   };
-#elif DELTA_X86_64
+#elif defined(DELTA_BACKEND_X86_64)
   // x86-64 stubs use REX.W prefixes on all pointer operations, growing ~30%.
   enum {
     _code_size = 24000

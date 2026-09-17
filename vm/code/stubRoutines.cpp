@@ -158,7 +158,7 @@ char* StubRoutines::generate_ic_lookup(MacroAssembler* masm, char* lookup_routin
 
   // eax: receiver
   // tos: return address
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // AArch64: the receiver is passed in x0 (as for all compiled sends) and
   // the ic address is the return address kept in x30 (the `call` into the
   // stub is a `bl`, so there is no return address pushed on the stack).
@@ -552,7 +552,7 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->pushl(esp); // to check that the right no. of arguments is used
   if (TraceDLLCalls) { // call trace routine (C to C call, no special setup required)
     masm->pushl(esi); // save DLL state address
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
     masm->call_C((char*)trace_DLL_call_1, edx, ecx, ebx); // trace_DLL_call_1(function, last_argument, nof_arguments)
 #else
     masm->pushl(ebx); // pass arguments in reverse order
@@ -1109,7 +1109,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->cmpl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
   masm->jcc(Assembler::equal, _return);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
-#ifdef DELTA_X86_64
+#ifdef DELTA_BACKEND_X86_64
   // nlr_result/nlr_home are full-width oops/pointers on x86-64
   masm->movq(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   masm->movq(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
@@ -1120,7 +1120,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   masm->bind(_return);
-#ifdef DELTA_X86_64
+#ifdef DELTA_BACKEND_X86_64
   // enter() above pushed a full 64-bit rbp
   masm->popq(ebp);
 #else
@@ -1131,7 +1131,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   Label common_unpack_unoptimized_frames;
 
   masm->bind(common_unpack_unoptimized_frames);
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // AArch64: pass the four arguments in x0-x3 (AAPCS64), loaded from the
   // caller's frame. No stack arguments.
   masm->movl(edx, ebp); // 4th arg: old frame pointer
@@ -1139,7 +1139,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->movl(ebx, real_fp); // 2nd arg: frame pointer link
   masm->movl(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
   masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, ecx, edx);
-#elif defined(DELTA_X86_64)
+#elif defined(DELTA_BACKEND_X86_64)
   // x86-64 SysV: pass the four arguments in rdi/rsi/rdx/rcx (the 64-bit
   // call_C maps arg1..arg4 to edi/esi/edx/ecx, and its asserts require
   // arg3 != ecx, arg4 != edx, hence the edx/ecx order below).
@@ -1148,16 +1148,8 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->movq(ebx, real_fp); // 2nd arg: frame pointer link
   masm->movq(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
   masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, edx, ecx);
-#else
-  masm->pushl(ebp); // Push the old   frame pointer
-  masm->pushl(frame_array); // Push the array with the packed frames
-  masm->pushl(real_fp); // Push the frame pointer link
-  masm->pushl(real_sender_sp); // Push the stack pointer of the calling activation
-
-  // Compute the new stack pointer
-  masm->call((char*)setup_deoptimization_and_return_new_sp, relocInfo::runtime_call_type);
 #endif
-#ifdef DELTA_X86_64
+#ifdef DELTA_BACKEND_X86_64
   // new sp and real fp are full 64-bit pointers on x86-64
   masm->movq(esp, eax); // Set the new stack pointer
   masm->movq(ebp, real_fp); // Set the frame pointer to the link
@@ -1172,7 +1164,7 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
 
   masm->bind(nlr_unpack_unoptimized_frames);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 1);
-#ifdef DELTA_X86_64
+#ifdef DELTA_BACKEND_X86_64
   // nlr_result/nlr_home are full-width oops/pointers on x86-64
   masm->movq(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
   masm->movq(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
@@ -1264,7 +1256,7 @@ char* StubRoutines::generate_handle_pascal_callback_stub(MacroAssembler* masm) {
   masm->addl(edx, 24); // (esi, edi, ebx, edx, fp, return address)
 
   // eax = handleCallBack(index, &params)
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   masm->call_C((char*)handleCallBack, ecx, edx); // handleCallBack(index, &params)
 #else
   masm->pushl(edx); // &params

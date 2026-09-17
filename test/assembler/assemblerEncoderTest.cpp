@@ -29,7 +29,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  * then immediately patches the displacement instead of deferring it.
  */
 
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
 // x86-only test; the AArch64 backend has its own encoder tests in
 // assemblerEncoderTest_aarch64.cpp.
 int main() {
@@ -1470,4 +1470,4 @@ int main() {
   return failures == 0 ? 0 : 1;
 }
 
-#endif // !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#endif // !defined(DELTA_BACKEND_AARCH64)

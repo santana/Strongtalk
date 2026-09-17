@@ -49,7 +49,7 @@
 #include <errno.h>
 
 void os_dump_context2(ucontext_t* context) {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef __aarch64__
 #ifdef __APPLE__
   mcontext_t mcontext = context->uc_mcontext;
   printf("\n");
@@ -60,7 +60,7 @@ void os_dump_context2(ucontext_t* context) {
          mcontext->__ss.__pc);
 #endif
 #endif
-#if defined(__APPLE__) && !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(__APPLE__) && defined(__x86_64__)
   _STRUCT_MCONTEXT* mcontext = context->uc_mcontext;
   printf("\nrax=0x%llx rbx=0x%llx rcx=0x%llx rdx=0x%llx\n", mcontext->__ss.__rax, mcontext->__ss.__rbx,
          mcontext->__ss.__rcx, mcontext->__ss.__rdx);
@@ -723,7 +723,7 @@ void trace_stack(int thread_id);
 static void handler(int signum, siginfo_t* info, void* context) {
   printf("\nsignal: %d  fault_addr: %p\n", signum, info->si_addr);
   os_dump_context2((ucontext_t*)context);
-#if defined(__APPLE__) && !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(__APPLE__) && defined(__x86_64__)
   {
     unsigned char* rip_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__rip;
     printf("  bytes at rip: ");
@@ -732,7 +732,7 @@ static void handler(int signum, siginfo_t* info, void* context) {
     printf("\n");
   }
 #endif
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(__aarch64__)
   {
     unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
     unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;

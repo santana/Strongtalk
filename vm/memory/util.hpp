@@ -23,6 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _UTIL_HPP
 #define _UTIL_HPP
+#include "topIncludes/architecture.hpp"
 
 #include "oops/oopsHierarchy.hpp"
 #include "topIncludes/types.hpp"
@@ -109,7 +110,7 @@ const int image_oop_size = oopSize;
 // that the stack pointer stays 16-byte aligned for every sp-based load/store
 // (AAPCS64 requires SP alignment and macOS raises EXC_ARM_SP_ALIGN on any
 // access that uses a misaligned sp). On x86 the slots are one word.
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
 const int slotSize = 2 * oopSize;
 #else
 const int slotSize = oopSize;

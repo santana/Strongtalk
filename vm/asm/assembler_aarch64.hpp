@@ -12,7 +12,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 // The AArch64 assembler backend. It is selected by "asm/assembler.hpp"
 // (via the Assembler/MacroAssembler aliases) when
-// DELTA_ASSEMBLER_BACKEND_AARCH64 is defined; the default backend remains
+// DELTA_BACKEND_AARCH64 is defined; the default backend remains
 // x86. It extends AbstractAssembler, implements the AArch64 (ARMv8-A) 64-bit
 // instruction set and the backend-specific label fixup.
 //

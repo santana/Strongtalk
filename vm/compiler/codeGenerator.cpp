@@ -431,7 +431,7 @@ void CodeGenerator::finalize(InlinedScope* scope) {
       assert(self_reg != temp1, "choose another register");
       _masm->testl(self_reg, Mem_Tag);			// testl instead of test => no alignment nop's needed later
       _masm->jcc(Assembler::zero, CompiledIC::normalLookupRoutine());
-#if DELTA_X86_64
+#if defined(DELTA_BACKEND_X86_64)
       // 64-bit: compare the 8-byte klass field against a materialized klass oop
       // (cmpl(Address, oop) can't embed a 64-bit oop in a cmp r/m32, imm32).
       Temporary scratch(_currentMapping);
@@ -896,8 +896,9 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
     } else {
       _masm->test(use(recv), Mem_Tag);
       _masm->jcc(Assembler::zero, CompiledIC::normalLookupRoutine());
-#if DELTA_X86_64
-      // 64-bit: see the verify-receiver snippet in the epilogue generator.
+#if defined(DELTA_BACKEND_X86_64)
+      // 64-bit: compare the 8-byte klass field against a materialized klass oop
+      // (cmpl(Address, oop) can't embed a 64-bit oop in a cmp r/m32, imm32).
       Temporary scratch(_currentMapping);
       _masm->movq(scratch.reg(), klass);
       _masm->cmpq(scratch.reg(), Address(use(recv), memOopDesc::klass_byte_offset()));

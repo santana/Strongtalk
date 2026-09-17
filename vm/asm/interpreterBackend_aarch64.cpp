@@ -11,7 +11,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 */
 
 // AArch64 conventions of the InterpreterBackend. Selected by the Makefile
-// (vm/asm/interpreterBackend_aarch64.cpp) when DELTA_ASSEMBLER_BACKEND_AARCH64
+// (vm/asm/interpreterBackend_aarch64.cpp) when DELTA_BACKEND_AARCH64
 // is defined; see asm/assembler.hpp for the backend selection macro.
 
 #include "asm/interpreterBackend.hpp"

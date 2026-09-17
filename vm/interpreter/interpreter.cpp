@@ -306,7 +306,7 @@ static int invocation_counter_limit_value = 0xFFFF << methodOopDesc::_invocation
 void Interpreter::set_invocation_counter_limit(int new_limit) {
   assert(_invocation_counter_addr != NULL, "invocation counter address unknown");
   assert(0 <= new_limit && new_limit <= methodOopDesc::_invocation_count_max, "illegal counter limit");
-#ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
+#if defined(DELTA_BACKEND_X86_64)
   assert(*((u_char*)_invocation_counter_addr - 2) == 0x81, "not a cmp edx, imm32 instruction anymore?")
 #endif
     * _invocation_counter_addr = new_limit << methodOopDesc::_invocation_count_offset;

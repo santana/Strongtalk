@@ -177,7 +177,7 @@ nmethod::nmethod(Compiler* c) : key(c->key->klass(), c->key->selector_or_method(
 #ifdef ASSERT
   // turned off because they're very slow  -Urs 4/96
   // lookupCache::verify();
-#ifndef DELTA_ASSEMBLER_BACKEND_AARCH64
+#if defined(DELTA_BACKEND_X86_64)
   // Too fragile during the AArch64 bring-up (IC call layout differs from x86);
   // the JIT nmethods are verified instead by actually running them.
   verify_expression_stacks();
@@ -243,7 +243,7 @@ void nmethod::fix_relocation_at_move(int delta) {
         // quad_addr); x86-64 embeds it as a 4-byte disp32 inside the
         // instruction (word_addr) - writing 8 bytes there would overrun the
         // next instruction.
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
         *iter.quad_addr() -= delta;
 #else
         *iter.word_addr() -= delta;

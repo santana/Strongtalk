@@ -26,7 +26,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 // Implementation of NativeCall
 
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
 void NativeCall::verify() {
   // make sure code pattern is a "call to absolute address":
   //   ldr x16, [pc, #8]; b .+12; .quad target; blr x16
@@ -58,7 +58,7 @@ void NativeMov::print() {
 
 // Implementation of NativeTest
 void NativeTest::verify() {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // On AArch64 the info word is a hint-encoded NOP (see
   // MacroAssembler::ic_info); there is no fixed opcode to check. The call
   // structure itself (ldr x16,[pc,#8]; blr x16) is verified by NativeCall.

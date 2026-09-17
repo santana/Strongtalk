@@ -23,6 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _COMPILED_IC_HPP
 #define _COMPILED_IC_HPP
+#include "topIncludes/architecture.hpp"
 
 #ifdef DELTA_COMPILER
 
@@ -90,13 +91,13 @@ class CompiledIC : public AbstractCompiledIC {
 protected:
   int compiler_info() const { return ic_info_at(next_instruction_address())->flags(); }
   void set_compiler_info(int info) {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
     // MAP_JIT W^X: the IC info word lives in generated code, so patching it
     // requires the writable state (running code has protection enabled).
     os::jit_write_protect(false);
 #endif
     ic_info_at(next_instruction_address())->set_flags(info);
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
     os::jit_write_protect(true);
 #endif
   }

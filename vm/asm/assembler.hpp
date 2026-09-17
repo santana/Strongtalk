@@ -27,16 +27,19 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 // is aliased to Assembler / MacroAssembler below, so the rest of the VM can
 // be written in an architecture-neutral way.
 //
-// The default backend is x86. To build for another backend, define the
-// corresponding DELTA_ASSEMBLER_BACKEND_* macro and add an implementation
-// under vm/asm/ following the pattern of the x86 one.
+// The backend is selected by DELTA_BACKEND_AARCH64 / DELTA_BACKEND_X86_64,
+// which are derived from the compiler's target-architecture builtins (see
+// topIncludes/architecture.hpp). To add another backend, extend the selection
+// in architecture.hpp and add an implementation under vm/asm/ following the
+// pattern of the x86 one.
 
 #ifndef _ASSEMBLER_HPP
 #define _ASSEMBLER_HPP
 
 #include "asm/abstractAssembler.hpp"
+#include "topIncludes/architecture.hpp"
 
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
 #include "asm/assembler_aarch64.hpp"
 typedef AArch64Assembler Assembler;
 typedef AArch64MacroAssembler MacroAssembler;

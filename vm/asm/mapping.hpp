@@ -20,10 +20,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // The backend header must provide the architecture-specific constants that
 // the Mapping interface depends on: nofRegisters, nofLocalRegisters,
 // nofArgRegisters, first_temp_offset, first_float_offset and the register
-// constants (self_reg, temp1, ...). The default backend is x86. To build
-// for another backend, define the corresponding DELTA_ASSEMBLER_BACKEND_*
-// macro and add an implementation under vm/asm/ following the pattern of
-// the x86 one.
+// constants (self_reg, temp1, ...). The backend is selected by
+// DELTA_BACKEND_AARCH64 / DELTA_BACKEND_X86_64, derived from the compiler's
+// target-architecture builtins (see topIncludes/architecture.hpp).
 
 #ifndef _MAPPING_HPP
 #define _MAPPING_HPP
@@ -34,8 +33,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "asm/assembler.hpp"
 #include "compiler/scope.hpp"
 #include "memory/allocation.hpp"
+#include "topIncludes/architecture.hpp"
 
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
 #include "asm/mapping_aarch64.hpp"
 #else
 // default backend: x86

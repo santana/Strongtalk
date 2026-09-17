@@ -93,13 +93,13 @@ void CompiledIC::set_call_destination(char* entry_point) {
   assert(p == NULL || p->entry() != entry_point, "replacing with same address -- shouldn't dealloc");
   if (p != NULL)
     delete p;
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // MAP_JIT W^X: patching the call-target literal in generated code requires
   // the writable state; generated code runs with protection enabled.
   os::jit_write_protect(false);
 #endif
   NativeCall::set_destination(entry_point);
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   os::jit_write_protect(true);
 #endif
 }
@@ -161,7 +161,7 @@ char* CompiledIC::normalLookup(oop recv) {
       // like the zombie-nmethod send restart: the lookup stub restored the
       // interp frame base (x29), so the redo entry re-loads esi/ebx from the
       // still-pushed send arguments and re-runs the send bytecode.
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
       return Interpreter::redo_send_entry();
 #else
       mystd->print_cr("interpreter entry-guard ic miss, interpreted result:");

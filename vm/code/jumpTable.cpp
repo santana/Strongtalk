@@ -194,7 +194,7 @@ void jumpTableEntry::initialize_as_link(char* link) {
 }
 
 void jumpTableEntry::initialize_nmethod_stub(char* dest) {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   initialize_aarch64_stub(dest, nmethod_entry);
 #else
   fill_jump(dest, nmethod_entry);
@@ -202,14 +202,14 @@ void jumpTableEntry::initialize_nmethod_stub(char* dest) {
 }
 
 void jumpTableEntry::initialize_block_closure_stub() {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   initialize_aarch64_stub(StubRoutines::compile_block_entry(), block_closure_entry);
 #else
   fill_jump(StubRoutines::compile_block_entry(), block_closure_entry);
 #endif
 }
 
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
 void jumpTableEntry::initialize_aarch64_stub(char* dest, char state) {
   // Emit an absolute-branch stub that the interpreter can jump/call to:
   //   ldr x16, [pc, #8]      (load the absolute literal below)
@@ -264,7 +264,7 @@ char* jumpTableEntry::link() const {
 }
 
 char** jumpTableEntry::destination_addr() const {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   return (char**)(((char*)this) + 8); // the .quad literal slot of the AArch64 stub
 #else
   return (char**)(((char*)this) + sizeof(char));
@@ -272,7 +272,7 @@ char** jumpTableEntry::destination_addr() const {
 }
 
 char* jumpTableEntry::destination() const {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   return *destination_addr();
 #else
   return *destination_addr() + (intptr_t)jump_rel32_end();
@@ -280,7 +280,7 @@ char* jumpTableEntry::destination() const {
 }
 
 void jumpTableEntry::set_destination(char* dest) {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   *destination_addr() = dest;
 #else
   intptr_t disp = (intptr_t)dest - (intptr_t)jump_rel32_end();

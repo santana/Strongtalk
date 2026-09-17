@@ -23,6 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _FRAME_HPP
 #define _FRAME_HPP
+#include "topIncludes/architecture.hpp"
 
 #include "memory/allocation.hpp"
 
@@ -51,7 +52,7 @@ class CompiledIC;
 // offsets below ebp/above ebp are doubled with respect to the x86 layout; the
 // link/return pair at fp[0]/fp[1] (pushed by enter as a 16-byte stp) is
 // unchanged.
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
 const int frame_temp_offset = -6; // For interpreter frames only
 const int frame_hp_offset = -4; // For interpreter frames only
 const int frame_receiver_offset = -2; // For interpreter frames only
@@ -114,7 +115,7 @@ private:
   char** return_addr_addr() const { return (char**)addr_at(frame_return_addr_offset); }
 
   // support for interpreter frames
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   oop* receiver_addr() const { return (oop*)addr_at(frame_receiver_offset); }
   u_char** hp_addr() const { return (u_char**)addr_at(frame_hp_offset); }
   oop* arg_addr(int off) const { return (oop*)addr_at(frame_arg_offset + 2 * off); }
@@ -143,7 +144,7 @@ public:
   // Temporaries
   oop temp(int offset) const { return *temp_addr(offset); }
   void set_temp(int offset, oop obj) { *temp_addr(offset) = obj; }
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   oop* temp_addr(int offset) const { return (oop*)addr_at(frame_temp_offset - 2 * offset); }
 #else
   oop* temp_addr(int offset) const { return (oop*)addr_at(frame_temp_offset - offset); }
@@ -154,7 +155,7 @@ public:
   void set_arg(int offset, oop obj) { *arg_addr(offset) = obj; }
 
   // Expressions
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // delta stack slots are 16 bytes (slotSize = 2*oopSize) on AArch64, so the
   // oops live at even 8-byte indices
   oop expr(int index) const { return ((oop*)sp())[2 * index]; }

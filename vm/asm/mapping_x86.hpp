@@ -49,7 +49,6 @@ const Register NLR_homeId_reg = esi; // scope id of home scope (inlining)
 // temporaries for local code generation (within one Node only)
 // note: these locations must not intersect with any location used
 // for non-local returns!
-#if DELTA_X86_64
 // r8-r10 are caller-saved scratch; r12-r14 are callee-saved locals.
 const Register temp1 = r8;
 const Register temp2 = r9;
@@ -59,14 +58,6 @@ const Register temp3 = r10;
 const Register localReg0 = r12;
 const Register localReg1 = r13;
 const Register localReg2 = r14;
-#else
-const Register temp1 = ecx;
-const Register temp2 = edx;
-const Register temp3 = ecx;
-const Register localReg0 = ebx;
-const Register localReg1 = esi;
-const Register localReg2 = edi;
-#endif
 
 // The x87 FPU stack is used for floating-point on x86 (UseFPUStack = true),
 // so fload/fstore never need a scratch GP register.  This constant exists

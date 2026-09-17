@@ -30,8 +30,7 @@ const int BitsPerByte = 8;
 const int BytesPerWord = 8;
 const int LogBytesPerWord = 3;
 #else
-const int BytesPerWord = 4;
-const int LogBytesPerWord = 2;
+#error "unsupported: the VM word size is fixed at 64 bits (32-bit x86 is dropped)"
 #endif
 
 const int BitsPerWord = BitsPerByte * BytesPerWord;

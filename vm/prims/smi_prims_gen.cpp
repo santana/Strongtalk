@@ -48,7 +48,7 @@ char* PrimitivesGenerator::smiOopPrimitives_add() {
 
   char* entry_point = masm->pc();
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(eax, receiver);
   masm->movq(edx, argument);
   masm->addq(eax, edx);
@@ -86,7 +86,7 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
 
   char* entry_point = masm->pc();
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(eax, receiver);
   masm->movq(edx, argument);
   masm->subq(eax, edx);
@@ -124,7 +124,7 @@ char* PrimitivesGenerator::smiOopPrimitives_multiply() {
 
   char* entry_point = masm->pc();
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   // (a<<1) * b  ==  (a*b)<<1  with the tag bit preserved. 64-bit multiply
   // with OF -> true smi-range overflow -> big-int fallback.
   masm->movq(edx, argument);
@@ -143,20 +143,15 @@ char* PrimitivesGenerator::smiOopPrimitives_multiply() {
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->jmp(error_overflow);
-#else
+#elif defined(DELTA_BACKEND_AARCH64)
   masm->movl(edx, argument);
   masm->movl(eax, receiver);
   masm->testb(edx, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   masm->sarl(edx, 2);
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   // AArch64 imull: cmp sets EQ when no overflow, so test notEqual for overflow.
   masm->imull(edx);
   masm->jcc(Assembler::notEqual, _overflow);
-#else
-  masm->imull(edx);
-  masm->jcc(Assembler::overflow, _overflow);
-#endif
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
   PRIM_RETURN();
@@ -197,7 +192,7 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   // ;     x mod y = x%y + y
   // ;
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(eax, receiver);
   masm->movq(ecx, argument);
   masm->testq(ecx, ecx);
@@ -227,7 +222,7 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   masm->addq(eax, ecx);
   masm->shlq(eax, 2);
   PRIM_RETURN();
-#else
+#elif defined(DELTA_BACKEND_AARCH64)
   //  masm->int3();
   masm->movl(eax, receiver);
   masm->movl(ecx, argument);
@@ -241,11 +236,7 @@ char* PrimitivesGenerator::smiOopPrimitives_mod() {
   masm->sarl(eax, 2);
   masm->cdq();
   masm->idivl(ecx);
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   masm->jcc(Assembler::notEqual, error_overflow);
-#else
-  masm->jcc(Assembler::overflow, error_overflow);
-#endif
 
   masm->movl(eax, edx);
   masm->testl(eax, eax);
@@ -288,7 +279,7 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   // ;     x div y = x/y-1
   // ;
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(ecx, argument);
   masm->movq(eax, receiver);
   masm->testq(ecx, ecx);
@@ -317,7 +308,7 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   masm->decq(eax);
   masm->shlq(eax, 2);
   PRIM_RETURN();
-#else
+#elif defined(DELTA_BACKEND_AARCH64)
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -330,12 +321,7 @@ char* PrimitivesGenerator::smiOopPrimitives_div() {
   masm->sarl(eax, 2);
   masm->cdq();
   masm->idivl(ecx);
-
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   masm->jcc(Assembler::notEqual, error_overflow);
-#else
-  masm->jcc(Assembler::overflow, error_overflow);
-#endif
 
   masm->testl(edx, edx);
   masm->jcc(Assembler::equal, _equal);
@@ -361,7 +347,7 @@ char* PrimitivesGenerator::smiOopPrimitives_quo() {
 
   char* entry_point = masm->pc();
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(ecx, argument);
   masm->movq(eax, receiver);
 
@@ -381,7 +367,7 @@ char* PrimitivesGenerator::smiOopPrimitives_quo() {
   masm->jcc(Assembler::overflow, error_overflow);
   masm->shlq(eax, 2);
   PRIM_RETURN();
-#else
+#elif defined(DELTA_BACKEND_AARCH64)
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
 
@@ -398,12 +384,7 @@ char* PrimitivesGenerator::smiOopPrimitives_quo() {
   masm->sarl(eax, 2);
   masm->cdq();
   masm->idivl(ecx);
-
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   masm->jcc(Assembler::notEqual, error_overflow);
-#else
-  masm->jcc(Assembler::overflow, error_overflow);
-#endif
   masm->shll(eax, 2);
   PRIM_RETURN();
 #endif
@@ -416,7 +397,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
 
   char* entry_point = masm->pc();
 
-#if defined(DELTA_X86_64)
+#if defined(DELTA_BACKEND_X86_64)
   masm->movq(ecx, argument);
   masm->movq(eax, receiver);
   masm->testq(ecx, ecx);
@@ -431,7 +412,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   masm->movq(eax, edx);
   masm->shlq(eax, 2);
   PRIM_RETURN();
-#else
+#elif defined(DELTA_BACKEND_AARCH64)
   masm->movl(ecx, argument);
   masm->movl(eax, receiver);
   masm->testl(ecx, ecx);
@@ -442,11 +423,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   masm->sarl(eax, 2);
   masm->cdq();
   masm->idivl(ecx);
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
   masm->jcc(Assembler::notEqual, error_overflow);
-#else
-  masm->jcc(Assembler::overflow, error_overflow);
-#endif
   masm->movl(eax, edx);
   masm->sarl(eax, 2);
   PRIM_RETURN();

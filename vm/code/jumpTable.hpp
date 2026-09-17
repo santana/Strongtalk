@@ -33,6 +33,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _JUMP_TABLE_HPP
 #define _JUMP_TABLE_HPP
+#include "topIncludes/architecture.hpp"
 
 #ifdef DELTA_COMPILER
 
@@ -115,7 +116,7 @@ private:
   }
   char* state_addr() const { return ((char*)this) + jump_inst_size(); }
   static int jump_inst_size() {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
     // AArch64 stub: ldr x16,[pc,#8] (4B) + br x16 (4B) + .quad literal (8B).
     return 16;
 #else
@@ -128,7 +129,7 @@ private:
   // so using state_addr() as the displacement base would land every dispatch
   // 4 bytes short of its target. See vm-code-review.md #7.
   char* jump_rel32_end() const {
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
     ShouldNotReachHere();
     return NULL;
 #else

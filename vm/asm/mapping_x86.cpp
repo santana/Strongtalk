@@ -14,10 +14,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // This is the sibling of asm/mapping_aarch64.cpp; the register conventions
 // are documented in asm/mapping_x86.hpp.
 //
-// This file is inert unless the AArch64 backend is NOT selected (i.e. the
-// default x86 build).
+// This file is inert unless the x86-64 backend is selected. The backend
+// macros are derived from the compiler's target builtins (see
+// topIncludes/architecture.hpp), so that header is included *before* the
+// guard below.
 
-#if defined(DELTA_COMPILER) && !defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#include "topIncludes/architecture.hpp"
+
+#if defined(DELTA_COMPILER) && defined(DELTA_BACKEND_X86_64)
 
 #include "asm/codeBuffer.hpp"
 #include "asm/mapping.hpp"
@@ -127,18 +131,11 @@ bool Mapping::isFloatTemporary(Location loc) {
 }
 
 // helper functions for code generation
-// x86-64 uses movq for pointer-sized ops; x86-32 uses movl.
-#if DELTA_X86_64
+// x86-64 uses movq for pointer-sized ops.
 #define MAPPING_MOVQ(d, s) theMacroAssm->movq(d, s)
 #define MAPPING_MOVL(d, s) theMacroAssm->movq(d, s)
 #define MAPPING_MOVL_MEM(d, s) theMacroAssm->movq(d, s)
 #define MAPPING_MOVL_IMM(d, v) theMacroAssm->movq(d, (intptr_t)(v))
-#else
-#define MAPPING_MOVQ(d, s) theMacroAssm->movl(d, s)
-#define MAPPING_MOVL(d, s) theMacroAssm->movl(d, s)
-#define MAPPING_MOVL_MEM(d, s) theMacroAssm->movl(d, s)
-#define MAPPING_MOVL_IMM(d, v) theMacroAssm->movl(d, (intptr_t)(v))
-#endif
 
 void Mapping::load(Location src, Register dst) {
   switch (src.mode()) {
@@ -279,4 +276,4 @@ void mapping_init() {
   Mapping::initialize();
 }
 
-#endif // DELTA_COMPILER && !DELTA_ASSEMBLER_BACKEND_AARCH64
+#endif // DELTA_COMPILER && DELTA_BACKEND_X86_64

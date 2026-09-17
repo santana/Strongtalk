@@ -15,6 +15,12 @@
 # The x86 encoder emits byte sequences regardless of the host that compiles
 # it; each must match the golden bytes checked by the test itself.
 #
+# Each test binary picks its backend explicitly (-DDELTA_BACKEND_X86_64 /
+# -DDELTA_BACKEND_AARCH64); the backend macros are NOT derived from the
+# compiler's target builtins here (an arm64 host would otherwise force the
+# AArch64 backend onto the x86 test). The host's real ABI is irrelevant since
+# the encoder is pure byte emission.
+#
 # The test links only the two encoder translation units. Symbols that the
 # encoder references but never calls at run time (Universe globals, the
 # ostream, print_reg, store_check, ...) are left unresolved; like the VM's
@@ -44,11 +50,11 @@ endif
 all: assemblerEncoderTest_64 assemblerEncoderTest_aarch64
 
 assemblerEncoderTest_64: assemblerEncoderTest.cpp $(ENCODER_SRCS)
-	$(CXX) $(CXXFLAGS) $(ENCODER_SRCS) assemblerEncoderTest.cpp \
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_X86_64 $(ENCODER_SRCS) assemblerEncoderTest.cpp \
 	  $(UNDEFINED_OK) -o $@
 
 assemblerEncoderTest_aarch64: assemblerEncoderTest_aarch64.cpp $(ENCODER_SRCS_AARCH64)
-	$(CXX) $(CXXFLAGS) -DDELTA_ASSEMBLER_BACKEND_AARCH64 \
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_AARCH64 \
 	  $(ENCODER_SRCS_AARCH64) assemblerEncoderTest_aarch64.cpp \
 	  $(UNDEFINED_OK) -o $@
 

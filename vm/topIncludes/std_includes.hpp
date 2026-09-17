@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <stdarg.h>
 
 #include "utilities/ostream.hpp"
+#include "topIncludes/architecture.hpp"
 
 #if defined(_MSC_VER)
 
@@ -46,13 +47,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #define _vsnprintf vsnprintf
 
-// __stdcall is a real calling convention only on 32-bit x86; on 64-bit
-// targets (x86-64, AArch64) the attribute is meaningless and clang flags it
-// with -Wignored-attributes. Leave it empty so the primitive/trampoline
-// declarations below don't emit noise on the ports this VM actually builds.
-#if defined(__i386__) || defined(_M_IX86)
-#define __stdcall __attribute__((stdcall))
-#elif !defined(__stdcall)
+// __stdcall is a real calling convention only on 32-bit x86; that path is
+// dropped, so on the 64-bit targets this VM builds (x86-64, AArch64) the
+// attribute is meaningless and clang flags it with -Wignored-attributes.
+// Leave it empty (unless the toolchain predefines it, e.g. MinGW-w64) so the
+// primitive/trampoline declarations below don't emit noise.
+#if !defined(__stdcall)
 #define __stdcall
 #endif
 #define mystd _mystd

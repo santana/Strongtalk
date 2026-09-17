@@ -23,6 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _NATIVE_INSTRUCTION_HPP
 #define _NATIVE_INSTRUCTION_HPP
+#include "topIncludes/architecture.hpp"
 
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
@@ -48,7 +49,7 @@ protected:
 
 class NativeCall : public NativeInstruction {
 public:
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // AArch64 "call to absolute address" is emitted as:
   //   ldr x16, [pc, #8]   (4 bytes)
   //   b .+12              (4 bytes)
@@ -167,7 +168,7 @@ inline NativeMov* nativeMov_at(char* address) {
 
 class NativeTest : public NativeInstruction {
 public:
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // On AArch64 there is no `test eax, imm32`; the IC info is a 4-byte
   // hint-encoded NOP (see MacroAssembler::ic_info) located AT the return
   // address, so the info word is at offset 0 and the next instruction four
@@ -212,7 +213,7 @@ inline NativeTest* nativeTest_at(char* address) {
 
 class IC_Info : public NativeTest {
 public:
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // The info word is a hint-encoded NOP carrying the (up to 6) flag bits in
   // hint-imm positions 5..11; MacroAssembler::ic_info remaps imm values
   // 0x07..0x0f (+9) to dodge the PAC pointer-auth aliases, mirror that here.

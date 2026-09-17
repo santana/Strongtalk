@@ -198,7 +198,7 @@ oop interpretedVFrame::expression_at(int index) const {
 }
 
 oop* interpretedVFrame::expression_addr(int offset) const {
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
   // delta stack slots are 16 bytes (slotSize = 2*oopSize) on AArch64
   return (oop*)&((oop*)_fr.sp())[2 * offset];
 #else

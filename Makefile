@@ -111,8 +111,10 @@ $(shell mkdir -p $(BUILD_DIR))
 # Select the assembler/mapping backend by the *target* architecture.
 ifeq ($(ARCH),x86_64)
 TARGET_ARCH_X86_64 = 1
-else
+else ifeq ($(ARCH),arm64)
 TARGET_ARCH_AARCH64 = 1
+else
+$(error Unsupported ARCH "$(ARCH)" -- expected x86_64 or arm64)
 endif
 
 # macOS -arch flag (Linux compiles for the host via the toolchain directly).
@@ -120,9 +122,6 @@ ifeq ($(UNAME),Darwin)
 ifeq ($(origin ARCH_FLAGS),command line)
 else
 ARCH_FLAGS	= -arch $(ARCH)
-endif
-ifeq ($(ARCH),arm64)
-DEFINES		+= -DDELTA_ASSEMBLER_BACKEND_AARCH64
 endif
 endif
 
@@ -221,7 +220,7 @@ $(1)_SRCS       := $$(foreach dir,$$($(1)_DIRS),$$(wildcard $$(dir)/*/*.cpp))
 $(1)_SRCS	:= $$(if $$(filter stest,$(1)),$$(filter-out $(TEST_DIR)/assembler/%,$$($(1)_SRCS)),$$($(1)_SRCS))
 ifeq ($(TARGET_ARCH_X86_64),1)
 $(1)_SRCS	:= $$(filter-out %/mapping_aarch64.cpp %/assembler_aarch64.cpp %/interpreterBackend_aarch64.cpp,$$($(1)_SRCS))
-else
+else ifeq ($(TARGET_ARCH_AARCH64),1)
 $(1)_SRCS	:= $$(filter-out %/mapping_x86.cpp %/assembler_x86.cpp %/interpreterBackend_x86.cpp,$$($(1)_SRCS))
 endif
 $(1)_OBJS	:= $$(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_DIR)/obj/%.o,$$($(1)_SRCS))

@@ -297,14 +297,16 @@ two backends:
 
 | Backend            | Files                          | Status     |
 |--------------------|--------------------------------|------------|
-| x86-64 (default)   | `assembler_x86.hpp/cpp`       | Complete   |
+| x86-64             | `assembler_x86.hpp/cpp`       | Complete   |
 | AArch64 (ARM64)    | `assembler_aarch64.hpp/cpp`   | Complete   |
 
-Backend selection is at compile time via `DELTA_ASSEMBLER_BACKEND_AARCH64`:
+Backend selection is at compile time via the `DELTA_BACKEND_AARCH64` /
+`DELTA_BACKEND_X86_64` macros, derived from the compiler's target builtins in
+`vm/topIncludes/architecture.hpp`:
 
 ```cpp
 // vm/asm/assembler.hpp
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   typedef AArch64Assembler Assembler;
   typedef AArch64MacroAssembler MacroAssembler;
 #else
@@ -330,7 +332,8 @@ A second, higher layer of the same split — `InterpreterBackend`
 shape of the delta stack and the piece of the calling convention that
 `MacroAssembler::call_C` does NOT already express. The frontend files are
 `#ifdef`-free; each arch-specific convention is one named method/constant here,
-selected by the same `DELTA_ASSEMBLER_BACKEND_AARCH64` define as the assemblers.
+selected by the same `DELTA_BACKEND_AARCH64` / `DELTA_BACKEND_X86_64`
+macros as the assemblers.
 
 The virtual interpreter frame layout itself (`frame_*_offset` in
 `runtime/frame.hpp`) stays where it is — it is shared with the GC/frame walkers.
@@ -655,7 +658,9 @@ configuration builds into its own out-of-tree directory,
 
 - **Auto-detection**: `uname -m` selects arm64 vs x86-64
 - **Defines**: `-DDELTA_COMPILER -DASSERT -DDEBUG` (debug build)
-- **AArch64**: adds `-DDELTA_ASSEMBLER_BACKEND_AARCH64`
+- **Backend**: `DELTA_BACKEND_AARCH64` / `DELTA_BACKEND_X86_64`, derived from
+  the compiler's target builtins in `vm/topIncludes/architecture.hpp` — no
+  build flag needed
 - **Object files**: `vm/**/*.cpp` -> `<build>/obj/vm/**/*.o`
 - **Shared library**: `strongtalk.so` (all objects except `main.o`)
 - **Binaries**: `strongtalk` (VM), `stest` (test runner)

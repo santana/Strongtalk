@@ -24,12 +24,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  * reporting) is provided here; everything else is left unresolved and the
  * executable is linked with undefined symbols allowed.
  *
- * This file is inert without -DDELTA_ASSEMBLER_BACKEND_AARCH64 so that the
+ * This file is inert without -DDELTA_BACKEND_AARCH64 so that the
  * VM's stest build (which compiles the other encoder tests with the x86
  * backend) is unaffected.
  */
 
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
 
 #include "asm/assembler.hpp"
 #include "asm/codeBuffer.hpp"
@@ -2821,4 +2821,4 @@ int main() {
   return failures == 0 ? 0 : 1;
 }
 
-#endif // DELTA_ASSEMBLER_BACKEND_AARCH64
+#endif // DELTA_BACKEND_AARCH64

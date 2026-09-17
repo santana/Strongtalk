@@ -14,11 +14,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // This is the sibling of asm/mapping_x86.cpp; the register conventions are
 // documented in asm/mapping_aarch64.hpp.
 //
-// This file is inert unless the AArch64 backend is selected with
-// -DDELTA_ASSEMBLER_BACKEND_AARCH64, so that the default (x86) VM build
-// (which compiles every vm/*/*.cpp) is unaffected.
+// This file is inert unless the AArch64 backend is selected. The backend
+// macros are derived from the compiler's target builtins (see
+// topIncludes/architecture.hpp), so that header is included *before* the
+// guard below.
 
-#if defined(DELTA_COMPILER) && defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#include "topIncludes/architecture.hpp"
+
+#if defined(DELTA_COMPILER) && defined(DELTA_BACKEND_AARCH64)
 
 #include "asm/codeBuffer.hpp"
 #include "asm/mapping.hpp"
@@ -291,4 +294,4 @@ void mapping_init() {
   Mapping::initialize();
 }
 
-#endif // DELTA_COMPILER && DELTA_ASSEMBLER_BACKEND_AARCH64
+#endif // DELTA_COMPILER && DELTA_BACKEND_AARCH64

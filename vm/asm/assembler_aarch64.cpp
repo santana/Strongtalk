@@ -15,11 +15,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // live in test/assembler/assemblerEncoderTest_aarch64.cpp. See the header
 // comment in asm/assembler_aarch64.hpp for the verification status.
 //
-// This file is inert unless the AArch64 backend is selected with
-// -DDELTA_ASSEMBLER_BACKEND_AARCH64, so that the default (x86) VM build
-// (which compiles every vm/*/*.cpp) is unaffected.
+// This file is inert unless the AArch64 backend is selected. The backend
+// macros are derived from the compiler's target builtins (see
+// topIncludes/architecture.hpp), so that header is included *before* the
+// guard below; the x86 VM build compiles this file and leaves it inert.
 
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#include "topIncludes/architecture.hpp"
+
+#ifdef DELTA_BACKEND_AARCH64
 
 #include "asm/assembler_aarch64.hpp"
 #include "asm/codeBuffer.hpp"
@@ -2388,4 +2391,4 @@ void AArch64MacroAssembler::inline_oop(oop o) {
   load_absolute_address(x16, Address((intptr_t)o, relocInfo::oop_type));
 }
 
-#endif // DELTA_ASSEMBLER_BACKEND_AARCH64
+#endif // DELTA_BACKEND_AARCH64

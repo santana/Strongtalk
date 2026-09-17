@@ -15,6 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include "asm/assembler.hpp"
 #include "memory/allocation.hpp"
+#include "topIncludes/architecture.hpp"
 
 // InterpreterBackend centralises the architecture-specific conventions of the
 // delta interpreter (the emitted bytecode engine) and of the primitives it
@@ -92,7 +93,7 @@ public:
   // both on return). AArch64: the receiver lives in x0, the argument in x1,
   // and the result must be copied from eax to x0 before ret(0). The returned
   // operand type is therefore Address on x86-64 and Register on AArch64.
-#if defined(DELTA_ASSEMBLER_BACKEND_AARCH64)
+#if defined(DELTA_BACKEND_AARCH64)
   static Register primReceiver();
   static Register primArgument();
 #else

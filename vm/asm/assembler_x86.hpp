@@ -24,18 +24,13 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
 
-// The x86 backend targets 64-bit only; 32-bit support has been dropped.
-// DELTA_X86_64 is therefore always defined (as 1), so existing
-// '#if DELTA_X86_64' guards keep working.
+// The x86 backend targets 64-bit only; 32-bit support has been dropped, so
+// the x86-64 path is always the one taken (guards use DELTA_BACKEND_X86_64).
 //
 // All pointer-sized operations (register moves, stack pushes, arithmetic)
 // use the explicit 64-bit *q instruction forms. The 32-bit *l forms remain
 // available for genuine 32-bit data operations (e.g. boxed Smi arithmetic)
 // and emit true 32-bit instructions.
-
-#ifndef DELTA_X86_64
-#define DELTA_X86_64 1
-#endif
 
 const int BytesPerNativeWord = 8; // size of a native word (pointer) in bytes
 const int nofRegisters = 16; // total number of registers

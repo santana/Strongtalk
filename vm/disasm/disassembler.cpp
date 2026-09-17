@@ -125,7 +125,7 @@ static void printRelocInfo(relocIterator* iter, outputStream* st) {
 
     case relocInfo::prim_type:
       st->print("%p, primitive call, ", addr);
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
       target = *(char**)addr; // .quad literal holds the absolute target
 #else
       target = (char*)(*addr + (intptr_t)addr + 4); // 4-byte rel32 displacement

@@ -50,7 +50,7 @@ int relocInfo::print(nmethod* m, int last_offset) {
     oop((intptr_t)*addr)->print_value();
   } else {
     assert(isCall(), "must be a call");
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+#ifdef DELTA_BACKEND_AARCH64
     char* target = *(char**)addr; // .quad literal holds the absolute target
 #else
     char* target = (char*)(*addr + (intptr_t)addr + 4); // 4-byte rel32 displacement
