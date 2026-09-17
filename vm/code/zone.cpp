@@ -614,11 +614,10 @@ bool zone::isDeltaPC(void* p) const {
 }
 
 nmethod* zone::findNMethod(void* start) const {
-  nmethod* n;
-  if (methodHeap->contains(start)) {
-    n = (nmethod*)methodHeap->findStartOfBlock(start);
-    assert((char*)start < (char*)n->locsEnd(), "found wrong nmethod");
-  }
+  if (!methodHeap->contains(start))
+    return NULL;
+  nmethod* n = (nmethod*)methodHeap->findStartOfBlock(start);
+  assert((char*)start < (char*)n->locsEnd(), "found wrong nmethod");
   assert(methodHeap->contains(n), "not in zone");
   assert(n->isNMethod(), "findNMethod didn't find nmethod");
   assert(n->encompasses(start), "doesn't encompass start");

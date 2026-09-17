@@ -825,7 +825,7 @@ nmethod* nmethodContaining(char* pc, char* likelyEntryPoint) {
 
 nmethod* findNMethod(void* start) {
   nmethod* m = Universe::code->findNMethod(start);
-  assert(m->encompasses(start), "returned wrong nmethod");
+  assert(!m || m->encompasses(start), "returned wrong nmethod");
   return m;
 }
 

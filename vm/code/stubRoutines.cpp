@@ -171,8 +171,13 @@ char* StubRoutines::generate_ic_lookup(MacroAssembler* masm, char* lookup_routin
   masm->set_last_Delta_frame_after_call();
   masm->movl(x1, x30); // ic = return address
   masm->pushl(x0); // save receiver (stre_pre by slotSize, keeps 16-byte alignment)
+  masm->pushl(x29); // save interp frame base: x29 is the VM frame pointer and the
+  // C call below clobbers it; interpreters that restart a send from this stub
+  // (redo_send_entry / interp-entry guard redo) re-read their state from the
+  // interp frame addressed by x29.
   masm->call_C(lookup_routine_entry, x0, x1); // eax = icNormalLookup(receiver, ic)
   masm->movl(ebx, eax); // ebx = method code entry
+  masm->popl(x29); // restore interp frame base (ldr_post by slotSize)
   masm->popl(x0); // restore receiver (ldr_post by slotSize)
   masm->reset_last_Delta_frame();
   masm->jmp(ebx); // jump to target

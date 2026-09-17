@@ -115,8 +115,10 @@ int TestDeltaProcess::launch_scheduler(DeltaProcess* process) {
   process->suspend_at_creation();
   DeltaProcess::set_active(process);
   while (true) {
-    if (DeltaProcess::wait_for_async_dll(10))
-      process->transfer_to(testProcess);
+    // No async DLLs are ever pending in the test harness, so
+    // wait_for_async_dll would never grant the CPU back to the test process;
+    // hand control over on every round-trip instead.
+    process->transfer_to(testProcess);
   }
   return 0;
 }

@@ -72,31 +72,6 @@ extern "C" char* icNormalLookup(oop recv, CompiledIC* ic) {
   // allocation may take place. Then we have to fix the lookup stub as well.
   // (receiver cannot be saved/restored within the C frame).
   VerifyNoScavenge vna;
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // TEMP DIAG (sent-receiver recovery): dump the IC info word, the bytes
-  // around the send, and the containing nmethod so a corrupted receiver can
-  // be traced to its frame slot. Remove once the recompile/activation blocker
-  // is resolved.
-  {
-    static int icmiss_no = 0;
-    fprintf(stderr, "ICFRESH[%d]: this=%p lowbyte=0x%x word=0x%x dest=%p\n", ++icmiss_no, ic,
-            *(unsigned char*)((char*)ic + 0), *(unsigned int*)((char*)ic + 0), *(void**)((char*)ic - 12));
-    fprintf(stderr, "  CALL: ");
-    for (int k = -24; k < 24; k += 4)
-      fprintf(stderr, "%08x ", *(unsigned int*)((char*)ic + k));
-    fprintf(stderr, "\n");
-    fprintf(stderr, "  CALLWIN (this-0x68..this-0x10): ");
-    for (int k = -0x68; k <= -0x10; k += 4)
-      fprintf(stderr, "%08x ", *(unsigned int*)((char*)ic + k));
-    fprintf(stderr, "\n");
-    nmethod* sndr = findNMethod((char*)ic);
-    if (sndr != NULL) {
-      fprintf(stderr, "  SENDER recv(%p) in nmethod %p is_block=%d sel=", recv, sndr, sndr->is_block());
-      sndr->method()->selector()->print_symbol_on();
-      fprintf(stderr, "\n");
-    }
-  }
-#endif
   return ic->normalLookup(recv);
 }
 
@@ -149,11 +124,53 @@ char* CompiledIC::normalLookup(oop recv) {
   //
   // assert(!Interpreter::contains(begin_addr()), "should be handled in the interpreter");
   if (Interpreter::contains(begin_addr())) {
-    mystd->print_cr("nmethod called from interpreter reports ic miss:");
-    mystd->print_cr("interpreter call at: 0x%x", begin_addr());
-    mystd->print_cr("nmethod entry point: 0x%x", Interpreter::_last_native_called);
-    InterpretedIC* ic = as_InterpretedIC(next_instruction_address());
-    fatal("please notify VM people");
+    // The derived inline-cache address belongs to the interpreter, not to
+    // compiled code. This happens when a predicted-send nmethod entry guard is
+    // reached from an interpreted send: the entry is called by call_native via
+    // the jump table (`br x16` stub) and re-dispatches to the lookup stub with
+    // a non-LR-setting `br`, so x30 -- and therefore the IC address computed by
+    // the lookup stub -- is the interpreter's OWN send-site return address, not
+    // a compiled call site. Steffen's classic "megamorphic self send in the
+    // interpreter".
+    //
+    // Resolve the send from what we do know instead: the actual receiver klass
+    // and the selector of the guarded target (recovered from the jump table
+    // stub call_native is currently calling). The interpreted inline cache stays
+    // untouched; the interp will re-resolve it through its own ic-miss on the
+    // next visit, so this path self-corrects.
+    char* lnc = Interpreter::_last_native_called;
+    nmethod* tnm = lnc != NULL ? Universe::code->findNMethod_maybe(lnc) : NULL;
+    if (tnm == NULL && lnc != NULL && (*(unsigned int*)lnc & 0xff000000) == 0x58000000) {
+      // lnc is a jump-table `ldr x16,[pc,#8]; br x16` stub; its literal (+8) is
+      // the guarded nmethod entry, which may be mid-recompile and absent from
+      // the live-nmethod table, so map it through the block directory instead.
+      nmethod* b = (nmethod*)Universe::code->methodHeap->findStartOfBlock((void*)*(intptr_t*)(lnc + 8));
+      if (b != NULL && b->isNMethod())
+        tnm = b;
+    }
+    if (tnm == NULL) {
+      mystd->print_cr("interpreter entry-guard ic miss, no target nmethod:");
+      mystd->print_cr("interpreter call at: 0x%x", begin_addr());
+      mystd->print_cr("nmethod entry point: 0x%x", lnc);
+      fatal("please notify VM people");
+    }
+    LookupResult result = interpreter_normal_lookup(recv->klass(), tnm->key.selector());
+    if (!result.is_entry()) {
+      // The real target is interpreted (or doesNotUnderstand); it cannot be
+      // dispatched from the guard. Re-issue the whole send in the interpreter,
+      // like the zombie-nmethod send restart: the lookup stub restored the
+      // interp frame base (x29), so the redo entry re-loads esi/ebx from the
+      // still-pushed send arguments and re-runs the send bytecode.
+#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
+      return Interpreter::redo_send_entry();
+#else
+      mystd->print_cr("interpreter entry-guard ic miss, interpreted result:");
+      mystd->print_cr("interpreter call at: 0x%x", begin_addr());
+      mystd->print_cr("nmethod entry point: 0x%x", lnc);
+      fatal("please notify VM people");
+#endif
+    }
+    return result.entry()->destination();
   }
 
   if (TraceLookup) {
@@ -165,16 +182,6 @@ char* CompiledIC::normalLookup(oop recv) {
     mystd->cr();
   }
   klassOop klass = recv->klass();
-#ifdef DELTA_ASSEMBLER_BACKEND_AARCH64
-  // TEMP DIAG: IC state before the inline-cache update (restored after the
-  // accidental working-tree reset; exact format drift from original is OK).
-  {
-    fprintf(stderr, "ICOPT: this=%p optimized=%d megamorphic=%d dirty=%d\n", this, isOptimized(), isMegamorphic(),
-            isDirty());
-    fprintf(stderr, "ICBYTES: info_word=0x%x dest=%p\n", *(unsigned int*)((char*)next_instruction_address()),
-            *(void**)((char*)next_instruction_address() - 12));
-  }
-#endif
   symbolOop sel = selector();
   LookupResult result = lookupCache::ic_normal_lookup(klass, sel);
 
