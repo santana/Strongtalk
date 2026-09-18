@@ -23,12 +23,17 @@ static Event* done;
 
 TestDeltaProcess* testProcess = NULL;
 
+static int addTestProcessDepth = 0;
+
 void addTestToProcesses() {
-  testProcess->addToProcesses();
+  if (addTestProcessDepth++ == 0)
+    testProcess->addToProcesses();
 }
 
 void removeTestFromProcesses() {
-  testProcess->removeFromProcesses();
+  assert(addTestProcessDepth > 0, "unbalanced removeTestFromProcesses");
+  if (--addTestProcessDepth == 0)
+    testProcess->removeFromProcesses();
 }
 
 void TestDeltaProcess::removeFromProcesses() {
