@@ -2151,7 +2151,7 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
 void InterpreterGenerator::generate_primitiveValue(int i) {
   GeneratedPrimitives::set_primitiveValue(i, masm->pc());
   masm->movl(eax, Address(esp, (i + 1) * slotSize)); // load recv (= block)
-  InterpreterBackend::shiftBlockValueArgs(masm, i);
+  InterpreterBackend::setupBlockValueFrame(masm, i);
   masm->jmp(_block_entry);
 }
 
@@ -2601,6 +2601,9 @@ char* InterpreterGenerator::objArray_at_put() {
 // _return_tos pops the arguments and returns from a method or block.
 
 void InterpreterGenerator::return_tos(Bytecodes::ArgumentSpec arg_spec) {
+  // A block can be reached through primitiveValue, whose call_C glue reads the
+  // result back from x0 (AArch64); publish eax before the frame comes down.
+  InterpreterBackend::copyResultToReturnRegister(masm);
   masm->leave();
   switch (arg_spec) {
     case Bytecodes::recv_0_args:

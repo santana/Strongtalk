@@ -89,6 +89,12 @@ void InterpreterBackend::returnErrorToInterpreter(MacroAssembler* masm) {
   masm->ret(2 * oopSize);
 }
 
+void InterpreterBackend::copyResultToReturnRegister(MacroAssembler* masm) {
+  // eax already holds the result and the caller pops the return address off
+  // the hardware stack, so nothing to do.
+  (void)masm;
+}
+
 Address InterpreterBackend::contextLengthArgument() {
   return Address(esp, +oopSize);
 }
@@ -185,10 +191,12 @@ void InterpreterBackend::negateNLRArgumentCount(MacroAssembler* masm, Register r
 
 const Address::ScaleFactor InterpreterBackend::contextTempScale = Address::times_4;
 
-void InterpreterBackend::shiftBlockValueArgs(MacroAssembler* masm, int nArgs) {
+void InterpreterBackend::setupBlockValueFrame(MacroAssembler* masm, int nArgs) {
   (void)masm;
   (void)nArgs;
-  // No-op: an 8-byte return-address slot does not disturb the delta-slot stride.
+  // No-op: the x86-64 call/ret prologue already leaves the delta stack
+  // balanced after the block's return pops (nArgs+1) slots plus the receiver
+  // word.
 }
 
 // ---- Megamorphic lookup-cache probes ----

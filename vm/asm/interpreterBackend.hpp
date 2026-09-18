@@ -103,6 +103,15 @@ public:
   static void returnToInterpreter(MacroAssembler* masm);
   static void returnErrorToInterpreter(MacroAssembler* masm);
 
+  // Copy the tos (eax) into the register the caller's glue reads the result
+  // from. AArch64's call_C(Register) reads the C result from x0 after the
+  // callee returns, so a block reached through primitiveValue (whose epilogue
+  // is return_tos/leave/ret, not returnToInterpreter) must publish eax in x0;
+  // without this the glue overwrites eax with stale x0. No-op on x86-64, where
+  // eax already holds the result and the return address is popped off the
+  // stack.
+  static void copyResultToReturnRegister(MacroAssembler* masm);
+
   // allocateContext_var reads the context size from the hardware stack; on
   // x86-64 the return address occupies [esp], so the length slots sits at
   // [esp+oopSize], while AArch64 calls the prim with a direct blr (return
@@ -196,11 +205,15 @@ public:
   // stride, preserved verbatim per arch.
   static const Address::ScaleFactor contextTempScale; // times_4 (x86-64), times_8 (AArch64)
 
-  // primitiveValue: an AArch64 call_C pushes a 16-byte return-address slot, so
-  // the i block arguments sit one delta slot too high for the block frame;
-  // shift them down before following _block_entry. No-op on x86-64 (its 8-byte
-  // return address does not disturb the delta-slot stride).
-  static void shiftBlockValueArgs(MacroAssembler* masm, int nArgs);
+  // primitiveValue: an AArch64 call_C pushes a 16-byte saved-LR slot at the
+  // primitive entry sp, and the block's return bytecode pops (nArgs+1) delta
+  // slots. If the arguments stay where the caller left them the block frame
+  // overlaps the saved LR and the pop lifts sp past the saved-LR slot, leaking
+  // stack and corrupting call_C's RESTORE_LR. Relocate the arguments into a
+  // frame placed entirely below the saved-LR slot and lower sp so that the
+  // block's own return pop lands sp exactly back on the saved LR. No-op on
+  // x86-64, whose call/ret prologue already leaves the delta stack balanced.
+  static void setupBlockValueFrame(MacroAssembler* masm, int nArgs);
 
   // ---- Megamorphic lookup-cache probes (interpreter.cpp megamorphic_send) ----
   //

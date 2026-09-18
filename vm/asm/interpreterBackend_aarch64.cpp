@@ -94,6 +94,13 @@ void InterpreterBackend::returnErrorToInterpreter(MacroAssembler* masm) {
   masm->ret(0);
 }
 
+void InterpreterBackend::copyResultToReturnRegister(MacroAssembler* masm) {
+  // call_C(Register) copies x0 -> eax after the callee returns; publish the
+  // interpreter's tos (eax) in x0 first so a block invoked through
+  // primitiveValue doesn't lose its result.
+  masm->mov(x0, eax);
+}
+
 Address InterpreterBackend::contextLengthArgument() {
   // install_context calls this prim with a direct blr, so the return address
   // lives in x30 rather than on the stack and the length sits in the top slot.
@@ -183,14 +190,26 @@ void InterpreterBackend::negateNLRArgumentCount(MacroAssembler* masm, Register r
 
 const Address::ScaleFactor InterpreterBackend::contextTempScale = Address::times_8;
 
-void InterpreterBackend::shiftBlockValueArgs(MacroAssembler* masm, int nArgs) {
-  // call_C pushed the 16-byte return address, so the block's arguments sit one
-  // slot too high for the block frame (arg1 would read [fp+16] = the saved
-  // x30). Shift the nArgs down one slot so the block sees them at [fp+16].
-  for (int j = nArgs; j >= 1; j--) {
+void InterpreterBackend::setupBlockValueFrame(MacroAssembler* masm, int nArgs) {
+  // On entry sp points at the saved-LR slot that call_C pushed; the block
+  // arguments are at [sp + j*slotSize] (j = 1..nArgs, arg1 = the last formal)
+  // and call_C's saved LR is at [sp]. The block's return bytecode pops
+  // (nArgs+1) delta slots, so if the arguments stayed put the block frame
+  // would sit on top of the saved LR and the return would lift sp one slot
+  // above it -- RESTORE_LR would then reload x30 from garbage and call_C would
+  // leave sp unbalanced. Instead place the whole block frame below the saved
+  // LR: move each argument down (nArgs+2) slots and lower sp one frame (nArgs+1
+  // slots). enter() then makes fp = sp - 16, arg1 lands at [fp+16], and the
+  // block's leave + pop(nArgs+1) restores sp to exactly the saved LR.
+  //
+  // Walk upward: every destination is below sp while every source is above it,
+  // so no store can clobber a not-yet-read argument. x0 is scratch -- the
+  // block closure is carried in eax (x13) and the block prologue reloads x0.
+  for (int j = 1; j <= nArgs; j++) {
     masm->movl(x0, Address(esp, j * slotSize));
-    masm->movl(Address(esp, (j - 1) * slotSize), x0);
+    masm->movl(Address(esp, (j - nArgs - 2) * slotSize), x0);
   }
+  masm->addl(esp, -(nArgs + 1) * slotSize);
 }
 
 // ---- Megamorphic lookup-cache probes ----
