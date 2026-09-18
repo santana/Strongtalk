@@ -392,7 +392,10 @@ private:
     if (handle == NULL) {
       char* message = (char*)malloc(200);
       snprintf(message, 200, format, dlerror());
-      assert(handle != NULL, message);
+      // The library/function can legitimately be missing at boot (e.g. Windows
+      // DLLs requested while booting on macOS); report it and let the caller
+      // fail gracefully instead of aborting the VM.
+      warning(message);
       free(message);
     }
   }

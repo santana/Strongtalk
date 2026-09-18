@@ -66,11 +66,23 @@ bool CompiledDLL_Cache::async() const {
 }
 
 void CompiledDLL_Cache::verify() {
+#ifdef DELTA_BACKEND_AARCH64
+  // check layout: the call pattern must be a NativeCall...
+  NativeCall::verify();
+  // ... followed by the two oop literals and the entry point literal.
+  if (*(int*)addr_at(entry_point_offset - 8) != (0x58000000 | (2 << 5) | 12))
+    fatal("CompiledDLL_Cache entry literal not found (ldr x12,[pc,#8])");
+  if (*(int*)addr_at(dll_name_offset - 8) != (0x58000000 | (2 << 5) | 16))
+    fatal("CompiledDLL_Cache dll_name literal not found (ldr x16,[pc,#8])");
+  if (*(int*)addr_at(function_name_offset - 8) != (0x58000000 | (2 << 5) | 16))
+    fatal("CompiledDLL_Cache function_name literal not found (ldr x16,[pc,#8])");
+#else
   // check layout
   mov_at(mov_edx_instruction_offset)->verify();
   test_at(test_1_instruction_offset)->verify();
   test_at(test_2_instruction_offset)->verify();
   NativeCall::verify();
+#endif
   // check oops
   if (!dll_name()->is_symbol())
     fatal("dll name is not a symbolOop");

@@ -1563,9 +1563,19 @@ void CodeGenerator::aDLLNode(DLLNode* node) {
   // CompiledDLL_Cache
   // This code pattern must correspond to the CompiledDLL_Cache layout
   // (make sure assembler is not optimizing mov reg, 0 into xor reg, reg!)
+#ifdef DELTA_BACKEND_AARCH64
+  // AArch64 layout: three 16-byte literal pools (entry point, dll_name,
+  // function_name) then the 20-byte NativeCall. The entry point literal is
+  // loaded into edx so the call_DLL_entry stub can call the resolved function;
+  // the oop literals (inline_oop) are kept alive by their oop relocations.
+  _masm->load_absolute_address(edx, Address((intptr_t)node->function(), relocInfo::none));
+  _masm->inline_oop(node->dll_name()); // part of CompiledDLL_Cache
+  _masm->inline_oop(node->function_name()); // part of CompiledDLL_Cache
+#else
   _masm->movl(edx, intptr_t(node->function())); // part of CompiledDLL_Cache
   _masm->inline_oop(node->dll_name()); // part of CompiledDLL_Cache
   _masm->inline_oop(node->function_name()); // part of CompiledDLL_Cache
+#endif
   _masm->call(entry, relocInfo::runtime_call_type); // call lookup/parameter conversion routine
   _currentMapping->killRegisters();
   // For now: ordinary inline cache even though NLRs through DLLs are not allowed yet

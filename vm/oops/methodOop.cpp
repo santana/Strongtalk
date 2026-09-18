@@ -101,8 +101,9 @@ struct bootstrap_instr {
   int nargs;
   u_char args[3]; // non-offset argument bytes
   int noops;
-  intptr_t oops[2]; // inline oop slot values (real oops/small ints)
-  bool oop_is_offset[2]; // oop slot holds a raw offset to relocate
+  intptr_t oops[3]; // inline oop slot values (real oops/small ints/raw words)
+  bool oop_is_offset[3]; // oop slot holds a raw offset to relocate
+  bool dll_entry; // third oop slot of a DLL call is the entry point cell
   u_char trailing;
   bool has_trailing;
   int noff; // number of offsets (0, 1, or 2 for jump_loop)
@@ -368,6 +369,14 @@ void methodOopDesc::bootstrap_object(bootstrap* st) {
     for (int i = 0; i < oops; i++)
       it->oop_is_offset[i] = slot_is_offset[i];
 
+    // The third inline word of a DLL call is the entry-point cell, which holds
+    // a process-specific C pointer (or a stale relocation from an old image)
+    // rather than an oop.  It is read tolerantly and forced back to NULL when
+    // the 64-bit layout is written, so the first execution performs the
+    // runtime lookup and patch like any other cold DLL cache.
+    it->dll_entry = (f == Bytecodes::BOOLB &&
+                     (code == Bytecodes::dll_call_sync || code == Bytecodes::dll_call_async));
+
     // Where each branch offset lives and how it is referenced.
     switch (code) {
       case Bytecodes::ifTrue_byte:
@@ -464,6 +473,8 @@ void methodOopDesc::bootstrap_object(bootstrap* st) {
             if (slot_is_offset[s]) {
               int k = (it->off_slot[0] == s) ? 0 : 1;
               it->off[k] = (int)(int32_t)word; // raw 32-bit offset
+            } else if (it->dll_entry && s == 2) {
+              it->oops[s] = (intptr_t)word; // raw DLL-entry cell, ignored below
             } else {
               if ((word & 3) != Int_Tag) {
                 fatal("raw inline oop word must be a small integer");
@@ -606,6 +617,8 @@ void methodOopDesc::bootstrap_object(bootstrap* st) {
         } else {
           v = it->oops[s];
         }
+        if (it->dll_entry && s == 2)
+          v = 0; // DLL entry points are process-specific; resolve at runtime
         *(intptr_t*)m->codes(base + s * oopSize + 1) = v;
       }
       if (it->has_trailing)

@@ -106,6 +106,9 @@ private:
   // add generators here
   static char* generate_ic_lookup(MacroAssembler* masm, char* lookup_routine_entry);
   static char* generate_call_DLL(MacroAssembler* masm, bool async);
+#ifdef DELTA_BACKEND_AARCH64
+  static char* generate_call_DLL_aarch64(MacroAssembler* masm, bool async);
+#endif
   static char* generate_lookup_DLL(MacroAssembler* masm, bool async);
 
   static char* generate_ic_normal_lookup(MacroAssembler* masm);

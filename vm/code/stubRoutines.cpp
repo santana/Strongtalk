@@ -513,6 +513,9 @@ char* StubRoutines::generate_continue_NLR(MacroAssembler* masm) {
 }
 
 char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
+#ifdef DELTA_BACKEND_AARCH64
+  return generate_call_DLL_aarch64(masm, async);
+#else
   // The following routine provides the extra frame for DLL calls.
   // Note: 1. Its code has to be *outside* the interpreters code! (see also: DLL calls in interpreter)
   //       2. This routine is also used by the compiler! Make sure to adjust the parameter
@@ -648,7 +651,149 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->jmp(next_argument);
 
   return entry_point;
+#endif
 }
+
+#ifdef DELTA_BACKEND_AARCH64
+// AArch64 version of the extra frame for DLL calls. The DLL function is called
+// through the AAPCS64 C ABI (arguments in x0..x7, result in x0) instead of the
+// x86 stack-pushing conventions. The Delta arguments on the eval stack are
+// converted (smi -> int, proxy -> pointer) and passed to the function in
+// C-argument order (the argument at the top of the Delta stack - the one the
+// x86 stub's stack pushes would store first - becomes the first C argument).
+//
+// Entry registers (same contract as x86):
+//   ebx (x15): number of arguments
+//   ecx (x11): address of the last argument
+//   edx (x12): DLL function entry point
+//
+// Stub frame (16-byte aligned throughout):
+//   [sp+0]  entry sp (restored before returning)
+//   [sp+8]  DLL state (asynchronous DLL/interrupted DLL calls)
+//   [sp+16] saved x30 (return address into the caller)
+//   [sp+32] converted argument buffer, C argument i at [sp+32 + i*8]
+char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) {
+  Label convert_loop, boxed_argument, next_argument, no_arguments, bad_call_count;
+
+  char* entry_point = masm->pc();
+  masm->set_last_Delta_frame_after_call();
+
+  // Prologue: allocate the stub frame (align16(8 * n) + 32 bytes).
+  masm->mov(x9, sp);                     // x9 = caller sp
+  masm->lsl(x10, ebx, 3);                // n * 8
+  masm->addl(x10, 31);
+  masm->andl(x10, 0xfffffff0);           // align16
+  masm->addl(x10, 32);
+  // sp -= x10 cannot be encoded with sp as an operand (the shifted-register
+  // sub decodes register 31 as xzr, producing a no-op), so combine the
+  // subtraction through a general register: x16 = sp; x16 -= x10; sp = x16.
+  masm->mov(x16, sp);                    // x16 = entry sp
+  masm->sub(x16, x16, x10);              // x16 = new sp
+  masm->mov(sp, x16);                    // sp = x16 (encoded as add sp, x16, #0)
+  masm->str(x9, Address(sp, 0));         // save entry sp
+  masm->str(xzr, Address(sp, 8));        // DLL state (zero-initialized)
+  masm->str(x30, Address(sp, 16));       // save return address
+
+  // Convert the arguments, reading them from [ecx] upward and writing the
+  // converted values into the buffer in C-argument order (the last argument
+  // read becomes the first C argument, mirroring the x86 stub's pushes).
+  //   edx (x12) holds the function entry point and is not touched here.
+  //   x15 (ebx) is the argument counter.
+  //   x11 (ecx) walks the Delta arguments upward.
+  //   x16 points at the current buffer slot (top of buffer first).
+  masm->mov(x17, ebx);                   // x17 = n
+  masm->add(x16, sp, 32);                // buffer base
+  masm->lsl(x10, ebx, 3);
+  masm->add(x16, x16, x10);              // buffer + n * 8
+  masm->sub(x16, x16, 8);                // first slot to fill: C argument n
+  masm->cmp(x17, 0);
+  masm->jcc(MacroAssembler::equal, no_arguments);
+
+  masm->bind(convert_loop);
+  masm->ldr(x0, Address(x11));           // get Delta argument
+  masm->addl(x11, 8);                    // go to next Delta argument
+  masm->testb(x0, Mem_Tag);              // mem oop iff bit 0 is set
+  masm->jcc(MacroAssembler::notZero, boxed_argument);
+  masm->sarl(x0, Tag_Size);              // smi -> C int
+  masm->b(next_argument);
+
+  // boxed argument -> unbox it
+  masm->bind(boxed_argument);
+  masm->ldr(x0, Address(x0, pointer_offset)); // unbox proxy
+
+  masm->bind(next_argument);
+  masm->str(x0, Address(x16));           // store converted argument
+  masm->sub(x16, x16, 8);
+  masm->sub(x17, x17, 1);                // decrement argument counter
+  masm->jcc(MacroAssembler::notZero, convert_loop);
+
+  masm->bind(no_arguments);
+  // Only argument counts within the 8 AAPCS64 argument registers are
+  // supported (the x86 stub could pass any number via the stack).
+  masm->cmp(ebx, 8);
+  masm->jcc(MacroAssembler::greater, bad_call_count);
+
+  // Load the (up to 8) converted arguments into x0..x7 in C order.
+  masm->add(x16, sp, 32);                // buffer base
+  masm->lsl(x10, ebx, 3);
+  masm->add(x16, x16, x10);
+  masm->sub(x16, x16, 8);                // &buffer[n-1] (first C argument)
+  masm->ldr(x0, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x1, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x2, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x3, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x4, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x5, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x6, Address(x16));
+  masm->sub(x16, x16, 8);
+  masm->ldr(x7, Address(x16));
+
+  if (async) {
+    // Get the DLL state word address (a DeltaProcess* slot).
+    masm->mov(x10, sp);
+    masm->addl(x10, 8);
+    masm->call_C((char*)DLLs::enter_async_call, x10);
+  }
+
+  // do DLL call
+  masm->blr(edx);                        // result in x0
+
+  if (TraceDLLCalls) {
+    masm->mov(eax, x0);                  // make the result available for the trace
+    masm->str(eax, Address(sp, 24));     // preserve the result across the trace
+    masm->call_C((char*)trace_DLL_call_2, eax);
+    masm->ldr(eax, Address(sp, 24));     // restore the result
+  } else {
+    masm->mov(eax, x0);                  // eax := DLL call result
+  }
+
+  if (async) {
+    masm->mov(x10, sp);
+    masm->addl(x10, 8);
+    masm->call_C((char*)DLLs::exit_async_call, x10);
+  }
+
+  // Restore the caller's stack and frame, then return.
+  masm->ldr(x30, Address(sp, 16));       // return address into the caller
+  masm->ldr(x9, Address(sp, 0));         // original sp
+  masm->mov(sp, x9);
+  masm->reset_last_Delta_frame();
+  masm->ret(0);
+
+  // wrong DLL function: unsupported argument count
+  masm->bind(bad_call_count);
+  masm->call((char*)wrong_DLL_call, relocInfo::runtime_call_type);
+  masm->hlt(); // should never reach here
+
+  return entry_point;
+}
+#endif // DELTA_BACKEND_AARCH64
 
 char* StubRoutines::generate_lookup_DLL(MacroAssembler* masm, bool async) {
   // Lookup routine called from "empty" DLL caches in compiled code only.

@@ -62,6 +62,33 @@ public:
 // ...				<- this
 
 class CompiledDLL_Cache : public NativeCall {
+#ifdef DELTA_BACKEND_AARCH64
+  // AArch64 layout (see CodeGenerator::aDLLNode): three 16-byte literal pools
+  // precede the 20-byte NativeCall, all addressed relative to the call's return
+  // address (this):
+  //
+  //   ldr x12,[pc,#8]; b .+12; .quad entry           entry_point  (R-68..R-52)
+  //   ldr x16,[pc,#8]; b .+12; .quad dll_name        dll_name     (R-52..R-36)
+  //   ldr x16,[pc,#8]; b .+12; .quad function_name   function_name(R-36..R-20)
+  //   ldr x16,[pc,#8]; b .+12; .quad target; blr x16 call         (R-20..R)
+private:
+  enum Layout_constants {
+    entry_point_offset = -60,  // .quad entry (the value the compiler loads into edx)
+    dll_name_offset = -44,     // .quad dll_name
+    function_name_offset = -28 // .quad function_name
+  };
+
+public:
+  symbolOop dll_name() { return (symbolOop)*(oop*)addr_at(dll_name_offset); }
+  symbolOop function_name() { return (symbolOop)*(oop*)addr_at(function_name_offset); }
+  dll_func entry_point() { return (dll_func)*(intptr_t*)addr_at(entry_point_offset); }
+  bool async() const;
+  void set_entry_point(dll_func f) { *(intptr_t*)addr_at(entry_point_offset) = intptr_t(f); }
+
+  // Debugging
+  void verify();
+  void print();
+#else
 private:
   enum Layout_constants {
     test_2_instruction_offset = -NativeCall::instruction_size - NativeTest::instruction_size,
@@ -82,6 +109,7 @@ public:
   // Debugging
   void verify();
   void print();
+#endif
 
   // Creation
   friend CompiledDLL_Cache* compiledDLL_Cache_from_return_address(char* return_address);
