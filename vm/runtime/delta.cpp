@@ -152,17 +152,20 @@ oop Delta::call(oop receiver, oop selector) {
 
 oop Delta::call(oop receiver, oop selector, oop arg1) {
   static DeltaCallCache cache;
-  return call_generic(&cache, receiver, selector, 1, &arg1);
+  oop args[1] = { arg1 };
+  return call_generic(&cache, receiver, selector, 1, args);
 }
 
 oop Delta::call(oop receiver, oop selector, oop arg1, oop arg2) {
   static DeltaCallCache cache;
-  return call_generic(&cache, receiver, selector, 2, &arg1);
+  oop args[2] = { arg1, arg2 };
+  return call_generic(&cache, receiver, selector, 2, args);
 }
 
 oop Delta::call(oop receiver, oop selector, oop arg1, oop arg2, oop arg3) {
   static DeltaCallCache cache;
-  return call_generic(&cache, receiver, selector, 3, &arg1);
+  oop args[3] = { arg1, arg2, arg3 };
+  return call_generic(&cache, receiver, selector, 3, args);
 }
 
 oop Delta::call(oop receiver, oop selector, objArrayOop args) {
