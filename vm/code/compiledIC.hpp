@@ -91,15 +91,12 @@ class CompiledIC : public AbstractCompiledIC {
 protected:
   int compiler_info() const { return ic_info_at(next_instruction_address())->flags(); }
   void set_compiler_info(int info) {
-#ifdef DELTA_BACKEND_AARCH64
     // MAP_JIT W^X: the IC info word lives in generated code, so patching it
-    // requires the writable state (running code has protection enabled).
-    os::jit_write_protect(false);
-#endif
+    // requires the writable state (running code has protection enabled).  The
+    // guard preserves the caller's state so this can nest inside a
+    // write-unprotected region.
+    JITWriteProtectGuard wpg;
     ic_info_at(next_instruction_address())->set_flags(info);
-#ifdef DELTA_BACKEND_AARCH64
-    os::jit_write_protect(true);
-#endif
   }
 
 public:

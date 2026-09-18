@@ -162,6 +162,7 @@ void zone::verify_if_often() {
 
 void zone::flush() {
   ResourceMark rm;
+  JITWriteProtectGuard wpg;
   TraceTime t("Flushing method cache...", PrintCodeReclamation);
   EventMarker em("flushing method cache");
 
@@ -230,6 +231,7 @@ public:
 static nmethod* debug_nm = NULL;
 extern nmethod* recompilee;
 void zone::flushZombies(bool deoptimize) {
+  JITWriteProtectGuard wpg;
   // 1. cleanup all methodOop inline caches
   // 2. cleanup all nmethod inline caches
   // 3..deoptimized blocks with compiled code.
@@ -256,6 +258,7 @@ void zone::flushZombies(bool deoptimize) {
 }
 
 void zone::flushUnused() {
+  JITWriteProtectGuard wpg;
   // flush all nmethods marked as unused
   // NB: access methods are always unused since they don't do the LRU thing
   // chainFrames();
@@ -319,6 +322,7 @@ void zone::doWork() {
 void zone::compact(bool forced) {
   // BlockProfilerTicks bpt(exclude_nmethod_compact);
   // CSect cs(profilerSemaphore); // for profiler
+  JITWriteProtectGuard wpg;
 
   TraceTime t("*compacting nmethod cache...", PrintCodeReclamation);
   EventMarker em("compacting zone");
@@ -354,6 +358,7 @@ void zone::addToCodeTable(nmethod* nm) {
 }
 
 void zone::clear_inline_caches() {
+  JITWriteProtectGuard wpg;
   TraceTime t("*flushing inline caches...", PrintInlineCacheInvalidation);
   EventMarker em("flushing inline caches");
 
@@ -365,6 +370,7 @@ void zone::clear_inline_caches() {
 }
 
 void zone::cleanup_inline_caches() {
+  JITWriteProtectGuard wpg;
   TraceTime t("*cleaning inline caches...", PrintInlineCacheInvalidation);
   EventMarker em("cleaning inline caches");
 
@@ -657,16 +663,19 @@ void zone::mark_dependents_for_deoptimization() {
 }
 
 void zone::mark_all_for_deoptimization() {
+  JITWriteProtectGuard wpg;
   FOR_ALL_NMETHODS(nm) {
     nm->mark_for_deoptimization();
   }
 }
 
 void zone::unmark_all_for_deoptimization() {
+  JITWriteProtectGuard wpg;
   FOR_ALL_NMETHODS(nm) nm->unmark_for_deoptimization();
 }
 
 void zone::make_marked_nmethods_zombies() {
+  JITWriteProtectGuard wpg;
   FOR_ALL_NMETHODS(nm) {
     if (nm->is_marked_for_deoptimization()) {
       nm->makeZombie(true);

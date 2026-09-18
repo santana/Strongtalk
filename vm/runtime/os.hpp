@@ -137,6 +137,29 @@ public:
   static int error_code();
 };
 
+// Scoped guard that disables MAP_JIT write protection for its lifetime and
+// restores the caller's state on exit.  C++ paths that mutate nmethod headers
+// or code in the zone (flush/compact/sweep, deoptimization marking, system
+// primitives) can be reached outside a VM_Operation, where the region is still
+// write-protected (e.g. the compiler tests call zone::flush directly); writing
+// then faults on Apple Silicon.  No-op where write protection is not enforced.
+class JITWriteProtectGuard {
+public:
+  JITWriteProtectGuard() : _was_protected(os::jit_write_protect_enabled()) {
+    if (_was_protected)
+      os::jit_write_protect(false);
+  }
+  ~JITWriteProtectGuard() {
+    if (_was_protected)
+      os::jit_write_protect(true);
+  }
+
+private:
+  bool _was_protected;
+  JITWriteProtectGuard(const JITWriteProtectGuard&);
+  JITWriteProtectGuard& operator=(const JITWriteProtectGuard&);
+};
+
 // A critial region for controling thread transfer at
 // interrupts
 class ThreadCritical {

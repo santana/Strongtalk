@@ -38,6 +38,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "prims/prim.hpp"
 #include "recompiler/recompile.hpp"
+#include "runtime/os.hpp"
 #include "utilities/eventLog.hpp"
 #include "memory/generation.inline.hpp"
 #include "memory/universe.store.hpp"
@@ -358,6 +359,12 @@ void nmethod::unlink() {
 }
 
 void nmethod::makeZombie(bool clearInlineCaches) {
+  // This path patches the nmethod's instructions / special-handler call, which
+  // live in the MAP_JIT method heap; disable write protection for the duration
+  // (restores the caller's state on exit, so a VM_Operation that already turned
+  // it off stays off).
+  JITWriteProtectGuard wpg;
+
   // mark this nmethod as zombie (it is almost dead and can be flushed as
   // soon as it is no longer on the stack)
   if (isZombie())
@@ -383,11 +390,14 @@ void nmethod::makeZombie(bool clearInlineCaches) {
     call->set_destination(StubRoutines::zombie_block_nmethod_entry());
   }
 
+  // At the verified entry point, overwrite the prologue with an absolute
+  // branch to the zombie handler (note that this code can be safely
+  // overwritten, since there's no relocation info nor oops associated with
+  // it).
+#if defined(DELTA_BACKEND_X86_64)
   // WARNING: INTEL SPECIFIC CODE PROVIDED BY ROBERT
-  // at verified entry point: overwrite "push ebp, mov ebp esp" instructions
-  // belonging to activation frame construction with jump to zombie handler
-  // call (note that this code can be savely overwritten, since there's no
-  // relocation info nor oops associated with it).
+  // overwrite "push ebp, mov ebp esp" belonging to activation frame
+  // construction with a jump to the special handler call.
   const char* enter = "\x55\x8b\xec";
   char* p = verifiedEntryPoint();
   guarantee(p[0] == enter[0] && p[1] == enter[1] && p[2] == enter[2], "not \"push ebp, mov ebp esp\" - check this");
@@ -399,6 +409,25 @@ void nmethod::makeZombie(bool clearInlineCaches) {
   p[0] = nop;
   p[1] = jmp;
   p[2] = char(offset);
+#elif defined(DELTA_BACKEND_AARCH64)
+  // AArch64: emit the same reloc-free absolute stub used by the jump table:
+  //   ldr x16, [pc, #8]      (load the literal below)
+  //   br  x16                (branch)
+  //   .quad zombie_entry
+  // The prologue (stp frame-link + nil/local init) is straight-line with no
+  // internal branch targets, relocations or oops in the first 16 bytes, so
+  // clobbering it is safe.
+  uint32_t* insns = (uint32_t*)verifiedEntryPoint();
+  intptr_t dest =
+    (intptr_t)(is_method() ? StubRoutines::zombie_nmethod_entry() : StubRoutines::zombie_block_nmethod_entry());
+  insns[0] = 0x58000050; // ldr x16, [pc, #8]
+  insns[1] = 0xD61F0200; // br  x16
+  *(intptr_t*)(insns + 2) = dest;
+  flushICacheRange(insns, (char*)insns + 16);
+  flushICache();
+#else
+#error Unsupported backend
+#endif
 
   if (TraceZombieCreation) {
     mystd->print_cr("%s nmethod 0x%x becomes zombie", (is_method() ? "normal" : "block"), this);

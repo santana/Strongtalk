@@ -93,15 +93,12 @@ void CompiledIC::set_call_destination(char* entry_point) {
   assert(p == NULL || p->entry() != entry_point, "replacing with same address -- shouldn't dealloc");
   if (p != NULL)
     delete p;
-#ifdef DELTA_BACKEND_AARCH64
   // MAP_JIT W^X: patching the call-target literal in generated code requires
-  // the writable state; generated code runs with protection enabled.
-  os::jit_write_protect(false);
-#endif
+  // the writable state; generated code runs with protection enabled.  The
+  // guard saves/restores the caller's state so nested patching inside a
+  // write-unprotected region (e.g. zone flush) does not re-protect early.
+  JITWriteProtectGuard wpg;
   NativeCall::set_destination(entry_point);
-#ifdef DELTA_BACKEND_AARCH64
-  os::jit_write_protect(true);
-#endif
 }
 
 extern "C" bool have_nlr_through_C;
