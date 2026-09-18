@@ -1903,6 +1903,14 @@ void X86MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real
   call_C(entry, eax, ebx, edx, ecx);
 }
 
+void X86MacroAssembler::call_handle_pascal_callback_stub(char* entry, Register index, Register params_ptr) {
+  // cdecl: pass the two arguments in reverse order on the stack, call, then pop both.
+  pushl(params_ptr); // &params
+  pushl(index); // index
+  call(entry, relocInfo::runtime_call_type);
+  addl(esp, 2 * oopSize); // pop the arguments
+}
+
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   // x86-64 SysV: arguments in rdi, rsi, rdx, rcx
   assert(arg1 != esi && arg1 != edx && arg1 != ecx && arg2 != edi && arg2 != edx && arg2 != ecx && arg3 != edi &&

@@ -2352,6 +2352,12 @@ void AArch64MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address 
   call_C(entry, eax, ebx, ecx, edx);
 }
 
+void AArch64MacroAssembler::call_handle_pascal_callback_stub(char* entry, Register index, Register params_ptr) {
+  // AAPCS64: pass the two arguments in x0/x1 (the 2-reg call_C maps
+  // arg1/arg2 to x0/x1); no stack arguments.
+  call_C(entry, index, params_ptr);
+}
+
 void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   mov(x3, arg4);
   mov(x2, arg3);

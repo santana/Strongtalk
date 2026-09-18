@@ -1375,14 +1375,7 @@ char* StubRoutines::generate_handle_pascal_callback_stub(MacroAssembler* masm) {
   masm->addl(edx, 24); // (esi, edi, ebx, edx, fp, return address)
 
   // eax = handleCallBack(index, &params)
-#ifdef DELTA_BACKEND_AARCH64
-  masm->call_C((char*)handleCallBack, ecx, edx); // handleCallBack(index, &params)
-#else
-  masm->pushl(edx); // &params
-  masm->pushl(ecx); // index
-  masm->call((char*)handleCallBack, relocInfo::runtime_call_type);
-  masm->addl(esp, 2 * oopSize); // pop the arguments
-#endif
+  masm->call_handle_pascal_callback_stub((char*)handleCallBack, ecx, edx); // handleCallBack(index, &params)
 
   // restore number of bytes in parameter list
   masm->popl(edx);
