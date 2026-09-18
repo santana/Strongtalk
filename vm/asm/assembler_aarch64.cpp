@@ -2334,6 +2334,14 @@ void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Re
   call_C(entry, relocInfo::runtime_call_type);
 }
 
+void AArch64MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument, Register nof_arguments) {
+  // AAPCS64: pass arguments in the AArch64 A64 calling convention; the trace
+  // arguments (function, last_argument, nof_arguments) are not preserved by
+  // the call, matching the shared-stub site's expectation (it only saves the
+  // DLL state address around this call).
+  call_C(entry, function, last_argument, nof_arguments);
+}
+
 void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   mov(x3, arg4);
   mov(x2, arg3);

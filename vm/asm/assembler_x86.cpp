@@ -1880,6 +1880,18 @@ void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Regist
   reset_last_Delta_frame();
 }
 
+void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument, Register nof_arguments) {
+  // C to C call, no special setup required; pass arguments on the stack in
+  // reverse order (cdecl), then restore the registers.
+  pushl(nof_arguments); // pass arguments in reverse order
+  pushl(last_argument);
+  pushl(function);
+  call(entry, relocInfo::runtime_call_type);
+  popl(function); // restore registers
+  popl(last_argument);
+  popl(nof_arguments);
+}
+
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   // x86-64 SysV: arguments in rdi, rsi, rdx, rcx
   assert(arg1 != esi && arg1 != edx && arg1 != ecx && arg2 != edi && arg2 != edx && arg2 != ecx && arg3 != edi &&

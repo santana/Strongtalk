@@ -555,17 +555,7 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->pushl(esp); // to check that the right no. of arguments is used
   if (TraceDLLCalls) { // call trace routine (C to C call, no special setup required)
     masm->pushl(esi); // save DLL state address
-#ifdef DELTA_BACKEND_AARCH64
-    masm->call_C((char*)trace_DLL_call_1, edx, ecx, ebx); // trace_DLL_call_1(function, last_argument, nof_arguments)
-#else
-    masm->pushl(ebx); // pass arguments in reverse order
-    masm->pushl(ecx);
-    masm->pushl(edx);
-    masm->call((char*)trace_DLL_call_1, relocInfo::runtime_call_type);
-    masm->popl(edx); // restore registers
-    masm->popl(ecx);
-    masm->popl(ebx);
-#endif
+    masm->call_trace_DLL_call_1((char*)trace_DLL_call_1, edx, ecx, ebx); // trace_DLL_call_1(function, last_argument, nof_arguments)
     masm->popl(esi); // restore DLL state address
   }
   //slr mod: push a fake stack frame to support cdecl calls
