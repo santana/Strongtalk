@@ -841,6 +841,7 @@ public:
   void call_C(char* entry, Register arg1, Register arg2, Register arg3);
   void call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4);
   void call_trace_DLL_call_1(char* entry, Register function, Register last_argument, Register nof_arguments);
+  void call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array, Register old_fp);
   void store_check(Register obj, Register tmp);
 
   // Support for inlined data (compiler)

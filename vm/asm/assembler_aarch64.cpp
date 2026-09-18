@@ -2342,6 +2342,16 @@ void AArch64MacroAssembler::call_trace_DLL_call_1(char* entry, Register function
   call_C(entry, function, last_argument, nof_arguments);
 }
 
+void AArch64MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array, Register old_fp) {
+  // AArch64: pass the four arguments in x0-x3 (AAPCS64), loaded from the
+  // caller's frame. No stack arguments.
+  movl(edx, old_fp); // 4th arg: old frame pointer
+  movl(ecx, frame_array); // 3rd arg: array with the packed frames
+  movl(ebx, real_fp); // 2nd arg: frame pointer link
+  movl(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
+  call_C(entry, eax, ebx, ecx, edx);
+}
+
 void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   mov(x3, arg4);
   mov(x2, arg3);

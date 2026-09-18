@@ -1266,24 +1266,8 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   Label common_unpack_unoptimized_frames;
 
   masm->bind(common_unpack_unoptimized_frames);
-#ifdef DELTA_BACKEND_AARCH64
-  // AArch64: pass the four arguments in x0-x3 (AAPCS64), loaded from the
-  // caller's frame. No stack arguments.
-  masm->movl(edx, ebp); // 4th arg: old frame pointer
-  masm->movl(ecx, frame_array); // 3rd arg: array with the packed frames
-  masm->movl(ebx, real_fp); // 2nd arg: frame pointer link
-  masm->movl(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
-  masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, ecx, edx);
-#elif defined(DELTA_BACKEND_X86_64)
-  // x86-64 SysV: pass the four arguments in rdi/rsi/rdx/rcx (the 64-bit
-  // call_C maps arg1..arg4 to edi/esi/edx/ecx, and its asserts require
-  // arg3 != ecx, arg4 != edx, hence the edx/ecx order below).
-  masm->movq(ecx, ebp); // 4th arg: old frame pointer
-  masm->movq(edx, frame_array); // 3rd arg: array with the packed frames
-  masm->movq(ebx, real_fp); // 2nd arg: frame pointer link
-  masm->movq(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
-  masm->call_C((char*)setup_deoptimization_and_return_new_sp, eax, ebx, edx, ecx);
-#endif
+  masm->call_unpack_unoptimized_frames((char*)setup_deoptimization_and_return_new_sp, real_sender_sp, real_fp, frame_array, ebp);
+  // setup_deoptimization_and_return_new_sp(real_sender_sp, real_fp, frame_array, old_fp)
 #ifdef DELTA_BACKEND_X86_64
   // new sp and real fp are full 64-bit pointers on x86-64
   masm->movq(esp, eax); // Set the new stack pointer

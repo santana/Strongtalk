@@ -1892,6 +1892,17 @@ void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Re
   popl(nof_arguments);
 }
 
+void X86MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array, Register old_fp) {
+  // x86-64 SysV: pass the four arguments in rdi/rsi/rdx/rcx (the 64-bit
+  // call_C maps arg1..arg4 to edi/esi/edx/ecx, and its asserts require
+  // arg3 != ecx, arg4 != edx, hence the edx/ecx order below).
+  movq(ecx, old_fp); // 4th arg: old frame pointer
+  movq(edx, frame_array); // 3rd arg: array with the packed frames
+  movq(ebx, real_fp); // 2nd arg: frame pointer link
+  movq(eax, real_sender_sp); // 1st arg: stack pointer of the calling activation
+  call_C(entry, eax, ebx, edx, ecx);
+}
+
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
   // x86-64 SysV: arguments in rdi, rsi, rdx, rcx
   assert(arg1 != esi && arg1 != edx && arg1 != ecx && arg2 != edi && arg2 != edx && arg2 != ecx && arg3 != edi &&
