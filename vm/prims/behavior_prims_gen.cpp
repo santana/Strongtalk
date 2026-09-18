@@ -45,7 +45,7 @@ char* PrimitivesGenerator::primitiveNew(int n) {
   masm->jcc(Assembler::notEqual, _break);
   masm->bind(no_break);
   masm->movl(ebx, klass_addr);
-  masm->movl(Address(eax, (-size + 0) * oopSize), 0x80000003); // obj->init_mark()
+  masm->movq(Address(eax, (-size + 0) * oopSize), (intptr_t)markOopDesc::tagged_prototype()); // obj->init_mark()
   masm->movl(Address(eax, (-size + 1) * oopSize), ebx); // obj->init_mark()
 
   if (n > 0) {
@@ -87,14 +87,14 @@ char* PrimitivesGenerator::inline_allocation() {
 
   test_for_scavenge(eax, size * oopSize, need_scavenge1);
   masm->bind(fill_object1);
-  masm->movl(Address(eax, (-size + 0) * oopSize), 0x80000003); // obj->init_mark()
+  masm->movq(Address(eax, (-size + 0) * oopSize), (intptr_t)markOopDesc::tagged_prototype()); // obj->init_mark()
   masm->movl(Address(eax, (-size + 1) * oopSize), ebx); // obj->init_mark()
 
   masm->subl(eax, (size * oopSize) - 1);
 
   test_for_scavenge(ecx, size * oopSize, need_scavenge2);
   masm->bind(fill_object2);
-  masm->movl(Address(ecx, (-size + 0) * oopSize), 0x80000003); // obj->init_mark()
+  masm->movq(Address(ecx, (-size + 0) * oopSize), (intptr_t)markOopDesc::tagged_prototype()); // obj->init_mark()
   masm->movl(Address(ecx, (-size + 1) * oopSize), ebx); // obj->init_mark()
 
   masm->subl(ecx, (size * oopSize) - 1);

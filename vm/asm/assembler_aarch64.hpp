@@ -632,7 +632,7 @@ public:
   void movq(Register dst, Register src) { movl(dst, src); }
   void movq(Register dst, Address src) { movl(dst, src); }
   void movq(Address dst, Register src) { movl(dst, src); }
-  void movq(Address dst, intptr_t imm) { movl(dst, imm); }
+  void movq(Address dst, intptr_t imm); // full 64-bit immediate store
   void movq(Address dst, oop obj) { movl(dst, obj); }
   void movb(Register dst, Address src); // zero-extending byte load
   void movb(Address dst, Register src);
@@ -691,6 +691,7 @@ public:
   void andq(Register dst, Register src) { andl(dst, src); }
   void andq(Register dst, intptr_t imm) { and_(dst, dst, (uint64_t)imm); }
   void orl(Register dst, Register src) { orr(dst, dst, src); }
+  void orq(Register dst, Register src) { orl(dst, src); }
   void orl(Register dst, int imm); // 32-bit x86 semantics: zero-extended mask
   void orl(Register dst, Address src);
   void xorl(Register dst, Register src) { eor(dst, dst, src); }

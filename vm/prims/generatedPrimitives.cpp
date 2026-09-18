@@ -34,6 +34,12 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
+// See frame.hpp: lets frame::is_interpreted_frame() recognize call sites in the
+// generated primitives' code buffer without pulling that header into frame.cpp.
+bool is_in_generated_primitives_code(char* pc) {
+  return GeneratedPrimitives::contains(pc);
+}
+
 // entry points
 char* GeneratedPrimitives::_allocateContext_var = NULL;
 

@@ -73,7 +73,7 @@ char* PrimitivesGenerator::allocateBlock(int n) {
 
   masm->bind(fill_object);
   masm->movl(ebx, block_klass_addr);
-  masm->movl(Address(eax, -4 * oopSize), 0x80000003); // obj->init_mark()
+  masm->movq(Address(eax, -4 * oopSize), (intptr_t)markOopDesc::tagged_prototype()); // obj->init_mark()
   masm->movl(Address(eax, -3 * oopSize), ebx); // obj->set_klass(klass)
   //  masm->movl(Address(eax, -2*oopSize), 0);			// obj->set_method(NULL)
   //  masm->movl(Address(eax, -1*oopSize), 0);			// obj->set_lexical_scope(NULL)
@@ -117,10 +117,15 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->movl(Address((intptr_t)&eden_top, relocInfo::external_word_type), edx);
 
   masm->bind(fill_object);
-  masm->movl(ebx, contextKlass_addr());
+  // Build the mark in ecx: ecx is the length smi; adding Tag_Size yields the
+  // object's hash (nofVars+1).  ebx is free here, so use it to materialise
+  // the full 64-bit sentinel/tag bits (a 32-bit constant would put the
+  // sentinel at bit 31, giving the context a bogus length).
   masm->addl(ecx, 4);
-  masm->orl(ecx, 0x80000003); // obj->init_mark()
-  masm->movl(Address(eax), ecx);
+  masm->movq(ebx, (intptr_t)markOopDesc::tagged_prototype());
+  masm->orq(ecx, ebx);
+  masm->movq(Address(eax), ecx); // obj->init_mark()
+  masm->movl(ebx, contextKlass_addr());
   masm->movl(ecx, nil_addr());
 
   masm->movl(Address(eax, 1 * oopSize), ebx); // obj->set_klass(klass)
@@ -169,7 +174,8 @@ char* PrimitivesGenerator::allocateContext(int n) {
   masm->bind(fill_object);
   masm->movl(ebx, contextKlass_addr());
   masm->movl(ecx, nil_addr());
-  masm->movl(Address(eax, (-size + 0) * oopSize), 0x80000003 + ((n + 1) * 4)); // obj->init_mark()
+  masm->movq(Address(eax, (-size + 0) * oopSize),
+             (intptr_t)markOopDesc::tagged_prototype()->set_hash(n + 1)); // obj->init_mark()
   masm->movl(Address(eax, (-size + 1) * oopSize), ebx); // obj->set_klass(klass)
   masm->movl(Address(eax, (-size + 2) * oopSize), 0); // obj->set_home(NULL)
   for (int i = 0; i < n; i++) {

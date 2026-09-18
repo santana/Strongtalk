@@ -486,6 +486,14 @@ public:
     movq(dst, r10); // 64-bit store
   }
 
+  using X86Assembler::movq;
+  // movq(Address, intptr_t) stores a full 64-bit immediate; the base
+  // 32-bit forms would truncate object marks to the low word.
+  void movq(Address dst, intptr_t imm) {
+    movq(r10, imm); // full 64-bit immediate (movabs)
+    movq(dst, r10); // 64-bit store
+  }
+
   using X86Assembler::addl;
   void addl(Register dst, int imm) { addq(dst, imm); }
   void addl(Register dst, Register src) { addq(dst, src); }

@@ -155,7 +155,7 @@ public:
   static char* allocateContext(int n); // -1 for variable size
 
   // Support for profiling
-  static bool contains(char* pc) { return (_code <= pc) && (pc < &_code[_code_size]); }
+  static bool contains(char* pc) { return _code != NULL && (_code <= pc) && (pc < &_code[_code_size]); }
 
   // Support for compiler constant folding
   static oop smiOopPrimitives_add(oop receiver, oop argument);

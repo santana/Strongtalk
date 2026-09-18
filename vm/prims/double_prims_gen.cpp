@@ -54,7 +54,7 @@ char* PrimitivesGenerator::double_op(arith_op op) {
   masm->movl(ecx, Address(esp, +2 * oopSize));
 
   masm->movl(edx, doubleKlass_addr());
-  masm->movl(Address(eax, -4 * oopSize), 0xA0000003); // obj->init_mark()
+  masm->movq(Address(eax, -4 * oopSize), (intptr_t)markOopDesc::untagged_prototype()); // obj->init_mark()
   masm->movl(Address(eax, -3 * oopSize), edx); // obj->set_klass(klass)
 
   masm->fld_d(Address(ecx, (2 * oopSize) - 1));
@@ -102,7 +102,7 @@ char* PrimitivesGenerator::double_from_smi() {
   masm->movl(ecx, Address(esp, +oopSize));
   masm->movl(edx, doubleKlass_addr());
   masm->sarl(ecx, 2);
-  masm->movl(Address(eax, -4 * oopSize), 0xA0000003); // obj->init_mark()
+  masm->movq(Address(eax, -4 * oopSize), (intptr_t)markOopDesc::untagged_prototype()); // obj->init_mark()
   masm->movl(Address(esp, -oopSize), ecx);
   masm->movl(Address(eax, -3 * oopSize), edx); // obj->set_klass(klass)
   masm->fild_s(Address(esp, -oopSize));

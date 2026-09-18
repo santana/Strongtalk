@@ -258,4 +258,9 @@ public:
   // Returns the word size of an interpreter frame
   static int interpreter_frame_size(int locals) { return frame_return_addr_offset - frame_temp_offset + locals; }
 };
+
+// True if pc falls within the generated primitives' code buffer.  Kept out of
+// frame.hpp's include graph (the primitives header pulls in heavy VM headers);
+// implemented in prims/generatedPrimitives.cpp.
+bool is_in_generated_primitives_code(char* pc);
 #endif // _FRAME_HPP

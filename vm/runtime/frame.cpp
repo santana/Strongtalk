@@ -102,7 +102,11 @@ nmethod* frame::code() const {
 }
 
 bool frame::is_interpreted_frame() const {
-  return Interpreter::contains(pc());
+  // The interpreter's C-call glue can also live in the generated primitives
+  // code buffer (e.g. the scavenge/allocate stubs); frames created from such a
+  // call site still describe an interpreted method activation, so classify them
+  // as interpreted too.
+  return Interpreter::contains(pc()) || is_in_generated_primitives_code(pc());
 }
 
 bool frame::is_compiled_frame() const {

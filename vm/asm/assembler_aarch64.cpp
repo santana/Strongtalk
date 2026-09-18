@@ -1384,6 +1384,19 @@ void AArch64MacroAssembler::movl(Address dst, int imm32) {
   }
 }
 
+void AArch64MacroAssembler::movq(Address dst, intptr_t imm) {
+  mov(x16, imm);
+  switch (dst._mode) {
+    case Address::absolute:
+      load_absolute_address(x17, dst);
+      str(x16, Address(x17));
+      break;
+    default:
+      str(x16, dst);
+      break;
+  }
+}
+
 void AArch64MacroAssembler::movl(Register dst, oop obj) {
   mov(dst, (intptr_t)obj);
 }
