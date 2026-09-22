@@ -78,23 +78,22 @@ static int probeCompiledICLookupCount = 0;
 static void probeCompiledICLookup(oop recv, CompiledIC* ic, char* entry) {
   if (probeCompiledICLookupCount++ > 128)
     return;
-  mystd->print_cr("CICPROBE#%d recv=%#lx klass=%#lx sel=%#lx entry=%#lx interpTarget=%d",
-                  probeCompiledICLookupCount - 1, recv, recv->klass(), ic->selector(), entry,
-                  Interpreter::contains(entry));
+  mystd->print_cr("CICPROBE#%d recv=%p klass=%p sel=%p entry=%p interpTarget=%d", probeCompiledICLookupCount - 1,
+                  (void*)recv, (void*)recv->klass(), (void*)ic->selector(), (void*)entry, Interpreter::contains(entry));
   char** probe_rbp = (char**)__builtin_frame_address(0);
   char** iclookup_rbp = (char**)*probe_rbp;
   char** caller_rbp = (char**)*iclookup_rbp;
-  mystd->print_cr("  rbp_C=%p callerRbp=%p [callerRbp+8]=%#lx begin_addr=%p", iclookup_rbp, caller_rbp,
-                  caller_rbp ? (unsigned long)caller_rbp[1] : 0, ic->begin_addr());
+  mystd->print_cr("  rbp_C=%p callerRbp=%p [callerRbp+8]=%p begin_addr=%p", iclookup_rbp, caller_rbp,
+                  caller_rbp ? (void*)caller_rbp[1] : NULL, ic->begin_addr());
   if (caller_rbp && caller_rbp >= iclookup_rbp) {
     for (int i = -12; i <= 3; i++)
-      mystd->print_cr("  caller[%+d] (%p) = %#lx", i, &caller_rbp[i], (unsigned long)caller_rbp[i]);
+      mystd->print_cr("  caller[%+d] (%p) = %p", i, &caller_rbp[i], (void*)caller_rbp[i]);
   }
   // caller nmethod + code window at the send site
   nmethod* nm = findNMethod(ic->begin_addr());
   mystd->print_cr("  callee found via findNMethod: nm=%p", nm);
   if (nm) {
-    mystd->print_cr("  nm=%p method=%#lx sel=%#lx", nm, (unsigned long)nm->method(), (unsigned long)nm->key.selector());
+    mystd->print_cr("  nm=%p method=%p sel=%p", nm, (void*)nm->method(), (void*)nm->key.selector());
     if (probeCompiledICLookupCount == 1) {
       FILE* codef = fopen("/tmp/caller_code.bin", "wb");
       FILE* addrf = fopen("/tmp/caller_code.addr", "w");
@@ -115,10 +114,10 @@ static void probeCompiledICLookup(oop recv, CompiledIC* ic, char* entry) {
     mystd->print_cr("  code[begin-0x30..+0x20]:");
     for (int i = -6; i < 4; i++) {
       int off = i * 8;
-      unsigned long w = 0;
+      unsigned long long w = 0;
       for (int b = 7; b >= 0; b--)
         w = (w << 8) | c[off + b];
-      mystd->print_cr("    %+4d (%p) = %#lx", off, c + off, w);
+      mystd->print_cr("    %+4d (%p) = %#llx", off, c + off, w);
     }
   }
 }

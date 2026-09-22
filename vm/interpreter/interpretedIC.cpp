@@ -621,11 +621,11 @@ oop* InterpretedIC::inline_cache_miss() {
 #ifdef ASSERT
   static int missCount = 0;
   if (missCount++ < 12) {
-    mystd->print_cr("ICMISS#%d send_code=%d selector=%#lx recv=%#lx klass=%#lx method=%#lx esp=%p", missCount - 1,
-                    send_code, ic->selector(), receiver, receiver->klass(), f.method(), f.sp());
+    mystd->print_cr("ICMISS#%d send_code=%d selector=%p recv=%p klass=%p method=%p esp=%p", missCount - 1, send_code,
+                    (void*)ic->selector(), (void*)receiver, (void*)receiver->klass(), (void*)f.method(), f.sp());
     oop* sp = f.sp();
     for (int di = -8; di <= 8; di++)
-      mystd->print_cr("   sp[%+d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+      mystd->print_cr("   sp[%+d] (%p) = %p", di, sp + di, (void*)sp[di]);
   }
   // stall detector: identical miss repeated forever (corrupted klass loop)
   static oop lastMissRecv = (oop)1, lastMissKlass = (oop)1;
@@ -634,21 +634,20 @@ oop* InterpretedIC::inline_cache_miss() {
   static bool stallReported = false;
   if (receiver == lastMissRecv && receiver->klass() == lastMissKlass && ic->selector() == lastMissSel) {
     if (++stall == 1000000) {
-      mystd->print_cr("STALLED-ICMISS receiver=%#lx klass=%#lx sel=%#lx (same triple >1e6 misses)",
-                      (unsigned long)receiver, (unsigned long)lastMissKlass, (unsigned long)lastMissSel);
+      mystd->print_cr("STALLED-ICMISS receiver=%p klass=%p sel=%p (same triple >1e6 misses)", (void*)receiver,
+                      (void*)lastMissKlass, (void*)lastMissSel);
       if (!stallReported) {
         stallReported = true;
         oop* sp = f.sp();
         for (int di = -12; di <= 12; di++)
-          mystd->print_cr("   st[%+d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+          mystd->print_cr("   st[%+d] (%p) = %p", di, sp + di, (void*)sp[di]);
         oop* rb = (oop*)f.fp();
         for (int di = -8; di <= 8; di++)
-          mystd->print_cr("   fp[%+d] (%p) = %#lx", di, rb + di, (unsigned long)rb[di]);
+          mystd->print_cr("   fp[%+d] (%p) = %p", di, rb + di, (void*)rb[di]);
         if (receiver && !receiver->is_smi()) {
-          int* raw = (int*)receiver;
-          mystd->print_cr("   receiver raw word0..5: %#lx %#lx %#lx %#lx %#lx %#lx", (unsigned long)raw[0],
-                          (unsigned long)raw[1], (unsigned long)raw[2], (unsigned long)raw[3], (unsigned long)raw[4],
-                          (unsigned long)raw[5]);
+          unsigned long long* raw = (unsigned long long*)receiver;
+          mystd->print_cr("   receiver raw word0..5: %#llx %#llx %#llx %#llx %#llx %#llx", raw[0], raw[1], raw[2],
+                          raw[3], raw[4], raw[5]);
         }
       }
     }
@@ -677,29 +676,27 @@ oop* InterpretedIC::inline_cache_miss() {
     static bool stallLookupPrinted = false;
     if (stallReported && !stallLookupPrinted) {
       stallLookupPrinted = true;
-      mystd->print_cr("STALL-LOOKUP sel=%#lx klass=%#lx recv=%#lx entry=%d send_type=%d cur_send_code=%d",
-                      (unsigned long)ic->selector(), (unsigned long)klass, (unsigned long)receiver, result.is_entry(),
-                      (int)ic->send_type(), (int)send_code);
-      mystd->print_cr("   ic word0=%#lx word1=%#lx (after update)", (unsigned long)ic->first_word(),
-                      (unsigned long)ic->second_word());
-      mystd->print_cr("   current-method=%#lx sel=%#lx sender-recv=%#lx nofArgs=%d argSpec=%d",
-                      (unsigned long)f.method(), (unsigned long)f.method()->selector(), (unsigned long)f.receiver(),
-                      (int)ic->nof_arguments(), (int)ic->argument_spec());
+      mystd->print_cr("STALL-LOOKUP sel=%p klass=%p recv=%p entry=%d send_type=%d cur_send_code=%d",
+                      (void*)ic->selector(), (void*)klass, (void*)receiver, result.is_entry(), (int)ic->send_type(),
+                      (int)send_code);
+      mystd->print_cr("   ic word0=%p word1=%p (after update)", (void*)ic->first_word(), (void*)ic->second_word());
+      mystd->print_cr("   current-method=%p sel=%p sender-recv=%p nofArgs=%d argSpec=%d", (void*)f.method(),
+                      (void*)f.method()->selector(), (void*)f.receiver(), (int)ic->nof_arguments(),
+                      (int)ic->argument_spec());
       if (receiver && !receiver->is_smi()) {
-        unsigned long* raw = (unsigned long*)receiver;
-        mystd->print_cr("   recv raw: %#lx %#lx %#lx %#lx %#lx %#lx %#lx %#lx", raw[0], raw[1], raw[2], raw[3], raw[4],
-                        raw[5], raw[6], raw[7]);
+        unsigned long long* raw = (unsigned long long*)receiver;
+        mystd->print_cr("   recv raw: %#llx %#llx %#llx %#llx %#llx %#llx %#llx %#llx", raw[0], raw[1], raw[2], raw[3],
+                        raw[4], raw[5], raw[6], raw[7]);
       }
       if (klass) {
-        unsigned long* rawk = (unsigned long*)klass;
-        mystd->print_cr("   klass raw: %#lx %#lx %#lx %#lx %#lx %#lx %#lx %#lx", rawk[0], rawk[1], rawk[2], rawk[3],
-                        rawk[4], rawk[5], rawk[6], rawk[7]);
+        unsigned long long* rawk = (unsigned long long*)klass;
+        mystd->print_cr("   klass raw: %#llx %#llx %#llx %#llx %#llx %#llx %#llx %#llx", rawk[0], rawk[1], rawk[2],
+                        rawk[3], rawk[4], rawk[5], rawk[6], rawk[7]);
       }
       methodOop m = result.is_entry() ? NULL : result.method();
-      mystd->print_cr("   resolved interp-method=%#lx", (unsigned long)m);
-      mystd->print_cr("   recv is_smi=%d is_mem=%d klass-again=%#lx kl-of-klass=%#lx", receiver->is_smi(),
-                      receiver->is_mem(), (unsigned long)klass,
-                      (unsigned long)(klass->is_smi() ? NULL : klass->klass()));
+      mystd->print_cr("   resolved interp-method=%p", (void*)m);
+      mystd->print_cr("   recv is_smi=%d is_mem=%d klass-again=%p kl-of-klass=%p", receiver->is_smi(),
+                      receiver->is_mem(), (void*)klass, (void*)(klass->is_smi() ? NULL : klass->klass()));
       u_char* where = (u_char*)ic->send_code_addr();
       mystd->print_cr("   ic bytes %+13: ", where - 4);
       for (int k = -4; k <= 4; k++)
@@ -707,7 +704,7 @@ oop* InterpretedIC::inline_cache_miss() {
       mystd->cr();
       oop* sp = f.sp();
       for (int di = 0; di <= 6; di++)
-        mystd->print_cr("   st[+%d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+        mystd->print_cr("   st[+%d] (%p) = %p", di, sp + di, (void*)sp[di]);
       methodOop cur = f.method();
       if (cur && cur->is_method()) {
         u_char* codes = cur->codes();
