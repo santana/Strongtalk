@@ -108,6 +108,13 @@ static const uint16 jz_opcode = 0x840f;
 static const uint16 mov_opcode = 0x508b;
 static const uint16 cmp_opcode = 0xfa81;
 static const int cmp_opcode_size = sizeof(uint16);
+#ifdef DELTA_BACKEND_X86_64
+// x86-64 per-entry nmethod patterns (see the layout comment in compiledPIC.hpp):
+//   movabs rcx, <klass64>  -> 48 B9 <imm64>      (first two bytes = 0xB948)
+//   cmp    rcx, rdx        -> 48 39 D1           (first two bytes = 0x3948)
+static const uint16 movabs_opcode = 0xb948;
+static const uint16 cmp_opcode64 = 0x3948;
+#endif
 
 // Helper routines for code pattern generation/parsing
 static inline void put_byte(char*& p, u_char b) {
@@ -121,6 +128,15 @@ static inline void put_word(char*& p, intptr_t w) {
   *(int*)p = w;
   p += sizeof(int);
 }
+#ifdef DELTA_BACKEND_X86_64
+static inline void put_qword(char*& p, intptr_t w) {
+  // 64-bit klass/method/selector cells: PIC code and cells share the same
+  // buffer, and the oop may not be 8-byte aligned in it -- x86-64 supports
+  // unaligned stores, so write it directly.
+  *(intptr_t*)p = w;
+  p += sizeof(intptr_t);
+}
+#endif
 static inline void put_disp(char*& p, char* d) {
   put_word(p, (int)(d - p - sizeof(int)));
 }
@@ -231,6 +247,20 @@ PIC_Iterator::PIC_Iterator(PIC* pic) {
 }
 
 void PIC_Iterator::computeNextState() {
+#ifdef DELTA_BACKEND_X86_64
+  if (get_shrt(_pos) == cmp_opcode64) {
+    // same state (end of a movabs+compare entry; the compare itself)
+  } else if (get_shrt(_pos) == movabs_opcode) {
+    // same state (start of an x86-64 movabs rcx, <klass64> entry)
+  } else if (*_pos == call_opcode) {
+    _state = at_methodOop;
+    _methodOop_counter = PIC::nof_entries(get_disp(_pos + 1));
+    _pos += PIC::PIC_methodOop_entry_offset - PIC::PIC_nmethod_entry_offset;
+  } else {
+    assert(*_pos == jmp_opcode, "jump to lookup routine expected");
+    _state = at_the_end;
+  }
+#else
   if (get_shrt(_pos) == cmp_opcode) {
     // same state
   } else if (*_pos == call_opcode) {
@@ -241,6 +271,7 @@ void PIC_Iterator::computeNextState() {
     assert(*_pos == jmp_opcode, "jump to lookup routine expected");
     _state = at_the_end;
   }
+#endif
 }
 
 void PIC_Iterator::advance() {
@@ -542,29 +573,116 @@ int PIC::nof_entries(char* pic_stub) {
 int PIC::code_for_methodOops_only(char* entry, PIC_contents* c) {
   char* p = entry;
   put_byte(p, call_opcode);
-  if (c->smi_methodOop == NULL) {
-    // no smi methodOop
-    put_disp(p, StubRoutines::PIC_stub_entry(c->m));
-    assert(entry + PIC_methodOop_only_offset == p, "constant inconsistent");
-  } else {
-    // handle smi methodOop first
-    put_disp(p, StubRoutines::PIC_stub_entry(1 + c->m));
-    put_word(p, intptr_t(smiKlassObj));
-    put_word(p, intptr_t(c->smi_methodOop));
-    assert(entry + PIC_methodOop_only_offset + PIC_methodOop_entry_size == p,
-           "constant value inconsistent with code pattern");
+#ifdef DELTA_BACKEND_X86_64
+  {
+    if (c->smi_methodOop == NULL) {
+      // no smi methodOop
+      put_disp(p, StubRoutines::PIC_stub_entry(c->m));
+      assert(entry + PIC_methodOop_only_offset == p, "constant inconsistent");
+    } else {
+      // handle smi methodOop first
+      put_disp(p, StubRoutines::PIC_stub_entry(1 + c->m));
+      put_qword(p, intptr_t(smiKlassObj));
+      put_qword(p, intptr_t(c->smi_methodOop));
+      assert(entry + PIC_methodOop_only_offset + PIC_methodOop_entry_size == p,
+             "constant value inconsistent with code pattern");
+    }
+    char* p1 = p;
+    for (int i = 0; i < c->m; i++) {
+      assert(c->methodOop_klasses[i] != smiKlassObj, "should not be smiKlassObj");
+      put_qword(p, intptr_t(c->methodOop_klasses[i]));
+      put_qword(p, intptr_t(c->methodOops[i]));
+    }
+    assert(p1 + c->m * PIC_methodOop_entry_size == p, "constant value inconsistent with code pattern");
   }
-  char* p1 = p;
-  for (int i = 0; i < c->m; i++) {
-    assert(c->methodOop_klasses[i] != smiKlassObj, "should not be smiKlassObj");
-    put_word(p, intptr_t(c->methodOop_klasses[i]));
-    put_word(p, intptr_t(c->methodOops[i]));
+#else
+  {
+    if (c->smi_methodOop == NULL) {
+      // no smi methodOop
+      put_disp(p, StubRoutines::PIC_stub_entry(c->m));
+      assert(entry + PIC_methodOop_only_offset == p, "constant inconsistent");
+    } else {
+      // handle smi methodOop first
+      put_disp(p, StubRoutines::PIC_stub_entry(1 + c->m));
+      put_word(p, intptr_t(smiKlassObj));
+      put_word(p, intptr_t(c->smi_methodOop));
+      assert(entry + PIC_methodOop_only_offset + PIC_methodOop_entry_size == p,
+             "constant value inconsistent with code pattern");
+    }
+    char* p1 = p;
+    for (int i = 0; i < c->m; i++) {
+      assert(c->methodOop_klasses[i] != smiKlassObj, "should not be smiKlassObj");
+      put_word(p, intptr_t(c->methodOop_klasses[i]));
+      put_word(p, intptr_t(c->methodOops[i]));
+    }
+    assert(p1 + c->m * PIC_methodOop_entry_size == p, "constant value inconsistent with code pattern");
   }
-  assert(p1 + c->m * PIC_methodOop_entry_size == p, "constant value inconsistent with code pattern");
+#endif
   return p - entry;
 }
 
 int PIC::code_for_polymorphic_case(char* entry, PIC_contents* c) {
+#ifdef DELTA_BACKEND_X86_64
+  if (c->has_nmethods()) {
+    // nmethods & methodOops
+    // test al, Mem_Tag
+    char* p = entry;
+    char* fixup = NULL;
+    put_byte(p, test_opcode);
+    put_byte(p, Mem_Tag);
+    // jz ...
+    put_shrt(p, jz_opcode);
+    if (c->smi_nmethod != NULL) {
+      assert(c->smi_methodOop == NULL, "can only have one method for smis");
+      put_disp(p, c->smi_nmethod);
+    } else if (c->smi_methodOop != NULL) {
+      // smi method is methodOop -> handle it in methodOop section
+      fixup = p;
+      put_disp(p, 0);
+    } else {
+      // no smi entries
+      put_disp(p, CompiledIC::normalLookupRoutine()); // Fix this for super sends!
+    }
+    // always load klass to simplify decoding/iteration of PIC
+    // mov rdx, [eax.klass] (REX.W + 8B 50 <disp8>)
+    put_byte(p, 0x48);
+    put_byte(p, 0x8b);
+    put_byte(p, 0x50);
+    put_byte(p, memOopDesc::klass_byte_offset());
+    assert(entry + PIC_nmethod_entry_offset == p, "constant value inconsistent with code pattern");
+    // handle nmethods
+    for (int i = 0; i < c->n; i++) {
+      // movabs rcx, klass64; cmp rcx, rdx; je nmethod(j)
+      assert(c->nmethod_klasses[i] != smiKlassObj, "should not be smiKlassObj");
+      put_shrt(p, movabs_opcode);
+      assert(entry + PIC_nmethod_entry_offset + i * PIC_nmethod_entry_size + PIC_nmethod_klass_offset == p,
+             "constant value inconsistent with code pattern");
+      put_qword(p, intptr_t(c->nmethod_klasses[i]));
+      put_shrt(p, cmp_opcode64);
+      // je nmethod(j)
+      put_shrt(p, jz_opcode);
+      assert(entry + PIC_nmethod_entry_offset + i * PIC_nmethod_entry_size + PIC_nmethod_offset == p,
+             "constant value inconsistent with code pattern");
+      put_disp(p, c->nmethods[i]);
+    }
+    assert(entry + PIC_nmethod_entry_offset + c->n * PIC_nmethod_entry_size == p,
+           "constant value inconsistent with code pattern");
+    if (c->smi_methodOop != NULL || c->m > 0) {
+      // handle methodOops
+      if (fixup != NULL)
+        put_disp(fixup, p);
+      p += code_for_methodOops_only(p, c);
+    } else {
+      // jmp cache_miss
+      put_byte(p, jmp_opcode);
+      put_disp(p, CompiledIC::normalLookupRoutine());
+    }
+    return p - entry;
+  } else {
+    // no nmethods -> call PIC stub routine directly
+    return code_for_methodOops_only(entry, c);
+  }
+#else
   if (c->has_nmethods()) {
     // nmethods & methodOops
     // test al, Mem_Tag
@@ -621,6 +739,7 @@ int PIC::code_for_polymorphic_case(char* entry, PIC_contents* c) {
     // no nmethods -> call PIC stub routine directly
     return code_for_methodOops_only(entry, c);
   }
+#endif
 }
 
 int PIC::code_for_megamorphic_case(char* entry) {
@@ -628,7 +747,11 @@ int PIC::code_for_megamorphic_case(char* entry) {
   put_byte(p, call_opcode);
   put_disp(p, StubRoutines::megamorphic_ic_entry());
   assert(entry + MIC_selector_offset == p, "layout constant inconsistent with code pattern");
+#ifdef DELTA_BACKEND_X86_64
+  put_qword(p, intptr_t(selector())); // used for fast lookup
+#else
   put_word(p, intptr_t(selector())); // used for fast lookup
+#endif
   assert(entry + MIC_code_size == p, "layout constant inconsistent with code pattern");
   return p - entry;
 }

@@ -45,6 +45,19 @@ public:
     max_nof_entries = 4, // the maximal number of PIC entries
 
     // PIC layout constants
+    //
+    // The generated PIC byte-code is hand-encoded per backend:
+    //   - aarch64 (legacy): the 32-bit-x86 format --
+    //       test al, Mem_Tag ; jz rel32 ; movl edx, [eax+klass] ; then per
+    //       nmethod entry: `cmpl edx, <klass32>` / `je <disp>` (4-byte oops),
+    //       then a 4-byte-cell methodOop section (`call PIC_stub(m)` + 4-byte
+    //       klass/method cells) and a 4-byte MIC selector cell.
+    //   - x86-64: a 64-bit format --
+    //       test al, Mem_Tag ; jz rel32 ; movq rdx, [rax+klass] ; then per
+    //       nmethod entry: `movabs rcx, <klass64>` / `cmp rcx, rdx` /
+    //       `je <disp>`, then an 8-byte-cell methodOop section and an 8-byte
+    //       MIC selector cell.
+#if defined(DELTA_BACKEND_AARCH64)
     PIC_methodOop_only_offset = 5,
     PIC_smi_nmethod_offset = 4,
 
@@ -61,6 +74,26 @@ public:
     // MIC layout constants
     MIC_selector_offset = 5,
     MIC_code_size = 9,
+#elif defined(DELTA_BACKEND_X86_64)
+    PIC_methodOop_only_offset = 5,
+    PIC_smi_nmethod_offset = 4,
+
+    PIC_nmethod_entry_offset = 12,
+    PIC_nmethod_entry_size = 19,
+    PIC_nmethod_klass_offset = 2,
+    PIC_nmethod_offset = 13,
+
+    PIC_methodOop_entry_offset = 17,
+    PIC_methodOop_entry_size = 16,
+    PIC_methodOop_klass_offset = 0,
+    PIC_methodOop_offset = 8,
+
+    // MIC layout constants
+    MIC_selector_offset = 5,
+    MIC_code_size = 13,
+#else
+#error "unknown backend"
+#endif
   };
 
 private:

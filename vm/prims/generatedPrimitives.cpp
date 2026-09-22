@@ -280,7 +280,10 @@ void GeneratedPrimitives::init() {
 
   int n;
   ResourceMark rm;
-  _code = os::exec_memory(_code_size);
+  // Allocate from the shared executable-code arena: generated primitives are
+  // the target of rel32 calls from the interpreter and nmethods, so they must
+  // stay within +-2GB of the rest of the generated code.
+  _code = os::code_memory(_code_size);
 
   CodeBuffer* code = new CodeBuffer(_code, _code_size);
   MacroAssembler* masm = new MacroAssembler(code);

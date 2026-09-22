@@ -82,6 +82,18 @@ public:
   static bool guard_memory(char* addr, int size);
   static char* exec_memory(int size);
 
+  // Executable-code memory from a single shared arena. All generated/JIT code
+  // regions (jump table, nmethod zone, PIC zone, interpreter, stub routines,
+  // generated primitives) are carved out of one reservation so every pair of
+  // code addresses is within +/-2GB of the others -- required on x86-64, where
+  // the compiler emits 32-bit PC-relative E8/E9 branches between independently
+  // "owned" regions (jump entries -> nmethods/StubRoutines, nmethods -> stub
+  // routines/interpreter entries, PIC stubs -> StubRoutines). Independent mmaps
+  // can drift arbitrarily far apart under ASLR, which breaks those branches.
+  static char* code_memory(int size);
+  static char* code_arena_base(); // base of the shared code arena (NULL if not yet allocated)
+  static void code_memory_free(void* p); // arena memory is never freed individually
+
   // MAP_JIT write-protect toggle (Apple Silicon). Generated code regions are
   // writable in the "unprotected" state and executable in the "protected"
   // state; no-ops on other platforms.

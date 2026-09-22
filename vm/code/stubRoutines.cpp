@@ -183,17 +183,22 @@ char* StubRoutines::generate_ic_lookup(MacroAssembler* masm, char* lookup_routin
   masm->jmp(ebx); // jump to target
   return entry_point;
 #else
+  // x86-64: the receiver is passed in eax (as for all compiled sends) and the
+  // ic address is the return address pushed by the compiled `call` into this
+  // stub. icNormalLookup(oop receiver, char* ic) follows the x86-64 SysV ABI
+  // (args in rdi/rsi), so build the arguments in registers, spill the receiver
+  // across the call (eax is the C result register), then restore it and jump.
+  // Note: movl/pushl would truncate the ic return address and the receiver
+  // oop to 32 bits (findNMethod() would then fail to locate the caller's
+  // nmethod and CompiledIC::normalLookup would crash on a NULL CompileD), so
+  // the full 64-bit forms are mandatory here.
   char* entry_point = masm->pc();
   masm->set_last_Delta_frame_after_call();
-  masm->movl(ebx, Address(esp)); // get return address (= ic address)
-  masm->pushl(eax); // save receiver
-  masm->pushl(ebx); // pass ic
-  masm->pushl(eax); // pass receiver
-  masm->call(lookup_routine_entry, relocInfo::runtime_call_type); // eax = lookup_routine(receiver, ic)
-  masm->movl(ebx, eax); // ebx = method code
-  masm->popl(eax); // get rid of receiver argument
-  masm->popl(eax); // get rid of ic argument
-  masm->popl(eax); // restore receiver (don't use argument, might be overwritten)
+  masm->movq(ebx, Address(esp)); // get return address (= ic address)
+  masm->pushq(eax); // save receiver
+  masm->call_C(lookup_routine_entry, eax, ebx); // eax = lookup_routine(receiver, ic)
+  masm->movq(ebx, eax); // ebx = method code
+  masm->popq(eax); // restore receiver
   masm->reset_last_Delta_frame();
   masm->jmp(ebx); // jump to target
   return entry_point;
@@ -223,16 +228,33 @@ char* StubRoutines::generate_zombie_nmethod(MacroAssembler* masm) {
   // tos  : return address to zombie nmethod (which called this stub)
   // tos-4: return address to caller nmethod (which called the zombie nmethod)
   char* entry_point = masm->pc();
+#ifdef DELTA_BACKEND_AARCH64
   masm->popl(ebx); // get rid of return address to zombie nmethod
+#else
+  // x86-64: the return address and ic address are full 64-bit pointers;
+  // movl/popl would truncate them and zombie_nmethod() would patch the wrong
+  // ic (findNMethod() on the truncated address fails to locate the caller's
+  // nmethod).
+  masm->popq(ebx); // get rid of return address to zombie nmethod
+#endif
   // eax: receiver
   // tos: return address to caller nmethod (which called the zombie nmethod)
   masm->set_last_Delta_frame_after_call();
+#ifdef DELTA_BACKEND_AARCH64
   masm->movl(ebx, Address(esp)); // get return address (= ic address) - don't pop! (needed for correct Delta frame)
   masm->pushl(eax); // save receiver
   masm->call_C((char*)zombie_nmethod, ebx); // eax = zombie_nmethod(return_address)
   masm->movl(ecx, eax); // ecx = entry point to redo send
   masm->popl(eax); // restore receiver
   masm->popl(ebx); // get rid of return address
+#else
+  masm->movq(ebx, Address(esp)); // get return address (= ic address) - don't pop! (needed for correct Delta frame)
+  masm->pushq(eax); // save receiver
+  masm->call_C((char*)zombie_nmethod, ebx); // eax = zombie_nmethod(return_address)
+  masm->movq(ecx, eax); // ecx = entry point to redo send
+  masm->popq(eax); // restore receiver
+  masm->popq(ebx); // get rid of return address
+#endif
   masm->reset_last_Delta_frame();
   masm->jmp(ecx); // redo send
   return entry_point;
@@ -360,6 +382,63 @@ char* StubRoutines::generate_zombie_block_nmethod(MacroAssembler* masm) {
 extern "C" char* method_entry_point;
 
 char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
+#ifdef DELTA_BACKEND_X86_64
+  // x86-64: the 32-bit primary/secondary lookup-cache probe below uses 4-byte
+  // cells with a 16-byte cacheElement stride (see lookupCache.cpp), neither of
+  // which holds on a 64-bit oops model. Instead of porting the probe, every
+  // megamorphic miss resolves the full lookup here (correct, just slower): the
+  // selector is taken from the MIC's selector cell, the receiver klass (smi or
+  // mem) is derived from the receiver, and the tagged result (methodOop or
+  // entry point) is dispatched like the ic lookup stub does.
+  //
+  // eax    : receiver
+  // tos    : return address pointing to selector in MIC
+  // tos + 8: return address of megamorphic send in compiled code (ic)
+
+  Label is_methodOop;
+  char* entry_point = masm->pc();
+  masm->movq(ecx, Address(esp)); // ecx = &selector cell (the return address into the MIC)
+  masm->movq(edx, Address(ecx)); // edx = selector oop
+  masm->popq(ecx); // discard the selector cell address; tos is now the ic of the send
+
+  // determine receiver klass (ecx)
+  Label not_smi, klass_done;
+  masm->testq(eax, Mem_Tag); // check if smi
+  masm->jcc(Assembler::notZero, not_smi);
+  masm->movq(ecx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
+  masm->jmp(klass_done);
+  masm->bind(not_smi);
+  masm->movq(ecx, Address(eax, memOopDesc::klass_byte_offset())); // receiver class
+  masm->bind(klass_done);
+
+  // do lookup
+  //
+  // ecx: receiver klass
+  // edx: selector
+  // tos: return address of megamorphic send in compiled code (ic)
+  masm->pushq(eax); // save receiver
+  masm->call_C((char*)lookupCache::normal_lookup, ecx, edx); // eax = normal_lookup(klass, selector)
+  masm->movq(ecx, eax); // ecx = result (tagged: methodOop or entry point)
+  masm->popq(eax); // restore receiver
+  masm->testq(ecx, Mem_Tag); // test if methodOop
+  masm->jcc(Assembler::notZero, is_methodOop); // mem-tagged -> interpreted method
+  masm->jmp(ecx); // entry point (smi-tagged)
+
+  // call methodOop - setup registers
+  masm->bind(is_methodOop);
+  masm->xorl(ebx, ebx); // clear ebx for interpreter
+  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+  // (Note: cannot use value in method_entry_point directly since interpreter is generated afterwards)
+  //
+  // eax: receiver
+  // ebx: 00000000
+  // ecx: methodOop
+  // edx: entry point
+  // tos: return address of megamorphic send in compiled code (ic)
+  masm->jmp(edx); // call method_entry
+
+  return entry_point;
+#else
   // Called from within a MIC (megamorphic inline cache), the special
   // variant of PICs for compiled code (see compiledPIC.hpp/cpp).
   // The MIC layout is as follows:
@@ -475,6 +554,7 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   masm->hlt();
 
   return entry_point;
+#endif
 }
 
 char* StubRoutines::generate_compile_block(MacroAssembler* masm) {
@@ -555,7 +635,8 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
   masm->pushl(esp); // to check that the right no. of arguments is used
   if (TraceDLLCalls) { // call trace routine (C to C call, no special setup required)
     masm->pushl(esi); // save DLL state address
-    masm->call_trace_DLL_call_1((char*)trace_DLL_call_1, edx, ecx, ebx); // trace_DLL_call_1(function, last_argument, nof_arguments)
+    masm->call_trace_DLL_call_1((char*)trace_DLL_call_1, edx, ecx,
+                                ebx); // trace_DLL_call_1(function, last_argument, nof_arguments)
     masm->popl(esi); // restore DLL state address
   }
   //slr mod: push a fake stack frame to support cdecl calls
@@ -669,20 +750,20 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   masm->set_last_Delta_frame_after_call();
 
   // Prologue: allocate the stub frame (align16(8 * n) + 32 bytes).
-  masm->mov(x9, sp);                     // x9 = caller sp
-  masm->lsl(x10, ebx, 3);                // n * 8
+  masm->mov(x9, sp); // x9 = caller sp
+  masm->lsl(x10, ebx, 3); // n * 8
   masm->addl(x10, 31);
-  masm->andl(x10, 0xfffffff0);           // align16
+  masm->andl(x10, 0xfffffff0); // align16
   masm->addl(x10, 32);
   // sp -= x10 cannot be encoded with sp as an operand (the shifted-register
   // sub decodes register 31 as xzr, producing a no-op), so combine the
   // subtraction through a general register: x16 = sp; x16 -= x10; sp = x16.
-  masm->mov(x16, sp);                    // x16 = entry sp
-  masm->sub(x16, x16, x10);              // x16 = new sp
-  masm->mov(sp, x16);                    // sp = x16 (encoded as add sp, x16, #0)
-  masm->str(x9, Address(sp, 0));         // save entry sp
-  masm->str(xzr, Address(sp, 8));        // DLL state (zero-initialized)
-  masm->str(x30, Address(sp, 16));       // save return address
+  masm->mov(x16, sp); // x16 = entry sp
+  masm->sub(x16, x16, x10); // x16 = new sp
+  masm->mov(sp, x16); // sp = x16 (encoded as add sp, x16, #0)
+  masm->str(x9, Address(sp, 0)); // save entry sp
+  masm->str(xzr, Address(sp, 8)); // DLL state (zero-initialized)
+  masm->str(x30, Address(sp, 16)); // save return address
 
   // Convert the arguments, reading them from [ecx] upward and writing the
   // converted values into the buffer in C-argument order (the last argument
@@ -691,20 +772,20 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   //   x15 (ebx) is the argument counter.
   //   x11 (ecx) walks the Delta arguments upward.
   //   x16 points at the current buffer slot (top of buffer first).
-  masm->mov(x17, ebx);                   // x17 = n
-  masm->add(x16, sp, 32);                // buffer base
+  masm->mov(x17, ebx); // x17 = n
+  masm->add(x16, sp, 32); // buffer base
   masm->lsl(x10, ebx, 3);
-  masm->add(x16, x16, x10);              // buffer + n * 8
-  masm->sub(x16, x16, 8);                // first slot to fill: C argument n
+  masm->add(x16, x16, x10); // buffer + n * 8
+  masm->sub(x16, x16, 8); // first slot to fill: C argument n
   masm->cmp(x17, 0);
   masm->jcc(MacroAssembler::equal, no_arguments);
 
   masm->bind(convert_loop);
-  masm->ldr(x0, Address(x11));           // get Delta argument
-  masm->addl(x11, 8);                    // go to next Delta argument
-  masm->testb(x0, Mem_Tag);              // mem oop iff bit 0 is set
+  masm->ldr(x0, Address(x11)); // get Delta argument
+  masm->addl(x11, 8); // go to next Delta argument
+  masm->testb(x0, Mem_Tag); // mem oop iff bit 0 is set
   masm->jcc(MacroAssembler::notZero, boxed_argument);
-  masm->sarl(x0, Tag_Size);              // smi -> C int
+  masm->sarl(x0, Tag_Size); // smi -> C int
   masm->b(next_argument);
 
   // boxed argument -> unbox it
@@ -712,9 +793,9 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   masm->ldr(x0, Address(x0, pointer_offset)); // unbox proxy
 
   masm->bind(next_argument);
-  masm->str(x0, Address(x16));           // store converted argument
+  masm->str(x0, Address(x16)); // store converted argument
   masm->sub(x16, x16, 8);
-  masm->sub(x17, x17, 1);                // decrement argument counter
+  masm->sub(x17, x17, 1); // decrement argument counter
   masm->jcc(MacroAssembler::notZero, convert_loop);
 
   masm->bind(no_arguments);
@@ -724,10 +805,10 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   masm->jcc(MacroAssembler::greater, bad_call_count);
 
   // Load the (up to 8) converted arguments into x0..x7 in C order.
-  masm->add(x16, sp, 32);                // buffer base
+  masm->add(x16, sp, 32); // buffer base
   masm->lsl(x10, ebx, 3);
   masm->add(x16, x16, x10);
-  masm->sub(x16, x16, 8);                // &buffer[n-1] (first C argument)
+  masm->sub(x16, x16, 8); // &buffer[n-1] (first C argument)
   masm->ldr(x0, Address(x16));
   masm->sub(x16, x16, 8);
   masm->ldr(x1, Address(x16));
@@ -752,15 +833,15 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   }
 
   // do DLL call
-  masm->blr(edx);                        // result in x0
+  masm->blr(edx); // result in x0
 
   if (TraceDLLCalls) {
-    masm->mov(eax, x0);                  // make the result available for the trace
-    masm->str(eax, Address(sp, 24));     // preserve the result across the trace
+    masm->mov(eax, x0); // make the result available for the trace
+    masm->str(eax, Address(sp, 24)); // preserve the result across the trace
     masm->call_C((char*)trace_DLL_call_2, eax);
-    masm->ldr(eax, Address(sp, 24));     // restore the result
+    masm->ldr(eax, Address(sp, 24)); // restore the result
   } else {
-    masm->mov(eax, x0);                  // eax := DLL call result
+    masm->mov(eax, x0); // eax := DLL call result
   }
 
   if (async) {
@@ -770,8 +851,8 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   }
 
   // Restore the caller's stack and frame, then return.
-  masm->ldr(x30, Address(sp, 16));       // return address into the caller
-  masm->ldr(x9, Address(sp, 0));         // original sp
+  masm->ldr(x30, Address(sp, 16)); // return address into the caller
+  masm->ldr(x9, Address(sp, 0)); // original sp
   masm->mov(sp, x9);
   masm->reset_last_Delta_frame();
   masm->ret(0);
@@ -816,6 +897,7 @@ char* StubRoutines::generate_recompile_stub(MacroAssembler* masm) {
   // eax: receiver
   char* entry_point = masm->pc();
   //masm->int3();
+#ifdef DELTA_BACKEND_AARCH64
   masm->set_last_Delta_frame_after_call();
   //  masm->call((char*)SavedRegisters::save_registers, relocInfo::runtime_call_type);
   SavedRegisters::generate_save_registers(masm);
@@ -828,6 +910,29 @@ char* StubRoutines::generate_recompile_stub(MacroAssembler* masm) {
   masm->reset_last_Delta_frame();
   masm->leave(); // remove trigger nmethod's stack frame
   masm->jmp(ecx); // continue
+#else
+  // Publish the trigger nmethod's frame to the stack walkers (Recompilation
+  // runs its VM operation suspended inside this C call): fp = the trigger
+  // frame's ebp and sp = the esp of the generated `call recompile_stub` site,
+  // so that frame(sp, fp).pc() == sp[-1] == the return address pushed by that
+  // call, i.e. a pc inside the trigger nmethod. The call_C glue below would
+  // re-capture last_Delta_sp at a deeper esp (sp[-1] then points into the
+  // stub, findNMethod() fails, and CompiledRFrame::init crashes on a NULL _nm),
+  // so the C call is made with explicit SysV register arguments instead.
+  masm->set_last_Delta_frame_after_call();
+  //  masm->call((char*)SavedRegisters::save_registers, relocInfo::runtime_call_type);
+  SavedRegisters::generate_save_registers(masm);
+  masm->movq(ebx, Address(esp)); // get return address (trigger nmethod)
+  masm->pushq(eax); // save receiver (full 64-bit oop)
+  masm->movq(edi, eax); // arg1: receiver (x86-64 SysV)
+  masm->movq(esi, ebx); // arg2: trigger nmethod pc
+  masm->call((char*)Recompilation::nmethod_invocation_counter_overflow,
+             relocInfo::runtime_call_type); // eax = ...overflow(receiver, pc)
+  masm->movq(ecx, eax); // save continuation address in ecx
+  masm->popq(eax); // restore receiver
+  masm->leave(); // remove trigger nmethod's stack frame
+  masm->jmp(ecx); // continue
+#endif
   return entry_point;
 }
 
@@ -1266,7 +1371,8 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   Label common_unpack_unoptimized_frames;
 
   masm->bind(common_unpack_unoptimized_frames);
-  masm->call_unpack_unoptimized_frames((char*)setup_deoptimization_and_return_new_sp, real_sender_sp, real_fp, frame_array, ebp);
+  masm->call_unpack_unoptimized_frames((char*)setup_deoptimization_and_return_new_sp, real_sender_sp, real_fp,
+                                       frame_array, ebp);
   // setup_deoptimization_and_return_new_sp(real_sender_sp, real_fp, frame_array, old_fp)
 #ifdef DELTA_BACKEND_X86_64
   // new sp and real fp are full 64-bit pointers on x86-64
@@ -1492,6 +1598,9 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   //
   // Note: Don't use this for polymorphic super sends!
 
+  // On x86-64 the klass/methodOop cells are 8-byte (see the layout comment in
+  // compiledPIC.hpp), so the pic_size-based offsets below use the shared
+  // PIC_methodOop_entry_* constants, which pick the right size per backend.
   Label found, loop;
 
   // entry found at index
@@ -1502,7 +1611,11 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   // edx: receiver klass
   // tos: return address of polymorphic send in compiled code
   masm->bind(found);
-  masm->movl(edx, Address(intptr_t(&method_entry_point), relocInfo::external_word_type));
+#ifdef DELTA_BACKEND_X86_64
+  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+#else
+  masm->movl(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+#endif
   // (Note: cannot use value in method_entry_point directly since interpreter is generated afterwards)
   masm->xorl(ebx, ebx);
   // eax: receiver
@@ -1515,11 +1628,19 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   // tos + 4: return address of polymorphic send in compiled code
   // tos + 8: last argument/receiver
   char* entry_point = masm->pc();
+#ifdef DELTA_BACKEND_X86_64
+  masm->popq(ebx); // get return address (PIC table pointer)
+  masm->movq(edx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
+  masm->testq(eax, Mem_Tag); // check if smi
+  masm->jcc(Assembler::zero, loop); // if so, class is already in edx
+  masm->movq(edx, Address(eax, memOopDesc::klass_byte_offset())); // otherwise, load receiver class
+#else
   masm->popl(ebx); // get return address (PIC table pointer)
   masm->movl(edx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
   masm->test(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::zero, loop); // if so, class is already in ecx
   masm->movl(edx, Address(eax, memOopDesc::klass_byte_offset())); // otherwise, load receiver class
+#endif
 
   // eax: receiver
   // ebx: PIC table pointer
@@ -1528,8 +1649,14 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   masm->bind(loop);
   for (int i = 0; i < pic_size; i++) {
     // compare receiver klass with klass in PIC table at index
+#ifdef DELTA_BACKEND_X86_64
+    masm->movq(ecx, Address(ebx, i * PIC::PIC_methodOop_entry_size + PIC::PIC_methodOop_klass_offset));
+    masm->cmpq(edx, ecx);
+    masm->movq(ecx, Address(ebx, i * PIC::PIC_methodOop_entry_size + PIC::PIC_methodOop_offset));
+#else
     masm->cmpl(edx, Address(ebx, i * PIC::PIC_methodOop_entry_size + PIC::PIC_methodOop_klass_offset));
     masm->movl(ecx, Address(ebx, i * PIC::PIC_methodOop_entry_size + PIC::PIC_methodOop_offset));
+#endif
     masm->jcc(Assembler::equal, found);
   }
   assert(ic_normal_lookup_entry() != NULL, "ic_normal_lookup_entry must be generated before");
@@ -1939,7 +2066,10 @@ void StubRoutines::init() {
   if (_is_initialized)
     return;
 
-  _code = os::exec_memory(_code_size);
+  // Allocate from the shared executable-code arena: stub routines are the
+  // target of 32-bit PC-relative calls/jumps from nmethods and jump table
+  // entries, so they must stay within +-2GB of the rest of the generated code.
+  _code = os::code_memory(_code_size);
 
   ResourceMark rm;
   CodeBuffer* code = new CodeBuffer(_code, _code_size);

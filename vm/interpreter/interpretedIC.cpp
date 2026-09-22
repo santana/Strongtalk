@@ -618,6 +618,48 @@ oop* InterpretedIC::inline_cache_miss() {
                    ? f.receiver() //  yes: take receiver of frame
                    : f.expr(ic->nof_arguments()); //  no:  take receiver pushed before the arguments
 
+#ifdef ASSERT
+  static int missCount = 0;
+  if (missCount++ < 12) {
+    mystd->print_cr("ICMISS#%d send_code=%d selector=%#lx recv=%#lx klass=%#lx method=%#lx esp=%p", missCount - 1,
+                    send_code, ic->selector(), receiver, receiver->klass(), f.method(), f.sp());
+    oop* sp = f.sp();
+    for (int di = -8; di <= 8; di++)
+      mystd->print_cr("   sp[%+d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+  }
+  // stall detector: identical miss repeated forever (corrupted klass loop)
+  static oop lastMissRecv = (oop)1, lastMissKlass = (oop)1;
+  static oop lastMissSel = (oop)1;
+  static long stall = 0;
+  static bool stallReported = false;
+  if (receiver == lastMissRecv && receiver->klass() == lastMissKlass && ic->selector() == lastMissSel) {
+    if (++stall == 1000000) {
+      mystd->print_cr("STALLED-ICMISS receiver=%#lx klass=%#lx sel=%#lx (same triple >1e6 misses)",
+                      (unsigned long)receiver, (unsigned long)lastMissKlass, (unsigned long)lastMissSel);
+      if (!stallReported) {
+        stallReported = true;
+        oop* sp = f.sp();
+        for (int di = -12; di <= 12; di++)
+          mystd->print_cr("   st[%+d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+        oop* rb = (oop*)f.fp();
+        for (int di = -8; di <= 8; di++)
+          mystd->print_cr("   fp[%+d] (%p) = %#lx", di, rb + di, (unsigned long)rb[di]);
+        if (receiver && !receiver->is_smi()) {
+          int* raw = (int*)receiver;
+          mystd->print_cr("   receiver raw word0..5: %#lx %#lx %#lx %#lx %#lx %#lx", (unsigned long)raw[0],
+                          (unsigned long)raw[1], (unsigned long)raw[2], (unsigned long)raw[3], (unsigned long)raw[4],
+                          (unsigned long)raw[5]);
+        }
+      }
+    }
+  } else {
+    lastMissRecv = receiver;
+    lastMissKlass = receiver->klass();
+    lastMissSel = ic->selector();
+    stall = 0;
+  }
+#endif
+
   // do the lookup
   klassOop klass = receiver->klass();
   LookupResult result = Bytecodes::is_super_send(send_code) ? interpreter_super_lookup(ic->selector())
@@ -631,6 +673,52 @@ oop* InterpretedIC::inline_cache_miss() {
   // handle the lookup result
   if (!result.is_empty()) {
     update_inline_cache(ic, &f, ic->send_code(), klass, result);
+#ifdef ASSERT
+    static bool stallLookupPrinted = false;
+    if (stallReported && !stallLookupPrinted) {
+      stallLookupPrinted = true;
+      mystd->print_cr("STALL-LOOKUP sel=%#lx klass=%#lx recv=%#lx entry=%d send_type=%d cur_send_code=%d",
+                      (unsigned long)ic->selector(), (unsigned long)klass, (unsigned long)receiver, result.is_entry(),
+                      (int)ic->send_type(), (int)send_code);
+      mystd->print_cr("   ic word0=%#lx word1=%#lx (after update)", (unsigned long)ic->first_word(),
+                      (unsigned long)ic->second_word());
+      mystd->print_cr("   current-method=%#lx sel=%#lx sender-recv=%#lx nofArgs=%d argSpec=%d",
+                      (unsigned long)f.method(), (unsigned long)f.method()->selector(), (unsigned long)f.receiver(),
+                      (int)ic->nof_arguments(), (int)ic->argument_spec());
+      if (receiver && !receiver->is_smi()) {
+        unsigned long* raw = (unsigned long*)receiver;
+        mystd->print_cr("   recv raw: %#lx %#lx %#lx %#lx %#lx %#lx %#lx %#lx", raw[0], raw[1], raw[2], raw[3], raw[4],
+                        raw[5], raw[6], raw[7]);
+      }
+      if (klass) {
+        unsigned long* rawk = (unsigned long*)klass;
+        mystd->print_cr("   klass raw: %#lx %#lx %#lx %#lx %#lx %#lx %#lx %#lx", rawk[0], rawk[1], rawk[2], rawk[3],
+                        rawk[4], rawk[5], rawk[6], rawk[7]);
+      }
+      methodOop m = result.is_entry() ? NULL : result.method();
+      mystd->print_cr("   resolved interp-method=%#lx", (unsigned long)m);
+      mystd->print_cr("   recv is_smi=%d is_mem=%d klass-again=%#lx kl-of-klass=%#lx", receiver->is_smi(),
+                      receiver->is_mem(), (unsigned long)klass,
+                      (unsigned long)(klass->is_smi() ? NULL : klass->klass()));
+      u_char* where = (u_char*)ic->send_code_addr();
+      mystd->print_cr("   ic bytes %+13: ", where - 4);
+      for (int k = -4; k <= 4; k++)
+        mystd->print(" %02x", where[k]);
+      mystd->cr();
+      oop* sp = f.sp();
+      for (int di = 0; di <= 6; di++)
+        mystd->print_cr("   st[+%d] (%p) = %#lx", di, sp + di, (unsigned long)sp[di]);
+      methodOop cur = f.method();
+      if (cur && cur->is_method()) {
+        u_char* codes = cur->codes();
+        u_char* icb = (u_char*)ic->send_code_addr();
+        mystd->print_cr("   method codes[0..79] @%p (icb-%ld):", codes, (long)(icb - codes));
+        for (int k = 0; k < 80; k++)
+          mystd->print(" %02x", codes[k]);
+        mystd->cr();
+      }
+    }
+#endif
     return NULL;
   } else {
     return cacheMissResult(does_not_understand(receiver, ic, &f),

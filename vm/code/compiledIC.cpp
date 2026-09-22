@@ -29,6 +29,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/nmethod.hpp"
 #include "code/pcDesc.hpp"
 #include "code/stubRoutines.hpp"
+#include "disasm/disassembler.hpp"
 #include "interpreter/codeIterator.hpp"
 #include "interpreter/interpretedIC.hpp"
 #include "interpreter/interpreter.hpp"
@@ -46,6 +47,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/evaluator.hpp"
 #include "runtime/process.hpp"
 #include "runtime/vmOperations.hpp"
+
+static int FirstCompiledICDiag = 30;
 #include "topIncludes/std_includes.hpp"
 #include "utilities/eventLog.hpp"
 #include "utilities/growableArray.hpp"
@@ -67,12 +70,69 @@ char* CompiledIC::superLookupRoutine() {
   return StubRoutines::ic_super_lookup_entry();
 }
 
+// ---- TEMP DEBUG CICPROBE: dump the compiled caller frame at an ic lookup ----
+// The ic-lookup stub keeps rbp untouched, so icNormalLookup's saved rbp
+// ([rbp_C]) is the compiled caller's rbp; [caller_rbp+8] should equal the
+// ic's call site (begin_addr). Dump the caller's expression/arg region.
+static int probeCompiledICLookupCount = 0;
+static void probeCompiledICLookup(oop recv, CompiledIC* ic, char* entry) {
+  if (probeCompiledICLookupCount++ > 128)
+    return;
+  mystd->print_cr("CICPROBE#%d recv=%#lx klass=%#lx sel=%#lx entry=%#lx interpTarget=%d",
+                  probeCompiledICLookupCount - 1, recv, recv->klass(), ic->selector(), entry,
+                  Interpreter::contains(entry));
+  char** probe_rbp = (char**)__builtin_frame_address(0);
+  char** iclookup_rbp = (char**)*probe_rbp;
+  char** caller_rbp = (char**)*iclookup_rbp;
+  mystd->print_cr("  rbp_C=%p callerRbp=%p [callerRbp+8]=%#lx begin_addr=%p", iclookup_rbp, caller_rbp,
+                  caller_rbp ? (unsigned long)caller_rbp[1] : 0, ic->begin_addr());
+  if (caller_rbp && caller_rbp >= iclookup_rbp) {
+    for (int i = -12; i <= 3; i++)
+      mystd->print_cr("  caller[%+d] (%p) = %#lx", i, &caller_rbp[i], (unsigned long)caller_rbp[i]);
+  }
+  // caller nmethod + code window at the send site
+  nmethod* nm = findNMethod(ic->begin_addr());
+  mystd->print_cr("  callee found via findNMethod: nm=%p", nm);
+  if (nm) {
+    mystd->print_cr("  nm=%p method=%#lx sel=%#lx", nm, (unsigned long)nm->method(), (unsigned long)nm->key.selector());
+    if (probeCompiledICLookupCount == 1) {
+      FILE* codef = fopen("/tmp/caller_code.bin", "wb");
+      FILE* addrf = fopen("/tmp/caller_code.addr", "w");
+      if (codef && addrf) {
+        fprintf(addrf, "nm_base=%p entry=%p begin=%p end=%p len=%ld\n", nm, nm->entryPoint(), ic->begin_addr(),
+                ic->begin_addr() + 0x20, (long)(ic->begin_addr() + 0x20 - nm->entryPoint()));
+        fwrite(nm->entryPoint(), 1, ic->begin_addr() + 0x20 - nm->entryPoint(), codef);
+      }
+      if (codef)
+        fclose(codef);
+      if (addrf)
+        fclose(addrf);
+    }
+    mystd->print_cr("  --- disasm entry..begin+0x20 ---");
+    Disassembler::decode(nm->entryPoint(), ic->begin_addr() + 0x20, mystd);
+    mystd->print_cr("  --- end disasm ---");
+    unsigned char* c = (unsigned char*)ic->begin_addr();
+    mystd->print_cr("  code[begin-0x30..+0x20]:");
+    for (int i = -6; i < 4; i++) {
+      int off = i * 8;
+      unsigned long w = 0;
+      for (int b = 7; b >= 0; b--)
+        w = (w << 8) | c[off + b];
+      mystd->print_cr("    %+4d (%p) = %#lx", off, c + off, w);
+    }
+  }
+}
+// ---- end TEMP DEBUG CICPROBE ----
+
 extern "C" char* icNormalLookup(oop recv, CompiledIC* ic) {
   // As soon as the lookup routine handles 'message not understood' correctly,
   // allocation may take place. Then we have to fix the lookup stub as well.
   // (receiver cannot be saved/restored within the C frame).
+  ResourceMark rm; // protect global ResourceArea nesting across the lookup
   VerifyNoScavenge vna;
-  return ic->normalLookup(recv);
+  char* entry = ic->normalLookup(recv);
+  probeCompiledICLookup(recv, ic, entry);
+  return entry;
 }
 
 bool CompiledIC::is_empty() const {
@@ -176,6 +236,16 @@ char* CompiledIC::normalLookup(oop recv) {
     mystd->print(", ");
     selector()->print_value();
     mystd->print(")");
+    mystd->cr();
+  }
+  if (FirstCompiledICDiag) {
+    FirstCompiledICDiag--;
+    void** xsp = (void**)&recv;
+    mystd->print_cr("CICARG: recv=%#lx klass=%#lx sel=%#lx", recv, recv->klass(), selector());
+    for (int di = 0; di <= 8; di++) {
+      mystd->print_cr("  CICARG[%+d] (%#lx) = %#lx", di, &xsp[di], xsp[di]);
+    }
+    selector()->print_value();
     mystd->cr();
   }
   klassOop klass = recv->klass();

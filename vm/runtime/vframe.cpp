@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "code/scopeDesc.hpp"
 #include "interpreter/prettyPrinter.hpp"
 #include "memory/oopFactory.hpp"
+#include "memory/universe.hpp"
 #include "oops/blockKlass.hpp"
 #include "oops/blockOop.hpp"
 #include "oops/memOop.hpp"
@@ -35,6 +36,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.hpp"
 #include "oops/smiOop.hpp"
 #include "oops/symbolOop.hpp"
+#include "runtime/process.hpp"
 #include "runtime/savedRegisters.hpp"
 #include "runtime/stackChunk.hpp"
 #include "runtime/vframe.hpp"
@@ -185,6 +187,136 @@ contextOop interpretedVFrame::interpreter_context() const {
   if (!has_interpreter_context())
     return NULL;
   contextOop result = contextOop(_fr.temp(0));
+  if (!(method()->in_context_allocation(bci()) || result->is_context())) {
+    mystd->print_cr("CTX-CHECK: fp=%#lx sp=%#lx pc=%#lx hp=%#lx bci=%d temp0=%#lx hasCtx=%d inAlloc=%d", _fr.fp(),
+                    _fr.sp(), _fr.pc(), hp(), bci(), result, has_interpreter_context(),
+                    method()->in_context_allocation(bci()));
+    mystd->print_cr("CTX-CHECK method: %#lx size_and_flags=%#lx", method(), method()->size_and_flags());
+    method()->print_value();
+    mystd->cr();
+    mystd->print_cr("temp0 klass: %#lx is_context=%d", result->is_mem() ? (oop)memOop(result)->klass() : (oop)0,
+                    result->is_context());
+    mystd->print_cr("CTX-CHECK method header: nofArgs=%d nofLocals=%d size=%d sizeOfCodes=%d flags=%d",
+                    method()->number_of_arguments(), method()->number_of_stack_temporaries(), method()->size(),
+                    method()->size_of_codes(), method()->flags());
+    mystd->print_cr(
+      "CTX-CHECK: is_blockMethod=%d allocatesInterpretedContext=%d activation_has_context=%d in_context_allocation=%d",
+      method()->is_blockMethod(), method()->allocatesInterpretedContext(), method()->activation_has_context(),
+      method()->in_context_allocation(bci()));
+    mystd->print_cr("CTX-CHECK bytecodes @bci%d: %02x %02x %02x %02x %02x %02x", bci(), method()->byte_at(bci()),
+                    method()->byte_at(bci() + 1), method()->byte_at(bci() + 2), method()->byte_at(bci() + 3),
+                    method()->byte_at(bci() + 4), method()->byte_at(bci() + 5));
+    mystd->print_cr("CTX-CHECK bytecodes from 0:");
+    for (int i = 0; i < method()->size_of_codes() * oopSize && i < 256; i++) {
+      if (i % 16 == 0)
+        mystd->print_cr("  %03d: ", i);
+      mystd->print("%02x ", method()->byte_at(i));
+    }
+    mystd->cr();
+    method()->print_codes();
+    void** fp = _fr.fp();
+    for (int i = -6; i <= 4; i++) {
+      oop w = (oop)fp[i];
+      mystd->print_cr("  fp[%+d] (%#lx) = %#lx", i, &fp[i], fp[i]);
+      if (w->is_mem()) {
+        klassOop k = memOop(w)->klass();
+        mystd->print_cr("        klass=%#lx isContext=%d name=%s", k, w->is_context(), k->klass_part()->name());
+        if (w->is_block()) {
+          blockClosureOop bc = blockClosureOop(w);
+          oop mOrE = *(oop*)((char*)w + blockClosureOopDesc::method_or_entry_byte_offset());
+          oop lxSc = *(oop*)((char*)w + blockClosureOopDesc::context_byte_offset());
+          mystd->print_cr("        block: lexScope=%#lx methodOrEntry=%#lx", lxSc, mOrE);
+        }
+        if (w->is_context()) {
+          contextOop co = contextOop(w);
+          mystd->print_cr("        context: parent=%#lx", co->parent());
+        }
+      } else if (w->is_smi()) {
+        mystd->print_cr("        smi=%ld", (long)((intptr_t)w >> 1));
+      } else {
+        mystd->print_cr("        (%s)", w->is_mark() ? "mark" : "other");
+      }
+    }
+    _fr.print();
+    mystd->print_cr("CTX-CHECK saved regs: last_Delta_fp=%#lx last_Delta_sp=%#lx last_Delta_pc=%#lx", last_Delta_fp,
+                    last_Delta_sp, last_Delta_pc);
+    mystd->print_cr("CTX-CHECK active proc: fp=%#lx sp=%#lx pc=%#lx (proc=%p isScheduler=%d)",
+                    DeltaProcess::active()->last_Delta_fp(), DeltaProcess::active()->last_Delta_sp(),
+                    DeltaProcess::active()->last_Delta_pc(), DeltaProcess::active(),
+                    DeltaProcess::active() == DeltaProcess::scheduler());
+    mystd->print_cr("CTX-CHECK raw stack fp[-24..+16]:");
+    {
+      void** fpw = _fr.fp();
+      for (int i = -24; i <= 16; i++) {
+        oop w = (oop)fpw[i];
+        mystd->print_cr("  fp[%+d] (%#lx) = %#lx", i, &fpw[i], fpw[i]);
+      }
+    }
+    mystd->print_cr("CTX-CHECK mapping length @bci%d = %d", bci(), method()->expression_stack_mapping(bci())->length());
+    {
+      frame caller = _fr.sender();
+      mystd->print_cr("CTX-CHECK caller: fp=%#lx sp=%#lx pc=%#lx kind=%s", caller.fp(), caller.sp(), caller.pc(),
+                      caller.is_interpreted_frame() ? "interp" : "other");
+      if (caller.pc() && Universe::code->contains((char*)caller.pc())) {
+        nmethod* nm = Universe::code->findNMethod_maybe((char*)caller.pc());
+        if (nm != NULL) {
+          mystd->print_cr("  caller nmethod=%p insts=%#lx instsEnd=%#lx method=%#lx klass=%#lx", nm, nm->insts(),
+                          nm->instsEnd(), nm->method(), nm->receiver_klass());
+          nm->method()->print_value();
+          mystd->cr();
+          u_char* base = (u_char*)caller.pc() - 0x200;
+          mystd->print_cr("  caller code around pc-0x200..pc+0x20 (%#lx):", caller.pc());
+          for (int i = 0; i < 0x220; i++) {
+            if (i % 16 == 0)
+              mystd->print_cr("    %03x: ", i);
+            mystd->print("%02x ", base[i]);
+          }
+          mystd->cr();
+          void* csp = caller.sp();
+          mystd->print_cr("  caller stack window sp-6*oopSize..sp+10*oopSize (%#lx..%#lx):", csp,
+                          (char*)csp + 16 * oopSize);
+          oop* cw = (oop*)csp;
+          for (int i = -6; i <= 12; i++) {
+            oop w = (oop)cw[i];
+            mystd->print_cr("    sp[%+d] (%#lx) = %#lx", i, &cw[i], cw[i]);
+          }
+        }
+      }
+    }
+    mystd->print_cr("CTX-CHECK sender chain:");
+    frame s = _fr;
+    for (int n = 0; n < 8 && !s.is_first_frame(); n++) {
+      mystd->print_cr("  frame[%d] fp=%#lx sp=%#lx pc=%#lx senderFp=%#lx kind=%s", n, s.fp(), s.sp(), s.pc(), s.link(),
+                      s.is_interpreted_frame() ? "interp" : "other");
+      if (s.pc() && Universe::code->contains((char*)s.pc())) {
+        nmethod* nm = Universe::code->findNMethod_maybe((char*)s.pc());
+        if (nm != NULL) {
+          mystd->print_cr("        nmethod=%p insts=%#lx instsEnd=%#lx method=%#lx klass=%#lx", nm, nm->insts(),
+                          nm->instsEnd(), nm->method(), nm->receiver_klass());
+          nm->method()->print_value();
+          mystd->cr();
+        }
+      }
+      s = s.sender();
+      if (s.is_first_frame()) {
+        mystd->print_cr("  (first frame)");
+        break;
+      }
+      if ((intptr_t)s.link() < (intptr_t)s.sp() || (intptr_t)s.link() > (intptr_t)s.sp() + 0x100000) {
+        mystd->print_cr("  (chain stops: implausible link %#lx for sp %#lx)", s.link(), s.sp());
+        break;
+      }
+    }
+    mystd->print_cr("CTX-CHECK raw stack fp[-24..+16]:");
+    {
+      void** fpw = _fr.fp();
+      for (int i = -24; i <= 16; i++) {
+        oop w = (oop)fpw[i];
+        mystd->print_cr("  fp[%+d] (%#lx) = %#lx", i, &fpw[i], fpw[i]);
+      }
+    }
+    mystd->print_cr("CTX-CHECK mapping length @bci%d = %d", bci(), method()->expression_stack_mapping(bci())->length());
+  }
   assert(method()->in_context_allocation(bci()) || result->is_context(), "context type check");
   return result;
 }

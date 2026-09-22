@@ -669,6 +669,7 @@ GrowableArray<PReg*>* NodeBuilder::pass_arguments(PReg* receiver, int nofArgs) {
   // pass arguments
   for (sp = first_arg; sp < limit_arg; sp++) {
     PReg* actual = exprStack()->at(sp)->preg();
+    materialize(actual, &blocks);
     SAPReg* formal = new SAPReg(_scope, Mapping::outgoingArg(sp - first_arg, nofArgs), false, false, bci(), bci());
     formals->append(formal);
     append(NodeFactory::new_AssignNode(actual, formal));

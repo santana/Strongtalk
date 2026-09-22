@@ -374,8 +374,7 @@ void methodOopDesc::bootstrap_object(bootstrap* st) {
     // rather than an oop.  It is read tolerantly and forced back to NULL when
     // the 64-bit layout is written, so the first execution performs the
     // runtime lookup and patch like any other cold DLL cache.
-    it->dll_entry = (f == Bytecodes::BOOLB &&
-                     (code == Bytecodes::dll_call_sync || code == Bytecodes::dll_call_async));
+    it->dll_entry = (f == Bytecodes::BOOLB && (code == Bytecodes::dll_call_sync || code == Bytecodes::dll_call_async));
 
     // Where each branch offset lives and how it is referenced.
     switch (code) {

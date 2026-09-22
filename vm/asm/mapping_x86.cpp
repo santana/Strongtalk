@@ -65,7 +65,11 @@ int Mapping::localRegisterIndex(Location l) {
 }
 
 // parameter passing
-// On x86/x86-64, all Delta arguments are passed on the stack.
+// On x86/x86-64, all Delta arguments are passed on the stack: the caller
+// writes them at stackLocation(i) and the callee reads the same absolute
+// locations (see Locations::locationAsWordOffset for the frame layout: the
+// arguments occupy [ebp+2 .. ebp+nofArgs+1], arg(nofArgs-1) at [ebp+2]).
+// This matches the interpreter frame convention (frame.hpp: arg_addr).
 Location Mapping::incomingArg(int i, int nofArgs) {
   assert((0 <= i) && (i < nofArgs), "illegal arg number");
   return Location::stackLocation(i);

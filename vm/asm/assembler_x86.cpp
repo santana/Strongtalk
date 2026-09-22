@@ -237,7 +237,7 @@ void X86Assembler::emit_arith(int op1, int op2, Register dst, int imm32, bool re
   assert(isByte(op1) && isByte(op2), "wrong opcode");
   assert((op1 & 0x01) == 1, "should be 32bit operation");
   assert((op1 & 0x02) == 0, "sign-extension bit should not be set");
-  emit_rex(rex_bits(dst) | (rex_w ? 0x08 : 0));
+  emit_rex(rex_bits(noreg, dst, noreg) | (rex_w ? 0x08 : 0)); // dst is the r/m operand -> REX.B
   if (is8bit(imm32)) {
     emit_byte(op1 | 0x02); // set sign bit
     emit_byte(op2 | (dst.number() & 7));
@@ -1880,7 +1880,8 @@ void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Regist
   reset_last_Delta_frame();
 }
 
-void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument, Register nof_arguments) {
+void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument,
+                                              Register nof_arguments) {
   // C to C call, no special setup required; pass arguments on the stack in
   // reverse order (cdecl), then restore the registers.
   pushl(nof_arguments); // pass arguments in reverse order
@@ -1892,7 +1893,8 @@ void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Re
   popl(nof_arguments);
 }
 
-void X86MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array, Register old_fp) {
+void X86MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp,
+                                                       Address frame_array, Register old_fp) {
   // x86-64 SysV: pass the four arguments in rdi/rsi/rdx/rcx (the 64-bit
   // call_C maps arg1..arg4 to edi/esi/edx/ecx, and its asserts require
   // arg3 != ecx, arg4 != edx, hence the edx/ecx order below).

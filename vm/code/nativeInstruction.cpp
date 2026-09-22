@@ -30,8 +30,14 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 void NativeCall::verify() {
   // make sure code pattern is a "call to absolute address":
   //   ldr x16, [pc, #8]; b .+12; .quad target; blr x16
-  if (*(int*)instruction_address() != instruction_code)
+  if (*(int*)instruction_address() != instruction_code) {
+    mystd->print_cr("NativeCall::verify: this=%p instr_addr=%p word=0x%x", this, instruction_address(),
+                    *(int*)instruction_address());
+    int* p = (int*)instruction_address();
+    for (int i = -1; i <= 7; i++)
+      mystd->print_cr("  [%+2d]=0x%x", i, p[i]);
     fatal("not an AArch64 call (ldr x16,[pc,#8])");
+  }
 }
 #else
 void NativeCall::verify() {

@@ -73,15 +73,15 @@ class CompiledDLL_Cache : public NativeCall {
   //   ldr x16,[pc,#8]; b .+12; .quad target; blr x16 call         (R-20..R)
 private:
   enum Layout_constants {
-    entry_point_offset = -60,  // .quad entry (the value the compiler loads into edx)
-    dll_name_offset = -44,     // .quad dll_name
+    entry_point_offset = -60, // .quad entry (the value the compiler loads into edx)
+    dll_name_offset = -44, // .quad dll_name
     function_name_offset = -28 // .quad function_name
   };
 
 public:
-  symbolOop dll_name() { return (symbolOop)*(oop*)addr_at(dll_name_offset); }
-  symbolOop function_name() { return (symbolOop)*(oop*)addr_at(function_name_offset); }
-  dll_func entry_point() { return (dll_func)*(intptr_t*)addr_at(entry_point_offset); }
+  symbolOop dll_name() { return (symbolOop) * (oop*)addr_at(dll_name_offset); }
+  symbolOop function_name() { return (symbolOop) * (oop*)addr_at(function_name_offset); }
+  dll_func entry_point() { return (dll_func) * (intptr_t*)addr_at(entry_point_offset); }
   bool async() const;
   void set_entry_point(dll_func f) { *(intptr_t*)addr_at(entry_point_offset) = intptr_t(f); }
 

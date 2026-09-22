@@ -288,7 +288,11 @@ Heap::Heap(int s, int bs) {
   }
   nfree = 30;
   //  _base = AllocateHeap(size + blockSize, "zone");
-  _base = os::exec_memory(size + blockSize); //, "zone");
+  // Allocate from the shared executable-code arena: jumping into a compiled
+  // nmethod from a jump table entry or stub routine uses 32-bit PC-relative
+  // displacements on x86-64, which requires this zone and every other code
+  // region to live within +/-2GB of each other.
+  _base = os::code_memory(size + blockSize); //, "zone");
   base = (char*)((intptr_t(_base) + blockSize - 1) / blockSize * blockSize);
   assert(intptr_t(base) % blockSize == 0, "base not aligned to blockSize");
   heapKlass = (ChunkKlass*)(AllocateHeap(mapSize() + 2, "zone free map") + 1);

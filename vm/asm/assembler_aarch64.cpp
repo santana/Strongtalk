@@ -2334,7 +2334,8 @@ void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Re
   call_C(entry, relocInfo::runtime_call_type);
 }
 
-void AArch64MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument, Register nof_arguments) {
+void AArch64MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Register last_argument,
+                                                  Register nof_arguments) {
   // AAPCS64: pass arguments in the AArch64 A64 calling convention; the trace
   // arguments (function, last_argument, nof_arguments) are not preserved by
   // the call, matching the shared-stub site's expectation (it only saves the
@@ -2342,7 +2343,8 @@ void AArch64MacroAssembler::call_trace_DLL_call_1(char* entry, Register function
   call_C(entry, function, last_argument, nof_arguments);
 }
 
-void AArch64MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array, Register old_fp) {
+void AArch64MacroAssembler::call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp,
+                                                           Address frame_array, Register old_fp) {
   // AArch64: pass the four arguments in x0-x3 (AAPCS64), loaded from the
   // caller's frame. No stack arguments.
   movl(edx, old_fp); // 4th arg: old frame pointer

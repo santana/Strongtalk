@@ -41,8 +41,11 @@ static const char halt_instruction = '\xF4';
 static const char jump_instruction = '\xE9';
 
 char* jumpTable::allocate_jump_entries(int size) {
-  //  return AllocateHeap(size * jumpTableEntry::size(), "jump table");
-  return os::exec_memory(size * jumpTableEntry::size()); //, "jump table");
+  // return AllocateHeap(size * jumpTableEntry::size(), "jump table");
+  // Allocate from the shared executable-code arena so the E9 rel32 targets
+  // (nmethods in the zone, StubRoutines::compile_block_entry) are guaranteed
+  // within +-2GB of every jump entry.
+  return os::code_memory(size * jumpTableEntry::size()); // , "jump table");
 }
 
 jumpTableEntry* jumpTable::jump_entry_for_at(char* entries, int index) {
@@ -78,7 +81,7 @@ jumpTableID jumpTable::allocate(int number_of_entries) {
 }
 
 jumpTable::~jumpTable() {
-  free(entries);
+  os::code_memory_free(entries);
 }
 
 jumpTableEntry* jumpTable::major_at(u_short index) {
@@ -116,8 +119,8 @@ int jumpTable::peekID() {
 void jumpTable::freeID(int index) {
   assert(index >= 0 && index < length && index != firstFree, "invalid ID");
   if (major_at(index)->is_link()) {
-    // free the chunk
-    free(major_at(index)->link());
+    // free the chunk (arena-backed: releases no space, keeps VA)
+    os::code_memory_free(major_at(index)->link());
   }
   major_at(index)->initialize_as_unused(firstFree);
   firstFree = index;
@@ -197,7 +200,14 @@ void jumpTableEntry::initialize_nmethod_stub(char* dest) {
 #if defined(DELTA_BACKEND_AARCH64)
   initialize_aarch64_stub(dest, nmethod_entry);
 #else
-  fill_jump(dest, nmethod_entry);
+  // Never emit the E9 jump at initialization: the caller passes NULL (pure
+  // placeholder), and on 64-bit a rel32 displacement to an absolute NULL is
+  // not encodable from an arbitrary entry address -- which is exactly what
+  // tripped the range guard on every first x86-64 compile. Halt now; the
+  // nmethod's set_destination() emits the real E9 as soon as its entry point
+  // is known.
+  assert(dest == NULL, "only the placeholder initialization is expected");
+  fill_entry(halt_instruction, NULL, nmethod_entry);
 #endif
 }
 
@@ -283,10 +293,11 @@ void jumpTableEntry::set_destination(char* dest) {
 #if defined(DELTA_BACKEND_AARCH64)
   *destination_addr() = dest;
 #else
-  intptr_t disp = (intptr_t)dest - (intptr_t)jump_rel32_end();
-  if (disp != (intptr_t)(int32_t)disp)
-    fatal("jump table destination out of E9 rel32 range (code zone and jump table more than 2GB apart)");
-  *destination_addr() = (char*)disp;
+  // Emit the complete E9 jump (instruction byte + rel32 displacement). The
+  // stub was halt-initialized by initialize_nmethod_stub, so there is no E9
+  // byte to patch in place; the destination is only ever a real compiled
+  // entry point, and fill_jump's range guard verifies it is encodable.
+  fill_jump(dest, state());
 #endif
 }
 

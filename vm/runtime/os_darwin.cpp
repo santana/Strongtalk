@@ -32,6 +32,10 @@
 #include "runtime/frame.hpp"
 #include "utilities/growableArray.hpp"
 #include "oops/methodOop.hpp"
+#include "disasm/disassembler.hpp"
+#include "code/zone.hpp"
+#include "code/nmethod.hpp"
+#include "code/relocInfo.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/symbolOop.hpp"
@@ -46,6 +50,7 @@
 #include <dlfcn.h>
 #include <signal.h>
 #include <ucontext.h>
+#include <execinfo.h>
 #include <errno.h>
 
 void os_dump_context2(ucontext_t* context) {
@@ -731,20 +736,79 @@ static void handler(int signum, siginfo_t* info, void* context) {
     for (int i = 0; i < 15; i++)
       printf("%02x ", rip_ptr[i]);
     printf("\n");
+    // TEMP: identify the nmethod containing the faulting pc and disassemble it
+    nmethod* nm = Universe::code->findNMethod((char*)rip_ptr);
+    if (nm != NULL) {
+      printf("  crashed in nmethod addr=%p method=", (void*)rip_ptr);
+      nm->method()->selector()->print_symbol_on();
+      printf("\n  relocs:\n");
+      relocIterator iter(nm);
+      while (iter.next()) {
+        const char* tn = "??";
+        switch (iter.type()) {
+          case relocInfo::oop_type:
+            tn = "oop";
+            break;
+          case relocInfo::ic_type:
+            tn = "ic";
+            break;
+          case relocInfo::prim_type:
+            tn = "prim";
+            break;
+          case relocInfo::runtime_call_type:
+            tn = "runtime_call";
+            break;
+          case relocInfo::external_word_type:
+            tn = "external_word";
+            break;
+          case relocInfo::internal_word_type:
+            tn = "internal_word";
+            break;
+          case relocInfo::uncommon_type:
+            tn = "uncommon";
+            break;
+          case relocInfo::dll_type:
+            tn = "dll";
+            break;
+        }
+        intptr_t w = *iter.word_addr();
+        intptr_t next_pc = (intptr_t)iter.word_addr() + 4;
+        printf("    off=%#lx type=%-13s word=%#lx [rip+%#lx] -> %#lx\n",
+               (intptr_t)iter.word_addr() - (intptr_t)nm->insts(), tn, w, w, next_pc + w);
+      }
+    } else {
+      printf("  no nmethod contains rip\n");
+      Dl_info pc_info;
+      if (dladdr(rip_ptr, &pc_info) != 0 && pc_info.dli_sname != NULL)
+        printf("  rip in: %s (base %p)\n", pc_info.dli_sname, pc_info.dli_saddr);
+    }
+    void* bt[64];
+    int btlen = backtrace(bt, 64);
+    printf("  C backtrace:\n");
+    for (int i = 0; i < btlen; i++) {
+      Dl_info bi;
+      if (dladdr(bt[i], &bi) != 0 && bi.dli_sname != NULL)
+        printf("    %d. %s\n", i, bi.dli_sname);
+    }
   }
 #endif
 #ifdef __aarch64__
   {
     unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
     unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
-    printf("  bytes at pc: ");
-    for (int i = 0; i < 16; i++)
-      printf("%02x ", pc_ptr[i]);
-    printf("\n");
-    printf("  bytes at lr: ");
-    for (int i = 0; i < 16; i++)
-      printf("%02x ", lr_ptr[i]);
-    printf("\n");
+    Dl_info pc_info;
+    if (pc_ptr != NULL && dladdr(pc_ptr, &pc_info) != 0) {
+      printf("  bytes at pc: ");
+      for (int i = 0; i < 16; i++)
+        printf("%02x ", pc_ptr[i]);
+      printf("\n");
+    }
+    if (lr_ptr != NULL && dladdr(lr_ptr, &pc_info) != 0) {
+      printf("  bytes at lr: ");
+      for (int i = 0; i < 16; i++)
+        printf("%02x ", lr_ptr[i]);
+      printf("\n");
+    }
     uint64_t hp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__x[14]; // esi == bytecode pointer
     uint64_t fp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__fp;
     frame top((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val,
@@ -816,6 +880,9 @@ void install_signal_handlers() {
     /* Handle error */;
   sa.sa_sigaction = handler;
   if (sigaction(SIGILL, &sa, NULL) == -1)
+    /* Handle error */;
+  sa.sa_sigaction = handler;
+  if (sigaction(SIGBUS, &sa, NULL) == -1)
     /* Handle error */;
 }
 
