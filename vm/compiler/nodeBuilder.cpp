@@ -655,6 +655,18 @@ GrowableArray<PReg*>* NodeBuilder::pass_arguments(PReg* receiver, int nofArgs) {
     if (receiverLoc.isStackLocation()) {
       // receiver is passed on stack, must happen before the arguments are passed
       append(NodeFactory::new_AssignNode(receiver, formalReceiver));
+#ifdef DELTA_BACKEND_X86_64
+    } else {
+      // x86-64: the callee (interpreted or compiled) pops nArgs+1 words from the
+      // message region (nArgs arguments plus the receiver word, see
+      // InterpreterBackend::interpretReceiverWordBytes), and primitive-value
+      // block dispatch reads the closure from the receiver's register. Push the
+      // receiver word below the arguments so the layout matches an interpreted
+      // sender's [recv, args...]; eax still carries the receiver for the IC and
+      // the callee prologue.
+      append(NodeFactory::new_AssignNode(
+        receiver, new SAPReg(_scope, topOfStack, false, false, bci(), bci())));
+#endif
     }
   }
   // argument range

@@ -401,41 +401,6 @@ char* Interpreter::deoptimized_return_from_dll_call_restore() {
   return access(_dr_from_dll_call_restore);
 }
 
-// DIAG helper called from the generated _method_entry stub via rdi..r9:
-// orgEsp = the stack pointer at method entry (return addr at orgEsp[0], pushed
-// args at orgEsp[1..n]); prints only when all first 3 arg slots are identical
-// (the corrupted-send fingerprint observed on handleNew:size:failure:).
-static int probeMethodEntryArgsCount = 0;
-static oop lastProbeMethod = NULL;
-static void probeMethodEntryArgs(char* orgEsp, oop method, oop receiver, intptr_t r13, intptr_t r14, intptr_t r15) {
-  if (!method->is_method())
-    return;
-  probeMethodEntryArgsCount++;
-  if (probeMethodEntryArgsCount > 6 && method == lastProbeMethod) {
-    if (probeMethodEntryArgsCount == 7)
-      mystd->print_cr("ENTDIAG: ... repeated method %#lx (further identical entries suppressed)", method);
-    return;
-  }
-  lastProbeMethod = method;
-  intptr_t a0 = *(intptr_t*)(orgEsp + oopSize);
-  intptr_t a1 = *(intptr_t*)(orgEsp + 2 * oopSize);
-  intptr_t a2 = *(intptr_t*)(orgEsp + 3 * oopSize);
-  intptr_t a3 = *(intptr_t*)(orgEsp + 4 * oopSize);
-  intptr_t a4 = *(intptr_t*)(orgEsp + 5 * oopSize);
-  intptr_t slot_ret = *(intptr_t*)orgEsp;
-  mystd->print_cr("ENTDIAG#%d: method=%#lx klass=%#lx nofArgs=%d recv=%#lx a0=%#lx a1=%#lx a2=%#lx a3=%#lx a4=%#lx "
-                  "r13=%#lx r14=%#lx r15=%#lx ret=%#lx",
-                  probeMethodEntryArgsCount - 1, method, method->klass(), methodOop(method)->nofArgs(), receiver, a0,
-                  a1, a2, a3, a4, r13, r14, r15, slot_ret);
-  if (probeMethodEntryArgsCount <= 4) {
-    for (int di = -1; di <= 6; di++) {
-      mystd->print_cr("  RAW[%+d] (%#lx) = %#lx  %d", di, orgEsp + di * oopSize, *(intptr_t*)(orgEsp + di * oopSize),
-                      di);
-    }
-  }
-  methodOop(method)->print_value();
-  mystd->cr();
-}
 
 /*
 extern "C" void deoptimized_return_from_send_without_receiver();
@@ -2309,26 +2274,6 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->bind(_method_entry);
   masm->movq(edi, nil_addr());
 
-#ifdef DELTA_BACKEND_X86_64
-  // DIAG probe: capture original esp + receiver + method + r13/r14/r15 before
-  masm->pushl(r13);
-  masm->pushl(r14);
-  masm->pushl(r15);
-  masm->pushl(ecx); // method
-  masm->pushl(eax); // receiver
-  // now: [esp]=recv [esp+8]=method [esp+16]=r15 [esp+24]=r14 [esp+32]=r13 [esp+40]=entry-esp
-  masm->leaq(edi, Address(esp, 40));
-  masm->movq(esi, Address(esp, 8));
-  masm->movq(edx, Address(esp, 0));
-  masm->movq(ecx, Address(esp, 32));
-  masm->movq(r8, Address(esp, 24));
-  masm->movq(r9, Address(esp, 16));
-  masm->call_C((char*)probeMethodEntryArgs, relocInfo::runtime_call_type);
-  masm->movq(eax, Address(esp, 0)); // restore receiver
-  masm->movq(ecx, Address(esp, 8)); // restore method
-  masm->addl(esp, 40);
-  masm->movq(edi, nil_addr()); // restore temp0 initialization
-#endif // DELTA_BACKEND_X86_64
 
   // eax: receiver
   // ebx: 000000xx

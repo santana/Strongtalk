@@ -1536,8 +1536,32 @@ void CodeGenerator::aPrimNode(PrimNode* node) {
   _currentMapping->killRegisters();
   updateDebuggingInfo(node);
   // Note: cannot use call_C because inline cache code has to come immediately after call instruction!
+#ifdef DELTA_BACKEND_X86_64
+  // SysV AMD64 ABI: the primitive's C function expects its first six parameters
+  // in rdi, rsi, rdx, rcx, r8, r9. The arguments were pushed in textual order
+  // by pass_arguments (arg0/receiver deepest, last argument on top of stack),
+  // which is the exact layout passPrimitiveCallArgs relies on in the
+  // interpreter. Load the six argument registers accordingly (up to the actual
+  // number of parameters; the primitive ignores the unused tail registers).
+  {
+    const int nofParams = node->pdesc()->number_of_parameters();
+    if (nofParams > 0) _masm->movq(edi, Address(esp, 0 * oopSize));
+    if (nofParams > 1) _masm->movq(esi, Address(esp, 1 * oopSize));
+    if (nofParams > 2) _masm->movq(edx, Address(esp, 2 * oopSize));
+    if (nofParams > 3) _masm->movq(ecx, Address(esp, 3 * oopSize));
+    if (nofParams > 4) _masm->movq(r8,  Address(esp, 4 * oopSize));
+    if (nofParams > 5) _masm->movq(r9,  Address(esp, 5 * oopSize));
+  }
+#endif // DELTA_BACKEND_X86_64
   _masm->set_last_Delta_frame_before_call();
   _masm->call((char*)(node->pdesc()->fn()), relocInfo::prim_type);
+#ifdef DELTA_BACKEND_X86_64
+  // The C primitive callee does not pop the arguments it was passed (SysV
+  // caller-pops; PRIM_API=__stdcall is a no-op on x86-64). Pop them here to
+  // keep the machine stack balanced, mirroring aPrimNode's sibling aDLLNode
+  // below (which does the same for DLL call arguments).
+  _masm->addl(esp, node->pdesc()->number_of_parameters() * oopSize);
+#endif // DELTA_BACKEND_X86_64
   _currentMapping->killRegisters();
   if (nlr != NULL)
     inlineCache(node, nlr);
@@ -1904,8 +1928,17 @@ void CodeGenerator::aReturnNode(ReturnNode* node) {
   if (scope->method()->is_blockMethod()) {
     // blocks are called via primitiveValue => need to pop first argument
     // of primitiveValue (= block closure) as well since return happens
-    // directly (and not through primitiveValue).
+    // directly (and not through primitiveValue). On x86-64 the closure IS
+    // the message-region receiver word pushed by the sender.
     no_of_args_to_pop++;
+#ifdef DELTA_BACKEND_X86_64
+  } else {
+    // x86-64: the sender pushes the receiver word below the arguments (see
+    // NodeBuilder::pass_arguments) and interpreted callees pop it via
+    // interpretReceiverWordBytes; compiled callees must do the same so the
+    // conventions agree across interpreted/compiled boundaries.
+    no_of_args_to_pop++;
+#endif
   }
   _masm->leave();
   _masm->ret(no_of_args_to_pop * oopSize);

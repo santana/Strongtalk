@@ -65,19 +65,26 @@ int Mapping::localRegisterIndex(Location l) {
 }
 
 // parameter passing
-// On x86/x86-64, all Delta arguments are passed on the stack: the caller
-// writes them at stackLocation(i) and the callee reads the same absolute
-// locations (see Locations::locationAsWordOffset for the frame layout: the
-// arguments occupy [ebp+2 .. ebp+nofArgs+1], arg(nofArgs-1) at [ebp+2]).
-// This matches the interpreter frame convention (frame.hpp: arg_addr).
+// x86-64: the outgoing argument block is built on the caller's delta/expression
+// stack with a push per argument (Mapping::store/storeO emit a push for
+// topOfStack). Pushing arg(0) first and arg(nofArgs-1) last places textual
+// argument i at [sender_sp + (nofArgs-1-i)*oopSize], exactly where the
+// interpreter callee reads it (frame.hpp: argument_at ->
+// callee_argument_at => arg i at [sender_sp + (nofArgs-1-i)]). The receiver is
+// passed in receiver_reg (eax); only the arguments occupy the stack.
+//
+// The calling-side location is therefore topOfStack; the callee-side location
+// is stackLocation(nofArgs-i+1): for the interp/compiled callee frame
+// ([fp] = link, [fp+1] = return pc, [fp+2] = sender_sp), argument i lives at
+// [ebp + (nofArgs-i+1)*oopSize].
 Location Mapping::incomingArg(int i, int nofArgs) {
   assert((0 <= i) && (i < nofArgs), "illegal arg number");
-  return Location::stackLocation(i);
+  return Location::stackLocation(nofArgs - i + 1);
 }
 
 Location Mapping::outgoingArg(int i, int nofArgs) {
   assert((0 <= i) && (i < nofArgs), "illegal arg number");
-  return Location::stackLocation(i);
+  return topOfStack;
 }
 
 // stack allocation (Note: offsets are always in oops!)
