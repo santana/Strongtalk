@@ -664,8 +664,7 @@ GrowableArray<PReg*>* NodeBuilder::pass_arguments(PReg* receiver, int nofArgs) {
       // receiver word below the arguments so the layout matches an interpreted
       // sender's [recv, args...]; eax still carries the receiver for the IC and
       // the callee prologue.
-      append(NodeFactory::new_AssignNode(
-        receiver, new SAPReg(_scope, topOfStack, false, false, bci(), bci())));
+      append(NodeFactory::new_AssignNode(receiver, new SAPReg(_scope, topOfStack, false, false, bci(), bci())));
 #endif
     }
   }

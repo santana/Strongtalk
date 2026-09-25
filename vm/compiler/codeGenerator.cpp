@@ -1545,12 +1545,18 @@ void CodeGenerator::aPrimNode(PrimNode* node) {
   // number of parameters; the primitive ignores the unused tail registers).
   {
     const int nofParams = node->pdesc()->number_of_parameters();
-    if (nofParams > 0) _masm->movq(edi, Address(esp, 0 * oopSize));
-    if (nofParams > 1) _masm->movq(esi, Address(esp, 1 * oopSize));
-    if (nofParams > 2) _masm->movq(edx, Address(esp, 2 * oopSize));
-    if (nofParams > 3) _masm->movq(ecx, Address(esp, 3 * oopSize));
-    if (nofParams > 4) _masm->movq(r8,  Address(esp, 4 * oopSize));
-    if (nofParams > 5) _masm->movq(r9,  Address(esp, 5 * oopSize));
+    if (nofParams > 0)
+      _masm->movq(edi, Address(esp, 0 * oopSize));
+    if (nofParams > 1)
+      _masm->movq(esi, Address(esp, 1 * oopSize));
+    if (nofParams > 2)
+      _masm->movq(edx, Address(esp, 2 * oopSize));
+    if (nofParams > 3)
+      _masm->movq(ecx, Address(esp, 3 * oopSize));
+    if (nofParams > 4)
+      _masm->movq(r8, Address(esp, 4 * oopSize));
+    if (nofParams > 5)
+      _masm->movq(r9, Address(esp, 5 * oopSize));
   }
 #endif // DELTA_BACKEND_X86_64
   _masm->set_last_Delta_frame_before_call();

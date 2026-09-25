@@ -401,7 +401,6 @@ char* Interpreter::deoptimized_return_from_dll_call_restore() {
   return access(_dr_from_dll_call_restore);
 }
 
-
 /*
 extern "C" void deoptimized_return_from_send_without_receiver();
 extern "C" void deoptimized_return_from_send_without_receiver_restore();
@@ -2273,7 +2272,6 @@ void InterpreterGenerator::generate_method_entry_code() {
   method_entry_point = masm->pc();
   masm->bind(_method_entry);
   masm->movq(edi, nil_addr());
-
 
   // eax: receiver
   // ebx: 000000xx
