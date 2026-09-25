@@ -28,25 +28,35 @@ per-arch machine output gated to stay byte-identical. The AArch64 backend is
 ported and exercising the full JIT pipeline (compiler, scope-description
 recording, inline caches, jumps, deoptimization, and recompilation): the VM
 boots, the image read-in completes fully, JIT-compiled frames install and run,
-and recompile/deopt cycles execute. It currently aborts during a hot-method
-recompile on `assert(methodHeap->contains(n), "not in zone")` in
-`zone::findNMethod` (`zone.cpp:622`), the active blocker.
+and recompile/deopt cycles execute. The earlier `findNMethod` "not in zone"
+assert (`zone.cpp:622`, once the active blocker) is resolved; the live blocker
+is a deterministic recompile A↔B ping-pong between two fixed nmethods during
+boot init (`unwindprotect`/`#value` recursion ending in `Fatal: Stack overflow
+in scheduler`), and a plain `./strongtalk -b` smoke run stops earlier at a
+`SIGSEGV` in `icNormalLookup → CompiledIC::selector →
+nmethod::containingPcDesc`. Both are pre-existing (reproduced on pristine
+`master`) — details in `AArch64_PORT_NOTES.md`.
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | loads the image, then spins in the interpreter bootstrap loop (repeated `error:` re-raise in `runBaseClassInitializers`); no JIT code yet |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; blocked at a `findNMethod` "not in zone" assert (`zone.cpp:622`) during recompile |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker: a deterministic `unwindprotect`/`#value` recompile ping-pong during boot init (`Fatal: Stack overflow in scheduler`); plain boot smoke stops at an `icNormalLookup`/`CompiledIC::selector` SIGSEGV — both pre-existing, see `AArch64_PORT_NOTES.md` |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows) for status |
 
-Getting the VM running end-to-end on Apple Silicon requires resolving that
-remaining zone-heap walk fault in `findNMethod`. Every configuration is
+Getting the VM running end-to-end on Apple Silicon requires resolving the
+remaining boot blocker (the `unwindprotect`/`#value` recompile ping-pong; see
+`AArch64_PORT_NOTES.md`). Every configuration is
 verified by building from the root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
 build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw
 CXX=x86_64-w64-mingw32-g++`, in a Docker container with MinGW-w64). All four
-configurations compile with zero errors; the only warnings are pre-existing
-`-Wundefined-inline` reports from `oop.hpp`/`generation.hpp` and a MinGW-only
-`long`-width shift warning in `smiOop.hpp`, all in untouched files.
+configurations compile with zero errors. The inherited MinGW `smiOop.hpp`
+`long`-width shift toxics were fixed (2026-09-24, `INT64_C(1)` plus a wider
+local in `debug_prims.cpp`); the warnings that remain are all pre-existing and
+outside current changes — `-Wundefined-inline` reports from
+`oop.hpp`/`generation.hpp` on the POSIX configs, plus on MinGW the same six
+and `proxyOop.cpp` (`-Wint-to-pointer-cast`) and `proxy_prims.cpp`
+(`-Wshift-count-overflow`), both tracked in `WIDTH_AUDIT.md`.
 
 ## Repository layout
 
