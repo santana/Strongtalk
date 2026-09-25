@@ -64,7 +64,7 @@ char* PrimitivesGenerator::smiOopPrimitives_add() {
   masm->jmp(error_overflow);
 #else
   masm->movl(eax, receiver);
-  masm->addl(eax, argument);
+  masm->adds(eax, eax, argument);
   masm->jcc(Assembler::overflow, _overflow);
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
@@ -102,7 +102,7 @@ char* PrimitivesGenerator::smiOopPrimitives_subtract() {
   masm->jmp(error_overflow);
 #else
   masm->movl(eax, receiver);
-  masm->subl(eax, argument);
+  masm->subs(eax, eax, argument);
   masm->jcc(Assembler::overflow, _overflow);
   masm->testb(eax, 0x03);
   masm->jcc(Assembler::notEqual, error_first_argument_has_wrong_type);
@@ -425,7 +425,7 @@ char* PrimitivesGenerator::smiOopPrimitives_remainder() {
   masm->idivl(ecx);
   masm->jcc(Assembler::notEqual, error_overflow);
   masm->movl(eax, edx);
-  masm->sarl(eax, 2);
+  masm->shll(eax, 2);
   PRIM_RETURN();
 #endif
 

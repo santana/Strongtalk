@@ -228,14 +228,14 @@ smiOop Integer::as_smi(bool& ok) const {
   ok = true;
   switch (_signed_length) {
     case -1:
-      if ((long)_first_digit <= -(long)smi_min)
-        return as_smiOop(-int(_first_digit));
+      if (intptr_t(_first_digit) <= -smi_min)
+        return as_smiOop(-intptr_t(_first_digit));
       break;
     case 0:
       return as_smiOop(0);
     case 1:
-      if ((long)_first_digit <= (long)smi_max)
-        return as_smiOop(int(_first_digit));
+      if (intptr_t(_first_digit) <= smi_max)
+        return as_smiOop(intptr_t(_first_digit));
       break;
   }
   ok = false;

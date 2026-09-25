@@ -105,7 +105,7 @@ const Location receiverLoc = Mapping::asLocation(receiver_reg); // outgoing rece
 const Location resultLoc = Mapping::asLocation(result_reg); // outgoing result location (before exit)
 const Location frameLoc = Mapping::asLocation(frame_reg); // activation frame pointer
 
-// non-local returns (make sure to adjust the corresponding constants in interpreter_asm.asm when changing these)
+// non-local returns (make sure to adjust the corresponding stub constants when changing these)
 const Location NLRResultLoc = Mapping::asLocation(NLR_result_reg); // result being returned
 const Location NLRHomeLoc = Mapping::asLocation(NLR_home_reg); // frame ptr of home frame (stack)
 const Location NLRHomeIdLoc = Mapping::asLocation(NLR_homeId_reg); // scope id of home scope (inlining)

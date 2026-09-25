@@ -32,9 +32,9 @@ private:
 
 public:
   static int insert(oop obj);
-  static oop at(int index);
+  static oop at(intptr_t index);
   static int find_index(oop obj);
-  static bool is_index_ok(int index);
+  static bool is_index_ok(intptr_t index);
   static void allocateSize(int size);
   static void cleanup_after_bootstrap();
 };

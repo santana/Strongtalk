@@ -37,12 +37,12 @@ objArrayOop objectIDTable::array() {
   return Universe::objectIDTable();
 }
 
-oop objectIDTable::at(int index) {
-  return array()->obj_at(index);
+oop objectIDTable::at(intptr_t index) {
+  return array()->obj_at(int(index));
 }
 
-bool objectIDTable::is_index_ok(int index) {
-  return 1 <= index && index <= Universe::objectIDTable()->length();
+bool objectIDTable::is_index_ok(intptr_t index) {
+  return 1 <= index && index <= intptr_t(Universe::objectIDTable()->length());
 }
 
 int objectIDTable::find_index(oop obj) {

@@ -107,8 +107,8 @@ extern "C" char* InterpreterCodeStatus() {
 
 #else
 
-extern "C" int interpreter_loop_counter; // see interpreter_asm.asm
-extern "C" int interpreter_loop_counter_limit; // see interpreter_asm.asm
+extern "C" int interpreter_loop_counter; // interpreter loop protection counter
+extern "C" int interpreter_loop_counter_limit; // interpreter loop protection limit
 
 // Boundaries of assembled interpreter code
 extern "C" char* interpreter_begin_addr;
@@ -199,10 +199,10 @@ void Interpreter::set_loop_counter_limit(int limit) {
   interpreter_loop_counter_limit = limit;
 }
 
-// Runtime routines called from interpreter_asm.asm
+// Runtime routines called from the generated interpreter (interpreterBackend)
 //
 // The following routine is for inline_cache_miss calls from
-// within interpreter_asm.asm. Can go away as soon as not needed
+// inline_cache_miss calls. Can go away as soon as not needed
 // anymore (because interpreter is generated).
 
 extern "C" void inline_cache_miss() {
@@ -2246,8 +2246,8 @@ void InterpreterGenerator::call_native(Register entry) {
 }
 
 extern "C" {
-char* method_entry_point = NULL; // for interpreter_asm.asm (remove if not used anymore)
-char* block_entry_point = NULL; // for interpreter_asm.asm (remove if not used anymore)
+char* method_entry_point = NULL; // for the generated interpreter (remove if not used anymore)
+char* block_entry_point = NULL; // for the generated interpreter (remove if not used anymore)
 }
 extern "C" char* active_stack_limit(); // address of pointer to the current process' stack limit
 
@@ -2774,7 +2774,7 @@ void InterpreterGenerator::generate_error_handler_code() {
 // made negative (compiled NLR home ids are always >= 0).
 
 extern "C" {
-char* nlr_testpoint_entry = NULL; // for interpreter_asm.asm (remove if not used anymore)
+char* nlr_testpoint_entry = NULL; // for the generated interpreter (remove if not used anymore)
 }
 extern "C" contextOop nlr_home_context;
 

@@ -111,9 +111,10 @@ PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   assert(Int_Tag == 0, "check this code");
-  // The smi range is deliberately 29-bit (BitsPerWord, not oopSize, since the
-  // 64-bit build keeps 29-bit smis for snapshot compatibility), so the overflow
-  // check below must use BitsPerWord and wide masks to avoid UB on the shift.
+  // The smi range is ±(2^(BitsPerWord-Tag_Size-1) - 1) (61 bits on LP64, from
+  // the historic 32-bit formula BitsPerWord - 3), so the overflow check below
+  // must use BitsPerWord and wide masks to avoid UB on the shift. The range is
+  // image-compatible: image smis always fit in the 32-bit build's ±2^29.
   const int bitsPerWord = BitsPerWord;
   const int maxShiftCnt = bitsPerWord - Tag_Size - 1;
   int n = smiOop(argument)->value();
@@ -124,7 +125,7 @@ PRIM_DECL_2(smiOopPrimitives::bitShift, oop receiver, oop argument) {
       intptr_t mask1 = intptr_t(1) << (bitsPerWord - (n + 1)); // |00...00|   1   |00..........00|
       intptr_t mask2 = intptr_t(-1) << (bitsPerWord - n); // |11...11|   0   |00..........00|
       if (((intptr_t(receiver) + mask1) & mask2) == 0) {
-        // i.e., the bit at position (32-(n+1)) is the same as the upper n bits, thus
+        // i.e., the bit at position (bitsPerWord-(n+1)) is the same as the upper n bits, thus
         // after shifting out the upper n bits the sign hasn't changed -> no overflow
         return smiOop(intptr_t(receiver) << n);
       }
@@ -158,7 +159,7 @@ PRIM_DECL_2(smiOopPrimitives::rawBitShift, oop receiver, oop argument) {
 PRIM_DECL_1(smiOopPrimitives::asObject, oop receiver) {
   PROLOGUE_1("asObject", receiver);
   ASSERT_RECEIVER;
-  int id = smiOop(receiver)->value();
+  intptr_t id = smiOop(receiver)->value();
   if (objectIDTable::is_index_ok(id))
     return objectIDTable::at(id);
   return markSymbol(vmSymbols::index_not_valid());

@@ -226,7 +226,7 @@ PRIM_DECL_0(debugPrimitives::timerPrintBuffer) {
 
 PRIM_DECL_0(debugPrimitives::interpreterInvocationCounterLimit) {
   PROLOGUE_0("interpreterInvocationCounterLimit");
-  long limit = Interpreter::get_invocation_counter_limit();
+  smi limit = Interpreter::get_invocation_counter_limit();
   if (limit < smi_min)
     limit = smi_min;
   else if (limit > smi_max)

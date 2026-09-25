@@ -56,14 +56,14 @@ class CompiledIC;
 const int frame_temp_offset = -6; // For interpreter frames only
 const int frame_hp_offset = -4; // For interpreter frames only
 const int frame_receiver_offset = -2; // For interpreter frames only
-const int frame_next_Delta_fp_offset = -2; // For entry frames only; see call_delta in interpreter_asm.asm
-const int frame_next_Delta_sp_offset = -4; // For entry frames only; see call_delta in interpreter_asm.asm
+const int frame_next_Delta_fp_offset = -2; // For entry frames only; see the Delta entry stubs (interpreterBackend)
+const int frame_next_Delta_sp_offset = -4; // For entry frames only; see the Delta entry stubs (interpreterBackend)
 #else
 const int frame_temp_offset = -3; // For interpreter frames only
 const int frame_hp_offset = -2; // For interpreter frames only
 const int frame_receiver_offset = -1; // For interpreter frames only
-const int frame_next_Delta_fp_offset = -1; // For entry frames only; see call_delta in interpreter_asm.asm
-const int frame_next_Delta_sp_offset = -2; // For entry frames only; see call_delta in interpreter_asm.asm
+const int frame_next_Delta_fp_offset = -1; // For entry frames only; see the Delta entry stubs (interpreterBackend)
+const int frame_next_Delta_sp_offset = -2; // For entry frames only; see the Delta entry stubs (interpreterBackend)
 #endif
 const int frame_link_offset = 0;
 const int frame_return_addr_offset = 1;
