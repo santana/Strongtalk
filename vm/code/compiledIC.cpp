@@ -270,7 +270,8 @@ char* CompiledIC::normalLookup(oop recv) {
     nmethod* containing = findNMethod(begin_addr());
     if (t != NULL && containing != NULL && t == containing) {
       if (TraceLookup)
-        mystd->print_cr("SELF-TARGET GUARD: direct call would jump back into the containing nmethod; routing through secondary dispatch");
+        mystd->print_cr("SELF-TARGET GUARD: direct call would jump back into the containing nmethod; routing through "
+                        "secondary dispatch");
       setMegamorphic(); // protect the type-feedback invariant: also keeps the IC non-empty
       return normalLookupRoutine();
     }
