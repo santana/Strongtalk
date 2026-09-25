@@ -73,6 +73,9 @@ configurations compile with zero errors; the only warnings are pre-existing
 make          # defaults to build/<arch>-<os>-<compiler>, e.g. build/arm64-macos-clang
 ```
 
+Build output is terse: one short line per step (`CXX vm/...`, `LINK strongtalk`).
+Use `make V=1` to print the full command lines instead, or `make -s` for silence.
+
 Useful targets:
 
 - `make` / `make vm` — build just the `strongtalk` VM

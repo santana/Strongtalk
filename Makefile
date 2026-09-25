@@ -125,6 +125,26 @@ ARCH_FLAGS	= -arch $(ARCH)
 endif
 endif
 
+# Quiet build output: each recipe prints one short, aligned line per step
+# instead of the whole command line. `make V=1` restores the full command
+# lines; `make -s` suppresses even the short lines.
+#
+# The -s detection reads only the *first* token of MAKEFLAGS: GNU make 3.81
+# puts "-jobserver-fds=..." later in MAKEFLAGS during `-j` builds, so a
+# whole-string search for "s" would wrongly silence the short lines there.
+ifeq (,$(findstring s,$(firstword $(MAKEFLAGS))))
+ifneq ($(V),1)
+Q := @
+SHORT := @printf '  %-7s %s\n'
+else
+Q :=
+SHORT := @:
+endif
+else
+Q := @
+SHORT := @:
+endif
+
 PROGRAMS = strongtalk stest
 
 strongtalk_DIRS = $(VM_DIR)
@@ -157,15 +177,17 @@ all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 vm: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
 
 test: $(BUILD_DIR)/stest$(EXE_SUFFIX)
-	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest$(EXE_SUFFIX) -b $(ROOT_DIR)/strongtalk.bst
+	$(SHORT) TEST stest
+	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest$(EXE_SUFFIX) -b $(ROOT_DIR)/strongtalk.bst
 
 # Regenerate the bytecode reference from the VM's built-in generator
 # (debug build only: the +GenerateHTML path lives under #ifndef PRODUCT).
 # Writes to a temp file first so a failed generation never truncates the
 # committed documentation.
 $(DOC_DIR)/internal/vm/bytecodes.html: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
-	$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) +GenerateHTML > $@.tmp
-	mv $@.tmp $@
+	$(SHORT) DOCS bytecodes.html
+	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) +GenerateHTML > $@.tmp
+	$(Q)mv $@.tmp $@
 
 docs: $(DOC_DIR)/internal/vm/bytecodes.html
 
@@ -251,10 +273,12 @@ INCLUDES += $$($(1)_INCLUDES)
 $(1)-objs: $$($(1)_OBJS)
 
 $(BUILD_DIR)/$(1).so: $$($(1)_OBJS)
-	$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$(filter-out %/main.o,$$($(1)_OBJS)) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
+	$(SHORT) LINK $$(@F)
+	$(Q)$$(CXX) $(SHLIB_FLAG) $(ARCH_FLAGS) -o $$@ $$(filter-out %/main.o,$$($(1)_OBJS)) $$($(1)_LDFLAGS) $$($(1)_LDLIBS)
 
 $(BUILD_DIR)/$(1)$(EXE_SUFFIX): $$($(1)_SO)
-	$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$(filter %/main.o,$$($(1)_OBJS)) $$($(1)_SO)
+	$(SHORT) LINK $$(@F)
+	$(Q)$$(CXX) $(LDFLAGS) $(ARCH_FLAGS) -o $$@ $$(filter %/main.o,$$($(1)_OBJS)) $$($(1)_SO)
 
 $$($(1)_DEPFILES):
 
@@ -273,10 +297,13 @@ $(shell mkdir -p $(sort $(dir $(ALL_OBJS))))
 
 # Compile rule: each object mirrors a source under $(BUILD_DIR)/obj.
 $(ALL_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(SHORT) CXX $(subst $(ROOT_DIR)/,,$<)
+	$(Q)$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	$(SHORT) CLEAN $(subst $(ROOT_DIR)/,,$(BUILD_DIR))
+	$(Q)rm -rf $(BUILD_DIR)
 
 pristine:
-	rm -f $(ALL_DEPFILES)
+	$(SHORT) PRISTINE removed-dependency-files
+	$(Q)rm -f $(ALL_DEPFILES)
