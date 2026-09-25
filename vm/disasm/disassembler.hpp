@@ -28,11 +28,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "topIncludes/std_includes.hpp"
 
-// A disassembler prints out intel 386 code annotated
+// A disassembler prints out machine code annotated
 // with delta specific information.
+// It is backed by the vendored Capstone engine (third_party/capstone),
+// which decodes either the x86-64 or the AArch64 backend depending on
+// DELTA_BACKEND_X86_64 / DELTA_BACKEND_AARCH64.
 // %note:
-//   The current implementation does not annotate
-//   the i386 code with delta specific information.
+//   The current implementation annotates nmethods with PcDesc/reloc
+//   information only when an nmethod is passed; the raw (begin, end)
+//   overload prints plain instructions.
 
 class Disassembler : AllStatic {
 public:

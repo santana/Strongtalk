@@ -33,17 +33,20 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
-//#include <inttypes.h>
-
-#define DISASM_LIBRARY "libnasm"
-#define DISASM_FUNCTION "disasm"
+#include "capstone/capstone.h"
+#include <cstdarg>
+#include <cstdio>
 
 #define MAX_HEXBUF_SIZE 256
 #define MAX_OUTBUF_SIZE 256
 
-typedef int32_t (*disasm_f)(uint8_t*, char*, int, int, int32_t, int, uint32_t);
+static csh capstone_handle = 0;
+static bool capstone_initialized = false;
+static bool capstone_valid = false;
+static bool capstone_warned = false;
 
-static void initialize(void);
+static void initialize(outputStream* st);
+static bool literalWord(nmethod* nm, char* pc, outputStream* st);
 static char tohex(unsigned char c);
 static char* bintohex(char* data, int bytes);
 
@@ -53,33 +56,44 @@ static void printPcDescInfo(nmethod* nm, char* pc, outputStream* st);
 
 static void disasm(char* begin, char* end, nmethod* nm, outputStream* st);
 
-static disasm_f disassemble;
-static bool library_loaded = false;
+// Capstone 5 resolves its allocations through cs_opt_mem set with
+// cs_option(CS_OPT_MEM) before the first cs_open(); the libc allocator is all
+// this debug facility needs.
+static void* cs_alloc(size_t size) {
+  return malloc(size);
+}
+static void* cs_calloc(size_t count, size_t size) {
+  return calloc(count, size);
+}
+static void* cs_realloc(void* ptr, size_t size) {
+  return realloc(ptr, size);
+}
+static void cs_free(void* ptr) {
+  free(ptr);
+}
 
-/* default parameters for the NASM disassembler */
-static int32_t offset = 0;
-static int autosync = 0;
-static uint32_t prefer = 0; // select instruction set; 0 = Intel (default)
-
-static void initialize(void) {
-  DLL* library_handle;
-  // "libnasm" + extension (.dylib/.so/.dll) ; the old 13-byte buffer was
-  // overrun by one byte on macOS (7+7 > 13).
-  char libname[32];
-  char* extension = os::dll_extension();
-  strcpy(libname, DISASM_LIBRARY);
-  strcpy(libname + 7, extension);
-  libname[7 + strlen(extension)] = '\0';
-
-  library_handle = os::dll_load(libname);
-  if (library_handle == NULL) {
+static void initialize(outputStream* st) {
+  cs_opt_mem mem;
+  mem.malloc = cs_alloc;
+  mem.calloc = cs_calloc;
+  mem.realloc = cs_realloc;
+  mem.free = cs_free;
+  mem.vsnprintf = vsnprintf;
+  if (cs_option(0, CS_OPT_MEM, (size_t)&mem) != CS_ERR_OK) {
+    if (st != NULL)
+      st->print_cr("INFO: capstone memory setup failed!");
     return;
   }
-  disassemble = (disasm_f)os::dll_lookup(DISASM_FUNCTION, library_handle);
-  if (disassemble == NULL) {
-    return;
+#ifdef DELTA_BACKEND_AARCH64
+  cs_err err = cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &capstone_handle);
+#else
+  cs_err err = cs_open(CS_ARCH_X86, CS_MODE_64, &capstone_handle);
+#endif
+  if (err == CS_ERR_OK) {
+    capstone_valid = true;
+  } else if (st != NULL) {
+    st->print_cr("INFO: capstone init failed: %s", cs_strerror(err));
   }
-  library_loaded = true;
 }
 
 static char tohex(unsigned char c) {
@@ -196,29 +210,89 @@ static void printPcDescInfo(nmethod* nm, char* pc, outputStream* st) {
   }
 }
 
-static void disasm(char* begin, char* end, nmethod* nm, outputStream* st) {
-  static char buf[MAX_OUTBUF_SIZE];
-  int lendis;
-
-  if (!library_loaded) {
-    initialize();
+#ifdef DELTA_BACKEND_AARCH64
+// On AArch64, code frequently embeds 8-byte literal words carrying the absolute
+// address of oops/primitive/runtime targets (the pool behind the ldr/br/blr
+// sequences emitted by load_absolute_address/call/jmp). Emit those as .quad
+// data instead of trying to decode them as instructions.
+static bool literalWord(nmethod* nm, char* pc, outputStream* st) {
+  if (nm == NULL || ((uintptr_t)pc & 7) != 0)
+    return false;
+  relocIterator iter(nm);
+  while (iter.next()) {
+    if ((char*)iter.word_addr() == pc) {
+      st->print("%p .quad %-20s  0x%llx", pc, bintohex(pc, sizeof(intptr_t)), (unsigned long long)*(intptr_t*)pc);
+      st->cr();
+      return true;
+    }
   }
-  if (disassemble) {
-    for (char* pc = begin; pc < end; pc += lendis) {
-      lendis = disassemble((uint8_t*)pc, buf, sizeof(buf), 32, offset, autosync, prefer);
-      if (lendis) {
-        st->print("%p %-20s    %-40s", pc, bintohex(pc, lendis), buf);
-        if (nm) {
-          st->print("; ");
-          printPcDescInfo(nm, pc, st);
-          printRelocInfo(nm, pc, lendis, st);
-        }
+  return false;
+}
+#endif
+
+static void disasm(char* begin, char* end, nmethod* nm, outputStream* st) {
+  if (!capstone_initialized) {
+    capstone_initialized = true;
+    initialize(st);
+  }
+  if (!capstone_valid) {
+    if (!capstone_warned) {
+      capstone_warned = true;
+      st->print_cr("INFO: no disassembler available!");
+    }
+    return;
+  }
+
+  cs_insn* insn = cs_malloc(capstone_handle);
+  if (insn == NULL) {
+    st->print_cr("INFO: capstone cs_malloc failed!");
+    return;
+  }
+
+  const uint8_t* code = (const uint8_t*)begin;
+  size_t remaining = (size_t)(end - begin);
+
+  while (remaining > 0) {
+    char* start = (char*)(intptr_t)code;
+#ifdef DELTA_BACKEND_AARCH64
+    if (literalWord(nm, start, st)) {
+      code += sizeof(intptr_t);
+      remaining -= sizeof(intptr_t);
+      continue;
+    }
+#endif
+    uint64_t address = (uint64_t)(intptr_t)code;
+    if (cs_disasm_iter(capstone_handle, &code, &remaining, &address, insn)) {
+      int lendis = (int)insn->size;
+      if (lendis <= 0)
+        break;
+      static char buf[MAX_OUTBUF_SIZE];
+      snprintf(buf, sizeof(buf), "%s %s", insn->mnemonic, insn->op_str);
+      st->print("%p %-20s    %-40s", start, bintohex(start, lendis), buf);
+      if (nm) {
+        st->print("; ");
+        printPcDescInfo(nm, start, st);
+        printRelocInfo(nm, start, lendis, st);
       }
       st->cr();
+    } else {
+      // Undecodable bytes (or trailing data): print them raw and advance by the
+      // smallest instruction unit so the dump can never stall.
+#ifdef DELTA_BACKEND_AARCH64
+      static const int unit = (int)sizeof(int32_t);
+#else
+      static const int unit = 1;
+#endif
+      int skip = (int)remaining;
+      if (skip > unit)
+        skip = unit;
+      st->print("%p .byte %-20s      %-40s", start, bintohex(start, skip), "<undecodable>");
+      st->cr();
+      code += skip;
+      remaining -= skip;
     }
-  } else {
-    st->print_cr("INFO: no disassemble() function available!");
   }
+  cs_free(insn, 1);
 }
 
 void Disassembler::decode(nmethod* nm, outputStream* st) {

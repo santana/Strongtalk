@@ -38,6 +38,20 @@ ENCODER_SRCS = $(VM_DIR)/asm/assembler.cpp $(VM_DIR)/asm/assembler_x86.cpp
 
 ENCODER_SRCS_AARCH64 = $(VM_DIR)/asm/assembler.cpp $(VM_DIR)/asm/assembler_aarch64.cpp
 
+# The disassembler round-trip tests additionally link the production
+# disassembler (vm/disasm/disassembler.cpp) and the vendored Capstone 5
+# sources. Capstone is compiled from C (plain-C semantics via -x c even though
+# the driver is a C++ compiler) with both X86 and ARM64 support enabled, so a
+# single object set serves both backends.
+CAPSTONE_DIR := $(ROOT_DIR)/third_party/capstone
+CAPSTONE_CFLAGS = -std=gnu11 -DCAPSTONE_HAS_X86 -DCAPSTONE_HAS_ARM64 -O1 -fPIC -g \
+		  -I$(CAPSTONE_DIR)/include -I$(CAPSTONE_DIR) -x c
+CAPSTONE_SRCS = $(wildcard $(CAPSTONE_DIR)/*.c $(CAPSTONE_DIR)/arch/X86/*.c \
+		$(CAPSTONE_DIR)/arch/AArch64/*.c)
+CAPSTONE_OBJS = $(patsubst $(ROOT_DIR)/%,objs/%,$(CAPSTONE_SRCS:.c=.o))
+
+DISASM_SRCS = $(VM_DIR)/disasm/disassembler.cpp
+
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),Darwin)
   UNDEFINED_OK = -undefined dynamic_lookup
@@ -47,7 +61,12 @@ endif
 
 .PHONY: all test clean
 
-all: assemblerEncoderTest_64 assemblerEncoderTest_aarch64
+all: assemblerEncoderTest_64 assemblerEncoderTest_aarch64 disassemblerTest_64 \
+	 disassemblerTest_aarch64
+
+objs/%.o: $(ROOT_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CXX) $(CAPSTONE_CFLAGS) -c $< -o $@
 
 assemblerEncoderTest_64: assemblerEncoderTest.cpp $(ENCODER_SRCS)
 	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_X86_64 $(ENCODER_SRCS) assemblerEncoderTest.cpp \
@@ -58,9 +77,22 @@ assemblerEncoderTest_aarch64: assemblerEncoderTest_aarch64.cpp $(ENCODER_SRCS_AA
 	  $(ENCODER_SRCS_AARCH64) assemblerEncoderTest_aarch64.cpp \
 	  $(UNDEFINED_OK) -o $@
 
+disassemblerTest_64: disassemblerTest.cpp $(ENCODER_SRCS) $(DISASM_SRCS) $(CAPSTONE_OBJS)
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_X86_64 -I$(CAPSTONE_DIR)/include \
+	  $(ENCODER_SRCS) $(DISASM_SRCS) $(CAPSTONE_OBJS) disassemblerTest.cpp \
+	  $(UNDEFINED_OK) -o $@
+
+disassemblerTest_aarch64: disassemblerTest.cpp $(ENCODER_SRCS_AARCH64) $(DISASM_SRCS) $(CAPSTONE_OBJS)
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_AARCH64 -I$(CAPSTONE_DIR)/include \
+	  $(ENCODER_SRCS_AARCH64) $(DISASM_SRCS) $(CAPSTONE_OBJS) disassemblerTest.cpp \
+	  $(UNDEFINED_OK) -o $@
+
 test: all
 	./assemblerEncoderTest_64
 	./assemblerEncoderTest_aarch64
+	./disassemblerTest_64
+	./disassemblerTest_aarch64
 
 clean:
-	rm -f assemblerEncoderTest_64 assemblerEncoderTest_aarch64
+	rm -rf assemblerEncoderTest_64 assemblerEncoderTest_aarch64
+	rm -rf disassemblerTest_64 disassemblerTest_aarch64 objs

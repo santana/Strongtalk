@@ -147,10 +147,28 @@ endif
 
 PROGRAMS = strongtalk stest
 
+# Vendored Capstone disassembly engine (third_party/capstone), compiled once
+# into a static archive and linked into the VM DLL. Both the x86-64 and the
+# AArch64 instruction tables are enabled so a single archive serves every
+# backend (the VM picks one at runtime via cs_open).
+CAPSTONE_DIR	:= $(ROOT_DIR)/third_party/capstone
+CAPSTONE_SRCS	:= $(wildcard $(CAPSTONE_DIR)/*.c $(CAPSTONE_DIR)/arch/X86/*.c $(CAPSTONE_DIR)/arch/AArch64/*.c)
+CAPSTONE_OBJS	:= $(patsubst $(ROOT_DIR)/%.c,$(BUILD_DIR)/obj/%.o,$(CAPSTONE_SRCS))
+CAPSTONE_DEPFILES := $(CAPSTONE_OBJS:%.o=%.d)
+CAPSTONE_ARCHIVE := $(BUILD_DIR)/libcapstone.a
+CAPSTONE_CFLAGS	:= -DCAPSTONE_HAS_X86 -DCAPSTONE_HAS_ARM64 -O0 -fPIC -g \
+		   $(ARCH_FLAGS) -I$(CAPSTONE_DIR)/include -I$(CAPSTONE_DIR) \
+		   -x c
+
+# Make the capstone public headers visible to the VM source files.
+INCLUDES	+= -I$(CAPSTONE_DIR)/include -I$(CAPSTONE_DIR)
+
+AR		?= ar
+
 strongtalk_DIRS = $(VM_DIR)
 strongtalk_INCLUDEDIRS = $(strongtalk_DIRS)
 strongtalk_SO = $(BUILD_DIR)/strongtalk.so
-strongtalk_LDLIBS = -lpthread -ldl
+strongtalk_LDLIBS = -lpthread -ldl $(CAPSTONE_ARCHIVE)
 ifneq ($(UNAME),Darwin)
 ifneq ($(OS),mingw)
 strongtalk_LDLIBS += -lrt
@@ -292,13 +310,30 @@ endef
 
 $(foreach prog,$(PROGRAMS),$(eval $(call PROGRAM_template,$(prog))))
 
+# The VM DLL carries the disassembler, so it depends on the capstone archive.
+$(BUILD_DIR)/strongtalk.so: $(CAPSTONE_ARCHIVE)
+
 # mkdir every object directory inside the build dir (single parse-time pass).
-$(shell mkdir -p $(sort $(dir $(ALL_OBJS))))
+$(shell mkdir -p $(sort $(dir $(ALL_OBJS)) $(dir $(CAPSTONE_OBJS))))
+
+# Capstone (third_party/capstone) is plain C. It is compiled with $(CXX) so
+# the objects always match the VM's toolchain (-x c forces C semantics even
+# though the driver is a C++ compiler); objects and depfiles mirror the source
+# tree under $(BUILD_DIR)/obj.
+$(CAPSTONE_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.c
+	$(SHORT) CS  $(subst $(ROOT_DIR)/,,$<)
+	$(Q)$(CXX) $(CAPSTONE_CFLAGS) $(DEPFLAGS) -c $< -o $@
+
+$(CAPSTONE_ARCHIVE): $(CAPSTONE_OBJS)
+	$(SHORT) AR libcapstone.a
+	$(Q)rm -f $@ && $(AR) rcs $@ $^
 
 # Compile rule: each object mirrors a source under $(BUILD_DIR)/obj.
 $(ALL_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.cpp
 	$(SHORT) CXX $(subst $(ROOT_DIR)/,,$<)
 	$(Q)$(CXX) $(CXXFLAGS) -c $< -o $@
+
+-include $(CAPSTONE_DEPFILES)
 
 clean:
 	$(SHORT) CLEAN $(subst $(ROOT_DIR)/,,$(BUILD_DIR))
@@ -306,4 +341,4 @@ clean:
 
 pristine:
 	$(SHORT) PRISTINE removed-dependency-files
-	$(Q)rm -f $(ALL_DEPFILES)
+	$(Q)rm -f $(ALL_DEPFILES) $(CAPSTONE_DEPFILES)
