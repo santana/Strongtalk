@@ -64,6 +64,8 @@ configurations compile with zero errors; the only warnings are pre-existing
 
 - A C++17 compiler: GCC 11+ or Clang
 - GNU make 4+
+- clang-format (>= 18; pinned to 23.1.0 so local formatting matches CI) —
+  install with `make setup-deps`
 
 ## Building
 
@@ -79,6 +81,9 @@ Useful targets:
 - `make docs` — regenerate `documentation/internal/vm/bytecodes.html` (runs the debug VM with `+GenerateHTML`)
 - `make clean` — remove that config's build directory
 - `make pristine` — like `clean`, plus that config's `.d` dependency files
+- `make format-check` — verify sources obey `.clang-format` (CI gate)
+- `make setup-deps` — install the dev tools (clang-format pinned to CI's version)
+- `make install-hooks` — enable the pre-commit hook that runs `make format` on staged files
 - `make BUILD_DIR=/custom/path` — build into a custom directory
 - `make ARCH=x86_64` — force the x86-64 backend (e.g. on an arm64 host)
 - `make -j$(nproc)` — parallel build (nproc on Linux; `sysctl -n hw.ncpu` on macOS)

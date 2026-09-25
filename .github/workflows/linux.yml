@@ -5,10 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Keep in sync with the clang-format version used by developers
-# (see `clang-format --version` locally).
-env:
-  CLANG_FORMAT_VERSION: '23.1.0'
+# The clang-format version is the single source of truth in the root Makefile
+# (CLANG_FORMAT_VERSION); this job reads it via `make -s format-version` so CI
+# and developers can never drift apart (see `tools/setup-deps.sh`).
 
 jobs:
   format:
@@ -28,8 +27,12 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install clang-format ${{ env.CLANG_FORMAT_VERSION }}
-        run: pip install -q "clang-format==$CLANG_FORMAT_VERSION"
+      - name: Read pinned clang-format version
+        id: format-version
+        run: echo "version=$(make -s format-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Install clang-format ${{ steps.format-version.outputs.version }}
+        run: pip install -q "clang-format==${{ steps.format-version.outputs.version }}"
 
       - name: Show clang-format version
         run: clang-format --version

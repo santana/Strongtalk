@@ -150,7 +150,7 @@ stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
-.PHONY: all vm test clean pristine format format-check docs
+.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs
 .DEFAULT_GOAL := all
 all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 
@@ -184,6 +184,18 @@ FORMAT_SRCS	:= $(filter-out $(FORMAT_EXCLUDES),$(FORMAT_SRCS))
 
 CLANG_FORMAT	:= $(shell command -v clang-format 2>/dev/null)
 CLANG_FORMAT_STYLE := $(ROOT_DIR)/.clang-format
+# Single source of truth for the clang-format version developers pin. CI
+# (linux.yml) reads this via `make -s format-version` so linting is identical.
+CLANG_FORMAT_VERSION ?= 23.1.0
+
+# Print the pinned clang-format version (consumed by CI and setup-deps).
+format-version:
+	@echo $(CLANG_FORMAT_VERSION)
+
+# Install the tools needed to build and format the VM (clang-format pinned to
+# $(CLANG_FORMAT_VERSION), toolchain checks). See tools/setup-deps.sh.
+setup-deps:
+	@CLANG_FORMAT_VERSION=$(CLANG_FORMAT_VERSION) $(ROOT_DIR)/tools/setup-deps.sh
 
 # `make format` rewrites every source file in place using the repo's
 # .clang-format. If clang-format is not installed it prints a hint and does
@@ -212,6 +224,13 @@ format-check: $(CLANG_FORMAT_STYLE)
 			echo "All .cpp/.hpp/.h files are correctly formatted."; \
 		fi; \
 	fi
+
+# `make install-hooks` points git's hooks at the versioned hooks/ dir, so the
+# pre-commit hook (which runs `make format` on the staged files) is enforced
+# for this clone. Idempotent; run once per checkout.
+install-hooks:
+	@git config core.hooksPath hooks && \
+		echo "pre-commit hook installed (core.hooksPath=${PWD}/hooks)."
 
 # Objects and dependency files live in the build directory, mirroring the
 # source tree under $(BUILD_DIR)/obj. mkdir each needed subdirectory.

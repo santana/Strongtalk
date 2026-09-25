@@ -1,0 +1,71 @@
+#!/bin/sh
+# Pre-commit hook: run `make format` (scoped to staged source files) before
+# committing, then re-stage the formatted files so they land in the commit.
+#
+# Install once per clone with:  make install-hooks    (sets core.hooksPath)
+# Bypass with:                  SKIP=format git commit
+#
+# Mirrors the Makefile's FORMAT_SRCS globs and FORMAT_EXCLUDES so the file set
+# stays in sync with `make format` / `make format-check`.
+#
+# Note: macOS /bin/sh is bash 3.2, whose parser mis-parses a `case` pattern's
+# `)` inside `$( ... )`, so the case loop below runs in the main flow (over a
+# temp file) rather than inside a command substitution.
+
+set -u
+
+if [ "${SKIP-}" = "format" ]; then
+  echo "pre-commit: SKIP=format set, not formatting."
+  exit 0
+fi
+
+# Repo root: this script lives in $ROOT/hooks.
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+STYLE_FILE="$ROOT/.clang-format"
+
+CLANG_FORMAT=$(command -v clang-format 2>/dev/null || true)
+if [ -z "$CLANG_FORMAT" ]; then
+  echo "pre-commit: clang-format not found; skipping format." \
+    "Install it or use 'brew install clang-format'."
+  exit 0
+fi
+
+STAGED_FILE=/tmp/strongtalk-staged-list.$$
+trap 'rm -f "$STAGED_FILE"' EXIT
+
+git diff --cached --name-only --diff-filter=ACM > "$STAGED_FILE"
+
+# Staged source files in the repo's format set (same extensions/scope the
+# Makefile formats), excluding the hand-aligned dispatchTable.cpp.
+FILES=
+while IFS= read -r f; do
+  case "$f" in
+    vm/*.cpp|vm/*.hpp|vm/*.h|test/*.cpp|test/*.hpp|test/*.h|easyunit/*.cpp|easyunit/*.hpp|easyunit/*.h)
+      if [ "$f" != "vm/interpreter/dispatchTable.cpp" ]; then
+        FILES="$FILES $f"
+      fi
+      ;;
+  esac
+done < "$STAGED_FILE"
+rm -f "$STAGED_FILE"
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+# Scoped equivalent of `make format`; abort the commit if the formatter fails.
+if ! printf '%s\n' "$FILES" | xargs "$CLANG_FORMAT" -i --style=file; then
+  echo "pre-commit: clang-format failed."
+  exit 1
+fi
+
+# Fold the formatted results back into the index so they ship in this commit.
+# Re-staging an untouched file is a no-op (identical content stays staged).
+for f in $FILES; do
+  if ! git diff --quiet -- "$f"; then
+    echo "pre-commit: formatted $f"
+  fi
+  git add -- "$f"
+done
+
+exit 0
