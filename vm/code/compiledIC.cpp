@@ -251,6 +251,31 @@ char* CompiledIC::normalLookup(oop recv) {
   symbolOop sel = selector();
   LookupResult result = lookupCache::ic_normal_lookup(klass, sel);
 
+  // SELF-TARGET GUARD.
+  //
+  // If the miss resolved to a jump-table entry whose nmethod is the very
+  // nmethod that CONTAINS this call site, planting a direct monomorphic
+  // unconditional call would jump the whole send straight back to the entry
+  // of the method we are executing right now -- a self-send with no dispatch
+  // in between. Every re-entry pushes one return address, the receiver
+  // dispatch never changes, and the frames stack up with an identical
+  // return address (the record shows 60 identical frames and zero further
+  // IC misses). Guard the install: a direct call whose destination equals
+  // the entry point of the containing nmethod is never a legitimate inline
+  // cache target, so route through the polymorphic/secondary machinery which
+  // re-dispatches on the receiver klass (real dispatch), breaking the
+  // direct self-recursion.
+  if (result.is_entry()) {
+    nmethod* t = result.get_nmethod();
+    nmethod* containing = findNMethod(begin_addr());
+    if (t != NULL && containing != NULL && t == containing) {
+      if (TraceLookup)
+        mystd->print_cr("SELF-TARGET GUARD: direct call would jump back into the containing nmethod; routing through secondary dispatch");
+      setMegamorphic(); // protect the type-feedback invariant: also keeps the IC non-empty
+      return normalLookupRoutine();
+    }
+  }
+
   if (result.is_empty()) {
     // does not understand
     //
