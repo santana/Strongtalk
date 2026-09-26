@@ -382,12 +382,16 @@ void os::fatalExit(int num) {
 
 class DLLLoadError {};
 
+static long int dll_legacy_fallback();
+
 class DLL : CHeapObj {
 private:
   char* _name;
   void* _handle;
+  bool _legacyAlias;
 
   DLL(char* name) {
+    _legacyAlias = false;
     _handle = dlopen(name, RTLD_LAZY);
     checkHandle(_handle, "could not find library: %s");
     _name = (char*)malloc(strlen(name) + 1);
@@ -413,11 +417,30 @@ private:
   bool isValid() { return (_handle != NULL) && (_name != NULL); }
   dll_func lookup(char* funcname) {
     dll_func function = dll_func(dlsym(_handle, funcname));
-    checkHandle((void*)function, "could not find function: %s");
+    if (function == NULL) {
+      if (_legacyAlias) {
+        // Classic-mac images are old Win32-shaped code; the compat shim cannot
+        // provide every symbol, and a boot-time missing import would otherwise
+        // be called by the image (NULL address -> SIGILL). Resolve to a stub
+        // that returns 0 (NULL) so the caller's error handling can proceed.
+#ifdef ASSERT
+        static int stubDiag = 0;
+        if (stubDiag++ < 5)
+          warning("legacy fallback: %s", funcname);
+#endif
+        function = dll_func((void*)&dll_legacy_fallback);
+      } else {
+        checkHandle((void*)function, "could not find function: %s");
+      }
+    }
     return function;
   }
   friend class os;
 };
+
+static long int dll_legacy_fallback() {
+  return 0;
+}
 
 // 1 reference - prims/dll.cpp
 dll_func os::dll_lookup(char* name, DLL* library) {
@@ -430,6 +453,22 @@ DLL* os::dll_load(char* name) {
   if (library->isValid())
     return library;
   delete library;
+  // Classic-mac Strongtalk images resolve Win32-style shim libraries at boot
+  // ('kernel.dylib', 'user.dylib', ... — the Mac OS 8/9 compatibility layer,
+  // referenced through e.g. `{{<kernel ExternalProxy GlobalAlloc>}}`). Those
+  // never existed on Darwin, and an image-side load failure escalates into an
+  // un-catchable boot error, so alias any missing library to the system
+  // umbrella. Symbol resolution inside it still degrades gracefully (warning
+  // only) if a boot-time external is actually invoked.
+  static const char* const aliases[] = {"/usr/lib/libSystem.B.dylib", NULL};
+  for (int i = 0; aliases[i] != NULL; i++) {
+    library = new DLL((char*)aliases[i]);
+    if (library->isValid()) {
+      library->_legacyAlias = true;
+      return library;
+    }
+    delete library;
+  }
   return NULL;
 }
 

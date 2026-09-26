@@ -729,9 +729,9 @@ char* StubRoutines::generate_call_DLL(MacroAssembler* masm, bool async) {
 // AArch64 version of the extra frame for DLL calls. The DLL function is called
 // through the AAPCS64 C ABI (arguments in x0..x7, result in x0) instead of the
 // x86 stack-pushing conventions. The Delta arguments on the eval stack are
-// converted (smi -> int, proxy -> pointer) and passed to the function in
-// C-argument order (the argument at the top of the Delta stack - the one the
-// x86 stub's stack pushes would store first - becomes the first C argument).
+// converted (smi -> int, proxy/string -> pointer) and passed to the function in
+// C-argument order (same order as the x86 stub: the last compiler argument,
+// at the top of the eval stack, becomes the last C argument).
 //
 // Entry registers (same contract as x86):
 //   ebx (x15): number of arguments
@@ -805,24 +805,26 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   masm->jcc(MacroAssembler::greater, bad_call_count);
 
   // Load the (up to 8) converted arguments into x0..x7 in C order.
+  // The Delta arguments on the eval stack are laid out like a message send:
+  // the last compiler argument is at the top, and ecx points at it. The
+  // conversion loop stored them into the buffer in reverse (the first-read,
+  // topmost argument lands in buffer[n-1]), so the C argument order is the
+  // buffer read ascending: buffer[0] is the first C argument.
   masm->add(x16, sp, 32); // buffer base
-  masm->lsl(x10, ebx, 3);
-  masm->add(x16, x16, x10);
-  masm->sub(x16, x16, 8); // &buffer[n-1] (first C argument)
   masm->ldr(x0, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x1, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x2, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x3, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x4, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x5, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x6, Address(x16));
-  masm->sub(x16, x16, 8);
+  masm->addl(x16, 8);
   masm->ldr(x7, Address(x16));
 
   if (async) {
