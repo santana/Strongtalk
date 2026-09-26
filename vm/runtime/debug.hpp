@@ -92,7 +92,7 @@ public:
   develop(VerifyZoneOften                    , false, "Verify compiled-code zone often"                                             ) \
   develop(PrintVMMessages                    , true , "Print vm messages on console"                                                ) \
   develop(CompiledCodeOnly                   , false, "Use compiled code only"                                                      ) \
-  product(UseRecompilation                   , true , "Automatically (re-)compile frequently-used methods"                          ) \
+  product(UseRecompilation                   , false, "Automatically (re-)compile frequently-used methods"                          ) \
   develop(UseNMethodAging                    , true , "Age nmethods before recompiling them"                                        ) \
   develop(UseInlineCaching                   , true , "Use inline caching in compiled code"                                         ) \
   develop(EnableTasks                        , true , "Enable periodic tasks to be performed"                                       ) \
