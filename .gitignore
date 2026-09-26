@@ -12,4 +12,9 @@ strongtalk-main.pdb
 build.osx/strongtalk/build
 *.o
 *.d
+/test/assembler/assemblerEncoderTest_64
+/test/assembler/assemblerEncoderTest_aarch64
+/test/assembler/disassemblerTest_64
+/test/assembler/disassemblerTest_aarch64
+*.dSYM/
 

@@ -68,13 +68,14 @@ objs/%.o: $(ROOT_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CXX) $(CAPSTONE_CFLAGS) -c $< -o $@
 
-assemblerEncoderTest_64: assemblerEncoderTest.cpp $(ENCODER_SRCS)
-	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_X86_64 $(ENCODER_SRCS) assemblerEncoderTest.cpp \
+assemblerEncoderTest_64: assemblerEncoderTest.cpp $(ENCODER_SRCS) $(CAPSTONE_OBJS)
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_X86_64 -I$(CAPSTONE_DIR)/include \
+	  $(ENCODER_SRCS) $(CAPSTONE_OBJS) assemblerEncoderTest.cpp \
 	  $(UNDEFINED_OK) -o $@
 
-assemblerEncoderTest_aarch64: assemblerEncoderTest_aarch64.cpp $(ENCODER_SRCS_AARCH64)
-	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_AARCH64 \
-	  $(ENCODER_SRCS_AARCH64) assemblerEncoderTest_aarch64.cpp \
+assemblerEncoderTest_aarch64: assemblerEncoderTest_aarch64.cpp $(ENCODER_SRCS_AARCH64) $(CAPSTONE_OBJS)
+	$(CXX) $(CXXFLAGS) -DDELTA_BACKEND_AARCH64 -I$(CAPSTONE_DIR)/include \
+	  $(ENCODER_SRCS_AARCH64) $(CAPSTONE_OBJS) assemblerEncoderTest_aarch64.cpp \
 	  $(UNDEFINED_OK) -o $@
 
 disassemblerTest_64: disassemblerTest.cpp $(ENCODER_SRCS) $(DISASM_SRCS) $(CAPSTONE_OBJS)
