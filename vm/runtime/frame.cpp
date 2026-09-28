@@ -81,6 +81,36 @@ void frame::patch_fp(void** fp) {
   previous.set_link(fp);
 }
 
+methodOop frame::method_from_hp() const {
+  // Resolve hp() to its methodOop, or NULL if hp is not a valid hybrid code
+  // pointer.  Deliberately uses the *checked* lookup: a frame slot we have not
+  // yet established to be a real activation can hold an arbitrary value, and
+  // the plain object_start() would assert or run off the end of a space.
+  oop* h = (oop*)hp();
+  if (!Universe::old_gen.contains(h))
+    return NULL;
+  oop* start = Universe::object_start_checked(h);
+  // is_mem() is a pure tag test, so it is safe on an arbitrary word; as_memOop()
+  // asserts that the value is an aligned C pointer.  object_start_checked() only
+  // guarantees the header carries Mark_Tag (3), and a garbage word can carry that
+  // tag too, so check is_mem() *before* converting.  For a real object the header
+  // is its klass, a markOop; the bogus values that reach here are not memOops.
+  if (start == NULL || !(*start)->is_mem())
+    return NULL;
+  memOop obj = as_memOop(*start);
+  if (!obj->is_method())
+    return NULL;
+  methodOop m = methodOop(obj);
+  // A genuine hybrid pointer addresses a byte *inside* the method's bytecodes.
+  // This containment test is what makes the check reliable: a garbage slot can
+  // land in the old generation and, via the card table, resolve to a word that
+  // merely carries a plausible tag.  Requiring hp to be within
+  // [codes(), codes_end()) rejects those.
+  if (hp() < m->codes() || hp() >= m->codes_end())
+    return NULL;
+  return m;
+}
+
 methodOop frame::method() const {
   assert(is_interpreted_frame(), "must be interpreter frame");
   // First we will check the interpreter frame is valid by checking the frame size.
@@ -89,11 +119,7 @@ methodOop frame::method() const {
   if (frame_size() < minimum_size_for_deoptimized_frame)
     return NULL;
 
-  u_char* h = hp();
-  if (!Universe::old_gen.contains(h))
-    return NULL;
-  memOop obj = as_memOop(Universe::object_start((oop*)h));
-  return obj->is_method() ? methodOop(obj) : NULL;
+  return method_from_hp();
 }
 
 nmethod* frame::code() const {
@@ -106,7 +132,37 @@ bool frame::is_interpreted_frame() const {
   // code buffer (e.g. the scavenge/allocate stubs); frames created from such a
   // call site still describe an interpreted method activation, so classify them
   // as interpreted too.
+  //
+  // This is deliberately just a pc-range test: it is on the send hot path
+  // (current_interpretedIC) and during image load the card table that
+  // object_start() relies on is not yet built, so hp cannot be resolved here.
+  // Code that walks frames for the GC must use is_interpreted_activation(),
+  // which additionally requires a valid hybrid code pointer.
   return Interpreter::contains(pc()) || is_in_generated_primitives_code(pc());
+}
+
+bool frame::is_interpreted_activation() const {
+  if (!is_interpreted_frame())
+    return false;
+  // The pc test is necessary but *not* sufficient.  frame::sender()
+  // deliberately returns the top C frame of a chunk when the current frame is
+  // an entry frame, and that C frame is built with the two-argument
+  // constructor, so its pc is taken from sp[-1] and can land inside the
+  // interpreter even though the frame is not an activation at all.  On x86-64
+  // such a frame exposes next_Delta_fp/next_Delta_sp in the very slots an
+  // interpreted frame uses for receiver/hp, so believing it makes the GC
+  // resolve a bogus address (convert_hcode_pointer -> Universe::object_start)
+  // and makes oop_iterate/follow_roots scan the wrong words.
+  //
+  // A genuine interpreted activation always carries a valid hybrid code
+  // pointer: hp() addresses the bytecodes of a methodOop in the old
+  // generation.  Requiring that separates the two cases, and it keeps the
+  // 17e13c1 behaviour (real activations reached from a call site in the
+  // generated primitives buffer still count) because those do have a valid hp.
+  if (frame_size() < minimum_size_for_deoptimized_frame)
+    return false;
+
+  return method_from_hp() != NULL;
 }
 
 bool frame::is_compiled_frame() const {
@@ -127,7 +183,7 @@ IC_Iterator* frame::sender_ic_iterator() const {
 
 IC_Iterator* frame::current_ic_iterator() const {
 
-  if (is_interpreted_frame()) {
+  if (is_interpreted_activation()) {
     InterpretedIC* ic = current_interpretedIC();
     if (ic && !Bytecodes::is_send_code(ic->send_code()))
       return NULL;
@@ -145,7 +201,11 @@ IC_Iterator* frame::current_ic_iterator() const {
 
 InterpretedIC* frame::current_interpretedIC() const {
 
-  if (is_interpreted_frame()) {
+  // is_interpreted_activation(), not is_interpreted_frame(): method() returns
+  // NULL for a frame that is not a real activation (e.g. the C frame of an
+  // entry chunk that happens to carry an interpreter return address), and the
+  // bci/codes lookups below dereference the method unconditionally.
+  if (is_interpreted_activation()) {
     methodOop m = method();
     int bci = m->bci_from(hp());
     u_char* codeptr = m->codes(bci);
@@ -238,7 +298,7 @@ static void print_context_chain(contextOop con, outputStream* st) {
 void frame::print_for_deoptimization(outputStream* st) {
   ResourceMark rm;
   st->print(" - ");
-  if (is_interpreted_frame()) {
+  if (is_interpreted_activation()) {
     st->print("I ");
     interpretedVFrame* vf = (interpretedVFrame*)vframe::new_vframe(this);
     vf->method()->print_value_on(st);
@@ -302,7 +362,7 @@ void frame::print_for_deoptimization(outputStream* st) {
 }
 
 void frame::layout_iterate(FrameLayoutClosure* blk) {
-  if (is_interpreted_frame()) {
+  if (is_interpreted_activation()) {
     oop* eos = temp_addr(0);
     for (oop* p = sp(); p <= eos; p++)
       blk->do_stack(eos - p, p);
@@ -352,7 +412,7 @@ bool frame::oop_iterate_compiled_float_frame(OopClosure* blk) {
 }
 
 void frame::oop_iterate(OopClosure* blk) {
-  if (is_interpreted_frame()) {
+  if (is_interpreted_activation()) {
     if (has_interpreted_float_marker() && oop_iterate_interpreted_float_frame(blk))
       return;
 
@@ -431,7 +491,7 @@ bool frame::follow_roots_compiled_float_frame() {
 }
 
 void frame::follow_roots() {
-  if (is_interpreted_frame()) {
+  if (is_interpreted_activation()) {
     if (has_interpreted_float_marker() && follow_roots_interpreted_float_frame())
       return;
 
@@ -477,7 +537,7 @@ void frame::follow_roots() {
 }
 
 void frame::convert_hcode_pointer() {
-  if (!is_interpreted_frame())
+  if (!is_interpreted_activation())
     return;
   // Adjust hcode pointer to object start
   u_char* h = hp();
@@ -489,7 +549,7 @@ void frame::convert_hcode_pointer() {
 }
 
 void frame::restore_hcode_pointer() {
-  if (!is_interpreted_frame())
+  if (!is_interpreted_activation())
     return;
   // Readjust hcode pointer
   u_char* obj = hp();

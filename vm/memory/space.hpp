@@ -229,6 +229,7 @@ public:
   oldSpace* next_space;
 
   oop* object_start(oop* p);
+  oop* object_start_checked(oop* p); // NULL for an address not inside a real object
 
   void update_offset_array(oop* p, oop* p_end);
 

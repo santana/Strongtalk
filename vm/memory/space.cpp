@@ -413,6 +413,63 @@ oop* oldSpace::object_start(oop* p) {
   return q;
 }
 
+oop* oldSpace::object_start_checked(oop* p) {
+  // Same walk as object_start(), but for an *untrusted* address: p may not be
+  // the middle of a real object at all (e.g. a garbage stack slot that
+  // happens to land inside this space).  object_start() trusts the card table
+  // and then walks forward by object sizes, so a bogus p can send `n` out of
+  // the space and fault.  Here every step is bounds checked and we return NULL
+  // instead.
+  if (!contains(p))
+    return NULL;
+
+  oop* q = p;
+  intptr_t b = (intptr_t)q;
+  clearBits(b, nthMask(card_shift));
+  q = (oop*)b;
+  if (!contains(q))
+    return NULL;
+
+  int index = (q - bottom()) / card_size_in_oops;
+  if (index < 0)
+    return NULL;
+
+  int offset = offset_array[index];
+  while (offset == card_size_in_oops) {
+    if (--index < 0)
+      return NULL;
+    q -= card_size_in_oops;
+    if (q < bottom())
+      return NULL;
+    offset = offset_array[index];
+  }
+  q -= offset;
+  if (q < bottom() || q >= top())
+    return NULL;
+
+  // Validate *every* header we step onto, including the first: a bogus start
+  // can leave us pointing at slots that hold smis or forward pointers rather
+  // than a klass.  is_mem() only inspects the tag bits of the word, so it is safe
+  // on any value, and it is exactly the precondition as_memOop() asserts.  Note
+  // p can precede the first object of the card, so this must be a do/while --
+  // the header still has to be checked in that case.
+  oop* n = q;
+  do {
+    if (!(*n)->is_mem())
+      return NULL;
+    q = n;
+    int size = as_memOop(n)->size();
+    if (size <= 0)
+      return NULL;
+    n += size;
+    if (n >= top())
+      return NULL;
+  } while (n <= p);
+  if (!as_memOop(q)->mark()->is_mark())
+    return NULL;
+  return q;
+}
+
 extern "C" {
 oop* eden_bottom = NULL;
 oop* eden_top = NULL;

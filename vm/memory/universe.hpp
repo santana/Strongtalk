@@ -198,6 +198,9 @@ public:
   static bool is_heap(oop* p) { return new_gen.contains(p) || old_gen.contains(p); }
 
   static oop* object_start(oop* p);
+  // Same, but for an untrusted address: returns NULL instead of asserting or
+  // walking off the end of a space when p is not inside a real object.
+  static oop* object_start_checked(oop* p);
 
   // relocate is used for moving objects around after reading in a snapshot
   static memOop relocate(memOop p);

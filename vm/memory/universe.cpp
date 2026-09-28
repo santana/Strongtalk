@@ -205,6 +205,18 @@ oop* Universe::object_start(oop* p) {
   return old_gen.object_start(p);
 }
 
+oop* Universe::object_start_checked(oop* p) {
+  // For an address we do not trust -- typically a slot read out of a stack
+  // frame that we have not yet established is a real activation.  The plain
+  // object_start() trusts the card table and can walk off the end of a space
+  // (and asserts) for such addresses; this variant returns NULL instead.
+  FOR_EACH_OLD_SPACE(s) {
+    if (s->contains(p))
+      return s->object_start_checked(p);
+  }
+  return NULL;
+}
+
 class PrintClosure : public ObjectClosure {
   void do_object(memOop obj) {
     PrintObjectClosure blk(mystd);

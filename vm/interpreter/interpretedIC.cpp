@@ -612,6 +612,12 @@ oop* InterpretedIC::inline_cache_miss() {
   // get ic info
   frame f = DeltaProcess::active()->last_frame();
   InterpretedIC* ic = f.current_interpretedIC();
+  if (ic == NULL) {
+    // current_interpretedIC() returns NULL when the last frame does not hold a
+    // send bytecode at hp() -- e.g. the frame is not a real activation.  There
+    // is no inline cache to patch in that case.
+    return NULL;
+  }
   Bytecodes::Code send_code = ic->send_code();
 
   oop receiver = ic->argument_spec() == Bytecodes::args_only // Are we at a self or super send?

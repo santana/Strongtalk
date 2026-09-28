@@ -176,6 +176,11 @@ public:
   nmethod* code() const;
 
 private:
+  // Resolve hp() to its methodOop, or NULL if hp is not a valid hybrid code
+  // pointer.  Shared by method() and is_interpreted_activation(); deliberately
+  // does not assert on the frame kind and uses the bounds-checked object lookup.
+  methodOop method_from_hp() const;
+
   // Float support
   inline bool has_interpreted_float_marker() const;
   bool oop_iterate_interpreted_float_frame(OopClosure* blk);
@@ -216,6 +221,11 @@ public:
 
   // testers
   bool is_interpreted_frame() const;
+  // is_interpreted_frame() *and* a valid hybrid code pointer, i.e. the frame
+  // really is a method activation rather than a C frame in an entry chunk that
+  // happens to carry an interpreter return address.  Costs an object lookup,
+  // so it is for the GC frame walks, not the send hot path.
+  bool is_interpreted_activation() const;
   bool is_compiled_frame() const;
   bool is_delta_frame() const { return is_interpreted_frame() || is_compiled_frame(); }
 
