@@ -262,23 +262,25 @@ public:
   develop(StackPrintLimit                    ,    20, "Number of stack frames to print in VM-level stack dump"                      ) \
   develop(MaxElementPrintSize                ,    10, "Maximum number of elements to print"                                         ) \
                                                                                                                                       \
+/* NOTE: the four object-heap flags below are sized in KWORDS, not Kbytes -- spaceSize.cpp                            \
+/*       multiplies them by oopSize, so one unit is oopSize bytes. SurvivorSize is per-space.                         \
 /* allocation parameters */                                                                                                           \
-  product(ReservedHeapSize                   ,  50*K, "Maximum size for object heap in Kbytes"                                      ) \
+  product(ReservedHeapSize                                  ,   50*K, "Maximum size for object heap, in Kwords (x BytesPerWord bytes)      ") \
   product(ObjectHeapExpandSize               ,   512, "Chunk size (in Kbytes) by which the object heap grows"                       ) \
-  product(EdenSize                           ,   512, "size of eden (in Kbytes)"                                                    ) \
-  product(SurvivorSize                       ,    64, "size of survivor spaces (in Kbytes)"                                         ) \
-  product(OldSize                            ,   3*K, "initial size of oldspace (in Kbytes)"                                        ) \
+  product(EdenSize                                  ,    512, "size of eden, in Kwords (x BytesPerWord bytes)                     ") \
+  product(SurvivorSize                                  ,     64, "size of EACH survivor space, in Kwords (x BytesPerWord bytes)  ") \
+  product(OldSize                                  ,    3*K, "initial size of oldspace, in Kwords (x BytesPerWord bytes)         ") \
   product(ReservedCodeSize                   ,  10*K, "Maximum size of code cache (in Kbytes)"                                      ) \
   product(CodeSize                           ,  20*K, "size of code cache (in Kbytes)"                                              ) \
   product(ReservedPICSize                    ,   4*K, "Maximum size of PIC cache (in Kbytes)"                                       ) \
   product(PICSize                            ,   128, "size of PIC cache (in Kbytes)"                                               ) \
-  product(JumpTableSize                      ,   8*K, "size of jump table"                                                          ) \
-  product(ThreadStackSize                    ,   512, "Size (in K) of each thread's stack"                                                          ) \
+  product(JumpTableSize                                  ,    8*K, "# of jump-table ENTRIES, not bytes (24 bytes/entry; max 32K-1)     ") \
+  product(ThreadStackSize                                  ,    512, "Size (in K) of each thread's stack; interp boot needs >= 14M      ") \
                                                                                                                                       \
 /* compiler parameters */                                                                                                             \
-  product(CompilerInstrsSize                 ,  50*K, "max. size of nmethod instrs"                                                 ) \
-  product(CompilerScopesSize                 ,  50*K, "max. size of debugging info per nmethod"                                     ) \
-  product(CompilerPCsSize                    ,  15*K, "max. size of relocation info info per nmethod"                               ) \
+  product(CompilerInstrsSize                                  ,   50*K, "max. size of nmethod instrs, in bytes                            ") \
+  product(CompilerScopesSize                                  ,   50*K, "max. size of debugging info per nmethod, in bytes                 ") \
+  product(CompilerPCsSize                                  ,   15*K, "max. size of relocation info per nmethod, in bytes                ") \
                                                                                                                                       \
 /* inlining parameters */                                                                                                             \
   develop(MaxFnInlineCost                    ,    40, "max. cost of normal inlined method"                                          ) \
