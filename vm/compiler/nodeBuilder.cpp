@@ -657,13 +657,18 @@ GrowableArray<PReg*>* NodeBuilder::pass_arguments(PReg* receiver, int nofArgs) {
       append(NodeFactory::new_AssignNode(receiver, formalReceiver));
 #ifdef DELTA_BACKEND_X86_64
     } else {
-      // x86-64: the callee (interpreted or compiled) pops nArgs+1 words from the
-      // message region (nArgs arguments plus the receiver word, see
-      // InterpreterBackend::interpretReceiverWordBytes), and primitive-value
-      // block dispatch reads the closure from the receiver's register. Push the
-      // receiver word below the arguments so the layout matches an interpreted
-      // sender's [recv, args...]; eax still carries the receiver for the IC and
-      // the callee prologue.
+      // x86-64: the compiled callee (CodeGenerator::aReturnNode) pops
+      // nArgs+1 words from the message region (nArgs arguments plus the
+      // receiver word), and primitive-value block dispatch reads the closure
+      // from the receiver's register. Push the receiver word below the
+      // arguments so the layout matches an interpreted sender's
+      // [recv, args...]; eax still carries the receiver for the IC and the
+      // callee prologue.
+      //
+      // NOTE: the interpreter no longer agrees with this -- its callee pops
+      // arguments only (interpretReceiverWordBytes == 0 on both backends).
+      // compiled -> interpreted calls are over-popped by one word until the
+      // two conventions are reconciled; see X86_64_PORT_NOTES.md X10.
       append(NodeFactory::new_AssignNode(receiver, new SAPReg(_scope, topOfStack, false, false, bci(), bci())));
 #endif
     }

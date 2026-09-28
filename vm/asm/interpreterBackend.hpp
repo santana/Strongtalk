@@ -172,13 +172,17 @@ public:
   // Two facts separate the backends in the method-return and NLR epilogues:
   // where the live return address lives (on the hardware stack below the frame
   // on x86-64, popped into ecx and branched to; in the link register x30 on
-  // AArch64, returned via ret) and whether an interpreted send pushed the
-  // receiver as an extra hardware word below the argument slots (x86-64:
-  // oopSize; AArch64: none).
+  // AArch64, returned via ret).
 
-  // Bytes pushed by an interpreted send below its n argument slots. x86-64
-  // pushes the receiver as one extra oop; AArch64 adds no such word.
-  static const int interpretReceiverWordBytes; // oopSize (x86-64), 0 (AArch64)
+  // Extra hardware words the interpreted callee pops below its n argument
+  // slots. This is 0 on BOTH backends: an interpreted callee pops its
+  // arguments only. An interpreted send does push the receiver below the
+  // argument slots, but the *sender* discards it ("discard receiver if on
+  // stack", skipped for args_only self/super sends which push no receiver
+  // word), and the callee's return sequence only ever sees its own declared
+  // argument spec — never the caller's. A callee-side receiver pop therefore
+  // over-pops args_only sends by one word. Do NOT re-derive this per backend.
+  static const int interpretReceiverWordBytes; // 0 (both backends)
 
   // ret(nArgs*slotSize + interpretReceiverWordBytes) for the fixed-arity
   // method returns (return_tos: recv_0/1/2_args). nArgs is 0..2.

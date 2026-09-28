@@ -165,7 +165,13 @@ void InterpreterBackend::enterNLRFrame(MacroAssembler* masm, Register ret_addr, 
 
 // ---- Interpreted send/return conventions ----
 
-const int InterpreterBackend::interpretReceiverWordBytes = oopSize;
+// The interpreted callee pops *only* its arguments.  The receiver word is
+// discarded by the sender (normal_send: "discard receiver if on stack", which
+// is skipped for args_only self/super sends, where no receiver word was
+// pushed).  return_tos can only see the callee's own argument spec, never the
+// caller's, so skipping a receiver word here over-pops self/super sends by one
+// word.  Must match the AArch64 backend (0).
+const int InterpreterBackend::interpretReceiverWordBytes = 0;
 
 void InterpreterBackend::popArgsAndReturn(MacroAssembler* masm, int nArgs) {
   masm->ret(nArgs * slotSize + InterpreterBackend::interpretReceiverWordBytes);

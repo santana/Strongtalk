@@ -1940,9 +1940,15 @@ void CodeGenerator::aReturnNode(ReturnNode* node) {
 #ifdef DELTA_BACKEND_X86_64
   } else {
     // x86-64: the sender pushes the receiver word below the arguments (see
-    // NodeBuilder::pass_arguments) and interpreted callees pop it via
-    // interpretReceiverWordBytes; compiled callees must do the same so the
-    // conventions agree across interpreted/compiled boundaries.
+    // NodeBuilder::pass_arguments) and the compiled callee pops it here, so
+    // compiled callers and callees agree with each other.
+    //
+    // NOTE: this is now ASYMMETRIC with the interpreter, whose callee pops
+    // arguments only (interpretReceiverWordBytes == 0 on both backends) and
+    // whose sender discards the receiver word. compiled -> interpreted calls
+    // therefore over-pop by one word. Reconciling the two conventions (and
+    // the matching receiver-pop skips in the interpreter's three nmethod
+    // send tails) is open work -- see X86_64_PORT_NOTES.md X10.
     no_of_args_to_pop++;
 #endif
   }
