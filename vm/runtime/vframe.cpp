@@ -403,13 +403,23 @@ bool interpretedVFrame::equal(const vframe* f) const {
 }
 
 int interpretedVFrame::bci() const {
-  return method()->bci_from(hp());
+  methodOop m = method();
+  if (!m)
+    return -1; // not really an interpreted activation (see method())
+  return m->bci_from(hp());
 }
 
 methodOop interpretedVFrame::method() const {
-  memOop m = as_memOop(Universe::object_start((oop*)(hp() - 1)));
-  assert(m->is_method(), "must be method");
-  return methodOop(m);
+  // Do not use hp() - 1 here: hp() is the interpreter's *bytecode pointer*, so
+  // hp() - 1 is a code address, not a frame slot. Delegate to frame::method(),
+  // which is the checked accessor: it rejects frames whose hp is not a method
+  // in old_gen and returns NULL instead of asserting.
+  //
+  // The NULL case is reachable: frame::sender() returns the top C frame of the
+  // chunk for an entry frame, and such a C frame carries a return address into
+  // the interpreter, so it passes the pc-based is_interpreted_frame() test even
+  // though it is not an activation (its fp[-2]/fp[-1] are not hp/receiver).
+  return _fr.method();
 }
 
 deltaVFrame* interpretedVFrame::parent() const {
