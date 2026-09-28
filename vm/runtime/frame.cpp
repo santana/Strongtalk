@@ -176,7 +176,7 @@ bool frame::has_next_Delta_fp() const {
 }
 
 void** frame::next_Delta_fp() const {
-  return addr_at(frame_next_Delta_fp_offset);
+  return (void**)at(frame_next_Delta_fp_offset);
 }
 
 oop* frame::next_Delta_sp() const {
