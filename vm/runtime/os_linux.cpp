@@ -248,7 +248,7 @@ typedef struct {
 
 static Event* threadCreated = NULL;
 
-#define STACK_SIZE ThreadStackSize* K
+#define STACK_SIZE (ThreadStackSize < 65536 ? 65536 : ThreadStackSize)* K
 
 char* calcStackLimit() {
   char* stackptr;

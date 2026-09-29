@@ -22,7 +22,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #ifdef WIN32
-#define STACK_SIZE ThreadStackSize* K
+#define STACK_SIZE (ThreadStackSize < 65536 ? 65536 : ThreadStackSize)* K
 
 #include "memory/allocation.hpp"
 #include "runtime/os.hpp"
