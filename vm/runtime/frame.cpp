@@ -90,14 +90,18 @@ methodOop frame::method_from_hp() const {
   if (!Universe::old_gen.contains(h))
     return NULL;
   oop* start = Universe::object_start_checked(h);
-  // is_mem() is a pure tag test, so it is safe on an arbitrary word; as_memOop()
-  // asserts that the value is an aligned C pointer.  object_start_checked() only
-  // guarantees the header carries Mark_Tag (3), and a garbage word can carry that
-  // tag too, so check is_mem() *before* converting.  For a real object the header
-  // is its klass, a markOop; the bogus values that reach here are not memOops.
-  if (start == NULL || !(*start)->is_mem())
+  if (start == NULL)
     return NULL;
-  memOop obj = as_memOop(*start);
+  // object_start_checked() returns the *raw* base address of the object (its
+  // callers wrap the return value in as_memOop()), so `*start` is the first
+  // word of the object, i.e. its header.  A header is the object's klass, which
+  // is a markOop (tag Mark_Tag == 3) and therefore NOT a memOop, so is_mark() is
+  // the predicate here; is_mem() is false for every legitimate header.  A garbage
+  // word can still carry the mark tag, which is why the codes-containment test
+  // below is needed as well.
+  if (!(*start)->is_mark())
+    return NULL;
+  memOop obj = as_memOop(start);
   if (!obj->is_method())
     return NULL;
   methodOop m = methodOop(obj);

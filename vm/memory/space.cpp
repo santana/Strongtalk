@@ -449,13 +449,14 @@ oop* oldSpace::object_start_checked(oop* p) {
 
   // Validate *every* header we step onto, including the first: a bogus start
   // can leave us pointing at slots that hold smis or forward pointers rather
-  // than a klass.  is_mem() only inspects the tag bits of the word, so it is safe
-  // on any value, and it is exactly the precondition as_memOop() asserts.  Note
-  // p can precede the first object of the card, so this must be a do/while --
-  // the header still has to be checked in that case.
+  // than a klass.  The header word of a memOop is its klass, which is a *markOop*
+  // (tag Mark_Tag == 3) and therefore NOT a memOop itself -- the predicate for a
+  // header is is_mark(), exactly as the unchecked object_start() uses.  Note p
+  // can precede the first object of the card, so this must be a do/while -- the
+  // header still has to be checked in that case.
   oop* n = q;
   do {
-    if (!(*n)->is_mem())
+    if (!(*n)->is_mark())
       return NULL;
     q = n;
     int size = as_memOop(n)->size();
