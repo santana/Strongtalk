@@ -463,7 +463,14 @@ oop* oldSpace::object_start_checked(oop* p) {
     if (size <= 0)
       return NULL;
     n += size;
-    if (n >= top())
+    // The last object in the space legally ends *at* top(), so the bound is
+    // `> top()`, not `>= top()`.  The loop invariant already guarantees
+    // n <= p < top() for every further iteration, so `n == top()` can only
+    // occur on this final advance -- and that is the last object, which must be
+    // accepted.  (Rejecting it made object_start_checked() fail for any hp
+    // pointing into the newest method in the old generation, i.e. the frame
+    // would not be recognised as an interpreted activation.)
+    if (n > top())
       return NULL;
   } while (n <= p);
   if (!as_memOop(q)->mark()->is_mark())
