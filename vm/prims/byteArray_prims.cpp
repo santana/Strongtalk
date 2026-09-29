@@ -582,18 +582,41 @@ oop unsafeContents(oop unsafeAlien) {
 
 #define alienIndex(argument) (smiOop(argument)->value())
 
+// True when a 1-based `index` may address a `type_size`-byte value living at
+// byte offset `index - 1` of an alien that holds `alien_size` bytes.
+//
+// The original test was
+//     ((unsigned int)index) > abs(alienSize(receiver)) - sizeof(type) + 1
+// abs() yields int while sizeof() yields size_t, so that subtraction was
+// evaluated in unsigned 64-bit arithmetic.  Whenever the alien was smaller
+// than the access type the bound underflowed -- e.g. a 4-byte alien accessed
+// as `unsigned long`, which is 8 bytes on LP64, gave
+// abs(4) - 8 + 1 == (size_t)-3.  The wrapped bound was so large that the
+// comparison could never hold, the guard never rejected anything, and the
+// 8-byte access silently ran off the end of the alien's bytes.  Derive the
+// bound in a width that cannot underflow, and reject every index outright when
+// the alien is simply too small to hold the type.
+static inline bool alien_index_in_bounds(int alien_size, int index, size_t type_size) {
+  if (index < 1)
+    return false;
+  if (alien_size == 0)
+    return true; // address-based alien: the bytes live elsewhere, nothing to bound
+  long long size = alien_size < 0 ? -(long long)alien_size : (long long)alien_size;
+  if (size + 1 < (long long)type_size)
+    return false; // too small for any index
+  return (long long)index <= size + 1 - (long long)type_size;
+}
+
 #define checkAlienAtIndex(receiver, argument, type)                                                                    \
   if (!argument->is_smi())                                                                                             \
     return markSymbol(vmSymbols::argument_has_wrong_type());                                                           \
-  if (alienIndex(argument) < 1 || (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) >                  \
-                                                                 abs(alienSize(receiver)) - sizeof(type) + 1))         \
+  if (!alien_index_in_bounds(alienSize(receiver), alienIndex(argument), sizeof(type)))                                 \
   return markSymbol(vmSymbols::index_not_valid())
 
 #define checkAlienAtPutIndex(receiver, argument, type)                                                                 \
   if (!argument->is_smi())                                                                                             \
     return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                     \
-  if (alienIndex(argument) < 1 || (alienSize(receiver) != 0 && ((unsigned int)alienIndex(argument)) >                  \
-                                                                 abs(alienSize(receiver)) - sizeof(type) + 1))         \
+  if (!alien_index_in_bounds(alienSize(receiver), alienIndex(argument), sizeof(type)))                                 \
   return markSymbol(vmSymbols::index_not_valid())
 
 #define checkAlienAtPutValue(receiver, argument, type, min, max)                                                       \

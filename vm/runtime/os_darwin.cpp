@@ -415,6 +415,12 @@ private:
       free(_name);
   }
   bool isValid() { return (_handle != NULL) && (_name != NULL); }
+  // Raw probe, without the legacy-alias stub substitution done by lookup().
+  // Used to search the registry for the library that really defines a symbol.
+  bool tryLookup(char* funcname, dll_func& function) {
+    function = dll_func(dlsym(_handle, funcname));
+    return function != NULL;
+  }
   dll_func lookup(char* funcname) {
     dll_func function = dll_func(dlsym(_handle, funcname));
     if (function == NULL) {
@@ -438,20 +444,76 @@ private:
   friend class os;
 };
 
+// Every DLL this VM created, so that a handle which did not survive the round
+// trip through the image can still be recovered from by name.  An image built
+// for 32-bit hosts encodes a library handle as two 16-bit halves, so on a
+// 64-bit VM the handle reaching dll_lookup is a truncation of the real DLL*
+// and must never be dereferenced.
+static const int dll_registry_capacity = 64;
+static DLL* dll_registry[dll_registry_capacity];
+static int dll_registry_count = 0;
+
+static void dll_register(DLL* library) {
+  if (dll_registry_count < dll_registry_capacity)
+    dll_registry[dll_registry_count++] = library;
+}
+
+// Pointer-identity test only: never dereferences the (possibly bogus) handle.
+static bool dll_is_registered(DLL* library) {
+  for (int i = 0; i < dll_registry_count; i++)
+    if (dll_registry[i] == library)
+      return true;
+  return false;
+}
+
+// Drop the entry before the DLL is freed, so a later dll_lookup with a stale
+// handle is not mistaken for a live library.
+static void dll_unregister(DLL* library) {
+  for (int i = 0; i < dll_registry_count; i++) {
+    if (dll_registry[i] == library) {
+      dll_registry[i] = dll_registry[--dll_registry_count];
+      return;
+    }
+  }
+}
+
 static long int dll_legacy_fallback() {
   return 0;
 }
 
 // 1 reference - prims/dll.cpp
 dll_func os::dll_lookup(char* name, DLL* library) {
-  return library->lookup(name);
+  if (dll_is_registered(library))
+    return library->lookup(name);
+  // The handle did not come from dll_load(), so it was truncated or corrupted
+  // on the way through the image: Alien>>asExternalProxy only reads two 16-bit
+  // halves, which cannot carry a 64-bit native handle on LP64.  Dereferencing
+  // it would be a wild pointer, so resolve the symbol by name among the
+  // libraries this VM actually loaded.
+  // Deliberately no dlsym(RTLD_DEFAULT, ...): the image's external names come
+  // from the Classic-Mac compatibility shim, and a host-global search happily
+  // matches an unrelated system symbol (e.g. sel_getName in libSystem) whose
+  // signature the image then calls with the wrong arguments.
+  warning("dll_lookup: unknown handle for %s; resolving by name", name);
+  for (int i = dll_registry_count - 1; i >= 0; i--) {
+    dll_func function;
+    if (dll_registry[i]->tryLookup(name, function))
+      return function;
+  }
+  // Nothing defines it.  Fall back to the same 0-returning stub the legacy
+  // alias path uses, so the image's own error handling can proceed instead of
+  // jumping through a null or wild address.
+  warning("dll_lookup: %s not found in any loaded library", name);
+  return dll_func((void*)&dll_legacy_fallback);
 }
 
 // 1 reference - prims/dll.cpp
 DLL* os::dll_load(char* name) {
   DLL* library = new DLL(name);
-  if (library->isValid())
+  if (library->isValid()) {
+    dll_register(library);
     return library;
+  }
   delete library;
   // Classic-mac Strongtalk images resolve Win32-style shim libraries at boot
   // ('kernel.dylib', 'user.dylib', ... — the Mac OS 8/9 compatibility layer,
@@ -465,6 +527,7 @@ DLL* os::dll_load(char* name) {
     library = new DLL((char*)aliases[i]);
     if (library->isValid()) {
       library->_legacyAlias = true;
+      dll_register(library);
       return library;
     }
     delete library;
@@ -474,6 +537,7 @@ DLL* os::dll_load(char* name) {
 
 // 1 reference - prims/dll.cpp
 bool os::dll_unload(DLL* library) {
+  dll_unregister(library);
   delete library;
   return true;
 }

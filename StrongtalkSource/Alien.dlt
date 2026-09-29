@@ -63,17 +63,18 @@ dataSize
 
 ensureLoaded: libraryName
 
+	"An LP64 native handle is 8 bytes, so the alien that carries it must be too."
 	^self loadedLibraries
 		at: libraryName
-		ifAbsentPut: [(Alien new: 4)
+		ifAbsentPut: [(Alien new: 8)
 								unsignedLongAt: 1 put: (self primLoadLibrary: libraryName);
 								yourself]!
 
 forLong: long
 
-	((long > 16r7FFFFFFF) or: [long < -16r80000000])
+	((long > 16r7FFFFFFFFFFFFFFF) or: [long < -16r8000000000000000])
 		ifTrue: [self error: 'Out of range'].
-	^(self new: 4)
+	^(self new: 8)
 		signedLongAt: 1 put: long;
 		yourself!
 
@@ -86,9 +87,9 @@ forPointer: pointer <Integer> ^<X>
 
 forULong: ulong
 
-	((ulong > 16rFFFFFFFF) or: [ulong < 0])
+	((ulong > 16rFFFFFFFFFFFFFFFF) or: [ulong < 0])
 		ifTrue: [self error: 'Out of range'].
-	^(self new: 4)
+	^(self new: 8)
 		unsignedLongAt: 1 put: ulong;
 		yourself!
 
@@ -566,9 +567,15 @@ asAlien
 
 asExternalProxy ^<ExternalProxy>
 
-	^ExternalProxy
-		forHigh: (self unsignedShortAt: 3)
-		low: (self unsignedShortAt: 1)!
+	"An LP64 pointer is 8 bytes, and ExternalProxy encodes it as
+	 (pointer >> 16, pointer & 16rFFFF) to match primitiveProxySetHighLow.
+	 The 48-bit high part still fits a SmallInteger."
+	| low high |
+	low := self unsignedShortAt: 1.
+	high := self unsignedShortAt: 3
+				+ ((self unsignedShortAt: 5) bitShiftLeft: 16)
+				+ ((self unsignedShortAt: 7) bitShiftLeft: 32).
+	^ExternalProxy forHigh: high low: low!
 
 asSignedByte
 

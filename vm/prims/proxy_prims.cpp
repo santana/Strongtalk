@@ -49,11 +49,16 @@ int proxyOopPrimitives::number_of_calls;
 PRIM_DECL_1(proxyOopPrimitives::getSmi, oop receiver) {
   PROLOGUE_1("getSmi", receiver);
   ASSERT_RECEIVER;
-  uintptr_t value = (uintptr_t)proxyOop(receiver)->get_pointer();
-  unsigned int topBits = value >> (BitsPerWord - Tag_Size);
-  if ((topBits != 0) && (topBits != 3))
+  intptr_t value = (intptr_t)proxyOop(receiver)->get_pointer();
+  // The old test looked at the top two bits and then converted through an
+  // `int`, so a 64-bit pointer whose top bits happened to be 0 (the normal
+  // case for user-space addresses) passed the check and was then truncated to
+  // 32 bits.  A smi holds 61 bits, which covers any real user-space pointer,
+  // so range-check against the smi limits instead and hand back the whole
+  // value.
+  if (value < (intptr_t)smi_min || value > (intptr_t)smi_max)
     return markSymbol(vmSymbols::smi_conversion_failed());
-  return as_smiOop((int)value);
+  return as_smiOop((smi)value);
 }
 
 PRIM_DECL_2(proxyOopPrimitives::set, oop receiver, oop value) {
@@ -75,27 +80,37 @@ PRIM_DECL_3(proxyOopPrimitives::setHighLow, oop receiver, oop high, oop low) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   if (!low->is_smi())
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
-  unsigned int h = (unsigned int)smiOop(high)->value();
-  unsigned int l = (unsigned int)smiOop(low)->value();
-  unsigned int value = (h << 16) | l;
-  proxyOop(receiver)->set_pointer((void*)(intptr_t)value);
+  // `high` holds everything above the low 16 bits and `low` the bottom 16, so
+  // that the image's `asInteger` -- `high * 65536 + low` -- reassembles a full
+  // native pointer.  The old code accumulated this in an `unsigned int`, which
+  // silently threw away everything above bit 31 and so could only ever build a
+  // 32-bit handle.  On LP64 a native pointer needs 64 bits, of which 48 live
+  // in `high`; a smi holds 61 bits, so both halves still arrive as smis.
+  // `low` is masked because only its bottom 16 bits are part of the encoding.
+  uint64_t h = (uint64_t)(int64_t)smiOop(high)->value();
+  uint64_t l = (uint64_t)(int64_t)smiOop(low)->value();
+  if (h > (UINT64_MAX >> 16) || l > 0xFFFF)
+    return markSymbol(vmSymbols::argument_is_invalid());
+  uintptr_t value = (uintptr_t)((h << 16) | l);
+  proxyOop(receiver)->set_pointer((void*)value);
   return receiver;
 }
 
 PRIM_DECL_1(proxyOopPrimitives::getHigh, oop receiver) {
   PROLOGUE_1("getHigh", receiver);
   ASSERT_RECEIVER;
-  unsigned int value = (intptr_t)proxyOop(receiver)->get_pointer();
-  value = value >> 16;
-  return as_smiOop(value);
+  // Everything above the low 16 bits, i.e. `pointer >> 16`.  Truncating to an
+  // `unsigned int` first (as this used to) lost the top half of a 64-bit
+  // pointer; the shift result is at most 48 bits, well inside a smi.
+  uintptr_t value = (uintptr_t)proxyOop(receiver)->get_pointer();
+  return as_smiOop((smi)((uint64_t)value >> 16));
 }
 
 PRIM_DECL_1(proxyOopPrimitives::getLow, oop receiver) {
   PROLOGUE_1("getLow", receiver);
   ASSERT_RECEIVER;
-  unsigned int value = (intptr_t)proxyOop(receiver)->get_pointer();
-  value &= 0x0000ffff;
-  return as_smiOop(value);
+  uintptr_t value = (uintptr_t)proxyOop(receiver)->get_pointer();
+  return as_smiOop((smi)(value & 0x0000ffff));
 }
 
 PRIM_DECL_1(proxyOopPrimitives::isNull, oop receiver) {
