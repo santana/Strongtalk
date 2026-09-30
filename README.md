@@ -103,6 +103,7 @@ Useful targets:
 - `make pristine` — like `clean`, plus that config's `.d` dependency files
 - `make format-check` — verify sources obey `.clang-format` (CI gate)
 - `make version` — print the version/commit/date/config this build would embed
+- `make package` — build a self-contained, runnable, versioned archive (see [Packaging](#packaging))
 - `make setup-deps` — install the dev tools (clang-format pinned to CI's version)
 - `make install-hooks` — enable the pre-commit hook that runs `make format` on staged files
 - `make BUILD_DIR=/custom/path` — build into a custom directory
@@ -186,6 +187,48 @@ default and logs every token of the `.bst` read-in as it parses it.
 
 `strongtalk.bst` is included at the repository root.
 
+## Packaging
+
+`make package` collects the build into a single archive that is meant to be
+unpacked and run as-is:
+
+```sh
+make package
+#   PKG     strongtalk-0.0.0-dev-719abcf-arm64-macos-clang.tar.gz
+```
+
+It lands in the config's build directory and contains:
+
+| Entry | Purpose |
+| --- | --- |
+| `strongtalk`, `stest` | the executables |
+| `strongtalk.so`, `stest.so` | the VM/test shared libraries (PE DLLs on Windows) |
+| `strongtalk.bst` | the image the VM reads — without it the binaries cannot start |
+| `run.sh` (Unix) / `run.bat` (Windows) | launcher that sets the loader path / working directory |
+| `VERSION.txt` | the full build identity, the same string `-version` reports |
+| `README.txt` | the same, tailored to the platform |
+| `libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll` | Windows only: the MinGW runtime the VM DLL imports |
+
+The archive name embeds the version, the commit and the build config, so a
+downloaded file identifies itself:
+
+```
+strongtalk-<version>-<commit>-<config>.tar.gz     # .zip on Windows
+strongtalk-1.4.0-a1b2c3d-x86_64-linux-gcc.zip
+```
+
+The build date is deliberately **not** in the name: it differs on every run,
+which would both mint a new name per build and make the archive
+non-reproducible. `make version-file-tag` prints just that name component, which
+is how CI names the artifact without ever drifting from the Makefile.
+
+Knobs:
+
+- `make package PACKAGE_FORMAT=tar.gz` — force a tarball even on Windows
+- `make package MINGW_RUNTIME_DLLS=` — skip the MinGW DLLs
+- `PACKAGE_FORMAT=zip` needs one of `zip`, `bsdtar` or `powershell.exe` (the
+  last is normally present on MSYS2, where `zip` is not)
+
 ## Windows runtime status
 
 The Windows x86-64 configuration **builds, links, and runs far enough to read
@@ -219,6 +262,17 @@ CI; the smoke runs are best-effort (`continue-on-error`) and capped with
   the MinGW-w64 toolchain, smoke-tested under Wine.
 - `windows-mingw-native.yml` — Windows (x86-64) built and run natively on
   `windows-latest` under MSYS2/MinGW-W64.
+
+These four run on every push and pull request and upload **nothing**: they are
+the correctness gate. Binaries are published only for tags, by
+
+- `release.yml` — on a `v*` tag push, builds all four configurations, runs
+  `make package` in each, and attaches the four versioned bundles to a GitHub
+  Release. Each bundle is uploaded as a workflow artifact named
+  `strongtalk-<platform>-<version>-<commit>-<config>`.
+
+Tag pushes need a full clone: the semantic version comes from
+`git describe --tags`, so the checkout uses `fetch-depth: 0`.
 
 ## Documentation
 

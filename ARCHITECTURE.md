@@ -701,6 +701,8 @@ make              # build into build/<arch>-<os>-<compiler>
 make vm           # build just the strongtalk VM
 make test         # run C++ test suite (stest -b strongtalk.bst)
 make docs         # regenerate documentation/internal/vm/bytecodes.html
+make version      # print the build identity this build would embed
+make package      # build a self-contained, versioned, runnable archive
 make clean        # remove that config's build directory
 make pristine     # like clean, also removes that config's .d dependency files
 make format-check # verify clang-format conformance
@@ -723,6 +725,39 @@ docker run --rm --platform linux/amd64 \
 
 The Makefile exports the runtime library path (`DYLD_LIBRARY_PATH` on macOS,
 `LD_LIBRARY_PATH` on Linux) for `make test` and `make docs`.
+
+### Build identity
+
+Every build is stamped with the identity of its source so a binary can be
+traced back: the nearest `git tag` (the version), `git describe` output, the
+short commit hash, a UTC build date and the `<arch>-<os>-<compiler>` config
+reach the compiler as `-D` macros via `VERSION_DEFINES` and are reported by
+`strongtalk -version` (`vm/runtime/version.cpp`). Make cannot see inside
+`CXXFLAGS`, so a new commit would otherwise leave stale objects — and a stale
+`-version` — in an existing build directory; a `version.stamp` file therefore
+carries the identity part of the define list and forces a rebuild when it
+changes. `BUILD_DATE` is deliberately excluded from the stamp, so re-running
+`make` does not rebuild the tree. All the inputs (`SEMVER`, `GIT_DESC`,
+`GIT_HASH`, `BUILD_DATE`) are overridable for tarball or reproducible builds,
+and degrade to `unknown` rather than leaking empty strings into the binary.
+
+### Distribution
+
+`make package` stages a config's build into a directory and archives it as
+`strongtalk-<version>-<commit>-<config>.tar.gz` (`.zip` when `OS=mingw`). The
+bundle is meant to be unpacked and run as-is, so besides the executables and
+shared libraries it carries `strongtalk.bst` (without which the VM cannot
+start), the MinGW runtime DLLs the PE DLL imports on Windows, a platform
+launcher that sets the loader path, and `VERSION.txt`/`README.txt`. The build
+date is not part of the name, so the name is stable across rebuilds;
+`make version-file-tag` prints the same component, which is how CI names the
+artifact without drifting from the Makefile.
+
+Release artifacts are produced only by `.github/workflows/release.yml`, on a
+`v*` tag push: it builds all four configurations, packages each, and attaches
+the bundles to the GitHub Release. The per-platform `build-*.yml` workflows
+gate every push and pull request but publish nothing. The tag workflow checks
+out with `fetch-depth: 0`, since the version is derived from the nearest tag.
 
 ---
 
