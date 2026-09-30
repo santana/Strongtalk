@@ -1,0 +1,257 @@
+name: release
+
+# Downloadable binaries are published only for tags. The per-platform CI
+# workflows (build-*.yml) run on every push and PR but upload nothing; this
+# workflow builds the release bundles on a tag push and attaches them to the
+# GitHub Release.
+#
+# Each bundle is a self-contained archive built by `make package`: the
+# executables, the shared libraries, the MinGW runtime DLLs where relevant,
+# strongtalk.bst, a launcher, VERSION.txt and README.txt. It is *not* the loose
+# file list the old per-push artifacts shipped -- that download could not run.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  # Unsigned, first-party actions only (checkout/upload/download); the release
+  # itself is created with the `gh` CLI that ships on the runners.
+  RETENTION_DAYS: '90'
+
+jobs:
+  linux:
+    name: Build on Linux (x86-64)
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 is required, not optional: `make version` derives the
+      # semantic version from the nearest tag (git describe --tags), which a
+      # shallow clone cannot see. Without it every release would be named
+      # 0.0.0-dev.
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build (make all)
+        run: make -j"$(nproc)" all
+
+      - name: Run tests
+        # The VM runtime may hit platform issues; don't fail the release over
+        # it (same policy as build-linux.yml).
+        continue-on-error: true
+        timeout-minutes: 10
+        run: make test
+
+      - name: Package (make package)
+        run: make package
+
+      - name: Read bundle tag
+        id: pkg
+        run: echo "tag=$(make -s version-file-tag)" >> "$GITHUB_OUTPUT"
+
+      - name: Report build identity
+        run: |
+          make version
+          echo "### strongtalk-linux-${{ steps.pkg.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: strongtalk-linux-${{ steps.pkg.outputs.tag }}
+          path: build/*/strongtalk-*.tar.gz
+          if-no-files-found: error
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+  macos:
+    name: Build on macOS (arm64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build (make all)
+        run: make -j"$(sysctl -n hw.ncpu)" all
+
+      - name: Package (make package)
+        run: make package
+
+      - name: Read bundle tag
+        id: pkg
+        run: echo "tag=$(make -s version-file-tag)" >> "$GITHUB_OUTPUT"
+
+      - name: Report build identity
+        run: |
+          make version
+          echo "### strongtalk-macos-${{ steps.pkg.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: strongtalk-macos-${{ steps.pkg.outputs.tag }}
+          path: build/*/strongtalk-*.tar.gz
+          if-no-files-found: error
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+  windows-mingw:
+    name: Build Windows (MinGW cross)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install MinGW toolchain and Wine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-mingw-w64-x86-64 wine64 xvfb
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+
+      - name: Build (make all, OS=mingw)
+        run: make -j"$(nproc)" all OS=mingw CXX=x86_64-w64-mingw32-g++
+
+      - name: Package (make package)
+        run: make package OS=mingw CXX=x86_64-w64-mingw32-g++
+
+      - name: Smoke test the packaged bundle under Wine
+        # Smoke-test what actually ships: unpack the bundle into a scratch
+        # directory and run it from there. This exercises the launcher, the
+        # strongtalk.bst lookup and the MinGW runtime DLLs that the bundle
+        # carries -- i.e. exactly the things a plain build-dir run does not.
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          rm -rf dist-check && mkdir dist-check
+          tar xzf build/*/strongtalk-*.tar.gz -C dist-check 2>/dev/null ||
+            unzip -q build/*/strongtalk-*.zip -d dist-check
+          cd dist-check/*/
+          cat VERSION.txt
+          WINEDEBUG=-all timeout 120 xvfb-run -a /usr/lib/wine/wine64 ./strongtalk.exe -b strongtalk.bst || rc=$?
+          echo "=== strongtalk.exe exit code: ${rc:-0} (124 = timed out) ==="
+
+      - name: Read bundle tag
+        id: pkg
+        run: echo "tag=$(make -s version-file-tag)" >> "$GITHUB_OUTPUT"
+
+      - name: Report build identity
+        run: |
+          make version OS=mingw CXX=x86_64-w64-mingw32-g++
+          echo "### strongtalk-windows-mingw-${{ steps.pkg.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: strongtalk-windows-mingw-${{ steps.pkg.outputs.tag }}
+          path: build/*/strongtalk-*.zip
+          if-no-files-found: error
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+  windows-mingw-native:
+    name: Build Windows (native, MinGW-W64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up MSYS2 with MinGW-W64 GCC
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          # No whole-system upgrade: the action extracts a fresh MSYS2 base
+          # release that already fits our needs.
+          update: false
+
+      - name: Install MinGW-W64 toolchain (resync + retry)
+        # The MINGW64 GCC package is `mingw-w64-x86_64-gcc` (underscore), not
+        # `mingw-w64-x86-64-gcc` (hyphenated) -- the hyphenated name does not
+        # exist in MSYS2, so each install failed with "target not found". Retry
+        # a few times (with `-Syy`) to ride out transient mirror/DB hiccups.
+        run: |
+          set +e
+          ok=0
+          for i in 1 2 3 4 5; do
+            pacman -Syy --noconfirm
+            pacman -S --noconfirm --needed --overwrite '*' mingw-w64-x86_64-gcc make
+            if [ $? -eq 0 ]; then
+              ok=1
+              break
+            fi
+            echo "pacman install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          [ $ok -eq 1 ]
+
+      - name: Build (make all)
+        run: make -j"$(nproc)" all
+
+      - name: Run VM smoke test (strongtalk.exe)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          cd build/x86_64-mingw-gcc
+          timeout 120 ./strongtalk.exe -b ../../strongtalk.bst || rc=$?
+          echo "=== strongtalk.exe exit code: ${rc:-0} (124 = timed out) ==="
+
+      - name: Run tests (make test)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: make test
+
+      - name: Package (make package)
+        run: make package
+
+      - name: Read bundle tag
+        id: pkg
+        run: echo "tag=$(make -s version-file-tag)" >> "$GITHUB_OUTPUT"
+
+      - name: Report build identity
+        run: |
+          make version
+          echo "### strongtalk-windows-native-${{ steps.pkg.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: strongtalk-windows-native-${{ steps.pkg.outputs.tag }}
+          path: build/*/strongtalk-*.zip
+          if-no-files-found: error
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+  publish:
+    name: Publish the GitHub Release
+    needs: [linux, macos, windows-mingw, windows-mingw-native]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Collect bundles
+        uses: actions/download-artifact@v6
+        with:
+          pattern: strongtalk-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create the release and attach the bundles
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          ls -l dist
+          test -n "$(ls dist)"
+          # No checkout in this job, so the notes range is left to
+          # --generate-notes, which compares against the previous release.
+          gh release create "$TAG" dist/* \
+            --verify-tag \
+            --title "Strongtalk $TAG" \
+            --generate-notes

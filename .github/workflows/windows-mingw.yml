@@ -45,12 +45,8 @@ jobs:
           WINEDEBUG=-all timeout 120 xvfb-run -a /usr/lib/wine/wine64 ./strongtalk.exe -b ../../strongtalk.bst || rc=$?
           echo "=== strongtalk.exe exit code: ${rc:-0} (124 = timed out) ==="
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v6
-        with:
-          name: strongtalk-windows-mingw
-          path: |
-            build/x86_64-mingw-gcc/strongtalk.exe
-            build/x86_64-mingw-gcc/stest.exe
-            build/x86_64-mingw-gcc/strongtalk.so
-            build/x86_64-mingw-gcc/stest.so
+      # No artifact upload here: binaries are only published for tags, by
+      # release.yml, which builds the versioned, self-contained bundle
+      # (`make package`) and attaches it to the GitHub Release. Note that the
+      # bundle also carries the MinGW runtime DLLs that the smoke test above
+      # copies into the build dir, so a download can actually run.

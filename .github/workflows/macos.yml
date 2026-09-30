@@ -21,12 +21,6 @@ jobs:
       - name: Build (make all)
         run: make -j"$(sysctl -n hw.ncpu)" all
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v6
-        with:
-          name: strongtalk-macos
-          path: |
-            build/*/strongtalk
-            build/*/stest
-            build/*/strongtalk.so
-            build/*/stest.so
+      # No artifact upload here: binaries are only published for tags, by
+      # release.yml, which builds the versioned, self-contained bundle
+      # (`make package`) and attaches it to the GitHub Release.

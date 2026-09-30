@@ -70,12 +70,6 @@ jobs:
         timeout-minutes: 10
         run: make test
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v6
-        with:
-          name: strongtalk-windows-native
-          path: |
-            build/x86_64-mingw-gcc/strongtalk.exe
-            build/x86_64-mingw-gcc/stest.exe
-            build/x86_64-mingw-gcc/strongtalk.so
-            build/x86_64-mingw-gcc/stest.so
+      # No artifact upload here: binaries are only published for tags, by
+      # release.yml, which builds the versioned, self-contained bundle
+      # (`make package`) and attaches it to the GitHub Release.

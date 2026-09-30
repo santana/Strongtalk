@@ -178,6 +178,134 @@ version:
 	@printf 'Strongtalk %s (%s, %s, %s)\n' \
 	  '$(VERSION_SEMVER)' '$(VERSION_DESCRIBE)' '$(VERSION_DATE)' '$(BUILD_CFG)'
 
+# ---------------------------------------------------------------------------
+# Packaging: a self-contained, runnable bundle.
+# ---------------------------------------------------------------------------
+# The archive name embeds the build identity, so a downloaded file says what it
+# is without being unpacked. BUILD_DATE is deliberately left out of the name: it
+# differs on every run, which would mint a new name per build and make the
+# bundle non-reproducible.
+#
+# The tag is sanitized because GitHub rejects artifact and release-asset names
+# containing any of  " : < > | * ? \ /  and because SEMVER/GIT_HASH may be
+# overridden to anything.
+VERSION_FILE_TAG := $(shell printf '%s' '$(VERSION_SEMVER)-$(VERSION_HASH)-$(BUILD_CFG)' | tr -c 'A-Za-z0-9._+-' '-')
+
+# CI reads this to name the artifact and the release asset, so the name the
+# workflow advertises can never drift from the name `make package` writes.
+version-file-tag:
+	@printf '%s\n' '$(VERSION_FILE_TAG)'
+
+# Windows gets a .zip (what a Windows user expects and unpacks); everywhere
+# else .tar.gz. Override PACKAGE_FORMAT=tar.gz to force a tarball on Windows.
+PACKAGE_FORMAT ?= $(if $(filter mingw,$(OS)),zip,tar.gz)
+PACKAGE_EXT    := $(if $(filter zip,$(PACKAGE_FORMAT)),zip,tar.gz)
+PACKAGE_BASE   := strongtalk-$(VERSION_FILE_TAG)
+PACKAGE        := $(BUILD_DIR)/$(PACKAGE_BASE).$(PACKAGE_EXT)
+PACKAGE_STAGE  := $(BUILD_DIR)/package/$(PACKAGE_BASE)
+
+# The MinGW runtime DLLs the PE DLL needs: objdump shows strongtalk.so importing
+# libgcc_s_seh-1.dll and libstdc++-6.dll, and -lpthread pulls in
+# libwinpthread-1.dll. Locating them here keeps the logic out of the CI
+# workflow, where it was duplicated -- and where it was copied into the build
+# directory for the Wine smoke test but left out of the uploaded artifact, so
+# the download could not run. Override with `make package MINGW_RUNTIME_DLLS=`
+# to ship without them.
+MINGW_RUNTIME_DLLS ?= libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll
+
+.PHONY: package
+package: all
+	$(SHORT) PKG  $(PACKAGE_BASE).$(PACKAGE_EXT)
+	$(Q)rm -rf $(PACKAGE_STAGE) && mkdir -p $(PACKAGE_STAGE)
+	$(Q)cp -p $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) $(BUILD_DIR)/stest$(EXE_SUFFIX) \
+	    $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so $(PACKAGE_STAGE)/
+	$(Q)cp -p $(ROOT_DIR)/strongtalk.bst $(PACKAGE_STAGE)/
+ifneq ($(strip $(MINGW_RUNTIME_DLLS)),)
+	$(Q)if [ "$(OS)" = mingw ]; then \
+	   for dll in $(MINGW_RUNTIME_DLLS); do \
+	     p=`$(CXX) -print-file-name=$$dll`; \
+	     case $$p in \
+	       /*|[A-Za-z]:/*) cp -p "$$p" $(PACKAGE_STAGE)/ ;; \
+	       *) echo "error: cannot locate $$dll, needed to run the Windows binaries." >&2; \
+	          echo "       install it, or skip with 'make package MINGW_RUNTIME_DLLS='" >&2; \
+	          exit 1 ;; \
+	     esac; \
+	   done; \
+	 fi
+endif
+	$(Q)printf '%s\n' \
+	  'Strongtalk $(VERSION_SEMVER)' \
+	  '' \
+	  '  version   $(VERSION_SEMVER)' \
+	  '  commit    $(VERSION_HASH) ($(VERSION_DESCRIBE))' \
+	  '  built     $(VERSION_DATE)' \
+	  '  config    $(BUILD_CFG)' \
+	  '' \
+	  "Report with: ./strongtalk$(EXE_SUFFIX) -version" > $(PACKAGE_STAGE)/VERSION.txt
+ifeq ($(OS),mingw)
+	$(Q)printf '%s\r\n' \
+	  '@echo off' \
+	  'rem Run the Strongtalk VM from this directory.' \
+	  'cd /d "%~dp0"' \
+	  'strongtalk.exe -b strongtalk.bst %*' > $(PACKAGE_STAGE)/run.bat
+	$(Q)printf '%s\n' \
+	  '#!/bin/sh' \
+	  '# Convenience launcher for use under MSYS2/Cygwin. Native Windows users want run.bat.' \
+	  'cd "$$(dirname "$$0")" || exit 1' \
+	  'exec ./strongtalk.exe -b strongtalk.bst "$$@"' > $(PACKAGE_STAGE)/run.sh
+	$(Q)printf '%s\n' \
+	  'Strongtalk $(VERSION_SEMVER) -- Windows (x86-64)' \
+	  '' \
+	  '  Run the VM:      run.bat            (or: strongtalk.exe -b strongtalk.bst)' \
+	  '  Print build id:  strongtalk.exe -version' \
+	  '  Run the tests:   stest.exe -b strongtalk.bst' \
+	  '' \
+	  'The PE DLLs are named strongtalk.so / stest.so because that is what the' \
+	  'loaders look for; they are ordinary Windows DLLs, not ELF shared objects.' \
+	  '' \
+	  'Also here: strongtalk.bst (the image the VM reads), VERSION.txt (build' \
+	  'identity) and the MinGW runtime DLLs the VM DLL imports.' \
+	  '' \
+	  'Unpack the whole archive: the DLLs must stay next to the executables.' > $(PACKAGE_STAGE)/README.txt
+else
+	$(Q)printf '%s\n' \
+	  '#!/bin/sh' \
+	  '# Run the Strongtalk VM from this directory (sets the loader path for' \
+	  '# strongtalk.so / stest.so, which the executables need at run time).' \
+	  'cd "$$(dirname "$$0")" || exit 1' \
+	  'LD_LIBRARY_PATH=. DYLD_LIBRARY_PATH=. exec ./strongtalk "$$@"' > $(PACKAGE_STAGE)/run.sh
+	$(Q)chmod +x $(PACKAGE_STAGE)/run.sh
+	$(Q)printf '%s\n' \
+	  'Strongtalk $(VERSION_SEMVER) -- $(BUILD_CFG)' \
+	  '' \
+	  '  Run the VM:      ./run.sh           (or: LD_LIBRARY_PATH=. ./strongtalk -b strongtalk.bst)' \
+	  '  Print build id:  ./strongtalk -version' \
+	  '  Run the tests:   LD_LIBRARY_PATH=. ./stest -b strongtalk.bst' \
+	  '' \
+	  'The VM needs strongtalk.so and stest.so next to the executables; run.sh' \
+	  'sets the loader path for you. On macOS that variable is DYLD_LIBRARY_PATH.' \
+	  '' \
+	  'Also here: strongtalk.bst (the image the VM reads) and VERSION.txt (the' \
+	  'full build identity).' > $(PACKAGE_STAGE)/README.txt
+endif
+	$(Q)rm -f $(BUILD_DIR)/$(PACKAGE_BASE).tar.gz
+	$(Q)if [ "$(PACKAGE_EXT)" != zip ]; then \
+	   tar -czf $(PACKAGE) -C $(BUILD_DIR)/package $(PACKAGE_BASE); \
+	 elif command -v zip >/dev/null 2>&1; then \
+	   (cd $(BUILD_DIR)/package && zip -q -r $(PACKAGE) $(PACKAGE_BASE)); \
+	 elif command -v bsdtar >/dev/null 2>&1; then \
+	   bsdtar --format zip -cf $(PACKAGE) -C $(BUILD_DIR)/package $(PACKAGE_BASE); \
+	 elif command -v powershell.exe >/dev/null 2>&1; then \
+	   (cd $(BUILD_DIR)/package && powershell.exe -NoProfile -Command \
+	     "Compress-Archive -Path '$(PACKAGE_BASE)' -DestinationPath '$(PACKAGE_BASE).zip' -Force"); \
+	 else \
+	   echo "error: PACKAGE_FORMAT=zip needs one of zip, bsdtar or powershell.exe." >&2; \
+	   echo "       install one, or run 'make package PACKAGE_FORMAT=tar.gz'." >&2; \
+	   exit 1; \
+	 fi
+	$(Q)rm -rf $(BUILD_DIR)/package
+	$(Q)echo "  archive: $(PACKAGE) ($$(du -h $(PACKAGE) | cut -f1))"
+
 # Select the assembler/mapping backend by the *target* architecture.
 ifeq ($(ARCH),x86_64)
 TARGET_ARCH_X86_64 = 1
@@ -258,7 +386,7 @@ stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
-.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs version
+.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs version package version-file-tag
 .DEFAULT_GOAL := all
 all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 
