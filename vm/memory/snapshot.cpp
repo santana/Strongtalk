@@ -45,16 +45,16 @@ void SnapshotDesc::write_sizes() {}
 static const char* revision_format = "Delta snapshot revision: %d.%d\n";
 
 void SnapshotDesc::read_revision() {
-  fprintf(file, revision_format, Universe::major_version(), Universe::snapshot_version());
+  fprintf(file, revision_format, major_revision(), revision());
 }
 
 void SnapshotDesc::write_revision() {
-  int major, snap;
-  if (fscanf(file, revision_format, &major, &snap) != 2)
+  int major, rev;
+  if (fscanf(file, revision_format, &major, &rev) != 2)
     error("reading revision");
-  if (Universe::major_version() != major)
+  if (major_revision() != major)
     error("major revision number conflict");
-  if (Universe::snapshot_version() != snap)
+  if (revision() != rev)
     error("snapshot revision number conflict");
 }
 

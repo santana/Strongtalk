@@ -58,6 +58,19 @@ private:
   void write_zone();
 
 public:
+  // On-disk snapshot format revision, written into the file header as
+  //   "Delta snapshot revision: <major_revision>.<revision>"
+  // and checked when reading a snapshot back.
+  //   major_revision() -- bump when the layout changes incompatibly, and
+  //                      reset revision() to 0 at the same time
+  //   revision()       -- bump whenever snapshots written by earlier revisions
+  //                      become unreadable
+  // This is deliberately independent of the build identity reported by
+  // Version (see runtime/version.hpp): a VM must still accept a snapshot
+  // written by an adjacent commit, so this cannot be the commit or the tag.
+  static int major_revision() { return 1; }
+  static int revision() { return 3; }
+
   void read_from(char* name);
   void write_on(char* name);
 

@@ -148,15 +148,6 @@ public:
   static objArrayOop objectIDTable() { return _objectIDTable; }
   static void set_objectIDTable(objArrayOop array) { _objectIDTable = array; }
 
-  // Version numbers
-  //   increment snapshot_version whenever old snapshots will break; reset
-  //   it to zero when changing the minor or major version
-  static int major_version() { return 1; }
-  static int minor_version() { return 1; }
-  //static int minor_version()    { return 0; }
-  static char* beta_version() { return "alpha5"; }
-  static int snapshot_version() { return 3; }
-
   // Check root is not badOop
   static void check_root(oop* p);
 
