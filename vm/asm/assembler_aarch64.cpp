@@ -2239,13 +2239,19 @@ void AArch64MacroAssembler::fwait() {
 // with a non-16-byte-aligned sp (EXC_ARM_SP_ALIGN), so an 8-byte SP push from
 // an aligned sp -- or any SP op from an 8-misaligned sp -- is illegal. With
 // 16-byte slots sp stays 16-byte aligned throughout the call.
+// The 16-byte slot keeps sp 16-byte aligned, but the return address must sit at
+// [sp_before_call - oopSize] so that sp_before_call[-1] finds it. That is where
+// an x86-64 call pushes it, and both consumers of the last_Delta_frame rely on
+// it: frame(sp, fp) derives its pc from sp[-1], and call_delta's _nlr_test reads
+// Address(last_Delta_sp, -oopSize) for the first C frame's return address. Keep
+// the value in the upper word of the slot and the lower word zero.
 #define PRESERVE_LR_BEFORE_CALL()                                                                                      \
   sub(x16, sp, 16);                                                                                                    \
-  str(x30, Address(x16));                                                                                              \
+  str(x30, Address(x16, oopSize));                                                                                     \
   sub(sp, sp, 16)
 #define RESTORE_LR_AFTER_CALL()                                                                                        \
   mov(x16, sp);                                                                                                        \
-  ldr(x30, Address(x16));                                                                                              \
+  ldr(x30, Address(x16, oopSize));                                                                                     \
   add(sp, sp, 16)
 
 void AArch64MacroAssembler::call_C(Label& L) {

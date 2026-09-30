@@ -29,23 +29,30 @@ ported and exercising the full JIT pipeline (compiler, scope-description
 recording, inline caches, jumps, deoptimization, and recompilation): the VM
 boots, the image read-in completes fully, JIT-compiled frames install and run,
 and recompile/deopt cycles execute. The earlier `findNMethod` "not in zone"
-assert (`zone.cpp:622`, once the active blocker) is resolved; the live blocker
-is a deterministic recompile A↔B ping-pong between two fixed nmethods during
-boot init (`unwindprotect`/`#value` recursion ending in `Fatal: Stack overflow
-in scheduler`), and a plain `./strongtalk -b` smoke run stops earlier at a
-`SIGSEGV` in `icNormalLookup → CompiledIC::selector →
-nmethod::containingPcDesc`. Both are pre-existing (reproduced on pristine
-`master`) — details in `AArch64_PORT_NOTES.md`.
+assert (`zone.cpp:622`, once the active blocker) is resolved. The live blocker
+is **not** in the VM: it is the frozen 32-bit `strongtalk.bst` image doing
+`(Alien new: 4) unsignedLongAt: 1 put: <64-bit dlopen handle>` — an 8-byte
+store into a 4-byte alien — inside `Alien>>ensureLoaded:`, reached from
+`ObjectiveCAlien class>>initializeSelectors` during
+`SystemInitializer class>>runNonCriticalClassInitializers`. The correctly-fixed
+alien bounds check rejects it, so `libobjc.dylib` never loads. Because the
+error surfaces while the scheduler is the active process,
+`processOopPrimitives::stop` is a no-op and the image's own error handler
+re-signals every 21 frames until `Fatal: Stack overflow in scheduler` — a
+symptom, not the cause. In-repo `Alien.dlt` is already 64-bit-correct
+(`(Alien new: 8)`), but the image cannot be rebuilt here; the same image defect
+is why x86-64 dies in the library load. Details in `AArch64_PORT_NOTES.md` and
+`WIDTH_AUDIT.md` (W12/W13).
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | loads the image, then spins in the interpreter bootstrap loop (repeated `error:` re-raise in `runBaseClassInitializers`); no JIT code yet |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker: a deterministic `unwindprotect`/`#value` recompile ping-pong during boot init (`Fatal: Stack overflow in scheduler`); plain boot smoke stops at an `icNormalLookup`/`CompiledIC::selector` SIGSEGV — both pre-existing, see `AArch64_PORT_NOTES.md` |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker is the frozen image's 4-byte `Alien` in `Alien>>ensureLoaded:` (above), surfacing as `Fatal: Stack overflow in scheduler` — see `AArch64_PORT_NOTES.md` |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows) for status |
 
-Getting the VM running end-to-end on Apple Silicon requires resolving the
-remaining boot blocker (the `unwindprotect`/`#value` recompile ping-pong; see
-`AArch64_PORT_NOTES.md`). Every configuration is
+Getting the VM running end-to-end on Apple Silicon requires a 64-bit-correct
+image so that `Alien>>ensureLoaded:` allocates an 8-byte alien and the
+Objective-C bridge can load (see `AArch64_PORT_NOTES.md`). Every configuration is
 verified by building from the root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
 build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw

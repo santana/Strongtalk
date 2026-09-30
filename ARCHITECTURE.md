@@ -139,6 +139,22 @@ fp[ 3]: second argument
 ...
 ```
 
+**`call_C` return-address slot (both backends).** `call_C` publishes the calling
+Delta frame via `last_Delta_fp` / `last_Delta_sp` / `last_Delta_pc` *before*
+making the call, and the return address must therefore end up at
+`last_Delta_sp[-1]` — that is, one `oopSize` below the published sp. Two
+consumers depend on that exact placement: `frame::frame(sp, fp)` derives a
+reconstructed frame's `_pc` from `sp[-1]`, and `call_delta`'s `_nlr_test` reads
+`Address(last_Delta_sp, -oopSize)` to find the first C frame's return address
+so an NLR can redirect it. On x86-64 this falls out of a real `call` (8-byte
+push). AArch64 has no push — the address is in `x30` and the backend reserves a
+full 16-byte slot for sp alignment — so it must store `x30` in the **upper**
+word of that slot (`Address(x16, oopSize)`), leaving the lower word zero, and
+`RESTORE_LR_AFTER_CALL` must read it back from the same offset. Putting it at
+the slot base instead yields a frame whose `pc` is the slot's high word, which
+breaks `frame::sender()`'s entry-frame branch (it uses the 2-arg `frame`
+constructor, so no explicit pc is supplied).
+
 **Bytecode set** (256 codes, version 2). Every opcode is a 1-byte `def()` call
 in `vm/interpreter/bytecodes.cpp` carrying an operand *format* and one of 14
 *code types* (local/instVar/classVar/global/context access, closure/context
