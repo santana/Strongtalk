@@ -41,19 +41,19 @@ error surfaces while the scheduler is the active process,
 re-signals every 21 frames until `Fatal: Stack overflow in scheduler` — a
 symptom, not the cause. In-repo `Alien.dlt` is already 64-bit-correct
 (`(Alien new: 8)`), but the image cannot be rebuilt here; the same image defect
-is why x86-64 dies in the library load. Details in `AArch64_PORT_NOTES.md` and
-`WIDTH_AUDIT.md` (W12/W13).
+is why x86-64 dies in the library load.
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
-| Linux x86-64 (native)     | yes   | loads the image, then spins in the interpreter bootstrap loop (repeated `error:` re-raise in `runBaseClassInitializers`); no JIT code yet |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker is the frozen image's 4-byte `Alien` in `Alien>>ensureLoaded:` (above), surfacing as `Fatal: Stack overflow in scheduler` — see `AArch64_PORT_NOTES.md` |
-| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows) for status |
+| Linux x86-64 (native)     | yes   | reads the image, then SIGSEGVs in the same printf/re-raise path as the x86-64 `printf` defect |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker is the frozen image's 4-byte `Alien` in `Alien>>ensureLoaded:` (above), surfacing as `Fatal: Stack overflow in scheduler` |
+| macOS x86-64 (forced)     | yes   | reads the image, then SIGBUSes inside `__v2printf` while formatting the re-raise error |
+| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows-runtime-status) for status |
 
 Getting the VM running end-to-end on Apple Silicon requires a 64-bit-correct
 image so that `Alien>>ensureLoaded:` allocates an 8-byte alien and the
-Objective-C bridge can load (see `AArch64_PORT_NOTES.md`). Every configuration is
-verified by building from the root `Makefile`: the native arm64 config, a
+Objective-C bridge can load. Every configuration is verified by building from
+the root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
 build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw
 CXX=x86_64-w64-mingw32-g++`, in a Docker container with MinGW-w64). All four
@@ -63,7 +63,7 @@ local in `debug_prims.cpp`); the warnings that remain are all pre-existing and
 outside current changes — `-Wundefined-inline` reports from
 `oop.hpp`/`generation.hpp` on the POSIX configs, plus on MinGW the same six
 and `proxyOop.cpp` (`-Wint-to-pointer-cast`) and `proxy_prims.cpp`
-(`-Wshift-count-overflow`), both tracked in `WIDTH_AUDIT.md`.
+(`-Wshift-count-overflow`).
 
 ## Repository layout
 

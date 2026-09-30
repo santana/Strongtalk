@@ -595,12 +595,27 @@ Repo-root developer docs:
 
 ## 6. Platform Support
 
+Every configuration currently loads the image and then hits the *same* single
+root cause, so the runtime column differs only in how the failure surfaces. The
+frozen `strongtalk.bst` image was built 32-bit and runs
+`(Alien new: 4) unsignedLongAt: 1 put: <64-bit dlopen handle>` inside
+`Alien>>ensureLoaded:`, an 8-byte store into a 4-byte alien, reached from
+`ObjectiveCAlien class>>initializeSelectors`. The 64-bit-correct alien bounds
+check rejects the write, so `libobjc` never loads. The image's own
+`Error>>defaultAction` then re-signals every 21 frames, and each config dies in
+the way its own code path allows:
+
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Boots, loads image; hits the `zone.cpp:622` `methodHeap->contains()` assert (last blocker) |
-| macOS x86-64 (forced) | Yes    | Boots startup; dies at the first JIT compile (`Array::receiver:selector:arguments:`) with the `jumpTable` E9-rel32 "more than 2GB apart" fatal (known P1/P2 boot blocker) |
-| Linux x86-64 (Docker) | Yes    | Boots, loads image; `stest` spins in `os::suspend_thread`/`os_dump_context` (wait-stub) |
+| macOS arm64 (native)  | Yes    | Boots, loads image, runs JIT-compiled code (recompile/deopt cycles execute). Re-raise loop exhausts the scheduler's soft stack limit -> `Fatal: Stack overflow in scheduler`. With a large `ThreadStackSize` it survives the loop, then hits a separate post-scavenge interpreter crash (dispatch into a handler with a garbage bytecode pointer) |
+| macOS x86-64 (forced) | Yes    | Reads the image, then SIGBUS inside `__v2printf` while formatting the re-raise error |
+| Linux x86-64 (Docker) | Yes    | Reads the image, then SIGSEGV in the same printf/re-raise path (constant `RIP`, `RSI: 0`) |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call |
+
+In-repo `StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the
+image itself cannot be regenerated in this tree, so the fix is a bytecode patch
+or a rebuilt image. See [README.md](README.md#status) for the same status from
+the build/run perspective.
 
 ### Platform Abstraction
 
