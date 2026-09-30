@@ -23,6 +23,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "runtime/arguments.hpp"
 #include "runtime/debug.hpp"
+#include "runtime/version.hpp"
 #include "topIncludes/types.hpp"
 
 #include <ctype.h>
@@ -145,6 +146,11 @@ void parse_arguments(int argc, char* argv[]) {
   for (int index = parse_files ? 1 : 2; index < argc; index++) {
     if (strcmp(argv[index], "-?") == 0) {
       debugFlags::printFlags();
+      exit(0);
+    } else if (strcmp(argv[index], "-version") == 0 || strcmp(argv[index], "--version") == 0) {
+      // Print to stdout directly: the ostream globals are not up yet at this
+      // point (parse_arguments runs before init_globals).
+      printf("Strongtalk %s\n", Version::version_string());
       exit(0);
     } else if (strcmp(argv[index], "-credits") == 0) {
       print_credits();

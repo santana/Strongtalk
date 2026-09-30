@@ -36,7 +36,7 @@ DEPFLAGS        = -MT $@ -MMD -MP -MF $(BUILD_DIR)/obj/$*.d
 # std::is_same_v / if constexpr in growableArray.hpp
 CXXFLAGS	= -std=gnu++17 -fno-rtti -Wno-write-strings -fno-operator-names \
 		  -O0 -fPIC -g \
-		  $(ARCH_FLAGS) $(DEFINES) $(DEPFLAGS) $(INCLUDES)
+		  $(ARCH_FLAGS) $(DEFINES) $(VERSION_DEFINES) $(DEPFLAGS) $(INCLUDES)
 
 UNAME := $(shell uname -s)
 # Windows/MSYS2 exports OS=Windows_NT in the environment; GNU make would
@@ -107,6 +107,76 @@ COMPILER	:= $(shell echo "$(COMPILER_VERSION)" | grep -qi clang && echo clang ||
 # Out-of-tree build directory; mkdir in case it does not exist yet.
 BUILD_DIR	?= $(ROOT_DIR)/build/$(ARCH)-$(OS)-$(COMPILER)
 $(shell mkdir -p $(BUILD_DIR))
+
+# Build/version identification, embedded into the binary so `./strongtalk
+# --version` can report exactly what it was built from.
+#
+#   SEMVER      -- version of the nearest tag, "v" stripped (e.g. 1.2.3)
+#   GIT_DESC    -- `git describe` output: "v1.2.3", "v1.2.3-42-g9f3a7b1-dirty"
+#   GIT_HASH    -- short commit hash
+#   BUILD_DATE  -- ISO-8601 UTC timestamp
+#   BUILD_CFG   -- the (arch-os-compiler) build-configuration triple
+#
+# All are overridable (command line or environment) for builds that must not
+# depend on the checkout: a source tarball, a distro build, or a reproducible
+# CI build that pins BUILD_DATE. Empty values degrade to the "unknown"/dev
+# stubs instead of leaking an empty string into the binary.
+GIT_DESC	?= $(shell git -C $(ROOT_DIR) describe --tags --always --dirty 2>/dev/null)
+GIT_HASH	?= $(shell git -C $(ROOT_DIR) rev-parse --short HEAD 2>/dev/null)
+SEMVER		?= $(shell git -C $(ROOT_DIR) describe --tags --abbrev=0 2>/dev/null | sed -e 's/^v//')
+BUILD_DATE	?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+BUILD_CFG	?= $(ARCH)-$(OS)-$(COMPILER)
+
+# A committed VERSION file covers tarball/vendored builds, where there is no
+# git history to describe. Read lazily: it is only consulted when needed.
+VERSION_FILE	:= $(strip $(shell cat $(ROOT_DIR)/VERSION 2>/dev/null))
+
+# The defaults are applied here, at the point of use, rather than by assigning
+# to the variables above: a command-line override cannot be reassigned by a
+# makefile rule, so `make GIT_DESC=` would otherwise leak an empty string.
+# The values are restricted to [A-Za-z0-9._+-] and ISO-8601 dates, so the only
+# character needing care when passing them through -D is the quoting.
+# (Rebuild trigger for a change here: see VERSION_STAMP below.)
+VERSION_SEMVER		= $(or $(strip $(SEMVER)),$(VERSION_FILE),0.0.0-dev)
+VERSION_HASH		= $(or $(strip $(GIT_HASH)),unknown)
+VERSION_DESCRIBE	= $(or $(strip $(GIT_DESC)),$(VERSION_HASH))
+VERSION_DATE		= $(or $(strip $(BUILD_DATE)),unknown)
+
+VERSION_DEFINES = \
+  -DSTRONGTALK_VERSION=\"$(VERSION_SEMVER)\" \
+  -DSTRONGTALK_GIT_HASH=\"$(VERSION_HASH)\" \
+  -DSTRONGTALK_GIT_DESCRIBE=\"$(VERSION_DESCRIBE)\" \
+  -DSTRONGTALK_BUILD_DATE=\"$(VERSION_DATE)\" \
+  -DSTRONGTALK_BUILD_CONFIG=\"$(BUILD_CFG)\"
+
+# make cannot see changes inside CXXFLAGS, so a new commit would otherwise
+# leave stale objects -- and a stale `-version` -- in an existing build dir.
+# The stamp's *content* is the identity part of the define list, and it is only
+# rewritten when that content really changes, so a rebuild is triggered by
+# committing/tagging, not by re-running make.
+#
+# BUILD_DATE is deliberately *not* part of the stamp: it differs on every
+# invocation, which would rebuild the whole tree each time. Instead it reports
+# when the objects being linked were compiled -- which stays coherent because
+# everything in a binary is rebuilt together whenever the identity changes.
+# (A pinned BUILD_DATE is honored all the same: a CI build starts from a fresh
+# build directory.)
+VERSION_STAMP := $(BUILD_DIR)/version.stamp
+VERSION_STAMP_CONTENT = $(VERSION_SEMVER) $(VERSION_HASH) $(VERSION_DESCRIBE) $(BUILD_CFG)
+
+.PHONY: force-version-stamp
+force-version-stamp:
+
+$(VERSION_STAMP): force-version-stamp
+	$(SHORT) VER  version.stamp
+	$(Q)mkdir -p $(@D)
+	$(Q)printf '%s\n' '$(VERSION_STAMP_CONTENT)' > $@.tmp
+	$(Q)if cmp -s $@.tmp $@; then rm -f $@.tmp; else mv $@.tmp $@; fi
+
+# `make version` prints what the binary reports, without building it.
+version:
+	@printf 'Strongtalk %s (%s, %s, %s)\n' \
+	  '$(VERSION_SEMVER)' '$(VERSION_DESCRIBE)' '$(VERSION_DATE)' '$(BUILD_CFG)'
 
 # Select the assembler/mapping backend by the *target* architecture.
 ifeq ($(ARCH),x86_64)
@@ -188,7 +258,7 @@ stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
-.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs
+.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs version
 .DEFAULT_GOAL := all
 all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 
@@ -329,7 +399,9 @@ $(CAPSTONE_ARCHIVE): $(CAPSTONE_OBJS)
 	$(Q)rm -f $@ && $(AR) rcs $@ $^
 
 # Compile rule: each object mirrors a source under $(BUILD_DIR)/obj.
-$(ALL_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.cpp
+# The version stamp is an extra prerequisite so that a change of the embedded
+# version/commit recompiles (see the VERSION_STAMP comment above).
+$(ALL_OBJS): $(BUILD_DIR)/obj/%.o: $(ROOT_DIR)/%.cpp $(VERSION_STAMP)
 	$(SHORT) CXX $(subst $(ROOT_DIR)/,,$<)
 	$(Q)$(CXX) $(CXXFLAGS) -c $< -o $@
 

@@ -102,6 +102,7 @@ Useful targets:
 - `make clean` — remove that config's build directory
 - `make pristine` — like `clean`, plus that config's `.d` dependency files
 - `make format-check` — verify sources obey `.clang-format` (CI gate)
+- `make version` — print the version/commit/date/config this build would embed
 - `make setup-deps` — install the dev tools (clang-format pinned to CI's version)
 - `make install-hooks` — enable the pre-commit hook that runs `make format` on staged files
 - `make BUILD_DIR=/custom/path` — build into a custom directory
@@ -147,6 +148,37 @@ DYLD_LIBRARY_PATH=. ./strongtalk   # needs strongtalk.bst at the repo root
 ```
 
 On Linux use `LD_LIBRARY_PATH` instead of `DYLD_LIBRARY_PATH`.
+
+## Version reporting
+
+Every build stamps its identity into the binary, so it can be traced back to
+the exact source it came from:
+
+```sh
+$ ./strongtalk -version          # also: --version
+Strongtalk 0.0.0-dev (v0.9.0-42-g9f3a7b1-dirty, 2026-09-30T11:00:56Z, arm64-macos-clang)
+```
+
+The parts are:
+
+| Part | Source |
+| --- | --- |
+| version | the nearest `git tag`, `v` stripped (`0.0.0-dev` before the first tag) |
+| describe | `git describe --tags --always --dirty` — `-N-gHASH` when ahead of a tag, `-dirty` with uncommitted changes |
+| date | build timestamp, ISO-8601 UTC |
+| config | the `<arch>-<os>-<compiler>` build directory triple |
+
+`make version` prints the same line without building. The build system reads
+git directly, so a build from a source tarball — or from a container image
+without a `git` binary, such as `strongtalk:linux-tools` — reports only the
+parts it can determine (the hash/describe is then omitted rather than faked).
+A committed `VERSION` file in the repository root supplies the version in that
+case; anything can be overridden explicitly:
+
+```sh
+make SEMVER=1.4.0 GIT_DESC=v1.4.0 GIT_HASH=abc1234   # pin the identity
+make BUILD_DATE=2026-01-01T00:00:00Z                 # reproducible builds
+```
 
 Debug flags are toggled on the command line with `+Name`/`-Name` (for example
 `+TraceBootstrap` enables the read-in trace). `TraceBootstrap` is off by

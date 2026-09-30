@@ -46,6 +46,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/delta.hpp"
 #include "runtime/disclaimer.hpp"
 #include "runtime/process.hpp"
+#include "runtime/version.hpp"
 #include "topIncludes/std_includes.hpp"
 #include "utilities/objectIDTable.hpp"
 #include "memory/generation.inline.hpp"
@@ -62,19 +63,10 @@ bool Universe::_scavenge_blocked = false;
 void Universe::genesis() {
   ResourceMark rm;
 
-  /*
-  mystd->print_cr("Delta version %d.%d%s (%s %s).",
-                Universe::major_version(), Universe::minor_version(), Universe::beta_version(), 
-		__DATE__, __TIME__);
-  mystd->print_cr("Copyright 1994 - 1996, LongView Technologies L.L.C. All rights reserved.");
-  mystd->print_cr("(use argument -? for a list of flags)");
-  */
-
   mystd->cr();
   Disclaimer::print_disclaimer();
-  mystd->print_cr("Version %d.%d (build %s %s)", Universe::major_version(), Universe::minor_version(), __DATE__,
-                  __TIME__);
-  mystd->print_cr("(use argument -? for a list of flags)");
+  Version::print_version();
+  mystd->print_cr("(use argument -? for a list of flags, -version for build details)");
   mystd->cr();
 
   if (UseNewBackend | TryNewBackend)
