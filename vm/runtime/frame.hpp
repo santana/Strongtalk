@@ -73,7 +73,7 @@ const int frame_sender_sp_offset = 2;
 const int frame_real_sender_sp_offset = -2; // For deoptimized frames only
 const int frame_frame_array_offset = -1; // For deoptimized frames only
 
-const int interpreted_frame_float_magic_offset = frame_temp_offset - 1;
+const int interpreted_frame_float_magic_offset = frame_temp_offset - oopsPerSlot;
 const int compiled_frame_magic_oop_offset = -1;
 const int minimum_size_for_deoptimized_frame = 4;
 

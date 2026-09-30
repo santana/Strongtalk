@@ -401,16 +401,12 @@ bool frame::oop_iterate_interpreted_float_frame(OopClosure* blk) {
   if (!m->has_float_temporaries())
     return false;
 
-  // Iterator from stack pointer to end of float section
-  oop* end = (oop*)addr_at(m->float_section_start_offset() - m->float_section_size());
-  for (oop* p = sp(); p <= end; p++) {
-    blk->do_oop(p);
-  }
-
-  // Skip the float section and magic_value
-
-  // Iterate from just before the float section to the first temp
-  for (oop* q = (oop*)addr_at(m->float_section_start_offset() + 2); q <= temp_addr(0); q++) {
+  // Everything at or below the float section (declared float temporaries plus
+  // the float expression stack reserved by the float_allocate bytecode) is raw
+  // float data that the interpreter never initializes, so it must not be
+  // scanned as oops. Only the initialized stack temporaries above the float
+  // section - [float_section_start .. temp0] - hold oops, one per delta slot.
+  for (oop* q = (oop*)addr_at(m->float_section_start_offset()); q <= temp_addr(0); q += oopsPerSlot) {
     blk->do_oop(q);
   }
 
@@ -480,16 +476,10 @@ bool frame::follow_roots_interpreted_float_frame() {
   if (!m->has_float_temporaries())
     return false;
 
-  // Iterator from stack pointer to end of float section
-  oop* end = (oop*)addr_at(m->float_section_start_offset() - m->float_section_size());
-  for (oop* p = sp(); p <= end; p++) {
-    MarkSweep::follow_root(p);
-  }
-
-  // Skip the float section and magic_value
-
-  // Iterate from just before the float section to the first temp
-  for (oop* q = (oop*)addr_at(m->float_section_start_offset() + 2); q <= temp_addr(0); q++) {
+  // See oop_iterate_interpreted_float_frame: the float region holds raw double
+  // data never initialized by the interpreter and must be skipped. The
+  // initialized stack temporaries are one oop per delta slot.
+  for (oop* q = (oop*)addr_at(m->float_section_start_offset()); q <= temp_addr(0); q += oopsPerSlot) {
     MarkSweep::follow_root(q);
   }
 

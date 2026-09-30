@@ -190,10 +190,16 @@ public:
   int float_expression_stack_size() const { return has_float_temporaries() ? *codes(4) : 0; }
   int total_number_of_floats() const { return number_of_float_temporaries() + float_expression_stack_size(); }
 
-  // Stack frame layout if there's a float section (offset & size in oops relative to ebp)
+  // Stack frame layout if there's a float section (offset & size in oops relative to ebp).
+  // Every delta stack slot is oopsPerSlot oops (1 on x86-64, 2 on AArch64), so the
+  // layout below has to scale by oopsPerSlot. Each float temporary occupies two slots
+  // (a double plus padding, see the float_allocate interpreter code); the float
+  // expression stack is a flat run of floatSize bytes.
   int float_offset(int float_no) const;
-  int float_section_start_offset() const { return frame_temp_offset - number_of_stack_temporaries(); }
-  int float_section_size() const { return total_number_of_floats() * floatSize / oopSize; }
+  int float_section_start_offset() const { return frame_temp_offset - number_of_stack_temporaries() * oopsPerSlot; }
+  int float_section_size() const {
+    return number_of_float_temporaries() * 2 * oopsPerSlot + float_expression_stack_size();
+  }
 
   // Testers
   bool is_accessMethod() const { return *codes() == Bytecodes::return_instVar; }
