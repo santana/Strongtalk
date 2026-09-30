@@ -129,6 +129,25 @@ public:
   // returns the stack pointer of the calling frame
   oop* sender_sp() const { return (oop*)addr_at(frame_sender_sp_offset); }
 
+#ifdef DELTA_BACKEND_AARCH64
+  // Stack pointer of the frame that activated a *block*.
+  //
+  // A block is not activated by a plain call: _block_entry is reached from a
+  // primitiveValue primitive, which first lets call_C save the return address
+  // in a delta slot of its own and then has setupBlockValueFrame reserve
+  // (nArgs+1) slots for the block's return bytecode to pop (interpreter.cpp
+  // generate_primitiveValue / setupBlockValueFrame).  enter() then builds the
+  // block frame on top of all of that, so the caller's sp sits
+  //
+  //     fp + 2*oopSize (enter's link/RA) + (nArgs+1)*slotSize (reserved)
+  //         + slotSize (call_C's saved LR)
+  //
+  // above the block's fp, not the usual frame_sender_sp_offset.  Using the
+  // ordinary sender_sp() here made the GC scan one uninitialized slot below the
+  // caller's real expression stack and dereference a null-address oop.
+  oop* block_activation_sender_sp() const;
+#endif
+
   // Link
   void* link() const { return *link_addr(); }
   void set_link(void* addr) { *link_addr() = addr; }

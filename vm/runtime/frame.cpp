@@ -81,6 +81,16 @@ void frame::patch_fp(void** fp) {
   previous.set_link(fp);
 }
 
+#ifdef DELTA_BACKEND_AARCH64
+oop* frame::block_activation_sender_sp() const {
+  methodOop m = method_from_hp();
+  int nArgs = (m != NULL) ? m->number_of_arguments() : 0;
+  // See frame.hpp: call_C's saved-LR slot plus the (nArgs+1) slots reserved by
+  // setupBlockValueFrame sit between the block's fp and the caller's sp.
+  return (oop*)((char*)addr_at(frame_sender_sp_offset) + slotSize + (nArgs + 1) * slotSize);
+}
+#endif
+
 methodOop frame::method_from_hp() const {
   // Resolve hp() to its methodOop, or NULL if hp is not a valid hybrid code
   // pointer.  Deliberately uses the *checked* lookup: a frame slot we have not
@@ -595,7 +605,16 @@ frame frame::sender() const {
   } else if (is_deoptimized_frame()) {
     result = frame(real_sender_sp(), link(), return_addr());
   } else {
-    result = frame(sender_sp(), link(), return_addr());
+#ifdef DELTA_BACKEND_AARCH64
+    // A block activation consumed extra delta slots (call_C's saved LR plus the
+    // slots setupBlockValueFrame reserved for the block's return), so the
+    // caller's sp is not at the usual sender_sp offset.
+    methodOop m = is_interpreted_activation() ? method_from_hp() : NULL;
+    if (m != NULL && m->is_blockMethod()) {
+      result = frame(block_activation_sender_sp(), link(), return_addr());
+    } else
+#endif
+      result = frame(sender_sp(), link(), return_addr());
   }
   return result;
 }
