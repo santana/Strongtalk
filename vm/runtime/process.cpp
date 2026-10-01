@@ -227,6 +227,7 @@ void VMProcess::terminate(DeltaProcess* proc) {
   os::delete_event(proc->_event);
   proc->_event = NULL;
 
+  DeltaProcess::_terminated_process = proc;
   DeltaProcess::set_terminating_process(proc->state());
 }
 
@@ -257,12 +258,28 @@ void VMProcess::activate_system() {
 void VMProcess::loop() {
   while (true) {
     assert(vm_operation(), "A VM_Operation should be present");
-    vm_operation()->evaluate();
+    VM_Operation* op = vm_operation();
+    op->evaluate();
     // if the process's thread is dead then the stack may already be released
     // in which case the vm_operation is no longer valid, so check for a
     // terminated process first. Can't use accessor as it resets the flag!
-    DeltaProcess* p = DeltaProcess::_process_has_terminated ? DeltaProcess::scheduler()
-                                                            : vm_operation()->calling_process();
+    DeltaProcess* p;
+    if (DeltaProcess::_process_has_terminated) {
+      // VM_TerminateProcess::doit() has already terminated *and freed* the
+      // process, so the only process we may safely resume is a scheduler that
+      // is still alive.  When the scheduler is itself the process that just
+      // terminated there is nothing left to transfer to: DeltaProcess::
+      // scheduler() is now a dangling pointer into freed memory, and handing
+      // control to it faults in Event::signal().  Leave the loop instead and
+      // let activate_system()/Processes::start() unwind.
+      if (DeltaProcess::terminated_process() == DeltaProcess::scheduler()) {
+        _vm_operation = NULL;
+        return;
+      }
+      p = DeltaProcess::scheduler();
+    } else {
+      p = op->calling_process();
+    }
     _vm_operation = NULL;
     transfer_to(p);
   }
@@ -354,6 +371,7 @@ volatile bool DeltaProcess::_interrupt = false;
 
 volatile bool DeltaProcess::_process_has_terminated = false;
 ProcessState DeltaProcess::_state_of_terminated_process = initialized;
+DeltaProcess* DeltaProcess::_terminated_process = NULL;
 
 Event* DeltaProcess::_async_dll_completion_event = NULL;
 

@@ -420,9 +420,15 @@ public:
   }
   static ProcessState state_of_terminated_process() { return _state_of_terminated_process; }
 
+  // The process that VMProcess::terminate() just terminated.  Termination frees
+  // the process object, so this is a *dangling* pointer kept only for identity
+  // comparison -- never dereference it.
+  static DeltaProcess* terminated_process() { return _terminated_process; }
+
 private:
   static volatile bool _process_has_terminated;
   static ProcessState _state_of_terminated_process;
+  static DeltaProcess* _terminated_process;
   static void check_stack_overflow();
 
 public:
