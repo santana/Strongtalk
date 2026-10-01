@@ -540,8 +540,6 @@ oop unsafeContents(oop unsafeAlien) {
   (!oop(argument)->is_smi() && memOop(argument)->klass_field() == unsafeAlienClass() &&                                \
    unsafeContents(argument)->is_byteArray())
 
-#define alienArg(argument) (void*)argument
-
 // An alien's byteArray payload is a VM-private header followed by the inline
 // bytes.  The layout must be derived from oopSize, never from a bare `int*` /
 // `void**` cast, because the header contains a machine pointer:
@@ -563,9 +561,6 @@ oop unsafeContents(oop unsafeAlien) {
 
 #define alienAddress(receiver) (*(void**)((u_char*)alienArray(receiver) + oopSize))
 
-#define alienResult(handle) (handle.as_oop() == nilObj ? NULL : (void*)handle.asPointer())
-#define alienResult2(handle) (handle->as_oop() == nilObj ? NULL : (void*)handle->asPointer())
-
 #define checkAlienCalloutReceiver(receiver)                                                                            \
   checkAlienReceiver(receiver);                                                                                        \
   if (/*alienSize(receiver) > 0 || */ alienAddress(receiver) == NULL)                                                  \
@@ -573,10 +568,14 @@ oop unsafeContents(oop unsafeAlien) {
 
 #define checkAlienCalloutResult(argument)                                                                              \
   if (!(argument->is_byteArray() || argument == nilObj))                                                               \
+  return markSymbol(vmSymbols::argument_has_wrong_type());                                                             \
+  if (argument != nilObj && byteArrayOop(argument)->length() < alienHeaderSize)                                         \
   return markSymbol(vmSymbols::argument_has_wrong_type())
 
 #define checkAlienCalloutResultArgs(argument)                                                                          \
   if (!(argument->is_byteArray() || argument == nilObj))                                                               \
+  return markSymbol(vmSymbols::first_argument_has_wrong_type());                                                       \
+  if (argument != nilObj && byteArrayOop(argument)->length() < alienHeaderSize)                                         \
   return markSymbol(vmSymbols::first_argument_has_wrong_type())
 
 #define checkAlienCalloutArg(argument, symbol)                                                                         \
@@ -909,16 +908,6 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetAddress, oop receiver, oop argument) {
   return receiver;
 }
 
-typedef void(__stdcall* call_out_func_0)(void*, void*);
-typedef void(__stdcall* call_out_func_1)(void*, void*, void*);
-typedef void(__stdcall* call_out_func_2)(void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_3)(void*, void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_4)(void*, void*, void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_5)(void*, void*, void*, void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_6)(void*, void*, void*, void*, void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_7)(void*, void*, void*, void*, void*, void*, void*, void*, void*);
-typedef void(__stdcall* call_out_func_args)(void*, void*, oop, oop*);
-
 void break_on_error(void* address, oop result) {
   if (true)
     return;
@@ -936,16 +925,173 @@ void break_on_error(void* address, oop result) {
       os::breakpoint();
   }
 }
+// ---------------------------------------------------------------------------
+// Alien callouts
+// ---------------------------------------------------------------------------
+//
+// These used to run in hand-written assembly (StubRoutines::generate_alien_call
+// and friends), reached through a `call_out_func_N` function pointer.  The
+// trampoline re-read its own arguments off `ebp + 8/12/16/...`, which is the
+// x86-32 cdecl layout.  Neither LP64 target uses it: AAPCS64 passes the first
+// eight integer arguments in x0-x7 and SysV x86-64 in rdi/rsi/rdx/rcx/r8/r9, so
+// the `ebp`-relative slots hold unrelated stack memory.  The same stubs also
+// assumed a 4-byte alien header, 4-byte stack slots, a split 32-bit return
+// value (edx:eax stored at contents+4/+8) and tagged-pointer arithmetic
+// (`-Mem_Tag`), none of which hold for untagged 64-bit oops.  Both backends ran
+// the same unported code, so x86-64 was broken exactly as arm64 was.
+//
+// Marshalling is done here in C++ instead, so it is word-size correct by
+// construction on every target and the per-ABI assembly disappears.  Arguments
+// and return values travel in machine words, which is what both LP64 ABIs use.
+//
+// Argument rules, matching what `Alien>>asAlien` (StrongtalkSource/Alien.dlt)
+// produces:
+//   SmallInteger  -> the integer value
+//   direct alien  -> by value when exactly one word wide, otherwise a pointer
+//                    to its inline bytes
+//   indirect      -> the external address
+//   UnsafeAlien   -> a pointer to its bytes
+//
+// The return value is a single machine word on LP64, stored into the result
+// alien (inline for a direct result, through the address for an indirect one)
+// truncated to the number of bytes that alien declares.
+
+static const int max_alien_callout_args = 15;
+
+typedef uintptr_t (*alien_call_0)(void*);
+typedef uintptr_t (*alien_call_1)(void*, uintptr_t);
+typedef uintptr_t (*alien_call_2)(void*, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_3)(void*, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_4)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_5)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_6)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_7)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_8)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                  uintptr_t);
+typedef uintptr_t (*alien_call_9)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                  uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_10)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_11)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_12)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_13)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_14)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+typedef uintptr_t (*alien_call_15)(void*, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                   uintptr_t);
+
+// Decode one validated callout argument into the machine word the callee sees.
+static uintptr_t alien_callout_arg_value(oop argument) {
+  if (argument->is_smi())
+    return (uintptr_t)smiOop(argument)->value();
+
+  if (isUnsafe(argument))
+    // `nonPointerObject` holds the byteArray whose bytes are the argument.
+    return (uintptr_t)byteArrayOop(unsafeContents(argument))->bytes();
+
+  int size = alienSize(argument);
+  if (size <= 0)
+    return (uintptr_t)alienAddress(argument);
+
+  void* contents = alienContents(argument);
+  if (contents != NULL && size == (int)sizeof(uintptr_t)) {
+    // One word wide: pass by value, which is what a foreign function expects
+    // for e.g. an `Alien forULong:` or a boxed double.
+    uintptr_t value;
+    memcpy(&value, contents, sizeof(value));
+    return value;
+  }
+  // Wider than a word: a by-value pass is not expressible in C, so hand over
+  // the address of the inline bytes rather than pushing a partial copy.
+  return (uintptr_t)contents;
+}
+
+// Store a callout result word into `resultAlien`, honouring direct/indirect.
+static void alien_callout_store_result(oop resultAlien, uintptr_t value) {
+  if (resultAlien == nilObj || !resultAlien->is_byteArray())
+    return;
+  int size = alienSize(resultAlien);
+  void* destination = size > 0 ? alienContents(resultAlien) : alienAddress(resultAlien);
+  if (destination == NULL)
+    return;
+  if (size < 0)
+    size = -size;
+  if (size <= 0)
+    return;
+  if (size > (int)sizeof(uintptr_t))
+    size = (int)sizeof(uintptr_t); // LP64 returns exactly one word
+  memcpy(destination, &value, size);
+}
+
+// Call `address` with `count` already-marshalled argument words and return the
+// single machine word the callee produced.  A variadic C++ call is not possible
+// here, so the arity is dispatched explicitly; both LP64 ABIs pass these in
+// registers, so no stack alignment or per-argument slot arithmetic is needed.
+static uintptr_t alien_callout_invoke(void* address, const uintptr_t* a, int count) {
+  switch (count) {
+    case 0:
+      return ((alien_call_0)address)(NULL);
+    case 1:
+      return ((alien_call_1)address)(NULL, a[0]);
+    case 2:
+      return ((alien_call_2)address)(NULL, a[0], a[1]);
+    case 3:
+      return ((alien_call_3)address)(NULL, a[0], a[1], a[2]);
+    case 4:
+      return ((alien_call_4)address)(NULL, a[0], a[1], a[2], a[3]);
+    case 5:
+      return ((alien_call_5)address)(NULL, a[0], a[1], a[2], a[3], a[4]);
+    case 6:
+      return ((alien_call_6)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5]);
+    case 7:
+      return ((alien_call_7)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+    case 8:
+      return ((alien_call_8)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+    case 9:
+      return ((alien_call_9)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
+    case 10:
+      return ((alien_call_10)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9]);
+    case 11:
+      return ((alien_call_11)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10]);
+    case 12:
+      return ((alien_call_12)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11]);
+    case 13:
+      return ((alien_call_13)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11],
+                                      a[12]);
+    case 14:
+      return ((alien_call_14)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11],
+                                      a[12], a[13]);
+    default:
+      return ((alien_call_15)address)(NULL, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11],
+                                      a[12], a[13], a[14]);
+  }
+}
+
+// Shared body of every callout primitive.  `handle` must pin the result alien
+// across the foreign call, because a scavenge may move it.
+static void alien_call_out(void* address, PersistentHandle* handle, int count, const oop* arguments) {
+  uintptr_t words[max_alien_callout_args];
+  for (int i = 0; i < count; i++)
+    words[i] = alien_callout_arg_value(arguments[i]);
+
+  uintptr_t returned = alien_callout_invoke(address, words, count);
+
+  // Re-read the result through the handle: it may have moved.
+  alien_callout_store_result(handle->as_oop(), returned);
+}
+
 PRIM_DECL_2(byteArrayPrimitives::alienCallResult0, oop receiver, oop argument) {
   PROLOGUE_2("alienCallResult0", receiver, argument);
   checkAlienCalloutReceiver(receiver);
   checkAlienCalloutResult(argument);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument);
-  call_out_func_0 entry = call_out_func_0(StubRoutines::alien_call_entry(0));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle));
+  PersistentHandle* resultHandle = new PersistentHandle(argument);
+  alien_call_out(address, resultHandle, 0, NULL);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -959,11 +1105,10 @@ PRIM_DECL_3(byteArrayPrimitives::alienCallResult1, oop receiver, oop argument1, 
   checkAlienCalloutResultArgs(argument1);
   checkAlienCalloutArg1(argument2);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_1 entry = call_out_func_1(StubRoutines::alien_call_entry(1));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[1] = {argument2};
+  alien_call_out(address, resultHandle, 1, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -978,11 +1123,10 @@ PRIM_DECL_4(byteArrayPrimitives::alienCallResult2, oop receiver, oop argument1, 
   checkAlienCalloutArg1(argument2);
   checkAlienCalloutArg2(argument3);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_2 entry = call_out_func_2(StubRoutines::alien_call_entry(2));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[2] = {argument2, argument3};
+  alien_call_out(address, resultHandle, 2, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -999,11 +1143,10 @@ PRIM_DECL_5(byteArrayPrimitives::alienCallResult3, oop receiver, oop argument1, 
   checkAlienCalloutArg2(argument3);
   checkAlienCalloutArg3(argument4);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_3 entry = call_out_func_3(StubRoutines::alien_call_entry(3));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[3] = {argument2, argument3, argument4};
+  alien_call_out(address, resultHandle, 3, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -1021,12 +1164,10 @@ PRIM_DECL_6(byteArrayPrimitives::alienCallResult4, oop receiver, oop argument1, 
   checkAlienCalloutArg3(argument4);
   checkAlienCalloutArg4(argument5);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_4 entry = call_out_func_4(StubRoutines::alien_call_entry(4));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
-        alienArg(argument5));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[4] = {argument2, argument3, argument4, argument5};
+  alien_call_out(address, resultHandle, 4, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -1045,12 +1186,10 @@ PRIM_DECL_7(byteArrayPrimitives::alienCallResult5, oop receiver, oop argument1, 
   checkAlienCalloutArg4(argument5);
   checkAlienCalloutArg5(argument6);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_5 entry = call_out_func_5(StubRoutines::alien_call_entry(5));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
-        alienArg(argument5), alienArg(argument6));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[5] = {argument2, argument3, argument4, argument5, argument6};
+  alien_call_out(address, resultHandle, 5, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
@@ -1070,18 +1209,17 @@ PRIM_DECL_8(byteArrayPrimitives::alienCallResult6, oop receiver, oop argument1, 
   checkAlienCalloutArg5(argument6);
   checkAlienCalloutArg6(argument7);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_6 entry = call_out_func_6(StubRoutines::alien_call_entry(6));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
-        alienArg(argument5), alienArg(argument6), alienArg(argument7));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[6] = {argument2, argument3, argument4, argument5, argument6, argument7};
+  alien_call_out(address, resultHandle, 6, arguments);
 
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
   return result;
 }
+
 PRIM_DECL_9(byteArrayPrimitives::alienCallResult7, oop receiver, oop argument1, oop argument2, oop argument3,
             oop argument4, oop argument5, oop argument6, oop argument7, oop argument8) {
   PROLOGUE_9("alienCallResult7", receiver, argument1, argument2, argument3, argument4, argument5, argument6, argument7,
@@ -1096,12 +1234,11 @@ PRIM_DECL_9(byteArrayPrimitives::alienCallResult7, oop receiver, oop argument1, 
   checkAlienCalloutArg6(argument7);
   checkAlienCalloutArg7(argument8);
 
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_7 entry = call_out_func_7(StubRoutines::alien_call_entry(7));
-
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), alienArg(argument2), alienArg(argument3), alienArg(argument4),
-        alienArg(argument5), alienArg(argument6), alienArg(argument7), alienArg(argument8));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  const oop arguments[7] = {argument2, argument3, argument4, argument5, argument6, argument7, argument8};
+  alien_call_out(address, resultHandle, 7, arguments);
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;
@@ -1116,11 +1253,17 @@ PRIM_DECL_3(byteArrayPrimitives::alienCallResultWithArguments, oop receiver, oop
   for (int index = 1; index <= length; index++) {
     checkAlienCalloutArg(objArrayOop(argument2)->obj_at(index), vmSymbols::argument_has_wrong_type());
   }
-  PersistentHandle* resultHandle = new PersistentHandle(argument1);
-  call_out_func_args entry = call_out_func_args(StubRoutines::alien_call_with_args_entry());
+  if (length > max_alien_callout_args)
+    return markSymbol(vmSymbols::argument_is_invalid());
+
+  oop arguments[max_alien_callout_args];
+  for (int index = 1; index <= length; index++)
+    arguments[index - 1] = objArrayOop(argument2)->obj_at(index);
 
   void* address = alienAddress(receiver);
-  entry(address, alienResult2(resultHandle), as_smiOop(length), objArrayOop(argument2)->objs(1));
+  PersistentHandle* resultHandle = new PersistentHandle(argument1);
+  alien_call_out(address, resultHandle, length, arguments);
+
   oop result = resultHandle->as_oop();
   break_on_error(address, result);
   delete resultHandle;

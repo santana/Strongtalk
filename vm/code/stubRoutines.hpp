@@ -95,8 +95,6 @@ private:
 
   static char* _PIC_stub_entries[];
   static char* _allocate_entries[];
-  static char* _alien_call_entries[];
-  static char* _alien_call_with_args_entry;
 
   // add tracing routines here
   static void trace_DLL_call_1(dll_func function, oop* last_argument, int nof_arguments);
@@ -141,15 +139,10 @@ private:
 
   static char* generate_PIC_stub(MacroAssembler* masm, int pic_size);
   static char* generate_allocate(MacroAssembler* masm, int size);
-  static char* generate_alien_call(MacroAssembler* masm, int args);
-  static char* generate_alien_call_with_args(MacroAssembler* masm);
 
   // helpers for generation
   static char* generate(MacroAssembler* masm, char* title, char* gen(MacroAssembler*));
   static char* generate(MacroAssembler* masm, char* title, char* gen(MacroAssembler*, int argument), int argument);
-  static void alien_arg_size(MacroAssembler* masm, Label& nextArg);
-  static void push_alien_arg(MacroAssembler* masm, Label& nextArg);
-  static void push_alignment_spacers(MacroAssembler* masm);
 
 public:
   // add entry point accessors here
@@ -179,12 +172,9 @@ public:
   static char* handle_pascal_callback_stub() { return _handle_pascal_callback_stub; }
   static char* handle_C_callback_stub() { return _handle_C_callback_stub; }
   static char* oopify_float() { return _oopify_float; }
-  static char* alien_call_with_args_entry() { return _alien_call_with_args_entry; }
 
   static char* PIC_stub_entry(int pic_size); // PIC interpreter stubs: pic_size is the number of entries
   static char* allocate_entry(int size); // allocation of memOops: size is words in addition to header
-  static char*
-  alien_call_entry(int args); // alien call out       : args is the number of arguments passed to the function called
 
   // Support for profiling
   static bool contains(char* pc) { return (_code <= pc) && (pc < &_code[_code_size]); }
