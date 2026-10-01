@@ -59,8 +59,9 @@ int vmProcessMain(void* ignored) {
   // with only the watchdog thread still running.
   //
   // TEMPORARY (A5): gated so that debugging can keep runMainProcess() running.
-  // When the scheduler no longer returns from its start code, VMProcess::loop()
-  // never unwinds here and this flag can go.
+  // Pass -ExitWhenSchedulerTerminates to disable (see debug.hpp).  When the
+  // scheduler no longer returns from its start code, VMProcess::loop() never
+  // unwinds here and this flag can go.
   if (ExitWhenSchedulerTerminates)
     ::exit(0);
   return 0;

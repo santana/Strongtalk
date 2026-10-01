@@ -155,10 +155,12 @@ public:
   develop(TraceProcessEvents                 , false, "Trace all process events"                                                    ) \
   /* Temporary (A5): VMProcess::loop() returns instead of resuming a freed      \
      scheduler when the scheduler is the process that just terminated.  When    \
-     true, vmProcessMain() then calls exit(); when false the VM main thread    \
-     just returns and the process lingers on the watchdog thread, which keeps   \
-     DeltaProcess::runMainProcess() observable while A5 is debugged.  Remove   \
-     this flag once the scheduler no longer returns from its start code. */    \
+     true (the default), vmProcessMain() then calls exit().  Boolean flags are   \
+     toggled with a leading sign: -ExitWhenSchedulerTerminates disables it so   \
+     the VM main thread just returns and the process lingers on the watchdog    \
+     thread, which keeps DeltaProcess::runMainProcess() observable while A5 is  \
+     debugged; +ExitWhenSchedulerTerminates re-enables it.  Remove this flag    \
+     once the scheduler no longer returns from its start code. */              \
   develop(ExitWhenSchedulerTerminates        , true , "Exit the VM when the scheduler process terminates"                         ) \
   develop(TraceDeoptimization                , false, "Trace deoptimizion"                                                          ) \
   develop(TraceZombieCreation                , false, "Trace nmethod zombie creation"                                               ) \
