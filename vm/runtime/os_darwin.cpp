@@ -914,26 +914,66 @@ static void handler(int signum, siginfo_t* info, void* context) {
     }
     uint64_t hp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__x[14]; // esi == bytecode pointer
     uint64_t fp_val = ((ucontext_t*)context)->uc_mcontext->__ss.__fp;
+    // Build the frame with the *return address* as pc.  Passing the bytecode
+    // pointer (esi) as pc made is_interpreted_frame() false by construction, so
+    // this dump used to report "<no method>" for every interpreted frame and
+    // told us nothing about hp.
+    uint64_t lr_val = ((ucontext_t*)context)->uc_mcontext->__ss.__lr;
     frame top((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val,
-              (char*)(uintptr_t)hp_val);
+              (char*)(uintptr_t)lr_val);
     methodOop m = NULL;
     u_char* hptr = NULL;
     if (top.is_interpreted_frame()) {
       hptr = top.hp();
-      m = top.method();
+      m = top.is_interpreted_activation() ? top.method() : NULL;
     }
-    printf("  delta: esi(hp reg)=%#llx fp=%#llx", hp_val, fp_val);
+    printf("  delta: esi(bp reg)=%#llx fp=%#llx pc(lr)=%#llx", hp_val, fp_val, lr_val);
     if (m != NULL) {
       int bci = m->bci_from(hptr);
-      printf(" method=\"");
+      printf(" frame_hp=%p method=\"", (void*)hptr);
       m->selector()->print_symbol_on();
       printf("\" bci=%d", bci);
       u_char* codes = m->codes();
       int rel = (int)(hptr - codes);
       printf(" rel=%d codes[rel]=%d", rel, *hptr);
     } else {
-      printf(" eff_hp=%p", hptr ? (void*)hptr : (void*)hp_val);
-      printf(" <no method>");
+      printf(" frame_hp=%p <hp not a bytecode pointer>", hptr ? (void*)hptr : (void*)hp_val);
+    }
+    // Is the register esi (the bytecode pointer the handler is using) itself a
+    // valid bytecode pointer?  This is the value that faulted.
+    {
+      methodOop em = NULL;
+      frame probe((oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp, (void*)(uintptr_t)fp_val,
+                  (char*)(uintptr_t)lr_val);
+      (void)probe;
+      // validate esi directly through the same containment test method_from_hp uses
+      oop* eh = (oop*)hp_val;
+      if (Universe::old_gen.contains(eh)) {
+        oop* estart = Universe::object_start_checked(eh);
+        if (estart != NULL && (*estart)->is_mark()) {
+          memOop eobj = as_memOop(estart);
+          printf(" | esi_obj is_method=%d is_symbol=%d", eobj->is_method(), eobj->is_symbol());
+          if (eobj->is_symbol())
+            ((symbolOop)eobj)->print_symbol_on();
+          else if (eobj->is_method())
+            em = methodOop(eobj);
+        } else {
+          printf(" | esi_obj not a memOop");
+        }
+      } else {
+        printf(" | esi not in old_gen");
+      }
+      (void)em;
+    }
+    // Raw interpreter frame slots, to spot an operand-stack/frame overlap.
+    printf("\n  frame slots:");
+    {
+      oop* sp_top = (oop*)(uintptr_t)((ucontext_t*)context)->uc_mcontext->__ss.__sp;
+      void** fpp = (void**)(uintptr_t)fp_val;
+      for (int i = 0; i < 8; i++)
+        printf(" sp[%d]=%#llx", i, (unsigned long long)(uintptr_t)sp_top[i]);
+      for (int i = 0; i < 6; i++)
+        printf(" fp[%d]=%#llx", i, (unsigned long long)(uintptr_t)fpp[i]);
     }
     printf("\n");
     // fp-chain walk: dladdr each saved LR so C frames below the JIT frames can

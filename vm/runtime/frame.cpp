@@ -508,6 +508,22 @@ void frame::follow_roots() {
     return;
   }
 
+  // Processes::follow_roots() runs from mark_sweep_phase1(), i.e. inside the
+  // window opened by Processes::convert_hcode_pointers(), which has just
+  // rewritten this frame's hp slot from an interior bytecode address into the
+  // method's tagged oop.  is_interpreted_activation() is value-based and is
+  // therefore false for exactly those frames: the object base lies below
+  // codes(), so method_from_hp()'s containment test fails.  Falling through
+  // would leave the slot untraced, so the method would not be marked from the
+  // frame and the slot would keep its pre-compaction address for
+  // restore_hcode_pointer() to add the saved offset to -- a bytecode pointer
+  // into unrelated memory.  is_interpreted_frame() is a pc-range test and so is
+  // independent of the value being asked about.
+  if (is_interpreted_frame()) {
+    MarkSweep::follow_root((oop*)hp_addr());
+    return;
+  }
+
   if (is_compiled_frame()) {
     if (has_compiled_float_marker() && follow_roots_compiled_float_frame())
       return;
@@ -541,8 +557,15 @@ void frame::follow_roots() {
 }
 
 void frame::convert_hcode_pointer() {
-  if (!is_interpreted_activation())
+  if (!is_interpreted_activation()) {
+    // Keep the offset FIFO balanced.  restore_hcode_pointer() consumes exactly
+    // one entry per frame visited by the matching restore walk and cannot
+    // re-derive this decision for itself: by the time it runs, the activation
+    // test fails for the frames this pass *did* convert (see below), so it
+    // cannot be used to tell a converted frame from an untouched one.
+    MarkSweep::add_hcode_offset(-1);
     return;
+  }
   // Adjust hcode pointer to object start
   u_char* h = hp();
   u_char* obj = (u_char*)as_memOop(Universe::object_start((oop*)h));
@@ -553,11 +576,19 @@ void frame::convert_hcode_pointer() {
 }
 
 void frame::restore_hcode_pointer() {
-  if (!is_interpreted_activation())
+  // Do NOT re-test is_interpreted_activation() here.  convert_hcode_pointer()
+  // has already rewritten this frame's hp slot to the method's *object base*,
+  // which lies below codes(), so method_from_hp()'s [codes(), codes_end())
+  // containment test fails and the test now reports "not an activation" for
+  // precisely the frames that were converted.  Re-testing therefore left
+  // MarkSweep::hcode_pos stranded mid-queue, so the next mark-sweep replayed
+  // stale offsets onto the wrong frames and corrupted bytecode pointers.  The
+  // sentinel recorded by convert is the authoritative answer.
+  int offset = MarkSweep::next_hcode_offset();
+  if (offset < 0)
     return;
   // Readjust hcode pointer
   u_char* obj = hp();
-  int offset = MarkSweep::next_hcode_offset();
   // if (WizardMode) lprintf("[0x%lx+%d]\n", obj, offset);
   set_hp(obj + offset);
 }
