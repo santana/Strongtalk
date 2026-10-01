@@ -70,7 +70,8 @@ and `proxyOop.cpp` (`-Wint-to-pointer-cast`) and `proxy_prims.cpp`
 | Path                | Contents                                          |
 | ------------------- | ------------------------------------------------- |
 | `vm/`               | C++ VM source                                     |
-| `source/` `StrongtalkSource/` | Two snapshots of the Smalltalk library source |
+| `source/`            | Legacy Smalltalk library source dump (fileout format with extensionless files and .class stubs; contains change/save logs) |
+| `StrongtalkSource/`  | Primary Smalltalk library source (Delta `.dlt`/`.str`/`.gr` chunk files) |
 | `strongtalk.bst`    | The Smalltalk image file                          |
 | `test/` `easyunit/` | C++ test suite (easyunit) for the VM              |
 | `build/`           | Out-of-tree per-config build dirs (`build/<arch>-<os>-<compiler>`) |
