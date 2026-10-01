@@ -281,11 +281,22 @@ public:
   // Returns the size of a number of interpreter frames in words.
   // This is used during deoptimization.
   static int interpreter_stack_size(int number_of_frames, int number_of_temporaries_and_locals) {
-    return number_of_frames * interpreter_frame_size(0) + number_of_temporaries_and_locals;
+    return number_of_frames * interpreter_frame_size(0) + oopsPerSlot * number_of_temporaries_and_locals;
   }
 
-  // Returns the word size of an interpreter frame
-  static int interpreter_frame_size(int locals) { return frame_return_addr_offset - frame_temp_offset + locals; }
+  // Returns the word size of an interpreter frame.
+  //
+  // frame_temp_offset is expressed in oop indices, but on a backend whose delta
+  // stack slot is wider than one oop (AArch64: slotSize = 2*oopSize) the span
+  // from temp0 to the frame link covers twice as many *words*, and so does each
+  // temporary.  Both terms must therefore scale by oopsPerSlot: leaving them
+  // unscaled makes DeltaProcess::unpack_frame() advance current_sp by half a
+  // frame per step on AArch64 (desynchronising it from the real stack and
+  // yielding garbage vframes), and makes interpreter_stack_size() reserve half
+  // the stack a new process needs.
+  static int interpreter_frame_size(int locals) {
+    return oopsPerSlot * (frame_return_addr_offset - frame_temp_offset + locals);
+  }
 };
 
 // True if pc falls within the generated primitives' code buffer.  Kept out of

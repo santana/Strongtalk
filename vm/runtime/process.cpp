@@ -916,7 +916,6 @@ inline void unpack_first_frame(char*& current_pc, frame& current, CodeIterator& 
 extern "C" void unpack_frame_array() {
   BlockScavenge bs;
   ResourceMark rm;
-  fprintf(stderr, "DIAG unpack: enter nlr=%d redo=%d\n", (int)nlr_through_unpacking, (int)redo_the_send);
 
   int* pc_addr = (int*)new_sp - 1;
   assert(*pc_addr = -1, "just checking");
@@ -1002,7 +1001,6 @@ extern "C" void unpack_frame_array() {
     fatal("Target for NLR not found when unpacking frame");
   }
 
-  fprintf(stderr, "DIAG unpack: done current_sp=%p\n", current_sp);
   assert(current_sp == old_sp, "We have not reached the end");
   current.set_link(old_fp);
 }

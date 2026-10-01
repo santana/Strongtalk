@@ -508,17 +508,19 @@ void frame::follow_roots() {
     return;
   }
 
-  // Processes::follow_roots() runs from mark_sweep_phase1(), i.e. inside the
-  // window opened by Processes::convert_hcode_pointers(), which has just
-  // rewritten this frame's hp slot from an interior bytecode address into the
-  // method's tagged oop.  is_interpreted_activation() is value-based and is
-  // therefore false for exactly those frames: the object base lies below
-  // codes(), so method_from_hp()'s containment test fails.  Falling through
-  // would leave the slot untraced, so the method would not be marked from the
-  // frame and the slot would keep its pre-compaction address for
-  // restore_hcode_pointer() to add the saved offset to -- a bytecode pointer
-  // into unrelated memory.  is_interpreted_frame() is a pc-range test and so is
-  // independent of the value being asked about.
+  // Processes::follow_roots() runs from mark_sweep_phase1(), inside the window
+  // opened by Processes::convert_hcode_pointers(), which has just rewritten
+  // this frame's hp slot from an interior bytecode address into the method's
+  // tagged oop.  is_interpreted_activation() is value-based and is therefore
+  // false for exactly those frames (the object base lies below codes(), so
+  // method_from_hp()'s containment test fails), so the temporaries and the
+  // receiver of a converted frame are *not* traced here.  convert_hcode_pointer()
+  // marks them while the hybrid code pointer is still valid, i.e. before
+  // Universe::oops_do() reverses the heap's headers; see the comment there.
+  //
+  // Only the hp slot is left to do here: it now holds the method's object base,
+  // a real oop, and following it here is what keeps restore_hcode_pointer()
+  // adding its offset to the post-compaction address.
   if (is_interpreted_frame()) {
     MarkSweep::follow_root((oop*)hp_addr());
     return;
@@ -572,6 +574,31 @@ void frame::convert_hcode_pointer() {
   set_hp(obj);
   // Save the offset
   MarkSweep::add_hcode_offset(h - obj);
+
+  // Mark the rest of this frame *here*, while the hybrid code pointer is still
+  // valid.  Once set_hp() above has run, is_interpreted_activation() no longer
+  // recognises the frame, so frame::follow_roots() cannot reach its temporaries
+  // or its receiver later in phase1 -- and moving this after
+  // Universe::oops_do(&follow_root) is not an option either, because that pass
+  // reverses every marked object's header into its marking pointer, after which
+  // method_from_hp()'s is_mark() test fails for all of them.  Leaving the frame
+  // unmarked here is what produced "VM Error: klass 0x... isn't a klass" from
+  // InterpretedIC::inline_cache_miss: compaction moved the receiver and the
+  // temporaries without updating the frame.
+  methodOop m = method();
+  if (has_interpreted_float_marker() && m != NULL && m->has_float_temporaries()) {
+    // Everything at or below the float section is raw float data that the
+    // interpreter never initializes, so it must not be scanned as oops; the
+    // oop-carrying temporaries sit between it and temp0.
+    for (oop* q = (oop*)addr_at(m->float_section_start_offset()); q <= temp_addr(0); q += oopsPerSlot) {
+      MarkSweep::follow_root(q);
+    }
+  } else {
+    for (oop* p = sp(); p <= temp_addr(0); p += oopsPerSlot) {
+      MarkSweep::follow_root(p);
+    }
+  }
+  MarkSweep::follow_root(receiver_addr());
   // if (WizardMode) lprintf("[0x%lx+%d]\n", obj, h - obj);
 }
 
