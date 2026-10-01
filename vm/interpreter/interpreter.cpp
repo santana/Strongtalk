@@ -1290,6 +1290,14 @@ char* InterpreterGenerator::push_closure(int nofArgs, bool use_context) {
 #ifndef DELTA_BACKEND_AARCH64
     masm->popl(ebx); // get rid of argument
 #endif
+#ifdef DELTA_BACKEND_AARCH64
+    // allocateBlock is a C function, so AAPCS64 returns the new block closure
+    // in x0, but the interpreter reads the result from eax. Only call_C copies
+    // x0 to eax, and this is a bare call, so do it here. Without this eax keeps
+    // whatever the C function left in x13 and push_closure then stores the
+    // block method into a null closure.
+    masm->mov(eax, x0);
+#endif
   } else {
     // no. of arguments implied by 1st byte
     advance_aligned(1 + oopSize); // go to next instruction
