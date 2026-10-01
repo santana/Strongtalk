@@ -24,14 +24,14 @@ initialize
 
 atAddress: pointer <Integer> ^<X>
 
-	^(self primitiveNew: 8)
+	^(self primitiveNew: 16)
 		size: self dataSize negated;
 		addressField: pointer;
 		yourself!
 
 atAddress: pointer <Integer> dataSize: dataSize <Integer> ^<X>
 
-	^(self primitiveNew: 8)
+	^(self primitiveNew: 16)
 		size: dataSize negated;
 		addressField: pointer;
 		yourself!
@@ -80,7 +80,7 @@ forLong: long
 
 forPointer: pointer <Integer> ^<X>
 
-	^(self primitiveNew: 8)
+	^(self primitiveNew: 16)
 		size: 0;
 		addressField: pointer;
 		yourself!
@@ -99,7 +99,7 @@ new
 
 new: size <Integer> ^ <X>
 
-	^(self primitiveNew: size + 4)
+	^(self primitiveNew: size + 16)
 		size: size;
 		initialize!
 
@@ -109,7 +109,7 @@ newC
 
 newC: size <Integer> ^ <X>
 
-	^(self primitiveNew: 8)
+	^(self primitiveNew: 16)
 		size: size negated;
 		addressField: (self Ccalloc: size);
 		initialize!
@@ -137,7 +137,7 @@ newGC
 newGC: size <Integer> ^<X>
 
 	| alien address |
-	alien := self primitiveNew: 8.
+	alien := self primitiveNew: 16.
 	alien size: size negated.
 	address := self Ccalloc: size.
 	self gcMallocedAliens add: alien.
@@ -148,7 +148,7 @@ newGC: size <Integer> ^<X>
 
 rawNewC: size <Integer> ^ <X>
 
-	^(self primitiveNew: 8)
+	^(self primitiveNew: 16)
 		size: size negated;
 		addressField: (self Cmalloc: size);
 		initialize!

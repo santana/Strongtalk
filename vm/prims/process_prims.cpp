@@ -38,6 +38,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/frame.hpp"
 #include "runtime/vframe.hpp"
 #include "runtime/process.hpp"
+#include "runtime/evaluator.hpp"
+#include "runtime/delta.hpp"
 #include "utilities/growableArray.hpp"
 #include "memory/generation.inline.hpp"
 #include "memory/universe.store.hpp"
@@ -93,8 +95,42 @@ PRIM_DECL_0(processOopPrimitives::stop) {
   //Universe::code->nmethods_do(print_nmethod);
   if (!DeltaProcess::active()->is_scheduler()) {
     DeltaProcess::active()->suspend(stopped);
+    return DeltaProcess::active()->processObj();
   }
-  return DeltaProcess::active()->processObj();
+
+  // The scheduler cannot be terminated via this primitive: the scheduler's
+  // process is a dummy process representing the running CPU. Returning here
+  // would let the image's `Error>>defaultAction` re-raise indefinitely, so
+  // instead report the condition and enter the VM REPL, mirroring
+  // handle_error() at process.cpp. read_eval_loop() does not return to
+  // Smalltalk, which makes the re-raise cycle structurally impossible.
+  //
+  // `stopWithError:` (StrongtalkSource/ProcessorScheduler.dlt) stores the
+  // ProcessError on the process object via `processError:` before invoking
+  // this primitive, so print it rather than a generic message.
+  DeltaProcess* proc = DeltaProcess::active();
+  {
+    // We are inside a primitive, so there is no enclosing ResourceMark.
+    // Everything below allocates (the symbol, the accessor send's result,
+    // the printing buffers), so the whole report is scoped under one mark.
+    ResourceMark rm;
+
+    mystd->print_cr("Unhandled error in the scheduler");
+    processOop pobj = proc->processObj();
+    if (pobj != nilObj) {
+      // `Process>>processError` is the Smalltalk accessor for the slot that
+      // `stopWithError:` set just before calling this primitive.
+      oop err = Delta::call(pobj, oopFactory::new_symbol("processError"));
+      if (err != nilObj) {
+        mystd->print("Process error: ");
+        err->print_value_on(mystd);
+        mystd->cr();
+      }
+    }
+    proc->trace_stack();
+  }
+  evaluator::read_eval_loop();
+  return proc->processObj();
 }
 PRIM_DECL_1(processOopPrimitives::setMainProcess, oop receiver) {
   PROLOGUE_1("setMainProcess", receiver);

@@ -181,6 +181,29 @@ unsigned int Integer::as_unsigned_int(bool& ok) const {
   return 0;
 }
 
+uintptr_t Integer::as_uintptr(bool& ok) const {
+  ok = true;
+  if (_signed_length < 0)
+    goto bad; // negative addresses are never valid
+  switch (length()) {
+    case 0:
+      return 0;
+    case 1:
+      return (uintptr_t)_first_digit;
+    case 2:
+      // An LP64 pointer needs both 32-bit digits; on ILP32 a second digit
+      // means the value cannot be a pointer, so reject it there.
+      if (sizeof(uintptr_t) < 2 * sizeof(Digit))
+        goto bad;
+      return (uintptr_t)operator[](0) | ((uintptr_t)operator[](1) << digitBitLength);
+    default:
+      goto bad; // wider than any machine address
+  }
+bad:
+  ok = false;
+  return 0;
+}
+
 double Integer::as_double(bool& ok) const {
   // filter out trivial result 0.0
   ok = true;
@@ -814,6 +837,15 @@ int IntegerOps::unsigned_int_to_Integer_result_size_in_bytes(unsigned int i) {
   return Integer::length_to_size_in_bytes(i != 0);
 }
 
+int IntegerOps::uintptr_to_Integer_result_size_in_bytes(uintptr_t i) {
+  int len = 0;
+  while (i != 0) {
+    len++;
+    i >>= digitBitLength;
+  }
+  return Integer::length_to_size_in_bytes(len);
+}
+
 int IntegerOps::int_to_Integer_result_size_in_bytes(int i) {
   return Integer::length_to_size_in_bytes(i != 0);
 }
@@ -1181,6 +1213,15 @@ void IntegerOps::unsigned_int_to_Integer(unsigned int i, Integer& z) {
     z.set_length(1);
     z._first_digit = Digit(i);
   }
+}
+
+void IntegerOps::uintptr_to_Integer(uintptr_t i, Integer& z) {
+  int len = 0;
+  for (uintptr_t rest = i; rest != 0; rest >>= digitBitLength)
+    len++;
+  z.set_length(len);
+  for (int d = 0; d < len; d++)
+    z[d] = Digit(i >> (d * digitBitLength));
 }
 
 void IntegerOps::int_to_Integer(int i, Integer& z) {

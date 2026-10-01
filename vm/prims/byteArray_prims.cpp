@@ -527,8 +527,13 @@ oop unsafeContents(oop unsafeAlien) {
   int offset = unsafeAlienClass()->klass_part()->lookup_inst_var(ivarName);
   return memOop(unsafeAlien)->instVarAt(offset);
 }
+// An alien must be large enough to hold the VM-private header.  Reject a short
+// one here rather than letting `alienAddress`/`alienContents` read past the end
+// of the object: this is what turned a stale 32-bit image into a wild pointer.
 #define checkAlienReceiver(receiver)                                                                                   \
   if (!receiver->is_byteArray())                                                                                       \
+  return markSymbol(vmSymbols::receiver_has_wrong_type());                                                             \
+  if (byteArrayOop(receiver)->length() < alienHeaderSize)                                                              \
   return markSymbol(vmSymbols::receiver_has_wrong_type())
 
 #define isUnsafe(argument)                                                                                             \
@@ -537,11 +542,26 @@ oop unsafeContents(oop unsafeAlien) {
 
 #define alienArg(argument) (void*)argument
 
+// An alien's byteArray payload is a VM-private header followed by the inline
+// bytes.  The layout must be derived from oopSize, never from a bare `int*` /
+// `void**` cast, because the header contains a machine pointer:
+//
+//   offset 0        int     size in bytes (negative => address-based alien)
+//   offset oopSize  void*   external address
+//   offset 2*oopSize        inline payload (only when size > 0)
+//
+// On ILP32 this was 4 + 4 = 8 bytes with the payload at offset 4.  On LP64 the
+// address slot alone is 8 bytes, so the header is 16; deriving the offsets with
+// 4-byte strides left `alienAddress` pointing 4 bytes past an 8-byte allocation
+// and let `alienContents` overlap the address field.  Reading the address then
+// returned adjacent heap bytes as a pointer.
+#define alienHeaderSize (int)(2 * oopSize)
+
 #define alienArray(receiver) ((int*)byteArrayOop(receiver)->bytes())
 
 #define alienSize(receiver) (alienArray(receiver)[0])
 
-#define alienAddress(receiver) ((void**)alienArray(receiver))[1]
+#define alienAddress(receiver) (*(void**)((u_char*)alienArray(receiver) + oopSize))
 
 #define alienResult(handle) (handle.as_oop() == nilObj ? NULL : (void*)handle.asPointer())
 #define alienResult2(handle) (handle->as_oop() == nilObj ? NULL : (void*)handle->asPointer())
@@ -634,7 +654,7 @@ static inline bool alien_index_in_bounds(int alien_size, int index, size_t type_
   return markSymbol(vmSymbols::illegal_state())
 
 #define alienContents(receiver)                                                                                        \
-  (alienSize(receiver) > 0 ? ((void*)(alienArray(receiver) + 1)) : (alienAddress(receiver)))
+  (alienSize(receiver) > 0 ? ((void*)((u_char*)alienArray(receiver) + alienHeaderSize)) : (alienAddress(receiver)))
 
 #define alienAt(receiver, argument, type) *((type*)(((char*)alienContents(receiver)) + alienIndex(argument) - 1))
 
@@ -859,11 +879,11 @@ PRIM_DECL_1(byteArrayPrimitives::alienGetAddress, oop receiver) {
   //    return markSymbol(vmSymbols::illegal_state());
 
   uintptr_t address = (uintptr_t)alienAddress(receiver);
-  int size = IntegerOps::unsigned_int_to_Integer_result_size_in_bytes(address);
+  int size = IntegerOps::uintptr_to_Integer_result_size_in_bytes(address);
 
   oop largeInteger = Universe::find_global("LargeInteger");
   oop z = klassOop(largeInteger)->klass_part()->allocateObjectSize(size);
-  IntegerOps::unsigned_int_to_Integer(address, byteArrayOop(z)->number());
+  IntegerOps::uintptr_to_Integer(address, byteArrayOop(z)->number());
   return simplified(byteArrayOop(z));
 }
 
@@ -875,16 +895,16 @@ PRIM_DECL_2(byteArrayPrimitives::alienSetAddress, oop receiver, oop argument) {
   if (!argument->is_smi() && !(argument->is_byteArray() && byteArrayOop(argument)->number().signum() > 0))
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  unsigned int value;
+  uintptr_t value;
   if (argument->is_smi())
-    value = smiOop(argument)->value();
+    value = (uintptr_t)smiOop(argument)->value();
   else {
     bool ok;
-    value = byteArrayOop(argument)->number().as_unsigned_int(ok);
+    value = byteArrayOop(argument)->number().as_uintptr(ok);
     if (!ok)
       return markSymbol(vmSymbols::argument_is_invalid());
   }
-  alienAddress(receiver) = (void*)(intptr_t)value;
+  alienAddress(receiver) = (void*)value;
 
   return receiver;
 }

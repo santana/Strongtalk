@@ -31,6 +31,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/os.hpp"
 #include "runtime/process.hpp"
 #include "runtime/shell.hpp"
+#include "runtime/imageCompat.hpp"
 #include "runtime/timer.hpp"
 #include "utilities/ostream.hpp"
 #include "memory/universe.store.hpp"
@@ -45,6 +46,8 @@ extern "C" void load_image() {
   bootstrap b(boot_filename);
   vmSymbols::initialize();
   bootstrapping = false;
+  patch_alien_ensure_loaded_size();
+  patch_alien_allocation_sizes();
 }
 
 int vmProcessMain(void* ignored) {

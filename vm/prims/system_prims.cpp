@@ -1000,6 +1000,20 @@ PRIM_DECL_0(systemPrimitives::nurseryFreeSpace) {
   return as_smiOop(Universe::new_gen.eden()->free());
 }
 
+// A C address is a full machine pointer.  Returning it as a smi truncates any
+// LP64 address to 32 bits, so return a LargeInteger instead, exactly as the
+// alien accessors do.
+static oop address_as_oop(uintptr_t address) {
+  int size = IntegerOps::uintptr_to_Integer_result_size_in_bytes(address);
+  oop largeInteger = Universe::find_global("LargeInteger");
+  oop z = klassOop(largeInteger)->klass_part()->allocateObjectSize(size);
+  IntegerOps::uintptr_to_Integer(address, byteArrayOop(z)->number());
+  // Collapse to a smi when the address happens to fit one.
+  bool ok;
+  oop smi = byteArrayOop(z)->number().as_smi(ok);
+  return ok ? smi : z;
+}
+
 PRIM_DECL_1(systemPrimitives::alienMalloc, oop size) {
   PROLOGUE_0("alienMalloc");
   if (!size->is_smi())
@@ -1008,7 +1022,7 @@ PRIM_DECL_1(systemPrimitives::alienMalloc, oop size) {
   if (theSize <= 0)
     return markSymbol(vmSymbols::argument_is_invalid());
 
-  return as_smiOop((intptr_t)malloc(theSize));
+  return address_as_oop((uintptr_t)malloc(theSize));
 }
 
 PRIM_DECL_1(systemPrimitives::alienCalloc, oop size) {
@@ -1019,7 +1033,7 @@ PRIM_DECL_1(systemPrimitives::alienCalloc, oop size) {
   if (theSize <= 0)
     return markSymbol(vmSymbols::argument_is_invalid());
 
-  return as_smiOop((intptr_t)calloc(smiOop(size)->value(), 1));
+  return address_as_oop((uintptr_t)calloc(smiOop(size)->value(), 1));
 }
 
 PRIM_DECL_1(systemPrimitives::alienFree, oop address) {
@@ -1036,10 +1050,11 @@ PRIM_DECL_1(systemPrimitives::alienFree, oop address) {
     BlockScavenge bs;
     Integer* largeAddress = &byteArrayOop(address)->number();
     bool ok;
-    int intAddress = largeAddress->as_int(ok);
+    // as_int would truncate an LP64 address before the free().
+    uintptr_t intAddress = largeAddress->as_uintptr(ok);
     if (intAddress == 0 || !ok)
       return markSymbol(vmSymbols::argument_is_invalid());
-    free((void*)(intptr_t)intAddress);
+    free((void*)intAddress);
   }
   return trueObj;
 }

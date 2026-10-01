@@ -72,6 +72,10 @@ public:
 
   int as_int(bool& ok) const;
   unsigned int as_unsigned_int(bool& ok) const;
+  // Convert to a machine-word unsigned address.  `unsigned int` is only 32 bits
+  // wide, so `as_unsigned_int` silently truncates any LP64 address; alien
+  // addresses must use this instead.
+  uintptr_t as_uintptr(bool& ok) const;
   double as_double(bool& ok) const;
   smiOop as_smi(bool& ok) const;
 
@@ -187,6 +191,7 @@ public:
   static int copy_result_size_in_bytes(Integer& x);
   static int int_to_Integer_result_size_in_bytes(int i);
   static int unsigned_int_to_Integer_result_size_in_bytes(unsigned int i);
+  static int uintptr_to_Integer_result_size_in_bytes(uintptr_t i);
   static int double_to_Integer_result_size_in_bytes(double x);
   static int string_to_Integer_result_size_in_bytes(char* s, int base);
   static int Integer_to_string_result_size_in_bytes(Integer& x, int base);
@@ -216,6 +221,7 @@ public:
   static void copy(Integer& x, Integer& z);
   static void int_to_Integer(int i, Integer& z);
   static void unsigned_int_to_Integer(unsigned int i, Integer& z);
+  static void uintptr_to_Integer(uintptr_t i, Integer& z);
   static void double_to_Integer(double x, Integer& z);
   static void string_to_Integer(char* s, int base, Integer& z);
   static void Integer_to_string(Integer& x, int base, char* s);
