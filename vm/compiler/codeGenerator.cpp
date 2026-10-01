@@ -1559,6 +1559,11 @@ void CodeGenerator::aPrimNode(PrimNode* node) {
       _masm->movq(r9, Address(esp, 5 * oopSize));
   }
 #endif // DELTA_BACKEND_X86_64
+#ifdef DELTA_BACKEND_AARCH64
+  // AAPCS64: the primitive's C function expects its parameters in x0-x7, but
+  // pass_arguments left them in the pushed stack slots.
+  _masm->load_primitive_arguments(node->pdesc()->number_of_parameters());
+#endif // DELTA_BACKEND_AARCH64
   _masm->set_last_Delta_frame_before_call();
   _masm->call((char*)(node->pdesc()->fn()), relocInfo::prim_type);
 #ifdef DELTA_BACKEND_X86_64

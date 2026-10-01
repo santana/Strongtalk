@@ -2374,6 +2374,24 @@ void AArch64MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Re
   call_C(entry, relocInfo::runtime_call_type);
 }
 
+void AArch64MacroAssembler::load_primitive_arguments(int nofParams) {
+  // 9 is the widest primitive (see the prim_fntype switch in prim.cpp).
+  assert(nofParams >= 0 && nofParams <= 9, "unexpected primitive arity");
+  const int nofArgRegs = 8;
+  int i = 0;
+  for (; i < nofParams && i < nofArgRegs; i++)
+    movq(argumentRegs[i], Address(sp, i * oopSize));
+  // blr leaves sp alone, so the callee reads its stack arguments from [sp]
+  // upwards rather than from wherever the caller happened to push them.
+  // Move the overflow parameters down to the slots the callee will look at;
+  // the sources and the destinations are disjoint, so the order does not
+  // matter, and x16 (IP0) is dead across the call that follows.
+  for (; i < nofParams; i++) {
+    movq(x16, Address(sp, i * oopSize));
+    movl(Address(sp, (i - nofArgRegs) * oopSize), x16);
+  }
+}
+
 void AArch64MacroAssembler::store_check(Register obj, Register tmp) {
   // Write barrier for interpreter/compiled stores. Mirrors the x86
   // implementation: if obj points into the old generation, mark the

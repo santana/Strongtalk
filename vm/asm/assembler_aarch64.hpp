@@ -166,6 +166,10 @@ const Register wzr = Register(31, ' ');
 
 const Register noreg; // Dummy register used in Load, LoadAddr, and Store.
 
+// AAPCS64 integer argument registers, in order. Parameters past the eighth are
+// passed on the stack, starting at [sp].
+const Register argumentRegs[8] = {x0, x1, x2, x3, x4, x5, x6, x7};
+
 // Interpreter register allocation (see vm/interpreter/interpreter.cpp).
 // The generator is written against the x86 register names; on AArch64 they
 // map to dedicated general-purpose registers disjoint from the scratch
@@ -844,6 +848,12 @@ public:
   void call_unpack_unoptimized_frames(char* entry, Address real_sender_sp, Address real_fp, Address frame_array,
                                       Register old_fp);
   void call_handle_pascal_callback_stub(char* entry, Register index, Register params_ptr);
+  // A primitive's arguments are left by pass_arguments in the pushed stack
+  // slots (parameter 0/receiver at [sp], the last parameter on top of stack).
+  // The primitive itself is a C function, so AAPCS64 wants them in x0-x7
+  // instead; emit the loads that move them across. Emit this immediately
+  // before the call, while sp still points at the first argument slot.
+  void load_primitive_arguments(int nofParams);
   void store_check(Register obj, Register tmp);
 
   // Support for inlined data (compiler)

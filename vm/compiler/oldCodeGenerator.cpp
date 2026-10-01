@@ -679,6 +679,11 @@ static Assembler::Condition mapToCC(BranchOpCode op) {
 }
 
 static void primitiveCall(InlinedScope* scope, primitive_desc* pdesc) {
+#ifdef DELTA_BACKEND_AARCH64
+  // The primitive is a C function, so AAPCS64 wants its parameters in x0-x7;
+  // pass_arguments left them in the pushed stack slots.
+  theMacroAssm->load_primitive_arguments(pdesc->number_of_parameters());
+#endif // DELTA_BACKEND_AARCH64
   if (pdesc->can_perform_NLR()) {
     call_C((char*)(pdesc->fn()), relocInfo::prim_type, pdesc->needs_delta_fp_code(), scope->nlrTestPoint()->label);
   } else {
