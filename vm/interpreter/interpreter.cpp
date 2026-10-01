@@ -1356,19 +1356,14 @@ char* InterpreterGenerator::install_context(int nofArgs, bool for_method) {
     masm->addl(esi, 2); // go to next instruction
     masm->shll(ebx, Tag_Size); // convert into smi (pushed on the stack!)
     save_esi(); // no last Delta frame setup needed => save vital registers
-    // allocateContext is a C function, so AAPCS64 takes the argument in x0
-    // rather than on the stack (on x86 the push/call/pop below is the
-    // convention).
-#ifdef DELTA_BACKEND_AARCH64
-    masm->mov(x0, ebx);
-#else
+    // allocateContext(-1) is generated code, not a C function: it reads its
+    // length from the top stack slot (see InterpreterBackend::
+    // contextLengthArgument), so the argument stays on the stack on every
+    // backend.
     masm->pushl(ebx); // pass as argument
-#endif
     masm->call(GeneratedPrimitives::allocateContext(nofArgs),
                relocInfo::runtime_call_type); // eax := context(nof. vars)
-#ifndef DELTA_BACKEND_AARCH64
     masm->popl(ebx); // get rid of argument
-#endif
   } else {
     // no. of variables implied by 1st byte
     masm->incl(esi); // go to next instruction
