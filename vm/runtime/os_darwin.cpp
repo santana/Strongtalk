@@ -926,6 +926,20 @@ static void handler(int signum, siginfo_t* info, void* context) {
     if (top.is_interpreted_frame()) {
       hptr = top.hp();
       m = top.is_interpreted_activation() ? top.method() : NULL;
+      if (m == NULL) {
+        // hp is not a hybrid pointer.  It may still be the *object base* of a
+        // methodOop, which is what convert_hcode_pointer() stores and what a
+        // restore that never ran would leave behind; name it so that case is
+        // distinguishable from genuine garbage.
+        oop* hs = Universe::old_gen.contains((oop*)hptr) ? Universe::object_start_checked((oop*)hptr) : NULL;
+        if (hs != NULL && (*hs)->is_mark() && as_memOop(hs)->is_method()) {
+          methodOop mb = methodOop(as_memOop(hs));
+          printf("  hp is methodOop base, selector=\"");
+          mb->selector()->print_symbol_on();
+          printf("\" bci_from_base=%d codes=%p codes_end=%p\n", mb->bci_from(hptr), mb->codes(), mb->codes_end());
+          m = NULL;
+        }
+      }
     }
     printf("  delta: esi(bp reg)=%#llx fp=%#llx pc(lr)=%#llx", hp_val, fp_val, lr_val);
     if (m != NULL) {
