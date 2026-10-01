@@ -116,7 +116,6 @@ int MarkSweep::hcode_pos;
 GrowableArray<void*>* MarkSweep::hcode_bases;
 int MarkSweep::hcode_base_pos;
 void* MarkSweep::hcode_pending_base;
-bool MarkSweep::in_hcode_walk_ = false;
 OopRelocations* MarkSweep::oopRelocations;
 
 void oopVerify(oop* p) {
@@ -173,7 +172,6 @@ void MarkSweep::allocate() {
   hcode_bases = new GrowableArray<void*>(100);
   hcode_base_pos = 0;
   hcode_pending_base = NULL;
-  in_hcode_walk_ = false;
   oopRelocations = new OopRelocations();
 }
 
@@ -240,18 +238,6 @@ void MarkSweep::follow_root(oop* p) {
     stack->pop()->follow_contents();
 }
 
-void MarkSweep::begin_hcode_walk() {
-  in_hcode_walk_ = true;
-}
-
-void MarkSweep::end_hcode_walk() {
-  in_hcode_walk_ = false;
-}
-
-bool MarkSweep::in_hcode_walk() {
-  return in_hcode_walk_;
-}
-
 void MarkSweep::add_hcode_offset(int offset) {
   hcode_offsets->push(offset);
   // Parallel record of the base the offset was measured from, so
@@ -278,9 +264,7 @@ void MarkSweep::mark_sweep_phase1(oop* p) {
   trace(" 1");
 
   WeakArrayRegister::begin_mark_sweep();
-  begin_hcode_walk();
   Processes::convert_hcode_pointers();
-  end_hcode_walk();
 
   Universe::oops_do(&follow_root);
 
@@ -324,7 +308,5 @@ void MarkSweep::mark_sweep_phase3() {
 
   // All hcode pointers can now be restored. Remember
   // we converted these pointers in phase1.
-  begin_hcode_walk();
   Processes::restore_hcode_pointers();
-  end_hcode_walk();
 }

@@ -105,6 +105,11 @@ methodOop frame::method_from_hp_or_base() const {
   oop* start = Universe::object_start_checked(h);
   if (start == NULL || !(*start)->is_mark())
     return NULL;
+  // See method_from_hp(): a mark-tagged header is not necessarily a klass --
+  // markOopDesc::tagged_prototype() has Mark_Tag and a non-canonical address --
+  // so require a real in-heap klass pointer before calling methods on the object.
+  if (!Universe::old_gen.contains((oop*)(*start)))
+    return NULL;
   memOop obj = as_memOop(start);
   if (!obj->is_method())
     return NULL;
@@ -134,6 +139,17 @@ methodOop frame::method_from_hp() const {
   // word can still carry the mark tag, which is why the codes-containment test
   // below is needed as well.
   if (!(*start)->is_mark())
+    return NULL;
+  // is_mark() only proves the word carries Mark_Tag; it does not prove the word
+  // is a *klass*.  markOopDesc::tagged_prototype() -- the "not yet marked"
+  // sentinel installed by memOop::init_mark(), and the value
+  // MarkSweep::reverse() then copies into the header -- is
+  // sentinel_is_place|no_hash_in_place|Mark_Tag, whose untagged address
+  // (1<<63) is non-canonical.  Dereferencing that as a klass faults, so a
+  // klass header must additionally point into the heap.  This has to be
+  // checked *before* is_method() below: that call reads through the klass, and
+  // the codes-containment test that would catch the bogus object comes after it.
+  if (!Universe::old_gen.contains((oop*)(*start)))
     return NULL;
   memOop obj = as_memOop(start);
   if (!obj->is_method())
@@ -722,14 +738,16 @@ frame frame::sender() const {
     // hcode-offset FIFO stayed balanced by count while replaying each offset
     // onto the wrong frame.
     //
-    // The block-ness of a frame does not change across the mark-sweep cycle, so
-    // the GC walks use the mark-phase-tolerant resolution below instead.  It
-    // deliberately does NOT apply to the general frame::sender() path: the heap
-    // lookup is far too expensive to repeat on every sender() during a normal
-    // frame walk (and re-enters the GC's own object_start_checked()), so only
-    // the GC enables it.  See MarkSweep::in_hcode_walk().
-    if (MarkSweep::in_hcode_walk()) {
-      methodOop m = method_from_hp_or_base();
+    // NB: is_interpreted_activation() answers correctly here for a scavenge walk
+    // (headers are untouched and hp is still an interior bytecode pointer), so
+    // the block test below resolves the method normally.  It must NOT be
+    // swapped for a mark-tolerant lookup: during mark-sweep phase1
+    // MarkSweep::reverse() has overwritten the object's header with a marking
+    // pointer, so is_method()/codes() on the located object read a word that is
+    // no longer a klass.  Locating the object start mid-mark is fine; calling
+    // methods on the object is not.
+    if (is_interpreted_activation()) {
+      methodOop m = method_from_hp();
       if (m != NULL && m->is_blockMethod()) {
         result = frame(block_activation_sender_sp(), link(), return_addr());
         return result;
