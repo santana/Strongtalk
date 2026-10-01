@@ -113,6 +113,10 @@ public:
 GrowableArray<memOop>* MarkSweep::stack;
 GrowableArray<intptr_t>* MarkSweep::hcode_offsets;
 int MarkSweep::hcode_pos;
+GrowableArray<void*>* MarkSweep::hcode_bases;
+int MarkSweep::hcode_base_pos;
+void* MarkSweep::hcode_pending_base;
+bool MarkSweep::in_hcode_walk_ = false;
 OopRelocations* MarkSweep::oopRelocations;
 
 void oopVerify(oop* p) {
@@ -166,12 +170,17 @@ void MarkSweep::allocate() {
   stack = new GrowableArray<memOop>(200);
   hcode_offsets = new GrowableArray<intptr_t>(100);
   hcode_pos = 0;
+  hcode_bases = new GrowableArray<void*>(100);
+  hcode_base_pos = 0;
+  hcode_pending_base = NULL;
+  in_hcode_walk_ = false;
   oopRelocations = new OopRelocations();
 }
 
 void MarkSweep::deallocate() {
   stack = NULL;
   hcode_offsets = NULL;
+  hcode_bases = NULL;
 }
 
 void MarkSweep::trace(char* msg) {
@@ -231,11 +240,34 @@ void MarkSweep::follow_root(oop* p) {
     stack->pop()->follow_contents();
 }
 
-void MarkSweep::add_hcode_offset(int offset) {
-  hcode_offsets->push(offset);
+void MarkSweep::begin_hcode_walk() {
+  in_hcode_walk_ = true;
 }
 
-int MarkSweep::next_hcode_offset() {
+void MarkSweep::end_hcode_walk() {
+  in_hcode_walk_ = false;
+}
+
+bool MarkSweep::in_hcode_walk() {
+  return in_hcode_walk_;
+}
+
+void MarkSweep::add_hcode_offset(int offset) {
+  hcode_offsets->push(offset);
+  // Parallel record of the base the offset was measured from, so
+  // next_hcode_offset() can verify the slot still holds it on replay.  NULL for
+  // the -1 sentinels, which have no base.
+  hcode_bases->push(hcode_pending_base);
+}
+
+void MarkSweep::set_hcode_pending_base(void* base) {
+  hcode_pending_base = base;
+}
+
+int MarkSweep::next_hcode_offset(void** base) {
+  if (base != NULL)
+    *base = (hcode_base_pos < hcode_bases->length()) ? hcode_bases->at(hcode_base_pos) : NULL;
+  hcode_base_pos++;
   return hcode_offsets->at(hcode_pos++);
 }
 
@@ -246,7 +278,9 @@ void MarkSweep::mark_sweep_phase1(oop* p) {
   trace(" 1");
 
   WeakArrayRegister::begin_mark_sweep();
+  begin_hcode_walk();
   Processes::convert_hcode_pointers();
+  end_hcode_walk();
 
   Universe::oops_do(&follow_root);
 
@@ -290,5 +324,7 @@ void MarkSweep::mark_sweep_phase3() {
 
   // All hcode pointers can now be restored. Remember
   // we converted these pointers in phase1.
+  begin_hcode_walk();
   Processes::restore_hcode_pointers();
+  end_hcode_walk();
 }

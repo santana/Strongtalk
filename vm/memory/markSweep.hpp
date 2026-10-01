@@ -40,7 +40,27 @@ public:
   static void reverse_and_follow(oop* p);
 
   static void add_hcode_offset(int offset);
-  static int next_hcode_offset();
+  // Records the base the *next* add_hcode_offset() call's offset was measured
+  // from.  frame::convert_hcode_pointer() sets this to the method object base it
+  // just stored in the frame's hp slot, so next_hcode_offset() can verify on
+  // replay that the slot still holds that base.
+  static void set_hcode_pending_base(void* base);
+  // Pops the next offset.  When base is non-NULL it receives the method object
+  // base that offset was measured from (NULL for a skipped frame), so the caller
+  // can verify the frame's hp slot still holds that base before replaying it;
+  // see frame::restore_hcode_pointer().
+  static int next_hcode_offset(void** base = NULL);
+
+  // True only between begin_hcode_walk() and end_hcode_walk(), i.e. while
+  // Processes::convert_hcode_pointers()/restore_hcode_pointers() are walking
+  // the frame stacks.  frame::sender() consults this to resolve an activation's
+  // method with the mark-phase-tolerant lookup (method_from_hp_or_base()) only
+  // for those two walks: a sender() call anywhere else would pay a full
+  // object_start_checked() heap walk per frame, and outside mark phase1 the
+  // plain method_from_hp() test is both cheaper and sufficient.
+  static void begin_hcode_walk();
+  static void end_hcode_walk();
+  static bool in_hcode_walk();
 
 private:
   // the traversal stack used during phase1.
@@ -49,6 +69,15 @@ private:
   // and retrieved after the garbage collection.
   static GrowableArray<intptr_t>* hcode_offsets;
   static int hcode_pos;
+  // The object base each hcode offset was measured from, parallel to
+  // hcode_offsets.  -1 offsets store NULL.
+  static GrowableArray<void*>* hcode_bases;
+  static int hcode_base_pos;
+  // Base for the next add_hcode_offset() call; see set_hcode_pending_base().
+  static void* hcode_pending_base;
+  // True while convert_hcode_pointers()/restore_hcode_pointers() run; see
+  // in_hcode_walk().
+  static bool in_hcode_walk_;
   // resource area for non-aligned oops requiring relocation (eg. in nmethods)
   static OopRelocations* oopRelocations;
 

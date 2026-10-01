@@ -456,7 +456,23 @@ oop* oldSpace::object_start_checked(oop* p) {
   // header still has to be checked in that case.
   oop* n = q;
   do {
-    if (!(*n)->is_mark())
+    // Validate every header we step onto, including the first: a bogus start
+    // can leave us pointing at slots that hold smis or forward pointers rather
+    // than a klass.  Three forms are legitimate here, because this function
+    // runs *inside* mark-sweep phase1 (frame::method_from_hp() ->
+    // is_interpreted_activation()), where MarkSweep::reverse() has already
+    // rewritten many headers in place:
+    //   is_mark() -- the normal klass, which is a markOop (tag Mark_Tag == 3);
+    //   is_mem()  -- a header already replaced by a tagged marking pointer;
+    //   a raw in-range address -- a header replaced by the *untagged*
+    //               reference MarkSweep::reverse() installs via
+    //               memOop(obj)->set_mark(p), where p is a plain slot address.
+    // Requiring is_mark() alone rejected the latter two forms and made this
+    // function return NULL for essentially every hybrid code pointer, so
+    // is_interpreted_activation() was false for all but a couple of frames in
+    // the whole run.  A header must at least lie inside this space, which still
+    // rejects smis, weak/forward pointers and other garbage.
+    if (!(*n)->is_mark() && !(*n)->is_mem() && !contains((oop*)*n))
       return NULL;
     q = n;
     int size = as_memOop(n)->size();
@@ -473,8 +489,20 @@ oop* oldSpace::object_start_checked(oop* p) {
     if (n > top())
       return NULL;
   } while (n <= p);
-  if (!as_memOop(q)->mark()->is_mark())
-    return NULL;
+  // NOTE: do *not* re-validate q's header here with
+  // as_memOop(q)->mark()->is_mark().  This function runs inside mark-sweep
+  // phase1 (frame::method_from_hp() -> is_interpreted_activation()), by which
+  // point reverse_and_follow() has replaced every live object's header with its
+  // *marking pointer*.  mark() therefore returns the marking pointer stored in
+  // that header rather than the header's own klass tag, so testing
+  // mark()->is_mark() inspects the wrong word and this function returned NULL
+  // for essentially every hybrid code pointer -- which made
+  // is_interpreted_activation() false for all but a couple of frames in the
+  // whole run, so convert_hcode_pointer() skipped essentially the whole stack
+  // and the restored `hp` invariant was never maintained.  The loop above has
+  // already validated every header it stepped onto with the correct predicate
+  // ((*n)->is_mark(), tested before that word was overwritten as a marking
+  // pointer's *target*), so q needs no further check here.
   return q;
 }
 

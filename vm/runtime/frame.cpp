@@ -34,6 +34,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/memOop.hpp"
 #include "oops/methodOop.hpp"
 #include "oops/objArrayOop.hpp"
+#include "oops/symbolOop.hpp"
 #include "oops/oop.hpp"
 #include "runtime/frame.hpp"
 #include "runtime/vframe.hpp"
@@ -90,6 +91,29 @@ oop* frame::block_activation_sender_sp() const {
   return (oop*)((char*)addr_at(frame_sender_sp_offset) + slotSize + (nArgs + 1) * slotSize);
 }
 #endif
+
+methodOop frame::method_from_hp_or_base() const {
+  // Resolve hp() to its methodOop when it addresses a byte inside a method's
+  // bytecodes (method_from_hp()), and *also* when it holds the method's object
+  // base -- which is what convert_hcode_pointer() leaves in the slot for the
+  // duration of a mark-sweep cycle.  Both denote the same frame's method, and
+  // frame::sender() has to give the same answer for both or the convert and
+  // restore walks enumerate different frames.
+  oop* h = (oop*)hp();
+  if (!Universe::old_gen.contains(h))
+    return NULL;
+  oop* start = Universe::object_start_checked(h);
+  if (start == NULL || !(*start)->is_mark())
+    return NULL;
+  memOop obj = as_memOop(start);
+  if (!obj->is_method())
+    return NULL;
+  methodOop m = methodOop(obj);
+  // Either an interior bytecode address, or the object base itself (offset 0).
+  if (h == (oop*)obj || (h >= (oop*)m->codes() && h < (oop*)m->codes_end()))
+    return m;
+  return NULL;
+}
 
 methodOop frame::method_from_hp() const {
   // Resolve hp() to its methodOop, or NULL if hp is not a valid hybrid code
@@ -565,6 +589,7 @@ void frame::convert_hcode_pointer() {
     // re-derive this decision for itself: by the time it runs, the activation
     // test fails for the frames this pass *did* convert (see below), so it
     // cannot be used to tell a converted frame from an untouched one.
+    MarkSweep::set_hcode_pending_base(NULL);
     MarkSweep::add_hcode_offset(-1);
     return;
   }
@@ -572,7 +597,9 @@ void frame::convert_hcode_pointer() {
   u_char* h = hp();
   u_char* obj = (u_char*)as_memOop(Universe::object_start((oop*)h));
   set_hp(obj);
-  // Save the offset
+  // Save the offset, together with the base it was measured from so that
+  // restore_hcode_pointer() can verify this exact frame still holds that base.
+  MarkSweep::set_hcode_pending_base(obj);
   MarkSweep::add_hcode_offset(h - obj);
 
   // Mark the rest of this frame *here*, while the hybrid code pointer is still
@@ -611,11 +638,36 @@ void frame::restore_hcode_pointer() {
   // MarkSweep::hcode_pos stranded mid-queue, so the next mark-sweep replayed
   // stale offsets onto the wrong frames and corrupted bytecode pointers.  The
   // sentinel recorded by convert is the authoritative answer.
-  int offset = MarkSweep::next_hcode_offset();
+  void* base = NULL;
+  int offset = MarkSweep::next_hcode_offset(&base);
   if (offset < 0)
     return;
+  if (getenv("ST_TRACE_RESTORE") != NULL && base != NULL)
+    lprintf("RESTORE fp=%p base=%p offset=%d hp=%p\n", (void*)fp(), base, offset, (void*)hp());
   // Readjust hcode pointer
   u_char* obj = hp();
+  // Verify the round trip.  The offset is relative to the method object base,
+  // and by now the slot holds that method's *post-compaction* base (frame::
+  // follow_roots() followed hp_addr() as a real oop precisely so compaction
+  // would update it), so `base` -- the pre-compaction base convert recorded --
+  // is expected to differ from `obj` and is not itself an error.  What must
+  // hold is that obj is a method and obj+offset lands inside its bytecodes.
+  // A failure here means the offset was replayed onto a frame that is not the
+  // one it was measured from, i.e. the convert and restore walks disagree.
+  // Diagnosed rather than fatal: the real bug is upstream, so report it and
+  // carry on to keep the process alive long enough to be inspected.
+  if (base != NULL) {
+    methodOop m = method_from_hp_or_base();
+    if (m == NULL) {
+      warning("restore_hcode_pointer: hp %p (recorded base %p) does not "
+              "resolve to a method; offset %d will be misapplied",
+              obj, base, offset);
+    } else if ((u_char*)obj + offset < m->codes() || (u_char*)obj + offset >= m->codes_end()) {
+      warning("restore_hcode_pointer: hp %p + offset %d is outside "
+              "[codes %p, codes_end %p) of the method it resolves to",
+              obj, offset, m->codes(), m->codes_end());
+    }
+  }
   // if (WizardMode) lprintf("[0x%lx+%d]\n", obj, offset);
   set_hp(obj + offset);
 }
@@ -657,12 +709,34 @@ frame frame::sender() const {
     // A block activation consumed extra delta slots (call_C's saved LR plus the
     // slots setupBlockValueFrame reserved for the block's return), so the
     // caller's sp is not at the usual sender_sp offset.
-    methodOop m = is_interpreted_activation() ? method_from_hp() : NULL;
-    if (m != NULL && m->is_blockMethod()) {
-      result = frame(block_activation_sender_sp(), link(), return_addr());
-    } else
+    //
+    // This test must NOT go through is_interpreted_activation().  That predicate
+    // is value-based on hp(), and convert_hcode_pointer() deliberately rewrites
+    // hp() to the method's object base -- which lies below codes(), so
+    // method_from_hp()'s [codes(), codes_end()) containment test then fails and
+    // is_interpreted_activation() reports false for exactly the frames that
+    // were converted.  Asking it here therefore made frame::sender() pick
+    // sender_sp() instead of block_activation_sender_sp() during the restore
+    // walk for block activations the convert walk had handled correctly, so the
+    // two walks enumerated *different* frames in the same order and the
+    // hcode-offset FIFO stayed balanced by count while replaying each offset
+    // onto the wrong frame.
+    //
+    // The block-ness of a frame does not change across the mark-sweep cycle, so
+    // the GC walks use the mark-phase-tolerant resolution below instead.  It
+    // deliberately does NOT apply to the general frame::sender() path: the heap
+    // lookup is far too expensive to repeat on every sender() during a normal
+    // frame walk (and re-enters the GC's own object_start_checked()), so only
+    // the GC enables it.  See MarkSweep::in_hcode_walk().
+    if (MarkSweep::in_hcode_walk()) {
+      methodOop m = method_from_hp_or_base();
+      if (m != NULL && m->is_blockMethod()) {
+        result = frame(block_activation_sender_sp(), link(), return_addr());
+        return result;
+      }
+    }
 #endif
-      result = frame(sender_sp(), link(), return_addr());
+    result = frame(sender_sp(), link(), return_addr());
   }
   return result;
 }

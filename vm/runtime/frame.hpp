@@ -199,6 +199,11 @@ private:
   // pointer.  Shared by method() and is_interpreted_activation(); deliberately
   // does not assert on the frame kind and uses the bounds-checked object lookup.
   methodOop method_from_hp() const;
+  // method_from_hp() but also accepting hp == the method's object base, which is
+  // what convert_hcode_pointer() stores in the slot mid-mark-sweep.  frame::
+  // sender() uses this so the convert and restore walks enumerate the same
+  // frames; see the comment there.
+  methodOop method_from_hp_or_base() const;
 
   // Float support
   inline bool has_interpreted_float_marker() const;
