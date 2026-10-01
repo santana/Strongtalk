@@ -53,11 +53,16 @@ extern "C" void load_image() {
 int vmProcessMain(void* ignored) {
   Processes::start(new VMProcess);
   // Processes::start() only returns when the scheduler process itself has been
-  // terminated (see VMProcess::loop()): the Smalltalk system is going away, and
+  // terminated (see VMProcess::loop()): the Smalltalk system is going away and
   // no further VM service is available for DeltaProcess::runMainProcess() on
-  // the main thread.  Tear the VM down here rather than leaving the process
-  // alive with only the watchdog thread still running.
-  ::exit(0);
+  // the main thread, so tear the VM down rather than leaving the process alive
+  // with only the watchdog thread still running.
+  //
+  // TEMPORARY (A5): gated so that debugging can keep runMainProcess() running.
+  // When the scheduler no longer returns from its start code, VMProcess::loop()
+  // never unwinds here and this flag can go.
+  if (ExitWhenSchedulerTerminates)
+    ::exit(0);
   return 0;
 }
 int vm_main(int argc, char* argv[]) {
