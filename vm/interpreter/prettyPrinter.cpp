@@ -351,7 +351,17 @@ public:
 
   klassOop get_klass() { return klass; }
 
-  bool is_block_method() { return method()->is_blockMethod(); }
+  bool is_block_method() {
+    methodOop m = method();
+    if (m == NULL)
+      return false;
+    try {
+      oop sel = m->selector_or_method();
+      return !sel->is_symbol();
+    } catch (...) {
+      return false;
+    }
+  }
 
   void context_allocated() { assert(is_context_allocated(), "just checking"); }
   bool is_context_allocated() { return method()->allocatesInterpretedContext(); }
