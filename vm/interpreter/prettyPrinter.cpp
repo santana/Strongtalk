@@ -551,11 +551,16 @@ public:
   }
 
   void print_method_header(prettyPrintStream* output) {
+    methodOop m = method();
+    if (m == NULL) {
+      output->print("unknown method");
+      return;
+    }
     GrowableArray<astNode*>* arguments = new GrowableArray<astNode*>(10);
-    for (int i = method()->number_of_arguments() - 1; i >= 0; i--) {
+    for (int i = m->number_of_arguments() - 1; i >= 0; i--) {
       arguments->push(parameter_at(i));
     }
-    print_selector_with_arguments(output, method()->selector(), arguments, false);
+    print_selector_with_arguments(output, m->selector(), arguments, false);
   }
 };
 
