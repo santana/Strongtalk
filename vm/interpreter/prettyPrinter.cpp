@@ -293,6 +293,8 @@ public:
   scopeNode(deltaVFrame* fr, int index, scopeNode* scope = NULL) : astNode(0, NULL) {
     frame_index = index;
     _method = fr ? fr->method() : NULL;
+    if (_method != NULL && !oop(_method)->is_mem())
+      _method = NULL;
     if (_method == NULL)
       klass = NULL;
     else
