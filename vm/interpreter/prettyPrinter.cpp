@@ -331,7 +331,9 @@ public:
       return;
     }
     try {
-      if (_method->is_blockMethod()) {
+      oop sel = _method->selector_or_method();
+      if (!sel->is_symbol()) {
+        // block method
         parentScope = new scopeNode(_method->parent(), klass, -1, this);
       } else {
         parentScope = NULL;
