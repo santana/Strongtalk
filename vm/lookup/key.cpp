@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "topIncludes/std_includes.hpp"
 #include "utilities/ostream.hpp"
 #include "memory/universe.store.hpp"
+#include "memory/universe.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/oop.inline.hpp"
 
@@ -47,13 +48,27 @@ symbolOop LookupKey::selector() const {
   }
 }
 
+// An oop word is only safe to dereference as an object if it actually points
+// into one of the heap spaces.  A tag-compatible but otherwise bogus word
+// (e.g. a small integer, or an already-freed/relocated pointer) still passes
+// is_mem(), so tag tests alone are not enough.
+static bool usable_as_oop(oop p) {
+  return p != NULL && Universe::really_contains((void*)((char*)p - Mem_Tag));
+}
+
 bool LookupKey::verify() const {
   bool flag = true;
-  if (!klass()->is_klass()) {
+  // verify() is called from asserts inside lookupCache::lookup_probe(), i.e.
+  // exactly when a key is already suspect, so it must report the problem
+  // rather than fault on it: is_klass()/is_symbol() dereference the oop, and a
+  // bad word here would turn a diagnosable lookup failure into an unexplained
+  // SIGSEGV inside memOopDesc::klass_field().
+  if (!usable_as_oop(klass()) || !klass()->is_klass()) {
     error("klass %#lx isn't a klass", klass());
     flag = false;
   }
-  if (!selector_or_method()->is_symbol() && !selector_or_method()->is_method()) {
+  if (!usable_as_oop(selector_or_method()) ||
+      (!selector_or_method()->is_symbol() && !selector_or_method()->is_method())) {
     lprintf("\tin selector_or_method of LookupKey %#lx\n", this);
     flag = false;
   }
