@@ -623,10 +623,14 @@ nmethod* zone::findNMethod(void* start) const {
   if (!methodHeap->contains(start))
     return NULL;
   nmethod* n = (nmethod*)methodHeap->findStartOfBlock(start);
-  assert((char*)start < (char*)n->locsEnd(), "found wrong nmethod");
-  assert(methodHeap->contains(n), "not in zone");
-  assert(n->isNMethod(), "findNMethod didn't find nmethod");
-  assert(n->encompasses(start), "doesn't encompass start");
+  if (n == NULL || !methodHeap->contains(n))
+    return NULL;
+  if ((char*)start >= (char*)n->locsEnd())
+    return NULL;
+  if (!n->isNMethod())
+    return NULL;
+  if (!n->encompasses(start))
+    return NULL;
   return n;
 }
 
