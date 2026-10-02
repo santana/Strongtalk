@@ -292,12 +292,15 @@ protected:
 public:
   scopeNode(deltaVFrame* fr, int index, scopeNode* scope = NULL) : astNode(0, NULL) {
     frame_index = index;
-    _method = fr->method();
-    klass = fr->receiver()->klass();
-    _hot_bci = scope ? -1 : fr->bci();
+    _method = fr ? fr->method() : NULL;
+    if (_method == NULL)
+      klass = NULL;
+    else
+      klass = fr->receiver() ? fr->receiver()->klass() : NULL;
+    _hot_bci = scope ? -1 : (fr ? fr->bci() : 0);
     _fr = fr;
     in = 0;
-    _sd = _fr->is_compiled_frame() ? ((compiledVFrame*)_fr)->scope() : NULL;
+    _sd = (_fr != NULL && _fr->is_compiled_frame()) ? ((compiledVFrame*)_fr)->scope() : NULL;
     innerScope = scope;
     initParent();
   }
@@ -310,6 +313,10 @@ public:
     in = 0;
     _sd = NULL;
     innerScope = scope;
+    if (_method == NULL) {
+      parentScope = NULL;
+      return;
+    }
     initParent();
   }
   void initParent() {
