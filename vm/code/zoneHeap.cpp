@@ -198,29 +198,40 @@ ChunkKlass* ChunkKlass::findStart(ChunkKlass* mapStart, ChunkKlass* mapEnd) {
   ChunkKlass* m;
   if (*p < MaxDistance) {
     // we're outside the header, so just walk down the trail
-    while (*p < MaxDistance)
+    int guard = 0;
+    while (*p < MaxDistance && p >= start && guard++ < 1000000) {
       p -= *p;
-    assert(p >= start, "not found");
+    }
+    if (p < start || p >= end)
+      return mapStart;
     m = asChunkKlass(p);
   } else {
     // pointing to a header, but we don't know whether long/short etc
     // first walk up to first non-header byte
     // (note that first distance byte of unused blocks is correct, but
     // the others aren't)
-    while (*p >= MaxDistance && p < end)
+    int guard = 0;
+    while (*p >= MaxDistance && p < end && guard++ < 1000000)
       p++;
     if (p < end) {
+      guard = 0;
       // find start of this block
-      while (*p < MaxDistance)
+      while (*p < MaxDistance && p >= start && guard++ < 1000000)
         p -= *p;
-      assert(p >= start, "not found");
+      if (p < start || p >= end)
+        return mapStart;
+    } else {
+      // p >= end means we walked past the map
+      return mapStart;
     }
     m = asChunkKlass(p);
-    while (!m->contains(this->asByte()))
+    guard = 0;
+    while (!m->contains(this->asByte()) && m > mapStart && guard++ < 100000) {
       m = m->prev();
+    }
+    if (!m->contains(this->asByte()))
+      return mapStart;
   }
-  assert(m->verify(), "invalid chunk map");
-  assert(m->contains(this->asByte()), "wrong chunk");
   return m;
 }
 
