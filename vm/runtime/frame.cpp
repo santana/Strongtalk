@@ -205,6 +205,12 @@ bool frame::is_interpreted_frame() const {
 }
 
 bool frame::is_interpreted_activation() const {
+  // Safety: reject obviously bad hp values before dereferencing
+  void* h = (void*)hp();
+  if (h == NULL || ((uintptr_t)h & (sizeof(void*) - 1)) != 0)
+    return false;
+  if ((uintptr_t)h < 0x1000)
+    return false;
   if (!is_interpreted_frame())
     return false;
   // The pc test is necessary but *not* sufficient.  frame::sender()
