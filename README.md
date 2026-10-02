@@ -29,31 +29,37 @@ ported and exercising the full JIT pipeline (compiler, scope-description
 recording, inline caches, jumps, deoptimization, and recompilation): the VM
 boots, the image read-in completes fully, JIT-compiled frames install and run,
 and recompile/deopt cycles execute. The earlier `findNMethod` "not in zone"
-assert (`zone.cpp:622`, once the active blocker) is resolved. The live blocker
-is **not** in the VM: it is the frozen 32-bit `strongtalk.bst` image doing
-`(Alien new: 4) unsignedLongAt: 1 put: <64-bit dlopen handle>` — an 8-byte
-store into a 4-byte alien — inside `Alien>>ensureLoaded:`, reached from
-`ObjectiveCAlien class>>initializeSelectors` during
-`SystemInitializer class>>runNonCriticalClassInitializers`. The correctly-fixed
-alien bounds check rejects it, so `libobjc.dylib` never loads. Because the
-error surfaces while the scheduler is the active process,
-`processOopPrimitives::stop` is a no-op and the image's own error handler
-re-signals every 21 frames until `Fatal: Stack overflow in scheduler` — a
-symptom, not the cause. In-repo `Alien.dlt` is already 64-bit-correct
-(`(Alien new: 8)`), but the image cannot be rebuilt here; the same image defect
-is why x86-64 dies in the library load.
+assert (`zone.cpp:622`, once the active blocker) is resolved, as is the frozen
+image's 4-byte `Alien` in `Alien>>ensureLoaded:` — `vm/runtime/imageCompat.*`
+rewrites that site at image load (`[image-compat] Alien>>ensureLoaded: alien
+size 4 -> 8 bytes`), so `libobjc.dylib` now loads and DLL handles resolve
+normally.
+
+**Both 64-bit backends now run real Smalltalk.** A long-standing defect made
+`frame::is_interpreted_activation()` validate a memOop's **mark** word as if it
+were its **klass**; the mark normally holds the non-canonical
+`markOopDesc::tagged_prototype()` sentinel, so the check rejected every hybrid
+code pointer, inline-cache misses could not find their cache, and **every send
+in every interpreted method became a silent no-op**. Fixed 2026-10-01
+(`frame::method_from_hp()` now validates word 1 via `klass_addr()`). Before
+the fix the scheduler's `ProcessorScheduler>>start` ran its seven bytecodes,
+dropped all four sends and returned; after it, the system image initialises and
+the image's own error-handling machinery executes on both backends.
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
-| Linux x86-64 (native)     | yes   | reads the image, then SIGSEGVs in the same printf/re-raise path as the x86-64 `printf` defect |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, runs JIT-compiled code; recompile/deopt cycles execute. Active blocker is the frozen image's 4-byte `Alien` in `Alien>>ensureLoaded:` (above), surfacing as `Fatal: Stack overflow in scheduler` |
-| macOS x86-64 (forced)     | yes   | reads the image, then SIGBUSes inside `__v2printf` while formatting the re-raise error |
+| Linux x86-64 (native)     | yes   | boots, loads the image, and runs the interpreter into the image's error handler (`1-ProcessExplicitError` on `2-ProcessorScheduler`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s); never reaches `Eval>` |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, resolves DLL handles, and reaches `[Garbage collection 1`. Active blocker is a mark-sweep phase1 frame walk: SIGSEGV in `oldSpace::object_start_checked()` via `frame::sender()` → `is_interpreted_activation()` on a frame whose header klass word has been replaced by an untagged pointer |
+| macOS x86-64 (forced)     | yes   | boots and runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`); then SIGSEGV `fault_addr: 0x17` in `methodOopDesc::selector_or_method()` from the debugger's `processOopPrimitives::stop` → `trace_stack` path |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows-runtime-status) for status |
 
-Getting the VM running end-to-end on Apple Silicon requires a 64-bit-correct
-image so that `Alien>>ensureLoaded:` allocates an 8-byte alien and the
-Objective-C bridge can load. Every configuration is verified by building from
-the root `Makefile`: the native arm64 config, a
+None of the four reaches `Eval>` yet. The remaining blockers are in the
+VM's own GC frame walk and debugger stack printer, not in the image and not in
+the code generator.
+
+Getting the VM running end-to-end requires finishing that GC frame-walk work.
+Every configuration is verified by building from the
+root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
 build in Docker, and the Windows x86-64 MinGW cross-build (`make OS=mingw
 CXX=x86_64-w64-mingw32-g++`, in a Docker container with MinGW-w64). All four

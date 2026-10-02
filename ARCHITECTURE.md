@@ -600,27 +600,39 @@ Repo-root developer docs:
 
 ## 6. Platform Support
 
-Every configuration currently loads the image and then hits the *same* single
-root cause, so the runtime column differs only in how the failure surfaces. The
-frozen `strongtalk.bst` image was built 32-bit and runs
-`(Alien new: 4) unsignedLongAt: 1 put: <64-bit dlopen handle>` inside
-`Alien>>ensureLoaded:`, an 8-byte store into a 4-byte alien, reached from
-`ObjectiveCAlien class>>initializeSelectors`. The 64-bit-correct alien bounds
-check rejects the write, so `libobjc` never loads. The image's own
-`Error>>defaultAction` then re-signals every 21 frames, and each config dies in
-the way its own code path allows:
+All four configurations build and load the image, and all of them now execute
+real Smalltalk — but they stop in **different** places, because the shared
+blocker that used to mask everything (the frozen image's 4-byte
+`Alien>>ensureLoaded:` site) is handled by `vm/runtime/imageCompat.*` rewriting
+that bytecode at load time, and a second defect was fixed that had been
+silently disabling the interpreter itself:
+
+`frame::is_interpreted_activation()` validated a memOop's **mark** word as if it
+were its **klass**. A memOop header is two words — `oopDesc::_mark` at
+`mark_byte_offset() == 0` and `_klass_field` at `klass_byte_offset() ==
+oopSize` — and the mark normally holds `markOopDesc::tagged_prototype()`
+(`0x8000000000000003`), the "not yet marked" sentinel whose untagged address is
+`1 << 63`. That address is non-canonical *by design*, so the containment test
+rejected **every** hybrid code pointer. With `is_interpreted_activation()`
+permanently false, `InterpretedIC::inline_cache_miss()` could not find its
+inline cache and every send in every interpreted method became a silent no-op
+— which is why the old symptom was "the scheduler returns from
+`ProcessorScheduler>>start` without looping". Fixed 2026-10-01 by validating
+word 1 through `as_memOop(start)->klass_addr()`.
 
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Boots, loads image, runs JIT-compiled code (recompile/deopt cycles execute). Re-raise loop exhausts the scheduler's soft stack limit -> `Fatal: Stack overflow in scheduler`. With a large `ThreadStackSize` it survives the loop, then hits a separate post-scavenge interpreter crash (dispatch into a handler with a garbage bytecode pointer) |
-| macOS x86-64 (forced) | Yes    | Reads the image, then SIGBUS inside `__v2printf` while formatting the re-raise error |
-| Linux x86-64 (Docker) | Yes    | Reads the image, then SIGSEGV in the same printf/re-raise path (constant `RIP`, `RSI: 0`) |
+| macOS arm64 (native)  | Yes    | Boots, loads image, resolves DLL handles, reaches `[Garbage collection 1`. Blocked in the mark-sweep phase1 GC frame walk: SIGSEGV in `oldSpace::object_start_checked()` via `frame::sender()` → `is_interpreted_activation()`, on a frame whose header klass word has been replaced by an untagged pointer mid-`MarkSweep::reverse()` |
+| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`). Blocked in the debugger's stack printer: SIGSEGV `fault_addr: 0x17` in `methodOopDesc::selector_or_method()` via `processOopPrimitives::stop` → `DeltaProcess::trace_stack_from` |
+| Linux x86-64 (Docker) | Yes    | Boots, loads image, runs into the image's error handler (`1-ProcessExplicitError`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s) without reaching `Eval>` |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call |
 
-In-repo `StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the
-image itself cannot be regenerated in this tree, so the fix is a bytecode patch
-or a rebuilt image. See [README.md](README.md#status) for the same status from
-the build/run perspective.
+The remaining blockers are in the VM's GC frame walk and its debugger stack
+printer — not in the image and not in the code generator. In-repo
+`StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the load-time
+`imageCompat` rewrite exists only because the frozen image cannot be regenerated
+in this tree. See [README.md](README.md#status) for the same status from the
+build/run perspective.
 
 ### Platform Abstraction
 
