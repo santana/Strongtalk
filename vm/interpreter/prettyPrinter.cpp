@@ -313,7 +313,11 @@ public:
     initParent();
   }
   void initParent() {
-    parentScope = _method->is_blockMethod() ? new scopeNode(_method->parent(), klass, -1, this) : NULL;
+    if (_method != NULL && _method->is_blockMethod()) {
+      parentScope = new scopeNode(_method->parent(), klass, -1, this);
+    } else {
+      parentScope = NULL;
+    }
   }
   deltaVFrame* fr() { return _fr; }
   ScopeDesc* sd() const { return _sd; }
