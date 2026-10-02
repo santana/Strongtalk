@@ -49,15 +49,18 @@ the image's own error-handling machinery executes on both backends.
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | boots, loads the image, and runs the interpreter into the image's error handler (`1-ProcessExplicitError` on `2-ProcessorScheduler`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s); never reaches `Eval>` |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, resolves DLL handles, and reaches `[Garbage collection 1`. Active blocker is a mark-sweep phase1 frame walk: SIGSEGV in `oldSpace::object_start_checked()` via `frame::sender()` → `is_interpreted_activation()` on a frame whose header klass word has been replaced by an untagged pointer |
-| macOS x86-64 (forced)     | yes   | boots and runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`); then SIGSEGV `fault_addr: 0x17` in `methodOopDesc::selector_or_method()` from the debugger's `processOopPrimitives::stop` → `trace_stack` path |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, passes GC, resolves DLL handles and `LoadImageA`. Stopped on the post-boot DLL-loading path by `klass 0x1 isn't a klass`, a clean `LookupKey::verify()` diagnostic whose underlying cause is an SMI-tagged word in a send's receiver slot (AArch64 **A8**) |
+| macOS x86-64 (forced)     | yes   | boots, runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion, and **reaches the `Eval>` prompt**. Stopped by the same `klass 0x1 isn't a klass` diagnostic, same SMI-receiver root cause (x86-64 **X15**) |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows-runtime-status) for status |
 
-None of the four reaches `Eval>` yet. The remaining blockers are in the
-VM's own GC frame walk and debugger stack printer, not in the image and not in
-the code generator.
+macOS x86-64 now reaches `Eval>`; the others do not. The remaining blocker is
+shared by both macOS arches and is in the VM's own send path, not in the image
+and not in the code generator: the interpreter's receiver-slot decode for sends
+hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
+`0x7ffffffffffffffc` — both SMI-tagged) where the receiver object should be, so
+`receiver->klass()` reads ordinary memory through a bogus base.
 
-Getting the VM running end-to-end requires finishing that GC frame-walk work.
+Getting the VM running end-to-end requires fixing that receiver-slot decode.
 Every configuration is verified by building from the
 root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64

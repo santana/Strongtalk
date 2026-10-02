@@ -622,13 +622,16 @@ word 1 through `as_memOop(start)->klass_addr()`.
 
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Boots, loads image, resolves DLL handles, reaches `[Garbage collection 1`. Blocked in the mark-sweep phase1 GC frame walk: SIGSEGV in `oldSpace::object_start_checked()` via `frame::sender()` → `is_interpreted_activation()`, on a frame whose header klass word has been replaced by an untagged pointer mid-`MarkSweep::reverse()` |
-| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`). Blocked in the debugger's stack printer: SIGSEGV `fault_addr: 0x17` in `methodOopDesc::selector_or_method()` via `processOopPrimitives::stop` → `DeltaProcess::trace_stack_from` |
+| macOS arm64 (native)  | Yes    | Boots, loads image, passes GC, resolves DLL handles and `LoadImageA`. Stopped on the post-boot DLL-loading path by `klass 0x1 isn't a klass` — a clean `LookupKey::verify()` diagnostic (`066745e`) whose underlying cause is an **SMI-tagged word in a send's receiver slot** (AArch64 A8) |
+| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`) to completion and **reaches the `Eval>` prompt**. Stopped by the same `klass 0x1 isn't a klass` diagnostic, same SMI-receiver root cause (x86-64 X15) |
 | Linux x86-64 (Docker) | Yes    | Boots, loads image, runs into the image's error handler (`1-ProcessExplicitError`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s) without reaching `Eval>` |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call |
 
-The remaining blockers are in the VM's GC frame walk and its debugger stack
-printer — not in the image and not in the code generator. In-repo
+The remaining blocker is shared by both arches: the interpreter's **receiver-slot
+decode for sends** hands `InterpretedIC::inline_cache_miss()` a non-pointer
+(`0xc`, `0x7ffffffffffffffc` — both SMI-tagged) where a receiver object should
+be, so `receiver->klass()` reads ordinary memory through a bogus base. This is
+in the VM's send path, not in the image and not in the code generator. In-repo
 `StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the load-time
 `imageCompat` rewrite exists only because the frozen image cannot be regenerated
 in this tree. See [README.md](README.md#status) for the same status from the
