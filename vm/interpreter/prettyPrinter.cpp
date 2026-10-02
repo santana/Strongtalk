@@ -322,9 +322,21 @@ public:
     initParent();
   }
   void initParent() {
-    if (_method != NULL && _method->is_blockMethod()) {
-      parentScope = new scopeNode(_method->parent(), klass, -1, this);
-    } else {
+    if (_method == NULL) {
+      parentScope = NULL;
+      return;
+    }
+    if (!oop(_method)->is_mem()) {
+      parentScope = NULL;
+      return;
+    }
+    try {
+      if (_method->is_blockMethod()) {
+        parentScope = new scopeNode(_method->parent(), klass, -1, this);
+      } else {
+        parentScope = NULL;
+      }
+    } catch (...) {
       parentScope = NULL;
     }
   }
