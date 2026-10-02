@@ -108,7 +108,7 @@ methodOop frame::method_from_hp_or_base() const {
   // See method_from_hp(): a mark-tagged header is not necessarily a klass --
   // markOopDesc::tagged_prototype() has Mark_Tag and a non-canonical address --
   // so require a real in-heap klass pointer before calling methods on the object.
-  if (!Universe::old_gen.contains((oop*)(*start)))
+  if (!Universe::old_gen.contains((void*)(*as_memOop(start)->klass_addr())))
     return NULL;
   memOop obj = as_memOop(start);
   if (!obj->is_method())
@@ -141,15 +141,24 @@ methodOop frame::method_from_hp() const {
   if (!(*start)->is_mark())
     return NULL;
   // is_mark() only proves the word carries Mark_Tag; it does not prove the word
-  // is a *klass*.  markOopDesc::tagged_prototype() -- the "not yet marked"
-  // sentinel installed by memOop::init_mark(), and the value
-  // MarkSweep::reverse() then copies into the header -- is
-  // sentinel_is_place|no_hash_in_place|Mark_Tag, whose untagged address
-  // (1<<63) is non-canonical.  Dereferencing that as a klass faults, so a
-  // klass header must additionally point into the heap.  This has to be
-  // checked *before* is_method() below: that call reads through the klass, and
-  // the codes-containment test that would catch the bogus object comes after it.
-  if (!Universe::old_gen.contains((oop*)(*start)))
+  // is a *klass*.  But note *which* word that is: the header is two words --
+  // word 0 is the mark (memOop::mark_byte_offset() == 0) and word 1 is the klass
+  // (klass_byte_offset() == oopSize).  Outside a mark-sweep the mark word holds
+  // markOopDesc::tagged_prototype(), the "not yet marked" sentinel installed by
+  // memOop::init_mark() and by bootstrap_header() when reading an image.  Its
+  // untagged address (sentinel_is_place == 1<<63) is non-canonical *by design*,
+  // so it never points into a space and must never be used as a heap pointer.
+  // Testing the mark word here therefore rejected every genuine hybrid code
+  // pointer, which made is_interpreted_activation() false for every frame and
+  // left InterpretedIC::inline_cache_miss() unable to find its inline cache --
+  // turning every send in every interpreted method into a silent no-op (A5).
+  //
+  // The klass is the word is_method() actually dereferences, so *that* is the one
+  // that has to be validated before the call: a garbage slot can resolve to an
+  // in-heap word that is not a klass, and is_method() would fault on it.  During
+  // mark-sweep phase1 MarkSweep::reverse() may have replaced it with an in-heap
+  // marking pointer, which this containment test also accepts.
+  if (!Universe::old_gen.contains((void*)(*as_memOop(start)->klass_addr())))
     return NULL;
   memOop obj = as_memOop(start);
   if (!obj->is_method())
