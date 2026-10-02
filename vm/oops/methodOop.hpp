@@ -88,7 +88,17 @@ public:
   void bootstrap_object(bootstrap* st);
 
   // Tester
-  bool is_blockMethod() const { return !selector_or_method()->is_symbol(); }
+  bool is_blockMethod() const {
+    if (this == NULL)
+      return false;
+    // Additional safety - check if addr is valid?
+    oop sel = selector_or_method();
+    if (sel == nilObj && this == NULL)
+      return false; // defensive
+    if (!sel->is_mem() && !sel->is_symbol())
+      return false;
+    return !sel->is_symbol();
+  }
 
   objArrayOop debugInfo() const { return addr()->_debugInfo; }
   void set_debugInfo(objArrayOop d) { addr()->_debugInfo = d; }
@@ -97,7 +107,11 @@ public:
   methodOop parent() const; // returns the enclosing block or method (for blocks), or NULL
   methodOop home() const; // returns the enclosing method (for blocks), or itself
 
-  oop selector_or_method() const { return addr()->_selector_or_method; }
+  oop selector_or_method() const {
+    if (this == NULL)
+      return nilObj;
+    return addr()->_selector_or_method;
+  }
   void set_selector_or_method(oop value) { addr()->_selector_or_method = value; }
 
   // returns the enclosing method's selector (block methods only)
