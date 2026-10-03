@@ -71,7 +71,10 @@ static const int float_0_offset = oopSize * (frame_temp_offset - 3);
 static const int temp_1_offset = oopSize * (frame_temp_offset - 1);
 static const int temp_0_offset = oopSize * frame_temp_offset;
 static const int esi_offset = oopSize * frame_hp_offset;
-static const int self_offset = oopSize * frame_receiver_offset;
+// NOTE (x86-64/AArch64): frame_receiver_offset is measured in *slots*, but
+// oopSize is a *byte* count. On AArch64 slotSize == 2*oopSize, so this must use
+// slotSize, not oopSize, or the offset is half of what it should be.
+static const int self_offset = slotSize * frame_receiver_offset;
 static const int link_offset = oopSize * frame_link_offset;
 static const int ret_addr_offset = oopSize * frame_return_addr_offset;
 static const int arg_n_offset = oopSize * frame_arg_offset;
