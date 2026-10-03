@@ -107,6 +107,11 @@ void evaluator::single_step(void** fr) {
   }
 }
 
+// Set when get_line() stops because stdin reached EOF, as opposed to a complete
+// line. read_eval_loop() needs the distinction: process_line() returns false for
+// EOF *and* for the debugger commands that deliberately hand control back to C++.
+static bool line_saw_eof = false;
+
 bool evaluator::get_line(char* line) {
   int end = 0;
   int c;
@@ -115,7 +120,8 @@ bool evaluator::get_line(char* line) {
   while ((end > 0) && ((line[end - 1] == ' ') || (line[end - 1] == '\t')))
     end--;
   line[end] = '\0';
-  return c != EOF;
+  line_saw_eof = (c == EOF);
+  return !line_saw_eof;
 }
 
 class TokenStream : public StackObj {
@@ -496,9 +502,23 @@ bool evaluator::process_line() {
 
 void evaluator::read_eval_loop() {
   ResourceMark rm;
+  line_saw_eof = false;
   do {
     mystd->print("Eval> ");
   } while (process_line());
+  // EOF must not return from here. Callers rely on the REPL not handing control
+  // back: the scheduler-termination primitive in process_prims.cpp enters this
+  // loop precisely so that the image's Error>>defaultAction cannot re-raise
+  // indefinitely, which it assumes can never happen. That assumption breaks as
+  // soon as stdin is exhausted, because get_line() reports EOF as a failed read
+  // and process_line() then returns false -- so the primitive returns to
+  // Smalltalk, the image re-raises, and the VM spins forever emitting one stack
+  // trace per cycle. Treat EOF as "quit", exactly like the 'q' command, so the
+  // process exits instead of looping. The debugger commands ('s', 'n', 'e', 'c')
+  // still return normally: they set no EOF and single_step()/handle_error() rely
+  // on regaining control in C++.
+  if (line_saw_eof)
+    os::fatalExit(0);
 }
 
 void evaluator::print_mini_help() {
