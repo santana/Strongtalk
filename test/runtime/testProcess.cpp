@@ -41,7 +41,21 @@ void TestDeltaProcess::removeFromProcesses() {
 }
 
 oop newProcess() {
-  return Delta::call(Universe::find_global("Process"), reinterpret_cast<oop>(oopFactory::new_symbol("new")));
+  // Allocate the process object directly from the Process class, mirroring the
+  // canonical path in vm/prims/process_prims.cpp (processOopPrimitives::create):
+  //   processOop process = processOop(receiver->primitive_allocate());
+  //
+  // Sending #new does NOT work. The image exposes process creation through the
+  // `create:` primitive, which takes a block argument, so a zero-argument #new
+  // send yields NULL -- which then faulted in processOopDesc::set_process()
+  // (NULL - Mem_Tag + offsetof(_process) == 0xf) and made stest unusable.
+  //
+  // This process runs its own thread (launch_tests), so it only needs the oop
+  // wrapper; no DeltaProcess body has to be created here. Scavenging is
+  // suppressed because the process is still half-initialised at this point
+  // (set_processObj()/set_process() run on the next lines).
+  oop processKlass = Universe::find_global("Process");
+  return processKlass->primitive_allocate(false);
 }
 
 void TestDeltaProcess::addToProcesses() {
