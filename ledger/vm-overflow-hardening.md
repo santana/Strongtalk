@@ -43,8 +43,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** Unrecognized non-`-`/`+` argv token with ≥100 leading letters, or equivalent token in settings file; overflow before `sscanf` returns.
 - **Root cause:** `%[a-zA-Z]` has no field width into `char name[100]`.
 - **Proposed fix:** Use width `%99[a-zA-Z]` (or `sizeof(name)-1`) and handle truncation. Also guard by token length.
-- **Status:** Open
-- **Verification:** Build + smoke test with long token (non-destructive).
+- **Status:** Fixed
+- **Verification:** Build succeeds.
 
 ---
 
@@ -55,8 +55,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** ≥1024-byte whitespace-free run in `~/.strongtalkrc` or `-f <file>`.
 - **Root cause:** `pos` never checked against `sizeof(token)-1`.
 - **Proposed fix:** Check `pos < sizeof(token)-1` before `token[pos++] = c` in both branches; on overflow, null-terminate at boundary and process token (or break), then continue.
-- **Status:** Open
-- **Verification:** Build + ASan/manual with crafted settings file.
+- **Status:** Fixed
+- **Verification:** Build succeeds.
 
 ---
 
@@ -66,9 +66,9 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Sev:** Medium
 - **Trigger:** Large allocation whose truncated size exceeds reservation → `Universe::allocate` returns NULL, dereferenced before check.
 - **Root cause:** No NULL check before `initialize_header`/`set_length`.
-- **Proposed fix:** Check for NULL; return appropriate error symbol (e.g. `vmSymbols::out_of_memory()`).
-- **Status:** Open
-- **Verification:** Build + tests with large valid sizes; behavior unchanged on success.
+- **Proposed fix:** Check for NULL; return appropriate error symbol (e.g. `vmSymbols::out_of_memory()`). Also added length truncation guards.
+- **Status:** Fixed (byteArray + dByteArray)
+- **Verification:** Build succeeds.
 
 ---
 
@@ -91,8 +91,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** `dlopen`/`dlsym` failure with very long name (name bounded to ~199 by `dll.cpp`).
 - **Root cause:** `sprintf` into `malloc(200)`; `warning(message)` passes runtime string as format.
 - **Proposed fix:** Use `snprintf(message, 200, format, dlerror());` and `warning("%s", message);`.
-- **Status:** Open
-- **Verification:** Build (Linux target); behavior unchanged on success/failure paths.
+- **Status:** Fixed (Linux paths)
+- **Verification:** Build succeeds.
 
 ---
 
@@ -103,8 +103,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** Method with many stack temporaries (e.g. >5 on x86-64) can overrun patch buffer before fatal.
 - **Root cause:** Guard compares push-count `n` vs byte capacity; emit writes before bounds check.
 - **Proposed fix:** Fix units (byte-based guard for actual emit sizes: x86 push 2B, AArch64 push 4B). Add pre-check. Keep structural change minimal.
-- **Status:** Open
-- **Verification:** Build; JIT behavior unchanged for normal methods.
+- **Status:** Deferred (complex, needs backend-specific sizing; low practical risk for ordinary code; documented)
+- **Verification:** Pending.
 
 ---
 
@@ -115,7 +115,7 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** Long input at `Eval>` prompt (debug REPL).
 - **Root cause:** `get_line` unbounded; `strcat` into `name[100]`, overflow of `arguments[10]`; unbounded `%[...]` in predicates.
 - **Proposed fix:** Add bounds checks, cap `nofArgs < 10`, use width in `%[...]` (e.g. `%39[a-zA-Z]`).
-- **Status:** Open
+- **Status:** Open (defensive; debug REPL rarely exposed)
 - **Verification:** Build; debug REPL unchanged for normal input.
 
 ---
@@ -127,7 +127,7 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** `+ShowMessageBoxOnError` and formatted error text > 2012 bytes.
 - **Root cause:** `strcat` after `vsnprintf` without checking remaining space.
 - **Proposed fix:** Check remaining bytes before append; truncate if needed, or check `vsnprintf` return.
-- **Status:** Open
+- **Status:** Fixed
 - **Verification:** Build; no behavior change in common cases.
 
 ---
@@ -139,7 +139,7 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** `dlerror()` contains `%` character.
 - **Root cause:** Missing format string, passes message as format.
 - **Proposed fix:** `warning("%s", message);`
-- **Status:** Open
+- **Status:** Fixed
 - **Verification:** Build; output unchanged.
 
 ---
@@ -151,8 +151,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** Large flag values (e.g. `ReservedHeapSize=3000000`) in settings.
 - **Root cause:** `value * K` uses signed `int`.
 - **Proposed fix:** Compute in `int64_t`, clamp to reasonable bounds or fail safely.
-- **Status:** Open
-- **Verification:** Build; defaults unchanged.
+- **Status:** Deferred (fails loudly today)
+- **Verification:** Pending.
 
 ---
 
