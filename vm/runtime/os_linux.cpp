@@ -365,11 +365,11 @@ private:
   void checkHandle(void* handle, const char* format) {
     if (handle == NULL) {
       char* message = (char*)malloc(200);
-      sprintf(message, format, dlerror());
+      snprintf(message, 200, format, dlerror());
       // The library/function can legitimately be missing at boot (e.g. Windows
       // DLLs requested while booting on other platforms); report it and let the
       // caller fail gracefully instead of aborting the VM.
-      warning(message);
+      warning("%s", message);
       free(message);
     }
   }

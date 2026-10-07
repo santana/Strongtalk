@@ -404,7 +404,7 @@ private:
       // The library/function can legitimately be missing at boot (e.g. Windows
       // DLLs requested while booting on macOS); report it and let the caller
       // fail gracefully instead of aborting the VM.
-      warning(message);
+      warning("%s", message);
       free(message);
     }
   }
