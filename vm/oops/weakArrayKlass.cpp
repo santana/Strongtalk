@@ -83,7 +83,7 @@ int weakArrayKlass::oop_scavenge_contents(oop obj) {
   if (!WeakArrayRegister::scavenge_register(o)) {
     oop* base = o->objs(1);
     oop* end = base + o->length();
-    while (base <= end) {
+    while (base < end) {
       scavenge_oop(base++);
     }
   }
@@ -98,7 +98,7 @@ int weakArrayKlass::oop_scavenge_tenured_contents(oop obj) {
   if (!WeakArrayRegister::scavenge_register(o)) {
     oop* base = o->objs(1);
     oop* end = base + o->length();
-    while (base <= end)
+    while (base < end)
       scavenge_tenured_oop(base++);
   }
   return object_size(o->length());
@@ -109,7 +109,7 @@ void weakArrayKlass::oop_follow_contents(oop obj) {
   if (!WeakArrayRegister::mark_sweep_register(weakArrayOop(obj), non_indexable_size())) {
     oop* base = weakArrayOop(obj)->objs(1);
     oop* end = base + weakArrayOop(obj)->length();
-    while (base <= end)
+    while (base < end)
       MarkSweep::reverse_and_follow(base++);
   }
 
