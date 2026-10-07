@@ -57,28 +57,27 @@ PRIM_DECL_2(byteArrayPrimitives::allocateSize, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  if (smiOop(argument)->value() < 0)
+  intptr_t len_val = smiOop(argument)->value();
+  if (len_val < 0 || len_val != (int)len_val)
     return markSymbol(vmSymbols::negative_size());
 
   klassOop k = klassOop(receiver);
   int ni_size = k->klass_part()->non_indexable_size();
-  int obj_size = ni_size + 1 + roundTo(smiOop(argument)->value(), image_oop_size) / image_oop_size;
+  int length = (int)len_val;
+  int obj_size = ni_size + 1 + roundTo(length, image_oop_size) / image_oop_size;
   // allocate
   byteArrayOop obj = as_byteArrayOop(Universe::allocate(obj_size, (memOop*)&k));
+  if (obj == NULL)
+    return markSymbol(vmSymbols::failed_allocation());
   // header
   memOop(obj)->initialize_header(true, k);
   // instance variables
   memOop(obj)->initialize_body(memOopDesc::header_size(), ni_size);
   // indexables
   oop* base = (oop*)obj->addr();
-  oop* end = base + obj_size;
   // %optimized 'obj->set_length(size)'
   base[ni_size] = argument;
-  // %optimized 'for (int index = 1; index <= size; index++)
-  //               obj->byte_at_put(index, '\000')'
-  base = &base[ni_size + 1];
-  while (base < end)
-    *base++ = (oop)0;
+  memOop(obj)->initialize_body(ni_size + 1, obj_size);
   return obj;
 }
 

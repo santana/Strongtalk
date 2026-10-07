@@ -115,8 +115,13 @@ static bool line_saw_eof = false;
 bool evaluator::get_line(char* line) {
   int end = 0;
   int c;
-  while (((c = getchar()) != EOF) && (c != '\n'))
-    line[end++] = c;
+  const int maxlen = 199;
+  while (((c = getchar()) != EOF) && (c != '\n')) {
+    if (end < maxlen)
+      line[end++] = c;
+    else
+      end = maxlen;
+  }
   while ((end > 0) && ((line[end - 1] == ' ') || (line[end - 1] == '\t')))
     end--;
   line[end] = '\0';
@@ -222,7 +227,7 @@ bool TokenStream::is_name(oop* addr) {
   char name[200];
   oop obj;
   unsigned int length;
-  if (sscanf(current(), "%[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length) {
+  if (sscanf(current(), "%199[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length) {
     if ((obj = Universe::find_global(name))) {
       *addr = obj;
       return true;
@@ -234,7 +239,7 @@ bool TokenStream::is_name(oop* addr) {
 bool TokenStream::is_symbol(oop* addr) {
   char name[200];
   unsigned int length;
-  if (sscanf(current(), "#%[a-zA-Z0-9_]%n", name, &length) == 1 && strlen(current()) == length) {
+  if (sscanf(current(), "#%199[a-zA-Z0-9_]%n", name, &length) == 1 && strlen(current()) == length) {
     *addr = reinterpret_cast<oop>(oopFactory::new_symbol(name));
     return true;
   }
@@ -244,7 +249,7 @@ bool TokenStream::is_symbol(oop* addr) {
 bool TokenStream::is_unary() {
   char name[40];
   unsigned int length;
-  return sscanf(current(), "%[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length;
+  return sscanf(current(), "%39[a-zA-Z]%n", name, &length) == 1 && strlen(current()) == length;
 }
 
 bool TokenStream::is_binary() {
@@ -254,7 +259,7 @@ bool TokenStream::is_binary() {
 bool TokenStream::is_keyword() {
   char name[40];
   unsigned int length;
-  return sscanf(current(), "%[a-zA-Z]:%n", name, &length) == 1 && strlen(current()) == length;
+  return sscanf(current(), "%39[a-zA-Z]:%n", name, &length) == 1 && strlen(current()) == length;
 }
 
 bool evaluator::get_oop(TokenStream* st, oop* addr) {
@@ -324,12 +329,18 @@ void evaluator::eval_message(TokenStream* st) {
     int nofArgs = 0;
     name[0] = '\0';
     while (!st->eos()) {
-      strcat(name, st->current());
+      const char* cur = st->current();
+      size_t nlen = strlen(name);
+      if (nlen + strlen(cur) < sizeof(name))
+        strcat(name, cur);
       st->advance();
       oop arg;
       if (!get_oop(st, &arg))
         return;
-      arguments[nofArgs++] = arg;
+      if (nofArgs < 10)
+        arguments[nofArgs++] = arg;
+      else
+        nofArgs++;
     }
     selector = oopFactory::new_symbol(name);
     if (!validate_lookup(receiver, selector))

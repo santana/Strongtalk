@@ -146,11 +146,17 @@ int objArrayKlass::oop_scavenge_contents(oop obj) {
   // indexables
   objArrayOop o = objArrayOop(obj);
   oop* base = o->objs(1);
-  oop* end = base + o->length();
+  intptr_t len = o->length();
+  int objSize = object_size(len);
+  oop* end = base + len;
+  // Defensive: clamp end to allocated boundary if mismatched
+  oop* endBySize = base + (objSize - (o->objs(0) - base));
+  if (end > endBySize)
+    end = endBySize;
   while (base < end) {
     scavenge_oop(base++);
   }
-  return object_size(o->length());
+  return objSize;
 }
 
 int objArrayKlass::oop_scavenge_tenured_contents(oop obj) {
@@ -159,16 +165,27 @@ int objArrayKlass::oop_scavenge_tenured_contents(oop obj) {
   // indexables
   objArrayOop o = objArrayOop(obj);
   oop* base = o->objs(1);
-  oop* end = base + o->length();
+  intptr_t len = o->length();
+  int objSize = object_size(len);
+  oop* end = base + len;
+  oop* endBySize = base + (objSize - (o->objs(0) - base));
+  if (end > endBySize)
+    end = endBySize;
   while (base < end)
     scavenge_tenured_oop(base++);
-  return object_size(o->length());
+  return objSize;
 }
 
 void objArrayKlass::oop_follow_contents(oop obj) {
   // Retrieve length information since header information  mutates the object
-  oop* base = objArrayOop(obj)->objs(1);
-  oop* end = base + objArrayOop(obj)->length();
+  objArrayOop o = objArrayOop(obj);
+  oop* base = o->objs(1);
+  intptr_t len = o->length();
+  int objSize = object_size(len);
+  oop* end = base + len;
+  oop* endBySize = base + (objSize - (o->objs(0) - base));
+  if (end > endBySize)
+    end = endBySize;
 
   // header + instance variables
   memOopKlass::oop_follow_contents(obj);

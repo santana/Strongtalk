@@ -52,7 +52,8 @@ PRIM_DECL_3(objArrayPrimitives::allocateSize2, oop receiver, oop argument, oop t
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  if (smiOop(argument)->value() < 0)
+  intptr_t len_val = smiOop(argument)->value();
+  if (len_val < 0 || len_val != (int)len_val)
     return markSymbol(vmSymbols::negative_size());
 
   if (tenured != Universe::trueObj() && tenured != Universe::falseObj())
@@ -60,7 +61,8 @@ PRIM_DECL_3(objArrayPrimitives::allocateSize2, oop receiver, oop argument, oop t
 
   klassOop k = klassOop(receiver);
   int ni_size = k->klass_part()->non_indexable_size();
-  int obj_size = ni_size + 1 + smiOop(argument)->value();
+  int length = (int)len_val;
+  int obj_size = ni_size + 1 + length;
   // allocate
   oop* result = (tenured == Universe::trueObj()) ? Universe::allocate_tenured(obj_size, false)
                                                  : Universe::allocate(obj_size, (memOop*)&k, false);
@@ -86,14 +88,18 @@ PRIM_DECL_2(objArrayPrimitives::allocateSize, oop receiver, oop argument) {
   if (!argument->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
-  if (smiOop(argument)->value() < 0)
+  intptr_t len_val = smiOop(argument)->value();
+  if (len_val < 0 || len_val != (int)len_val)
     return markSymbol(vmSymbols::negative_size());
 
   klassOop k = klassOop(receiver);
   int ni_size = k->klass_part()->non_indexable_size();
-  int obj_size = ni_size + 1 + smiOop(argument)->value();
+  int length = (int)len_val;
+  int obj_size = ni_size + 1 + length;
   // allocate
   objArrayOop obj = as_objArrayOop(Universe::allocate(obj_size, (memOop*)&k));
+  if (obj == NULL)
+    return markSymbol(vmSymbols::failed_allocation());
   // header
   memOop(obj)->initialize_header(k->klass_part()->has_untagged_contents(), k);
   // instance variables

@@ -58,7 +58,7 @@ static void process_token(char* token) {
   else {
     char name[100];
     int value;
-    if (sscanf(token, "%[a-zA-Z]=%d", name, &value) == 2) {
+    if (sscanf(token, "%99[a-zA-Z]=%d", name, &value) == 2) {
       set_int_flag(name, value);
     }
   }
@@ -90,7 +90,10 @@ void process_settings_file(char* file_name, bool quiet) {
           in_comment = true;
         else if (!isspace(c)) {
           in_white_space = false;
-          token[pos++] = c;
+          if (pos < (int)sizeof(token) - 1)
+            token[pos++] = c;
+          else
+            pos = sizeof(token) - 1;
         }
       }
     } else {
@@ -100,7 +103,8 @@ void process_settings_file(char* file_name, bool quiet) {
         pos = 0;
         in_white_space = true;
       } else {
-        token[pos++] = c;
+        if (pos < (int)sizeof(token) - 1)
+          token[pos++] = c;
       }
     }
     c = getc(stream);

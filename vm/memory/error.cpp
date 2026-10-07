@@ -77,7 +77,10 @@ void report_error(char* title, char* format, ...) {
     report_vm_state();
 
   if (ShowMessageBoxOnError) {
-    std::strcat(buffer, "\n\nDo you want to debug the problem?");
+    const char* suffix = "\n\nDo you want to debug the problem?";
+    size_t rem = sizeof(buffer) - strlen(buffer) - 1;
+    if (rem > strlen(suffix))
+      std::strcat(buffer, suffix);
     if (!os::message_box(title, buffer))
       os::fatalExit(-1);
   }
