@@ -115,8 +115,8 @@ All changes are read-only-audit driven; trusted-image execution is in scope, mal
 - **Trigger:** Long input at `Eval>` prompt (debug REPL).
 - **Root cause:** `get_line` unbounded; `strcat` into `name[100]`, overflow of `arguments[10]`; unbounded `%[...]` in predicates.
 - **Proposed fix:** Add bounds checks, cap `nofArgs < 10`, use width in `%[...]` (e.g. `%39[a-zA-Z]`).
-- **Status:** Open (defensive; debug REPL rarely exposed)
-- **Verification:** Build; debug REPL unchanged for normal input.
+- **Status:** Fixed
+- **Verification:** Build succeeds; bounds added.
 
 ---
 
