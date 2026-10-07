@@ -634,8 +634,7 @@ be, so `receiver->klass()` reads ordinary memory through a bogus base. This is
 in the VM's send path, not in the image and not in the code generator. In-repo
 `StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the load-time
 `imageCompat` rewrite exists only because the frozen image cannot be regenerated
-in this tree. See [README.md](README.md#status) for the same status from the
-build/run perspective.
+in this tree. See [README.md](README.md#status) and the [architecture ledger](ledger/) for per-architecture details.
 
 ### Platform Abstraction
 

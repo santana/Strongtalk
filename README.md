@@ -58,7 +58,7 @@ shared by both macOS arches and is in the VM's own send path, not in the image
 and not in the code generator: the interpreter's receiver-slot decode for sends
 hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
 `0x7ffffffffffffffc` — both SMI-tagged) where the receiver object should be, so
-`receiver->klass()` reads ordinary memory through a bogus base.
+`receiver->klass()` reads ordinary memory through a bogus base. See [ledger/](ledger/) for detailed per-architecture status and reproduction notes.
 
 Getting the VM running end-to-end requires fixing that receiver-slot decode.
 Every configuration is verified by building from the
