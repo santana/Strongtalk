@@ -33,7 +33,7 @@ char* PrimitivesGenerator::double_op(arith_op op) {
 
   // 	Tag test for argument
   masm->movl(ebx, Address(esp, +oopSize));
-  masm->movl(edx, doubleKlass_addr());
+  masm->load_absolute_value(edx, doubleKlass_addr());
   masm->testb(ebx, 0x01);
   masm->jcc(Assembler::zero, error_first_argument_has_wrong_type);
 
@@ -53,7 +53,7 @@ char* PrimitivesGenerator::double_op(arith_op op) {
   masm->bind(fill_object);
   masm->movl(ecx, Address(esp, +2 * oopSize));
 
-  masm->movl(edx, doubleKlass_addr());
+  masm->load_absolute_value(edx, doubleKlass_addr());
   masm->movq(Address(eax, -4 * oopSize), (intptr_t)markOopDesc::untagged_prototype()); // obj->init_mark()
   masm->movl(Address(eax, -3 * oopSize), edx); // obj->set_klass(klass)
 
@@ -85,7 +85,7 @@ char* PrimitivesGenerator::double_op(arith_op op) {
   masm->bind(need_scavenge);
   scavenge(4);
   masm->movl(ebx, Address(esp, +oopSize));
-  masm->movl(edx, doubleKlass_addr());
+  masm->load_absolute_value(edx, doubleKlass_addr());
   masm->jmp(fill_object);
 
   return entry_point;
@@ -100,7 +100,7 @@ char* PrimitivesGenerator::double_from_smi() {
 
   masm->bind(fill_object);
   masm->movl(ecx, Address(esp, +oopSize));
-  masm->movl(edx, doubleKlass_addr());
+  masm->load_absolute_value(edx, doubleKlass_addr());
   masm->sarl(ecx, 2);
   masm->movq(Address(eax, -4 * oopSize), (intptr_t)markOopDesc::untagged_prototype()); // obj->init_mark()
   masm->movl(Address(esp, -oopSize), ecx);

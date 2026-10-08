@@ -241,23 +241,28 @@ Knobs:
 
 ## Windows runtime status
 
-The Windows x86-64 configuration **builds, links, and runs far enough to read
-the image**: the full `strongtalk.bst` read-in completes (the Linux/amd64
-config, by comparison, never leaves the interpreter bootstrap). Both
-`strongtalk.exe` and `stest.exe` then die in the **first Delta call**
-(`DeltaProcess::launch_delta`, right after the spawned Delta thread starts).
-Depending on how the binaries are executed:
+The Windows x86-64 configuration **builds, links, and boots**: the full
+`strongtalk.bst` read-in completes and, under native amd64 Wine (reproduced in
+QEMU TCG + wine), `strongtalk.exe` runs the image-compat `Alien` patches through
+the real interpreter (`Delta::call_generic`) and exits cleanly with no access
+violation. The fixes (see `ledger/windows-x86_64.md`) closed three root causes:
+an LLP64 mask truncation in `bits.hpp`, a RIP-relative disp32 wrap on C-global
+references, and the missing Windows x64 C-call shadow space/stack alignment
+that let C callees stamp over the interpreter's delta stack.
 
+Remaining Windows-specific work:
+
+- `stest.exe` (easyunit harness) exits with `0xC0000005` after 3 init
+  `call_generic`s — the harness path still needs debugging.
+- The doesNotUnderstand tail of `generate_inline_cache_miss_handler` pops
+  arguments with a 32-bit byte count instead of `argCount * oopSize`.
+- DLL-call stubs and the *compiler* C-call sites do not yet reserve the Win64
+  shadow space (only the interpreter C calls do) — needed for external DLL
+  calls and compiled code.
 - **Under Wine on Apple Silicon (via Rosetta)**: the VM faults with
-  `rosetta error: invalid gdt selector index 5` (SIGTRAP) — a host-emulation
-  artifact of Rosetta translating the first JIT'd x86-64 code inside the Wine
-  process, not a PE/runtime defect (the same generated code runs cleanly under
-  Rosetta in the forced macOS x86-64 config).
-- **Under native Wine on a real amd64 machine (CI)**: the VM catches an Access
-  Violation in its own handler and then **hangs** — a genuine
-  Windows/x86-64 port defect still to be diagnosed (needs a
-  `winedbg`/backtrace capture). A run on a real Windows host would settle
-  whether anything else is platform-specific.
+  `rosetta error: invalid gdt selector index 5` (SIGTRAP) after image read — a
+  host-emulation artifact, not a PE/runtime defect; the native amd64 (QEMU TCG +
+  wine) path is authoritative.
 
 The MSYS2 native job and the MinGW cross-build both pass their build steps in
 CI; the smoke runs are best-effort (`continue-on-error`) and capped with

@@ -87,16 +87,16 @@ Naked void SavedRegisters::save_registers() {
 
 void SavedRegisters::generate_save_registers(MacroAssembler* masm) {
   // save the registers
-  masm->movl(Address((intptr_t)&saved_eax, relocInfo::external_word_type), eax);
-  masm->movl(Address((intptr_t)&saved_ecx, relocInfo::external_word_type), ecx);
-  masm->movl(Address((intptr_t)&saved_edx, relocInfo::external_word_type), edx);
-  masm->movl(Address((intptr_t)&saved_ebx, relocInfo::external_word_type), ebx);
-  masm->movl(Address((intptr_t)&saved_esi, relocInfo::external_word_type), esi);
-  masm->movl(Address((intptr_t)&saved_edi, relocInfo::external_word_type), edi);
+  masm->store_absolute_value(Address((intptr_t)&saved_eax, relocInfo::external_word_type), eax);
+  masm->store_absolute_value(Address((intptr_t)&saved_ecx, relocInfo::external_word_type), ecx);
+  masm->store_absolute_value(Address((intptr_t)&saved_edx, relocInfo::external_word_type), edx);
+  masm->store_absolute_value(Address((intptr_t)&saved_ebx, relocInfo::external_word_type), ebx);
+  masm->store_absolute_value(Address((intptr_t)&saved_esi, relocInfo::external_word_type), esi);
+  masm->store_absolute_value(Address((intptr_t)&saved_edi, relocInfo::external_word_type), edi);
   // save frame pointer w/o destroying any register contents
-  masm->movl(eax, Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
-  masm->movl(Address((intptr_t)&stored_frame_pointer, relocInfo::external_word_type), eax);
-  masm->movl(eax, Address((intptr_t)&saved_eax, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
+  masm->store_absolute_value(Address((intptr_t)&stored_frame_pointer, relocInfo::external_word_type), eax);
+  masm->load_absolute_value(eax, Address((intptr_t)&saved_eax, relocInfo::external_word_type));
   // return
   // %note: we don't return because the code is inlined in stubs -Marc 04/07
   //  masm->ret();

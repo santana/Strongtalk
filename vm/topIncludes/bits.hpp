@@ -26,9 +26,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "memory/error.hpp"
 
-#define AllBits ~0UL
-#define NoBits 0UL
-#define OneBit 1UL
+// The mask constants must be 64-bit on every LP64 *and* LLP64 target: on
+// Windows (LLP64) `unsigned long` is only 32 bits, and a 32-bit mask applied
+// to a 64-bit pointer via clearBits()/maskBits() silently zeroes the upper
+// half of the address (see oldSpace::object_start()).
+#define AllBits ~0ULL
+#define NoBits 0ULL
+#define OneBit 1ULL
+
+// Catch any future re-narrowing of the mask constants before it can corrupt
+// addresses at runtime (an LLP64 port hazard: `unsigned long` is 32-bit).
+static_assert(sizeof(AllBits) == 8, "bit-mask constants must be 64-bit wide on LLP64");
 
 #define addBits(x, m) ((x) | (m))
 #define setBits(x, m) ((x) |= (m))

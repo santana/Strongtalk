@@ -758,8 +758,8 @@ void InterpreterGenerator::generateStopInterpreterAt() {
   if (StopInterpreterAt > 0) {
     Label cont;
     masm->pushl(edx);
-    masm->movl(edx, Address(intptr_t(&StopInterpreterAt), relocInfo::external_word_type));
-    masm->cmpl(edx, Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
+    masm->load_absolute_value(edx, Address(intptr_t(&StopInterpreterAt), relocInfo::external_word_type));
+    masm->cmp_absolute(edx, Address(intptr_t(&NumberOfBytecodesExecuted), relocInfo::external_word_type));
     masm->popl(edx);
     masm->jcc(Assembler::above, cont);
     masm->int3();
@@ -781,14 +781,14 @@ void InterpreterGenerator::jump_ebx() {
   // On x86-64 the [index*scale+disp32] form (SIB base=101) is decoded as
   // absolute by Rosetta rather than RIP-relative, so load the table base via
   // the [rip+disp] form into a register and index through it instead.
-  masm->leaq(edx,
-             Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
+  masm->lea_absolute(
+    edx, Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
   masm->jmp(Address(edx, ebx, Address::times_8));
 }
 
 void InterpreterGenerator::load_edi() {
-  masm->leaq(edx,
-             Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
+  masm->lea_absolute(
+    edx, Address(noreg, noreg, Address::no_scale, (intptr_t)dispatchTable::table(), relocInfo::external_word_type));
   masm->movq(edi, Address(edx, ebx, Address::times_8));
 }
 
@@ -987,7 +987,7 @@ char* InterpreterGenerator::push_const(Address obj_addr) {
   char* ep = entry_point();
   masm->pushl(eax);
   next_ebx();
-  masm->movl(eax, obj_addr);
+  masm->load_absolute_value(eax, obj_addr);
   jump_ebx();
   return ep;
 }
@@ -1091,7 +1091,7 @@ char* InterpreterGenerator::allocate_temps(int n) {
   assert(n > 0, "just checkin'");
   next_ebx();
   masm->pushl(eax);
-  masm->movl(eax, nil_addr());
+  masm->load_absolute_value(eax, nil_addr());
   while (--n > 0)
     masm->pushl(eax);
   jump_ebx();
@@ -1113,7 +1113,7 @@ char* InterpreterGenerator::allocate_temps_n() {
   masm->movb(ebx, Address(esi, 1)); // get n (n = 0 ==> 256 temps)
   masm->addl(esi, 2); // advance to next bytecode
   masm->pushl(eax);
-  masm->movl(eax, nil_addr());
+  masm->load_absolute_value(eax, nil_addr());
   masm->jmp(entry);
 
   return ep;
@@ -1469,7 +1469,7 @@ char* InterpreterGenerator::control_cond(Bytecodes::Code code) {
   if (!isByte) {
     advance_aligned(codeSize);
   }
-  masm->cmpl(eax, cond); // if tos # cond
+  masm->cmp_absolute(eax, cond); // if tos # cond
   masm->jcc(Assembler::notEqual, _else); // then jump to else part
   if (isByte) {
     masm->addl(esi, codeSize); // skip info & offset byte
@@ -1479,7 +1479,7 @@ char* InterpreterGenerator::control_cond(Bytecodes::Code code) {
   jump_ebx();
 
   masm->bind(_else);
-  masm->cmpl(eax, not_cond); // if tos # ~cond
+  masm->cmp_absolute(eax, not_cond); // if tos # ~cond
   masm->jcc(Assembler::notEqual, _boolean_expected); // then non-boolean arguments
 
   // jump relative to next instr (must happen after the check for non-booleans)
@@ -1530,7 +1530,7 @@ char* InterpreterGenerator::control_while(Bytecodes::Code code) {
 
   char* ep = entry_point();
 
-  masm->cmpl(eax, cond); // if tos # cond
+  masm->cmp_absolute(eax, cond); // if tos # cond
   masm->jcc(Assembler::notEqual, _exit); // then jump to else part
 
   if (isByte) {
@@ -1542,17 +1542,17 @@ char* InterpreterGenerator::control_while(Bytecodes::Code code) {
     masm->subl(esi, Address(edx, -oopSize));
   }
 
-  masm->movl(edx, Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type));
   load_ebx();
   masm->popl(eax); // discard loop condition
   masm->incl(edx);
-  masm->movl(Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type), edx);
-  masm->cmpl(edx, Address((intptr_t)&interpreter_loop_counter_limit, relocInfo::external_word_type));
+  masm->store_absolute_value(Address((intptr_t)&interpreter_loop_counter, relocInfo::external_word_type), edx);
+  masm->cmp_absolute(edx, Address((intptr_t)&interpreter_loop_counter_limit, relocInfo::external_word_type));
   masm->jcc(Assembler::greater, _overflow);
   jump_ebx();
 
   masm->bind(_exit);
-  masm->cmpl(eax, not_cond); // if tos # ~cond
+  masm->cmp_absolute(eax, not_cond); // if tos # ~cond
   masm->jcc(Assembler::notEqual, _boolean_expected); // then non-boolean arguments
 
   // advance to next instruction (must happen after the check for non-booleans)
@@ -1689,7 +1689,7 @@ char* InterpreterGenerator::float_allocate() {
     masm->bind(L1);
 
     // check eax (corresponds now to temp0, must be initialized to nil)
-    masm->cmpl(eax, nil_addr());
+    masm->cmp_absolute(eax, nil_addr());
     masm->jcc(Assembler::equal, L2);
     masm->call_C((char*)Interpreter::wrong_eax, relocInfo::runtime_call_type);
     should_not_reach_here();
@@ -1703,7 +1703,7 @@ char* InterpreterGenerator::float_allocate() {
   masm->movb(ebx, Address(esi, -3)); // get nofTemps
   masm->testl(ebx, ebx); // allocate no additional temps if nofTemps = 0
   masm->jcc(Assembler::zero, tDone);
-  masm->movl(eax, nil_addr());
+  masm->load_absolute_value(eax, nil_addr());
   masm->bind(tLoop);
   masm->pushl(eax); // push nil
   masm->pushl(eax); // push nil
@@ -1745,7 +1745,7 @@ char* InterpreterGenerator::float_floatify() {
   masm->testb(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::zero, is_smi);
   masm->movl(ecx, Address(eax, memOopDesc::klass_byte_offset())); // check if float
-  masm->cmpl(ecx, doubleKlass_addr());
+  masm->cmp_absolute(ecx, doubleKlass_addr());
   masm->jcc(Assembler::notEqual, _float_expected);
 
   // unbox doubleOop
@@ -1826,7 +1826,7 @@ char* InterpreterGenerator::float_op(int nof_args, bool returns_float) {
   masm->movb(ebx, Address(esi, -2)); // get float number
   masm->leal(edx, float_addr(ebx)); // get float address
   masm->movb(ebx, Address(esi, -1)); // get function number
-  masm->leaq(
+  masm->lea_absolute(
     ecx, Address(noreg, noreg, Address::no_scale, intptr_t(Floats::_function_table), relocInfo::external_word_type));
   masm->movq(eax, Address(ecx, ebx, Address::times_8));
   for (int i = 0; i < nof_args; i++)
@@ -2037,10 +2037,11 @@ extern "C" int number_of_arguments_through_unpacking;
 extern "C" oop result_through_unpacking;
 
 void InterpreterGenerator::generate_deoptimized_return_restore() {
-  masm->movl(eax, Address((intptr_t)&number_of_arguments_through_unpacking, relocInfo::external_word_type));
+  masm->load_absolute_value(eax,
+                            Address((intptr_t)&number_of_arguments_through_unpacking, relocInfo::external_word_type));
   masm->shll(eax, 2);
   masm->addl(esp, eax);
-  masm->movl(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
 }
 
 void InterpreterGenerator::generate_deoptimized_return_code() {
@@ -2148,7 +2149,7 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
   // into a temp in the failure block
 
   Interpreter::_dr_from_dll_call_restore = masm->pc();
-  masm->movl(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type));
   // fall through
 
   Interpreter::_dr_from_dll_call = masm->pc();
@@ -2212,7 +2213,7 @@ void InterpreterGenerator::generate_forStubRountines() {
   // Redo the send
   restore_esi();
   restore_ebx();
-  masm->movl(eax, Address((intptr_t)&redo_send_offset, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&redo_send_offset, relocInfo::external_word_type));
   masm->subl(esi, eax);
   load_ebx();
   masm->popl(eax); // get top of stack
@@ -2262,7 +2263,8 @@ void InterpreterGenerator::call_native(Register entry) {
   }
 
   save_esi();
-  masm->movl(Address(intptr_t(&Interpreter::_last_native_called), relocInfo::external_word_type), entry);
+  masm->store_absolute_value(Address(intptr_t(&Interpreter::_last_native_called), relocInfo::external_word_type),
+                             entry);
   masm->call(entry);
   masm->ic_info(_nlr_testpoint, 0); // ordinary inline cache info
   restore_esi();
@@ -2295,7 +2297,7 @@ void InterpreterGenerator::generate_method_entry_code() {
   // parameters on the stack
   method_entry_point = masm->pc();
   masm->bind(_method_entry);
-  masm->movq(edi, nil_addr());
+  masm->load_absolute_value(edi, nil_addr());
 
   // eax: receiver
   // ebx: 000000xx
@@ -2322,7 +2324,7 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->jcc(Assembler::aboveEqual, counter_overflow); // treat invocation counter overflow
   masm->bind(start_execution); // continuation point after overflow
   masm->movq(eax, edi); // initialize temp0
-  masm->cmpl(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
+  masm->cmp_absolute(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
   masm->jcc(Assembler::lessEqual, handle_stack_overflow);
   masm->bind(continue_from_stack_overflow);
   jump_ebx(); // start execution
@@ -2534,11 +2536,11 @@ char* InterpreterGenerator::smi_compare_op(Bytecodes::Code code) {
       ShouldNotReachHere();
   }
   masm->jcc(cc, is_true);
-  masm->movl(eax, false_addr());
+  masm->load_absolute_value(eax, false_addr());
   jump_ebx();
 
   masm->bind(is_true);
-  masm->movl(eax, true_addr());
+  masm->load_absolute_value(eax, true_addr());
   jump_ebx();
   return ep;
 }
@@ -2834,7 +2836,7 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   masm->jcc(Assembler::notZero, loop); // until is_smi(edi)
   masm->testl(edi, edi); // if edi = 0 then
   masm->jcc(Assembler::zero, zapped_context); //   context has been zapped
-  masm->movl(Address(intptr_t(&nlr_home_context), relocInfo::external_word_type), eax);
+  masm->store_absolute_value(Address(intptr_t(&nlr_home_context), relocInfo::external_word_type), eax);
   // else save the context containing the home (edi points to home stack frame)
   masm->movb(ebx, Address(esi, 1)); // get no. of arguments to pop
   masm->popl(eax); // get NLR result back
@@ -2863,7 +2865,7 @@ void InterpreterGenerator::generate_nonlocal_return_code() {
   masm->test(ecx, Mem_Tag); // if is_smi(ecx) then
   masm->jcc(Assembler::zero, no_zapping); //   can't be a context pointer
   masm->movl(edx, Address(ecx, memOopDesc::klass_byte_offset())); // else isOop: get its class
-  masm->cmpl(edx, contextKlass_addr()); // if class # contextKlass then
+  masm->cmp_absolute(edx, contextKlass_addr()); // if class # contextKlass then
   masm->jcc(Assembler::notEqual, no_zapping); //   is not a context
   masm->movl(ebx, Address(ecx, contextOopDesc::parent_byte_offset())); // else is context: get home
   masm->cmpl(ebx, ebp); // if home # ebp then
@@ -3012,7 +3014,7 @@ char* InterpreterGenerator::normal_send(Bytecodes::Code code, bool allow_methodO
   Address klass_addr = Address(esi, -1 * oopSize);
 
   masm->bind(is_smi); // smi case (assumed to be infrequent)
-  masm->movl(edi, smiKlass_addr()); // load smi klass
+  masm->load_absolute_value(edi, smiKlass_addr()); // load smi klass
   masm->jmp(compare_class);
 
   char* ep = entry_point();
@@ -3125,7 +3127,7 @@ char* InterpreterGenerator::megamorphic_send(Bytecodes::Code code) {
     cacheElementShift++;
 
   masm->bind(is_smi); // smi case (assumed to be infrequent)
-  masm->movl(ecx, smiKlass_addr()); // load smi klass
+  masm->load_absolute_value(ecx, smiKlass_addr()); // load smi klass
   masm->jmp(probe_primary_cache);
 
   char* ep = entry_point();
@@ -3225,7 +3227,7 @@ char* InterpreterGenerator::polymorphic_send(Bytecodes::Code code) {
   masm->sarl(ecx, Tag_Size); // get pic length (int) = number of slots
   // verifyPIC here
 
-  masm->movl(edx, smiKlass_addr()); // preload smi klass
+  masm->load_absolute_value(edx, smiKlass_addr()); // preload smi klass
   masm->testl(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::zero, loop); // otherwise
   masm->movl(edx, Address(eax, memOopDesc::klass_byte_offset())); // get receiver klass
@@ -3303,11 +3305,11 @@ char* InterpreterGenerator::compare(bool equal) {
   masm->cmpl(eax, edx); // compare with argument
   masm->jcc(cond, _return_true);
 
-  masm->movl(eax, false_addr());
+  masm->load_absolute_value(eax, false_addr());
   jump_ebx();
 
   masm->bind(_return_true);
-  masm->movl(eax, true_addr());
+  masm->load_absolute_value(eax, true_addr());
   jump_ebx();
 
   return ep;

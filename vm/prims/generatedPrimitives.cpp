@@ -75,11 +75,11 @@ void PrimitivesGenerator::scavenge(int size) {
 }
 
 void PrimitivesGenerator::test_for_scavenge(Register dst, int size, Label& need_scavenge) {
-  masm->movl(dst, Address((intptr_t)&eden_top, relocInfo::external_word_type));
+  masm->load_absolute_value(dst, Address((intptr_t)&eden_top, relocInfo::external_word_type));
   masm->addl(dst, size);
-  masm->cmpl(dst, Address((intptr_t)&eden_end, relocInfo::external_word_type));
+  masm->cmp_absolute(dst, Address((intptr_t)&eden_end, relocInfo::external_word_type));
   masm->jcc(Assembler::greater, need_scavenge);
-  masm->movl(Address((intptr_t)&eden_top, relocInfo::external_word_type), dst);
+  masm->store_absolute_value(Address((intptr_t)&eden_top, relocInfo::external_word_type), dst);
 }
 
 void PrimitivesGenerator::error_jumps() {
@@ -106,23 +106,23 @@ void PrimitivesGenerator::error_jumps() {
 #define ERROR_RETURN() InterpreterBackend::returnErrorToInterpreter(masm)
 
   masm->bind(error_receiver_has_wrong_type);
-  masm->movl(eax, _receiver_has_wrong_type);
+  masm->load_absolute_value(eax, _receiver_has_wrong_type);
   masm->addl(eax, 2);
   ERROR_RETURN();
   masm->bind(error_first_argument_has_wrong_type);
-  masm->movl(eax, _first_argument_has_wrong_type);
+  masm->load_absolute_value(eax, _first_argument_has_wrong_type);
   masm->addl(eax, 2);
   ERROR_RETURN();
   masm->bind(error_overflow);
-  masm->movl(eax, _smi_overflow);
+  masm->load_absolute_value(eax, _smi_overflow);
   masm->addl(eax, 2);
   ERROR_RETURN();
   masm->bind(error_division_by_zero);
-  masm->movl(eax, _division_by_zero);
+  masm->load_absolute_value(eax, _division_by_zero);
   masm->addl(eax, 2);
   ERROR_RETURN();
   masm->bind(allocation_failure);
-  masm->movl(eax, _allocation_failure);
+  masm->load_absolute_value(eax, _allocation_failure);
   masm->addl(eax, 2);
   ERROR_RETURN();
 

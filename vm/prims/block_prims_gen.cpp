@@ -101,7 +101,7 @@ char* PrimitivesGenerator::allocateContext_var() {
   // on x86-64 the return address occupies [esp], hence the +oopSize there.
   Address length_addr = InterpreterBackend::contextLengthArgument();
   masm->movl(ecx, length_addr); // load length  (remember this is a smiOop)
-  masm->movl(eax, Address((intptr_t)&eden_top, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&eden_top, relocInfo::external_word_type));
   masm->movl(edx, ecx);
 #ifdef DELTA_BACKEND_AARCH64
   // ecx is a smi = nofVars << Tag_Size = nofVars*4, but the object needs
@@ -112,9 +112,9 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->addl(edx, 3 * oopSize);
   masm->addl(edx, eax);
   // Equals? ==>  masm->leal(edx, Address(ecx, eax, Address::times_1, 3*oopSize));
-  masm->cmpl(edx, Address((intptr_t)&eden_end, relocInfo::external_word_type));
+  masm->cmp_absolute(edx, Address((intptr_t)&eden_end, relocInfo::external_word_type));
   masm->jcc(Assembler::greater, need_scavenge);
-  masm->movl(Address((intptr_t)&eden_top, relocInfo::external_word_type), edx);
+  masm->store_absolute_value(Address((intptr_t)&eden_top, relocInfo::external_word_type), edx);
 
   masm->bind(fill_object);
   // Build the mark in ecx: ecx is the length smi; adding Tag_Size yields the
@@ -125,8 +125,8 @@ char* PrimitivesGenerator::allocateContext_var() {
   masm->movq(ebx, (intptr_t)markOopDesc::tagged_prototype());
   masm->orq(ecx, ebx);
   masm->movq(Address(eax), ecx); // obj->init_mark()
-  masm->movl(ebx, contextKlass_addr());
-  masm->movl(ecx, nil_addr());
+  masm->load_absolute_value(ebx, contextKlass_addr());
+  masm->load_absolute_value(ecx, nil_addr());
 
   masm->movl(Address(eax, 1 * oopSize), ebx); // obj->set_klass(klass)
   masm->movl(Address(eax, 2 * oopSize), 0); // obj->set_home(NULL)
@@ -172,8 +172,8 @@ char* PrimitivesGenerator::allocateContext(int n) {
   test_for_scavenge(eax, size * oopSize, need_scavenge);
 
   masm->bind(fill_object);
-  masm->movl(ebx, contextKlass_addr());
-  masm->movl(ecx, nil_addr());
+  masm->load_absolute_value(ebx, contextKlass_addr());
+  masm->load_absolute_value(ecx, nil_addr());
   masm->movq(Address(eax, (-size + 0) * oopSize),
              (intptr_t)markOopDesc::tagged_prototype()->set_hash(n + 1)); // obj->init_mark()
   masm->movl(Address(eax, (-size + 1) * oopSize), ebx); // obj->set_klass(klass)

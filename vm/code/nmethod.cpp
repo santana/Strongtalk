@@ -239,22 +239,37 @@ void nmethod::fix_relocation_at_move(int delta) {
   relocIterator iter(this);
   while (iter.next()) {
     if (iter.is_position_dependent()) {
-      if (iter.type() == relocInfo::internal_word_type) {
-        // internal_word references a cell inside the nmethod's own header
-        // (the invocation counter etc.). AArch64 embeds the absolute address
-        // as an 8-byte literal (quad_addr), written at generation relative to
-        // the scratch code buffer, so it must track the move: -= delta.
-        // x86-64 encodes the same reference as a RIP-relative disp32 inside
-        // the instruction, and BOTH the instruction and the target cell move
-        // by delta together -- adjusting it would point 2*delta off (this was
-        // the "first compiled method reads garbage / SEGV on unmapped %rip"
-        // crash on every x86-64 boot).
 #ifdef DELTA_BACKEND_AARCH64
+      // AArch64 embeds position-dependent values as 8-byte quad literals,
+      // written relative to the scratch code buffer. The internal_word target
+      // cell lives inside the nmethod and moves with it (thus -= delta); the
+      // external/runtime/dll targets are absolute in the literal (C globals /
+      // functions) and do not move with the code.
+      if (iter.type() == relocInfo::internal_word_type)
         *iter.quad_addr() -= delta;
-#endif
+#else
+      if (iter.type() == relocInfo::internal_word_type) {
+        if (BytesPerNativeWord == 8) {
+          // x86-64 encodes this as a RIP-relative disp32 inside the
+          // instruction; BOTH the instruction and the target cell move by
+          // delta together -- adjusting it would point 2*delta off (this was
+          // the "first compiled method reads garbage / SEGV on unmapped %rip"
+          // crash on every x86-64 boot).
+        } else {
+          *iter.word_addr() += delta;
+        }
+      } else if (iter.type() == relocInfo::external_word_type || iter.type() == relocInfo::runtime_call_type ||
+                 iter.type() == relocInfo::dll_type) {
+        // x86-64 materializes these as full 64-bit addresses (movabs + register
+        // indirection); the target is a C global / function that does not move
+        // with the code, so the move delta must not be applied.  On 32-bit
+        // these are plain disp32 and still need the adjustment.
+        if (BytesPerNativeWord != 8)
+          *iter.word_addr() += delta;
       } else {
         *iter.word_addr() += delta;
       }
+#endif
     }
   }
 }

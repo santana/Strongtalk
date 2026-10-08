@@ -875,7 +875,7 @@ void PrologueNode::gen() {
   // check for recompilation (do this last so stack frame is initialized properly)
   checkRecompilation(recompile_stub_call, temp2);
 
-  theMacroAssm->cmpl(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
+  theMacroAssm->cmp_absolute(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
   theMacroAssm->jcc(Assembler::less, handle_stack_overflow);
   theMacroAssm->bind(continue_after_stack_overflow);
 }
@@ -1363,7 +1363,7 @@ static void floatArithROp(ArithOpCode op, Register reg, Register temp) {
       theMacroAssm->test(reg, Mem_Tag); // check if smi
       theMacroAssm->jcc(Assembler::zero, is_smi);
       theMacroAssm->movq(temp, Address(reg, memOopDesc::klass_byte_offset())); // get object klass
-      theMacroAssm->cmpl(temp, doubleKlass_addr()); // check if floatOop
+      theMacroAssm->cmp_absolute(temp, doubleKlass_addr()); // check if floatOop
       theMacroAssm->jcc(Assembler::equal, is_float);
       theMacroAssm->hlt(); // not yet implemented		// cannot be converted
 

@@ -62,6 +62,13 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
   // Load the primitive entry point from the saved bytecode pointer (before
   // esi is clobbered by the argument shuffling below).
   masm->movl(eax, Address(r12, entryOffsetBytes));
+#ifdef _WIN64
+  // Windows x64 C ABI: first four arguments in rcx, rdx, r8, r9.
+  masm->movq(ecx, Address(esp, 0 * oopSize));
+  masm->movq(edx, Address(esp, 1 * oopSize));
+  masm->movq(r8, Address(esp, 2 * oopSize));
+  masm->movq(r9, Address(esp, 3 * oopSize));
+#else
   // SysV AMD64 ABI: first six arguments in rdi, rsi, rdx, rcx, r8, r9.
   masm->movq(edi, Address(esp, 0 * oopSize));
   masm->movq(esi, Address(esp, 1 * oopSize));
@@ -69,6 +76,7 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
   masm->movq(ecx, Address(esp, 3 * oopSize));
   masm->movq(r8, Address(esp, 4 * oopSize));
   masm->movq(r9, Address(esp, 5 * oopSize));
+#endif
 }
 
 Address InterpreterBackend::primReceiver() {
@@ -100,23 +108,35 @@ Address InterpreterBackend::contextLengthArgument() {
 }
 
 void InterpreterBackend::callScavengeAndAllocate(MacroAssembler* masm, int size) {
+#ifdef _WIN64
+  masm->movq(ecx, size); // Win64 first argument
+#else
   masm->movl(edi, size); // SysV AMD64: first argument in rdi
+#endif
   masm->call_C((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
 }
 
 void InterpreterBackend::callScavengeAndAllocate(MacroAssembler* masm, Register sizeReg) {
-  masm->movl(edi, sizeReg); // SysV AMD64: first argument in rdi
-  masm->call((char*)&scavenge_and_allocate, relocInfo::runtime_call_type);
+  masm->call_C((char*)&scavenge_and_allocate, sizeReg);
 }
 
 void InterpreterBackend::spillCallDeltaArgs(MacroAssembler* masm) {
   // Reserve the four argument slots below the four pushed words below ebp and
   // spill the register-passed arguments into them (see generate_call_delta).
   masm->subq(esp, 4 * oopSize);
+#ifdef _WIN64
+  // Windows x64 C ABI: rcx/rdx/r8/r9.
+  masm->movq(Address(esp, 0), ecx); // method
+  masm->movq(Address(esp, oopSize), edx); // receiver
+  masm->movl(Address(esp, 2 * oopSize), r8); // nofArgs
+  masm->movq(Address(esp, 3 * oopSize), r9); // args (r9)
+#else
+  // SysV x86-64 C ABI (macOS/Linux): rdi/rsi/rdx/rcx.
   masm->movq(Address(esp, 0), edi); // method (rdi)
   masm->movq(Address(esp, oopSize), esi); // receiver (rsi)
   masm->movl(Address(esp, 2 * oopSize), edx); // nofArgs
   masm->movq(Address(esp, 3 * oopSize), ecx); // args (rcx)
+#endif
 }
 
 void InterpreterBackend::returnToCallDeltaCaller(MacroAssembler* masm) {
@@ -133,7 +153,9 @@ void InterpreterBackend::callPopStackHandles(MacroAssembler* masm) {
   masm->pushq(ecx);
   masm->pushq(esi);
   masm->pushq(edi);
+  masm->win64_call_shadow_begin();
   masm->call((char*)&popStackHandles, relocInfo::external_word_type);
+  masm->win64_call_shadow_end();
   masm->popq(edi);
   masm->popq(esi);
   masm->popq(ecx);

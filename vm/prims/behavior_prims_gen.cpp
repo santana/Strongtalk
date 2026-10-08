@@ -40,7 +40,7 @@ char* PrimitivesGenerator::primitiveNew(int n) {
   Address _stop = Address((intptr_t)&stop, relocInfo::external_word_type);
   Label _break, no_break;
   masm->bind(fill_object);
-  masm->movl(ebx, _stop);
+  masm->load_absolute_value(ebx, _stop);
   masm->testl(ebx, ebx);
   masm->jcc(Assembler::notEqual, _break);
   masm->bind(no_break);
@@ -49,7 +49,7 @@ char* PrimitivesGenerator::primitiveNew(int n) {
   masm->movl(Address(eax, (-size + 1) * oopSize), ebx); // obj->init_mark()
 
   if (n > 0) {
-    masm->movl(ebx, nil_addr());
+    masm->load_absolute_value(ebx, nil_addr());
     for (int i = 0; i < n; i++) {
       masm->movl(Address(eax, (-size + 2 + i) * oopSize), ebx); // obj->obj_at_put(i,nilObj)
     }

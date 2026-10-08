@@ -25,6 +25,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #define STACK_SIZE (ThreadStackSize < 65536 ? 65536 : ThreadStackSize)* K
 
 #include "memory/allocation.hpp"
+#include "memory/universe.hpp"
 #include "runtime/os.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/growableArray.hpp"
@@ -542,7 +543,7 @@ int os::get_nCmdShow() {
   return nCmdShow;
 }
 
-extern int bootstrapping;
+extern bool bootstrapping;
 
 void os::timerStart() {}
 

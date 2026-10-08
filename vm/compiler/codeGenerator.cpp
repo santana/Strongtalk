@@ -533,7 +533,7 @@ void CodeGenerator::storeCheck(Register obj) {
   _masm->cmpl(obj,
               (intptr_t)Universe::new_gen.boundary()); // assumes boundary between new_gen and old_gen is unchanging
   _masm->jcc(Assembler::less, no_store); // avoid marking dirty if target is a new object
-  _masm->movl(base.reg(), Address(intptr_t(&byte_map_base), relocInfo::external_word_type));
+  _masm->load_absolute_value(base.reg(), Address(intptr_t(&byte_map_base), relocInfo::external_word_type));
   _masm->movl(indx.reg(), obj); // do not destroy obj (a preg may be mapped to it)
   _masm->shrl(indx.reg(), card_shift); // divide obj by card_size
   _masm->movb(Address(base.reg(), indx.reg(), Address::times_1), 0); // clear entry
@@ -986,7 +986,7 @@ void CodeGenerator::aPrologueNode(PrologueNode* node) {
   _masm->call(StubRoutines::recompile_stub_entry(), relocInfo::runtime_call_type);
 
   _masm->bind(start);
-  _masm->cmpl(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
+  _masm->cmp_absolute(esp, Address(intptr_t(active_stack_limit()), relocInfo::external_word_type));
   _masm->jcc(Assembler::less, handle_stack_overflow);
   _masm->bind(continue_after_stack_overflow);
 }

@@ -370,7 +370,8 @@ char* StubRoutines::generate_zombie_block_nmethod(MacroAssembler* masm) {
   masm->call_C((char*)deoptimize_context_and_patch_block, self_reg); // pass argument (C calling convention)
   masm->reset_last_Delta_frame();
   masm->addl(esp, 4);
-  masm->movl(edx, Address((intptr_t)Interpreter::restart_primitiveValue(), relocInfo::external_word_type));
+  masm->load_absolute_value(edx,
+                            Address((intptr_t)Interpreter::restart_primitiveValue(), relocInfo::external_word_type));
   masm->jmp(edx);
   //  masm->jmp(restart_primitiveValue, relocInfo::runtime_call_type);
   return entry_point;
@@ -402,7 +403,7 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   Label not_smi, klass_done;
   masm->testq(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::notZero, not_smi);
-  masm->movq(ecx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
+  masm->load_absolute_value(ecx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
   masm->jmp(klass_done);
   masm->bind(not_smi);
   masm->movq(ecx, Address(eax, memOopDesc::klass_byte_offset())); // receiver class
@@ -424,7 +425,7 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   // call methodOop - setup registers
   masm->bind(is_methodOop);
   masm->xorl(ebx, ebx); // clear ebx for interpreter
-  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
   // (Note: cannot use value in method_entry_point directly since interpreter is generated afterwards)
   //
   // eax: receiver
@@ -448,7 +449,7 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   Label is_smi, probe_primary_cache, probe_secondary_cache, call_method, is_methodOop, do_lookup;
 
   masm->bind(is_smi); // smi case (assumed to be infrequent)
-  masm->movl(ecx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
+  masm->load_absolute_value(ecx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
   masm->jmp(probe_primary_cache);
 
   // eax    : receiver
@@ -493,7 +494,7 @@ char* StubRoutines::generate_megamorphic_ic(MacroAssembler* masm) {
   // call methodOop - setup registers
   masm->bind(is_methodOop);
   masm->xorl(ebx, ebx); // clear ebx for interpreter
-  masm->movl(edx, Address(intptr_t(&method_entry_point), relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address(intptr_t(&method_entry_point), relocInfo::external_word_type));
   // (Note: cannot use value in method_entry_point directly since interpreter is generated afterwards)
   //
   // eax: receiver
@@ -923,8 +924,13 @@ char* StubRoutines::generate_recompile_stub(MacroAssembler* masm) {
   SavedRegisters::generate_save_registers(masm);
   masm->movq(ebx, Address(esp)); // get return address (trigger nmethod)
   masm->pushq(eax); // save receiver (full 64-bit oop)
+#ifdef _WIN64
+  masm->movq(ecx, eax); // arg1: receiver (Win64: rcx)
+  masm->movq(edx, ebx); // arg2: trigger nmethod pc (Win64: rdx)
+#else
   masm->movq(edi, eax); // arg1: receiver (x86-64 SysV)
   masm->movq(esi, ebx); // arg2: trigger nmethod pc
+#endif
   masm->call((char*)Recompilation::nmethod_invocation_counter_overflow,
              relocInfo::runtime_call_type); // eax = ...overflow(receiver, pc)
   masm->movq(ecx, eax); // save continuation address in ecx
@@ -1115,8 +1121,8 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
 
   // last_Delta_fp & last_Delta_sp must be the first two words in
   // the stack frame; i.e. at ebp - sizeof(intptr_t) and ebp - 2*sizeof(intptr_t). See also frame.hpp.
-  masm->pushl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
-  masm->pushl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type));
+  masm->push_absolute(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
+  masm->push_absolute(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type));
 
   masm->pushl(edi); // save registers for C calling convetion
   masm->pushl(esi);
@@ -1157,7 +1163,7 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->test(edx, Mem_Tag);
   masm->jcc(Assembler::zero, _is_compiled);
   masm->movq(ecx, edx);
-  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
 
   // eax: receiver
   // ebx: 0
@@ -1176,8 +1182,8 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->leaq(esp, Address(ebp, -4 * slotSize));
   masm->popl(esi); // restore registers for C calling convetion
   masm->popl(edi);
-  masm->popl(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
-  masm->popl(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
+  masm->pop_absolute(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
+  masm->pop_absolute(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
   InterpreterBackend::returnToCallDeltaCaller(masm);
   masm->ret(0); // remove stack frame & return
 
@@ -1191,7 +1197,7 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
 
   masm->movq(edx, Address(ecx, -oopSize)); // get return address of the first C function called
   // store return address for nlr_return_from_Delta
-  masm->movq(Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type), edx);
+  masm->store_absolute_value(Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type), edx);
   //  masm->hlt();
 
   //  char* nlr_return_from_Delta_addr = StubRoutines::nlr_return_from_Delta();
@@ -1204,10 +1210,10 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   masm->bind(_nlr_setup);
   // setup global NLR variables
   masm->movl(Address((intptr_t)&have_nlr_through_C, relocInfo::external_word_type), 1);
-  masm->movq(Address((intptr_t)&nlr_result, relocInfo::external_word_type), eax);
+  masm->store_absolute_value(Address((intptr_t)&nlr_result, relocInfo::external_word_type), eax);
   // nlr_home is an 8-byte frame pointer; movl stores it 64-bit on both backends
-  masm->movl(Address((intptr_t)&nlr_home, relocInfo::external_word_type), edi);
-  masm->movl(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), esi);
+  masm->store_absolute_value(Address((intptr_t)&nlr_home, relocInfo::external_word_type), edi);
+  masm->store_absolute_value(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), esi);
   masm->jmp(_return);
 
   return entry_point;
@@ -1223,13 +1229,13 @@ char* StubRoutines::generate_nlr_return_from_Delta(MacroAssembler* masm) {
   char* entry_point = masm->pc();
 
   masm->reset_last_Delta_frame();
-  masm->movq(eax, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->load_absolute_value(eax, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   // nlr_home is a full 64-bit frame pointer; movl is a 64-bit load on both backends
-  masm->movl(edi, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
-  masm->movl(esi, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
+  masm->load_absolute_value(edi, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+  masm->load_absolute_value(esi, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   // get return address
-  masm->movq(ebx, Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type));
+  masm->load_absolute_value(ebx, Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type));
   InterpreterBackend::decodeICInfo(masm, ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
   masm->addq(ebx, ecx); // compute NLR test point address
   masm->jmp(ebx); // return to nlr test point
@@ -1269,7 +1275,8 @@ char* StubRoutines::generate_single_step_stub(MacroAssembler* masm) {
   masm->xorl(ebx, ebx);
   masm->movb(ebx, Address(esi));
   // execute bytecode
-  masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
+  masm->lea_absolute(edx,
+                     Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
   masm->jmp(Address(edx, ebx, Address::times_8));
 
   //   then the calling stub
@@ -1284,9 +1291,10 @@ char* StubRoutines::generate_single_step_stub(MacroAssembler* masm) {
   char* entry_point = masm->pc();
 
   //  masm->int3();
-  masm->cmpl(ebp, Address((intptr_t)&frame_breakpoint, relocInfo::external_word_type));
+  masm->cmp_absolute(ebp, Address((intptr_t)&frame_breakpoint, relocInfo::external_word_type));
   masm->jcc(Assembler::greaterEqual, is_break);
-  masm->leaq(edx, Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
+  masm->lea_absolute(edx,
+                     Address(noreg, noreg, Address::no_scale, (intptr_t)original_table, relocInfo::external_word_type));
   masm->jmp(Address(edx, ebx, Address::times_8));
 
   masm->bind(is_break);
@@ -1345,18 +1353,18 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->enter();
   masm->call((char*)unpack_frame_array, relocInfo::runtime_call_type);
   // Restore the nlr state
-  masm->cmpl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
+  masm->cmp_absolute_imm(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
   masm->jcc(Assembler::equal, _return);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
 #ifdef DELTA_BACKEND_X86_64
   // nlr_result/nlr_home are full-width oops/pointers on x86-64
-  masm->movq(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
-  masm->movq(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
 #else
   masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
   masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
 #endif
-  masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   masm->bind(_return);
 #ifdef DELTA_BACKEND_X86_64
@@ -1390,19 +1398,19 @@ char* StubRoutines::generate_unpack_unoptimized_frames(MacroAssembler* masm) {
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 1);
 #ifdef DELTA_BACKEND_X86_64
   // nlr_result/nlr_home are full-width oops/pointers on x86-64
-  masm->movq(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
-  masm->movq(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
+  masm->store_absolute_value(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
+  masm->store_absolute_value(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
 #else
   masm->movl(Address((intptr_t)&nlr_result, relocInfo::external_word_type), nlr_result_reg);
   masm->movl(Address((intptr_t)&nlr_home, relocInfo::external_word_type), nlr_home_reg);
 #endif
-  masm->movl(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), nlr_home_id_reg);
+  masm->store_absolute_value(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), nlr_home_id_reg);
   masm->jmp(common_unpack_unoptimized_frames);
 
   char* entry_point = masm->pc();
   masm->ic_info(nlr_unpack_unoptimized_frames, 0);
   masm->movl(Address((intptr_t)&nlr_through_unpacking, relocInfo::external_word_type), 0);
-  masm->movl(Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type), eax);
+  masm->store_absolute_value(Address((intptr_t)&result_through_unpacking, relocInfo::external_word_type), eax);
   masm->jmp(common_unpack_unoptimized_frames);
 
   return entry_point;
@@ -1420,9 +1428,9 @@ char* StubRoutines::generate_provoke_nlr_at(MacroAssembler* masm) {
 
   InterpreterBackend::enterNLRFrame(masm, ebx, old_ret_addr);
 
-  masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
-  masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
-  masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   InterpreterBackend::decodeICInfo(masm, ecx, Address(ebx, IC_Info::info_offset)); // get nlr_offset
   masm->addq(ebx, ecx); // compute NLR test point address (64-bit code ptr)
@@ -1443,9 +1451,9 @@ char* StubRoutines::generate_continue_nlr_in_delta(MacroAssembler* masm) {
 
   InterpreterBackend::enterNLRFrame(masm, ebx, old_ret_addr);
 
-  masm->movl(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
-  masm->movl(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
-  masm->movl(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_result_reg, Address((intptr_t)&nlr_result, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_reg, Address((intptr_t)&nlr_home, relocInfo::external_word_type));
+  masm->load_absolute_value(nlr_home_id_reg, Address((intptr_t)&nlr_home_id, relocInfo::external_word_type));
 
   masm->jmp(ebx); // continue
 
@@ -1571,9 +1579,9 @@ char* StubRoutines::generate_oopify_float(MacroAssembler* masm) {
   masm->enter();
   masm->subl(esp, 8);
   masm->fstp_d(Address(esp));
-  masm->incl(Address((intptr_t)BlockScavenge::counter_addr(), relocInfo::external_word_type));
+  masm->inc_absolute(Address((intptr_t)BlockScavenge::counter_addr(), relocInfo::external_word_type));
   masm->call((char*)oopFactory::new_double, relocInfo::runtime_call_type);
-  masm->decl(Address((intptr_t)BlockScavenge::counter_addr(), relocInfo::external_word_type));
+  masm->dec_absolute(Address((intptr_t)BlockScavenge::counter_addr(), relocInfo::external_word_type));
   masm->leave();
   masm->ret();
 
@@ -1611,7 +1619,7 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   // tos: return address of polymorphic send in compiled code
   masm->bind(found);
 #ifdef DELTA_BACKEND_X86_64
-  masm->movq(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
 #else
   masm->movl(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
 #endif
@@ -1629,7 +1637,7 @@ char* StubRoutines::generate_PIC_stub(MacroAssembler* masm, int pic_size) {
   char* entry_point = masm->pc();
 #ifdef DELTA_BACKEND_X86_64
   masm->popq(ebx); // get return address (PIC table pointer)
-  masm->movq(edx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
+  masm->load_absolute_value(edx, Address((intptr_t)&smiKlassObj, relocInfo::external_word_type));
   masm->testq(eax, Mem_Tag); // check if smi
   masm->jcc(Assembler::zero, loop); // if so, class is already in edx
   masm->movq(edx, Address(eax, memOopDesc::klass_byte_offset())); // otherwise, load receiver class

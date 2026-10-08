@@ -108,6 +108,9 @@ public:
   Address(Register base, Register index, ScaleFactor scale, intptr_t disp = 0,
           relocInfo::relocType rtype = relocInfo::none);
 
+  intptr_t disp() const { return _disp; }
+  relocInfo::relocType rtype() const { return _rtype; }
+
   friend class X86Assembler;
 };
 
@@ -482,17 +485,73 @@ public:
   void movl(Register dst, Register src) { movq(dst, src); }
   // movl(Address, int) must also store 64 bits; materialise via r10 (temp3).
   void movl(Address dst, int imm32) {
-    movl(r10, imm32); // zero-extends to 64-bit
-    movq(dst, r10); // 64-bit store
+    if (BytesPerNativeWord == 8 && dst.rtype() != relocInfo::none) {
+      // absolute C-global target (external_word): r10 holds the address, the
+      // value goes through the caller-saved scratch r11.
+      movl(r11, imm32); // zero-extends to 64-bit
+      movq(r10, (intptr_t)dst.disp());
+      X86Assembler::movq(Address(r10), r11);
+    } else {
+      movl(r10, imm32); // zero-extends to 64-bit
+      movq(dst, r10); // 64-bit store
+    }
   }
 
   using X86Assembler::movq;
+  // movq(Address, int) must also go through the immutable rtype-aware path
+  // (a literal `0` would otherwise bind to the base (Address,int) overload).
+  void movq(Address dst, int imm32) { movq(dst, (intptr_t)imm32); }
   // movq(Address, intptr_t) stores a full 64-bit immediate; the base
   // 32-bit forms would truncate object marks to the low word.
   void movq(Address dst, intptr_t imm) {
-    movq(r10, imm); // full 64-bit immediate (movabs)
-    movq(dst, r10); // 64-bit store
+    if (BytesPerNativeWord == 8 && dst.rtype() != relocInfo::none) {
+      // absolute C-global target: r10 holds the address, r11 the value.
+      movq(r11, imm); // full 64-bit immediate (movabs)
+      movq(r10, (intptr_t)dst.disp());
+      X86Assembler::movq(Address(r10), r11);
+    } else {
+      movq(r10, imm); // full 64-bit immediate (movabs)
+      movq(dst, r10); // 64-bit store
+    }
   }
+  // movq(Register, Address): an absolute C-global Address (external_word) is
+  // far beyond the REX-relative reach, so materialize it through registers.
+  void movq(Register dst, Address src) {
+    if (BytesPerNativeWord == 8 && src.rtype() == relocInfo::external_word_type) {
+      load_absolute_value(dst, src);
+    } else {
+      X86Assembler::movq(dst, src);
+    }
+  }
+  // movq(Address, Register): scatter absolute C-global stores through r10.
+  void movq(Address dst, Register src) {
+    if (BytesPerNativeWord == 8 && dst.rtype() == relocInfo::external_word_type) {
+      movq(r10, (intptr_t)dst.disp());
+      X86Assembler::movq(Address(r10), src);
+    } else {
+      X86Assembler::movq(dst, src);
+    }
+  }
+
+  // Absolute references to C globals / functions (relocInfo::external_word_type
+  // and the far runtime_call targets).  On x86-64 the REX-relative encodings
+  // only reach +/- 2 GB from the generated code, which is not enough for a
+  // DLL/.so that loads far from the JIT area (e.g. Windows); the 64-bit
+  // port therefore materializes the address through a register, like the
+  // AArch64 backend's x16/x17 literals.  Loads use their own destination
+  // register; the remaining forms go through the reserved scratch temp3/r10
+  // (matching movq(Address, imm) above).  The 32-bit fallbacks emit the old
+  // absolute disp32 operand forms.
+  void load_absolute_address(Register dst, Address src); // dst = <addr>
+  void load_absolute_value(Register dst, Address src); // dst = *<addr>
+  void store_absolute_value(Address dst, Register src); // *<addr> = src
+  void lea_absolute(Register dst, Address src); // dst = <addr>
+  void push_absolute(Address src); // push *<addr>
+  void pop_absolute(Address dst); // pop *<addr>
+  void cmp_absolute(Register lhs, Address mem); // cmp lhs, *<addr>
+  void cmp_absolute_imm(Address mem, int imm); // cmp *<addr>, imm
+  void inc_absolute(Address mem); // (*<addr>)++
+  void dec_absolute(Address mem); // (*<addr>)--
 
   using X86Assembler::addl;
   void addl(Register dst, int imm) { addq(dst, imm); }
@@ -583,6 +642,12 @@ public:
   void set_last_Delta_frame_before_call(); // assumes that the return address has not been pushed yet
   void set_last_Delta_frame_after_call(); // assumes that the return address has been pushed already
   void reset_last_Delta_frame();
+
+  // Windows x64: reserve the 32-byte shadow space and 16-byte stack alignment
+  // that every engine->C call must provide. edi is dead across these calls and
+  // is used as the stash; both helpers are no-ops outside _WIN64.
+  void win64_call_shadow_begin();
+  void win64_call_shadow_end();
 
   void call_C(Label& L);
   void call_C(Label& L, Label& nlrTestPoint);

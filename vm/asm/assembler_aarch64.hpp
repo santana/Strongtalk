@@ -632,6 +632,13 @@ public:
   void movl(Address dst, Register src); // str/stur; absolute via temp reg
   void movl(Address dst, int imm32); // materialize imm, then store
   void movl(Address dst, oop obj); // embed oop value, then store
+  // Absolute-address store (x86-style alias; AArch64 movl(Address, Register)
+  // already materializes the absolute target via an inline literal).
+  void store_absolute_value(Address dst, Register src) { movl(dst, src); }
+  // Compare register against a value at an absolute address (alias for the
+  // existing absolute-aware cmpl), and its immediate compare variant.
+  void cmp_absolute(Register lhs, Address mem) { cmpl(lhs, mem); }
+  void cmp_absolute_imm(Address mem, int imm) { cmpl(mem, imm); }
   void movq(Register dst, intptr_t imm) { mov(dst, imm); }
   void movq(Register dst, Register src) { movl(dst, src); }
   void movq(Register dst, Address src) { movl(dst, src); }

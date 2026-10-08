@@ -368,6 +368,9 @@ void X86Assembler::emit_operand(Register reg, Register base, Register index, Add
         // Emit the displacement relative to the end of the disp32 field; the
         // recorded relocation keeps the reference fixable when the code moves
         // (see nmethod::fix_relocation_at_move, which adds the move delta).
+        assert(BytesPerNativeWord != 8 || rtype == relocInfo::internal_word_type,
+               "on 64-bit, absolute C-global (external_word/far runtime_call) operands must go "
+               "through the X86MacroAssembler absolute-address helpers");
         emit_byte(0x05 | r << 3);
         code()->relocate(pc(), rtype);
         // RIP-relative disp32: next_pc is the end of the disp field, i.e. the
@@ -614,6 +617,94 @@ void X86Assembler::movq(Register dst, oop obj) {
   emit_rex_w(noreg, dst, noreg);
   emit_byte(0xB8 | (dst.number() & 7));
   emit_quad_data((intptr_t)obj, relocInfo::oop_type);
+}
+
+// Absolute references to C globals / functions (external_word_type and far
+// runtime_call targets).  On x86-64 the relative encodings cannot reach a
+// DLL/.so loaded > 2 GB from the JIT code, so the address is materialized
+// through a register; see the comments at the MacroAssembler declarations.
+void X86MacroAssembler::load_absolute_address(Register dst, Address src) {
+  if (BytesPerNativeWord == 8) {
+    movq(dst, (intptr_t)src.disp());
+  } else {
+    leal(dst, src);
+  }
+}
+
+void X86MacroAssembler::load_absolute_value(Register dst, Address src) {
+  if (BytesPerNativeWord == 8) {
+    movq(dst, (intptr_t)src.disp());
+    movq(dst, Address(dst)); // dst = *dst
+  } else {
+    movl(dst, src);
+  }
+}
+
+void X86MacroAssembler::store_absolute_value(Address dst, Register src) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)dst.disp()); // r10 = reserved scratch (temp3)
+    movq(Address(r10), src);
+  } else {
+    movl(dst, src);
+  }
+}
+
+void X86MacroAssembler::lea_absolute(Register dst, Address src) {
+  load_absolute_address(dst, src);
+}
+
+void X86MacroAssembler::push_absolute(Address src) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)src.disp());
+    pushq(Address(r10));
+  } else {
+    pushl(src);
+  }
+}
+
+void X86MacroAssembler::pop_absolute(Address dst) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)dst.disp());
+    popq(Address(r10));
+  } else {
+    popl(dst);
+  }
+}
+
+void X86MacroAssembler::cmp_absolute(Register lhs, Address mem) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)mem.disp());
+    cmpq(lhs, Address(r10));
+  } else {
+    cmpl(lhs, mem);
+  }
+}
+
+void X86MacroAssembler::cmp_absolute_imm(Address mem, int imm) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)mem.disp());
+    cmpq(Address(r10), imm);
+  } else {
+    cmpl(mem, imm);
+  }
+}
+
+void X86MacroAssembler::inc_absolute(Address mem) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)mem.disp());
+    incl(Address(r10));
+  } else {
+    incl(mem);
+  }
+}
+
+void X86MacroAssembler::dec_absolute(Address mem) {
+  if (BytesPerNativeWord == 8) {
+    movq(r10, (intptr_t)mem.disp());
+    decl(Address(r10));
+  } else {
+    decl(mem);
+  }
 }
 
 void X86Assembler::movsxq(Register dst, Register src) {
@@ -1446,10 +1537,26 @@ void X86Assembler::call(Label& L) {
 }
 
 void X86Assembler::call(char* entry, relocInfo::relocType rtype) {
-  // rel32 is relative to the next instruction, i.e. the end of the 4-byte
-  // displacement field (sizeof(int)); sizeof(long) would be 8 on LP64.
-  emit_byte(0xE8);
-  emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(int)), rtype);
+  if (BytesPerNativeWord == 8 && (rtype == relocInfo::external_word_type || rtype == relocInfo::runtime_call_type ||
+                                  rtype == relocInfo::dll_type)) {
+    // A relative call (E8 rel32) only reaches +/- 2 GB, which is not far
+    // enough for a C function in a DLL/.so that loads far from the JIT code
+    // (Windows); materialize the full 64-bit address in r10 and call through
+    // the register, like the AArch64 backend.  The relocation is recorded at
+    // pc()-4 (which lands inside the trailing bytes of the movabs) so that
+    // call_end() (addr + 4) still equals the return address, as it did for
+    // the E8 form.  ic/prim/uncommon targets stay relative (E8): they are
+    // within the same code arena so the rel32 reach is fine and the IC /
+    // uncommon-trap patching machinery expects the rel32 layout.
+    movq(r10, (intptr_t)entry);
+    call(r10);
+    code()->relocate(pc() - 4, rtype);
+  } else {
+    // rel32 is relative to the next instruction, i.e. the end of the 4-byte
+    // displacement field (sizeof(int)); sizeof(long) would be 8 on LP64.
+    emit_byte(0xE8);
+    emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(int)), rtype);
+  }
 }
 
 void X86Assembler::call(Register dst) {
@@ -1465,8 +1572,16 @@ void X86Assembler::call(Address adr) {
 }
 
 void X86Assembler::jmp(char* entry, relocInfo::relocType rtype) {
-  emit_byte(0xE9);
-  emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(int)), rtype);
+  if (BytesPerNativeWord == 8 && (rtype == relocInfo::external_word_type || rtype == relocInfo::runtime_call_type ||
+                                  rtype == relocInfo::dll_type)) {
+    // See the 64-bit comment in call(char*, relocType).
+    movq(r10, (intptr_t)entry);
+    jmp(r10);
+    code()->relocate(pc() - 4, rtype);
+  } else {
+    emit_byte(0xE9);
+    emit_data((intptr_t)entry - ((intptr_t)_code_pos + sizeof(int)), rtype);
+  }
 }
 
 void X86Assembler::jmp(Register reg) {
@@ -1772,11 +1887,12 @@ void X86MacroAssembler::inline_oop(oop o) {
 // allow proper stack traversal.
 
 void X86MacroAssembler::set_last_Delta_frame_before_call() {
-  // Note: the absolute addresses of last_Delta_fp/sp are emitted as disp32
-  // external_word_type references; on a 64-bit build these must be fixed up
-  // to RIP-relative addresses by the relocation machinery (64-bit port item).
-  movq(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
-  movq(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
+  // The last Delta frame is a C global that x86-64 cannot reach with a
+  // relative reference, so the absolute address is materialized through the
+  // reserved scratch register r10 (safe here: r10 is volatile across the
+  // C call that follows).
+  store_absolute_value(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
+  store_absolute_value(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
 }
 
 void X86MacroAssembler::set_last_Delta_frame_after_call() {
@@ -1786,9 +1902,30 @@ void X86MacroAssembler::set_last_Delta_frame_after_call() {
 }
 
 void X86MacroAssembler::reset_last_Delta_frame() {
-  // Note: see the note in set_last_Delta_frame_before_call() about the
-  // absolute address on 64-bit builds.
+  // movq(Address, intptr_t) materializes the absolute address via r10.
   movq(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), 0);
+}
+
+// Windows x64 requires the caller to reserve a 32-byte shadow area above the
+// return address and to keep rsp 16-byte aligned at the call. A plain
+// sub(esp, 32) would put that shadow exactly on top of the interpreter's live
+// delta-stack words; instead rsp is lowered (down-aligned to 16, then 32 bytes
+// of shadow) for the duration of the call and restored afterwards, so the
+// shadow area lies below the delta-stack. edi is dead across every
+// engine->C call (callers reload it), so it is the stash register. Both
+// helpers are no-ops outside _WIN64.
+void X86MacroAssembler::win64_call_shadow_begin() {
+#ifdef _WIN64
+  movq(edi, esp); // stash unaligned esp
+  andq(esp, -16); // 16-byte align
+  subq(esp, 32); // 32-byte shadow space
+#endif
+}
+
+void X86MacroAssembler::win64_call_shadow_end() {
+#ifdef _WIN64
+  movq(esp, edi); // restore esp past the shadow/aligned area
+#endif
 }
 
 void X86MacroAssembler::call_C(Label& L) {
@@ -1806,26 +1943,34 @@ void X86MacroAssembler::call_C(Label& L, Label& nlrTestPoint) {
 
 void X86MacroAssembler::call_C(char* entry, relocInfo::relocType rtype) {
   set_last_Delta_frame_before_call();
+  win64_call_shadow_begin();
   call(entry, rtype);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(char* entry, relocInfo::relocType rtype, Label& nlrTestPoint) {
   set_last_Delta_frame_before_call();
+  win64_call_shadow_begin();
   call(entry, rtype);
+  win64_call_shadow_end();
   X86Assembler::ic_info(nlrTestPoint, 0);
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(Register entry) {
   set_last_Delta_frame_before_call();
+  win64_call_shadow_begin();
   call(entry);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(Register entry, Label& nlrTestPoint) {
   set_last_Delta_frame_before_call();
+  win64_call_shadow_begin();
   call(entry);
+  win64_call_shadow_end();
   X86Assembler::ic_info(nlrTestPoint, 0);
   reset_last_Delta_frame();
 }
@@ -1850,33 +1995,75 @@ void X86MacroAssembler::call_C(Register entry, Label& nlrTestPoint) {
 // stub. However, currently the assembler doesn't support label pushes.
 
 void X86MacroAssembler::call_C(char* entry, Register arg1) {
-  // x86-64 SysV: first argument in rdi
   set_last_Delta_frame_before_call();
+#ifdef _WIN64
+  movq(ecx, arg1); // Win64: first argument in rcx
+#else
   movq(edi, arg1); // edi == rdi on a 64-bit build
+#endif
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2) {
+  set_last_Delta_frame_before_call();
+#ifdef _WIN64
+  // Win64: arguments in rcx, rdx. arg2 may already live in ecx and arg1 in
+  // edx (the interpreter's method-entry counter-overflow passes eax+ecx), so
+  // emit the moves in an overlap-safe order, spilling through r11 if needed.
+  if (arg1 == edx) {
+    movq(r11, arg1);
+    movq(edx, arg2);
+    movq(ecx, r11);
+  } else {
+    movq(edx, arg2);
+    movq(ecx, arg1);
+  }
+#else
   // x86-64 SysV: arguments in rdi, rsi (arg registers must be distinct from
   // rdi/rsi so that the moves do not clobber each other)
   assert(arg1 != esi && arg2 != edi, "argument register overlap");
-  set_last_Delta_frame_before_call();
   movq(edi, arg1); // edi == rdi, esi == rsi on a 64-bit build
   movq(esi, arg2);
+#endif
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3) {
+  set_last_Delta_frame_before_call();
+#ifdef _WIN64
+  // Win64: arguments in rcx, rdx, r8. A caller may pass an argument in a Win64
+  // argument register itself (e.g. call_C(fn, eax, ebp, edx)); such a value
+  // would be overwritten by an earlier dest move, so stage it in r11/r10
+  // first. Only arg2/arg3 can be at risk (arg1 is read before any write), and
+  // at most two registers can be at risk, so r11/r10 suffice.
+  assert(arg1 != r10 && arg1 != r11 && arg2 != r10 && arg2 != r11 && arg3 != r10 && arg3 != r11,
+         "scratch register as argument");
+  bool stage2 = (arg2 == ecx);
+  bool stage3 = (arg3 == ecx || arg3 == edx);
+  if (stage2)
+    movq(r11, arg2);
+  if (stage3)
+    movq(r10, arg3);
+  movq(ecx, arg1);
+  movq(edx, stage2 ? r11 : arg2);
+  movq(r8, stage3 ? r10 : arg3);
+#else
   // x86-64 SysV: arguments in rdi, rsi, rdx
   assert(arg1 != esi && arg1 != edx && arg2 != edi && arg2 != edx && arg3 != edi && arg3 != esi,
          "argument register overlap");
-  set_last_Delta_frame_before_call();
   movq(edi, arg1); // edi == rdi, esi == rsi, edx == rdx on a 64-bit build
   movq(esi, arg2);
   movq(edx, arg3);
+#endif
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
@@ -1887,7 +2074,9 @@ void X86MacroAssembler::call_trace_DLL_call_1(char* entry, Register function, Re
   pushl(nof_arguments); // pass arguments in reverse order
   pushl(last_argument);
   pushl(function);
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   popl(function); // restore registers
   popl(last_argument);
   popl(nof_arguments);
@@ -1909,21 +2098,52 @@ void X86MacroAssembler::call_handle_pascal_callback_stub(char* entry, Register i
   // cdecl: pass the two arguments in reverse order on the stack, call, then pop both.
   pushl(params_ptr); // &params
   pushl(index); // index
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   addl(esp, 2 * oopSize); // pop the arguments
 }
 
 void X86MacroAssembler::call_C(char* entry, Register arg1, Register arg2, Register arg3, Register arg4) {
+  set_last_Delta_frame_before_call();
+#ifdef _WIN64
+  // Win64: arguments in rcx, rdx, r8, r9. A caller may pass an argument in a
+  // Win64 argument register itself (e.g. call_unpack_unoptimized_frames passes
+  // (eax, ebx, edx, ecx)); such arguments are staged in r11/r10 before the
+  // dest moves so they are not overwritten. arg1 is read before any write, so
+  // only arg2/arg3/arg4 can be at risk; that is at most two distinct
+  // registers, so r11/r10 suffice (otherwise the caller itself is broken).
+  assert(arg1 != r10 && arg1 != r11 && arg2 != r10 && arg2 != r11 && arg3 != r10 && arg3 != r11 && arg4 != r10 &&
+           arg4 != r11,
+         "scratch register as argument");
+  bool stage2 = (arg2 == ecx);
+  bool stage3 = (arg3 == ecx || arg3 == edx);
+  bool stage4 = (arg4 == ecx || arg4 == edx || arg4 == r8);
+  assert((int)stage2 + (int)stage3 + (int)stage4 <= 2, "too many clashing arguments");
+  int staged = 0;
+  if (stage2)
+    movq((staged++ ? r10 : r11), arg2);
+  if (stage3)
+    movq((staged++ ? r10 : r11), arg3);
+  if (stage4)
+    movq((staged++ ? r10 : r11), arg4);
+  movq(ecx, arg1);
+  movq(edx, stage2 ? r11 : arg2);
+  movq(r8, stage3 ? (stage2 ? r10 : r11) : arg3);
+  movq(r9, stage4 ? r10 : arg4);
+#else
   // x86-64 SysV: arguments in rdi, rsi, rdx, rcx
   assert(arg1 != esi && arg1 != edx && arg1 != ecx && arg2 != edi && arg2 != edx && arg2 != ecx && arg3 != edi &&
            arg3 != esi && arg3 != ecx && arg4 != edi && arg4 != esi && arg4 != edx,
          "argument register overlap");
-  set_last_Delta_frame_before_call();
   movq(edi, arg1); // edi == rdi, esi == rsi, edx == rdx, ecx == rcx on a 64-bit build
   movq(esi, arg2);
   movq(edx, arg3);
   movq(ecx, arg4);
+#endif
+  win64_call_shadow_begin();
   call(entry, relocInfo::runtime_call_type);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
