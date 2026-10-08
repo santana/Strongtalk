@@ -41,6 +41,9 @@ int main() {
 #include "asm/codeBuffer.hpp"
 #include "code/stubRoutines.hpp"
 #include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 #include "runtime/runtime.hpp"
 #include "utilities/ostream.hpp"
 

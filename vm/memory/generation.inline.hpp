@@ -23,6 +23,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #ifndef _GENERATION_INLINE_HPP
 #define _GENERATION_INLINE_HPP
+
+#include "memory/generation.hpp"
+#include "oops/oop.inline.hpp"
+
 inline bool newGeneration::is_new(memOop p, char* boundary) {
   return (char*)p < boundary;
 }

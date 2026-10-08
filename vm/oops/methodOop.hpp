@@ -57,6 +57,13 @@ private:
   // returns the header size of a methodOop
   static int header_size() { return sizeof(methodOopDesc) / oopSize; }
 
+  // Frame resolution can yield a NULL methodOop (frame::method_from_hp returns
+  // NULL when hp is not a valid hybrid code pointer), so the testers below have
+  // to accept one. Comparing `this` against null is not valid C++ -- the
+  // compiler assumes it is non-null and warns (-Wtautological-undefined-compare)
+  // -- so the pointer is tested through this helper instead.
+  static bool is_null(const void* p) { return p == NULL; }
+
 public:
   // offsets for code generation
   static int selector_or_method_byte_offset() {
@@ -89,12 +96,9 @@ public:
 
   // Tester
   bool is_blockMethod() const {
-    if (this == NULL)
+    if (is_null(this))
       return false;
-    // Additional safety - check if addr is valid?
     oop sel = selector_or_method();
-    if (sel == nilObj && this == NULL)
-      return false; // defensive
     if (!sel->is_mem() && !sel->is_symbol())
       return false;
     return !sel->is_symbol();
@@ -108,7 +112,7 @@ public:
   methodOop home() const; // returns the enclosing method (for blocks), or itself
 
   oop selector_or_method() const {
-    if (this == NULL)
+    if (is_null(this))
       return nilObj;
     return addr()->_selector_or_method;
   }

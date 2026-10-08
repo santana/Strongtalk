@@ -17,7 +17,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "asm/interpreterBackend.hpp"
 #include "code/nativeInstruction.hpp"
 #include "lookup/lookupCache.hpp"
+#include "memory/generation.inline.hpp"
+#include "memory/universe.store.hpp"
 #include "memory/util.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 
 extern "C" void scavenge_and_allocate(int size);
 extern "C" void popStackHandles(char* nextFrame);
@@ -109,7 +113,7 @@ Address InterpreterBackend::contextLengthArgument() {
 
 void InterpreterBackend::callScavengeAndAllocate(MacroAssembler* masm, int size) {
 #ifdef _WIN64
-  masm->movq(ecx, size); // Win64 first argument
+  masm->movq(ecx, intptr_t(size)); // Win64 first argument
 #else
   masm->movl(edi, size); // SysV AMD64: first argument in rdi
 #endif

@@ -26,6 +26,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include "memory/allocation.hpp"
 #include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 #include "runtime/os.hpp"
 #include "runtime/debug.hpp"
 #include "utilities/growableArray.hpp"

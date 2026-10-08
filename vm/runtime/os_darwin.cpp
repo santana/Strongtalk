@@ -25,6 +25,7 @@
 #ifdef __APPLE__
 #define _XOPEN_SOURCE
 #include "memory/allocation.hpp"
+#include "memory/generation.inline.hpp"
 #include "memory/universe.hpp"
 #include "memory/universe.store.hpp"
 #include "runtime/os.hpp"

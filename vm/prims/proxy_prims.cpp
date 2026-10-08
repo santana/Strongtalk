@@ -208,8 +208,8 @@ PRIM_DECL_2(proxyOopPrimitives::smiAt, oop receiver, oop offset) {
   if (proxyOop(receiver)->is_null())
     return markSymbol(vmSymbols::illegal_state());
 
-  unsigned long value = (unsigned long)(uintptr_t)proxyOop(receiver)->long_at(smiOop(offset)->value());
-  unsigned long topBits = value >> (BitsPerWord - Tag_Size);
+  uintptr_t value = (uintptr_t)proxyOop(receiver)->long_at(smiOop(offset)->value());
+  uintptr_t topBits = value >> (BitsPerWord - Tag_Size);
   if ((topBits != 0) && (topBits != 3))
     return markSymbol(vmSymbols::smi_conversion_failed());
   return as_smiOop((int)value);

@@ -272,10 +272,10 @@ public:
   develop(MaxElementPrintSize                ,    10, "Maximum number of elements to print"                                         ) \
                                                                                                                                       \
 /* NOTE: the four object-heap flags below are sized in KWORDS, not Kbytes -- spaceSize.cpp                            \
-/*       multiplies them by oopSize, so one unit is oopSize bytes. SurvivorSize is per-space.                         \
-/*       Do NOT raise EdenSize while the frame.cpp:529 entry-frame assert is open: a larger eden                      \
-/*       scavenges less often, which turns that assert into a bare stack overflow (less diagnosable).                 \
-/* allocation parameters */                                                                                                           \
+        multiplies them by oopSize, so one unit is oopSize bytes. SurvivorSize is per-space.                          \
+        Do NOT raise EdenSize while the frame.cpp:529 entry-frame assert is open: a larger eden                       \
+        scavenges less often, which turns that assert into a bare stack overflow (less diagnosable).                  \
+        allocation parameters */                                                                                                      \
   product(ReservedHeapSize                                  ,  128*K, "Maximum size for object heap, in Kwords (x BytesPerWord bytes)      ") \
   product(ObjectHeapExpandSize               ,   512, "Chunk size (in Kbytes) by which the object heap grows"                       ) \
   product(EdenSize                                  ,    512, "size of eden, in Kwords (x BytesPerWord bytes)                     ") \

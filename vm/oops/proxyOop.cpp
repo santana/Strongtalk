@@ -29,6 +29,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 void proxyOopDesc::bootstrap_object(bootstrap* st) {
   memOopDesc::bootstrap_header(st);
-  set_pointer((void*)st->read_long());
+  set_pointer((void*)(intptr_t)st->read_long());
   memOopDesc::bootstrap_body(st, header_size());
 }

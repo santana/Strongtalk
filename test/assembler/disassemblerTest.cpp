@@ -39,6 +39,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "code/stubRoutines.hpp"
 #include "disasm/disassembler.hpp"
 #include "memory/universe.hpp"
+#include "memory/universe.store.hpp"
+#include "oops/memOop.inline.hpp"
+#include "oops/oop.inline.hpp"
 #include "runtime/runtime.hpp"
 #include "utilities/ostream.hpp"
 
