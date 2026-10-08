@@ -1557,15 +1557,30 @@ void AArch64MacroAssembler::addl(Address dst, int imm) {
 }
 
 void AArch64MacroAssembler::incl(Address dst) {
-  movl(x16, dst);
-  add(x16, x16, 1);
-  movl(dst, x16);
+  // x86 `incl` on memory has no REX.W prefix, so it bumps a 32-bit word;
+  // every use site counts an int (BlockScavenge::counter, the interpreter's
+  // bytecode counters, the nmethod invocation count). Keep the
+  // read-modify-write 32-bit so the neighbouring bytes are not clobbered.
+  Address target = dst;
+  if (target._mode == Address::absolute) {
+    load_absolute_address(x17, target); // x17 = <abs address>
+    target = Address(x17);
+  }
+  ldr_w(x16, target);
+  add(x16, x16, 1, 0, sz_32);
+  str_w(x16, target);
 }
 
 void AArch64MacroAssembler::decl(Address dst) {
-  movl(x16, dst);
-  sub(x16, x16, 1);
-  movl(dst, x16);
+  // see incl(Address): 32-bit read-modify-write, like x86 `decl`.
+  Address target = dst;
+  if (target._mode == Address::absolute) {
+    load_absolute_address(x17, target); // x17 = <abs address>
+    target = Address(x17);
+  }
+  ldr_w(x16, target);
+  sub(x16, x16, 1, 0, sz_32);
+  str_w(x16, target);
 }
 
 void AArch64MacroAssembler::orl(Register dst, Address src) {

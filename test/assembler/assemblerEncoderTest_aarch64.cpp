@@ -1878,13 +1878,13 @@ static void test_compat_dispatch_frame() {
 static void test_compat_misc() {
   {
     static const uint32_t e[] = {
-      0xF9400050, // ldr x16, [x2]
-      0x91000610, // add x16, x16, #1
-      0xF9000050, // str x16, [x2]
+      0xB9400050, // ldr w16, [x2]
+      0x11000610, // add w16, w16, #1
+      0xB9000050, // str w16, [x2]
     };
     TEST_BEGIN("incl [x2]")
     __a.incl(Address(x2));
-    CHECK_WORDS(e, 3, "ldr x16, [x2] ; add x16, x16, #1 ; str x16, [x2]");
+    CHECK_WORDS(e, 3, "ldr w16, [x2] ; add w16, w16, #1 ; str w16, [x2]");
     TEST_END
   }
   {
@@ -2719,13 +2719,13 @@ static void test_new_instructions() {
   {
     // decl(Address)
     static const uint32_t e[] = {
-      0xF9400030, // ldr x16, [x1]
-      0xD1000610, // sub x16, x16, #1
-      0xF9000030, // str x16, [x1]
+      0xB9400030, // ldr w16, [x1]
+      0x51000610, // sub w16, w16, #1
+      0xB9000030, // str w16, [x1]
     };
     TEST_BEGIN("decl(Address)")
     __a.decl(Address(x1, 0));
-    CHECK_WORDS(e, 3, "ldr x16, [x1] ; sub x16, x16, #1 ; str x16, [x1]");
+    CHECK_WORDS(e, 3, "ldr w16, [x1] ; sub w16, w16, #1 ; str w16, [x1]");
     TEST_END
   }
   {

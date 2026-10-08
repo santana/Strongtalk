@@ -639,6 +639,16 @@ public:
   // existing absolute-aware cmpl), and its immediate compare variant.
   void cmp_absolute(Register lhs, Address mem) { cmpl(lhs, mem); }
   void cmp_absolute_imm(Address mem, int imm) { cmpl(mem, imm); }
+  // Absolute-address stack/address/arithmetic ops (operands are
+  // Address::absolute C globals), the x86 MacroAssembler names used by the
+  // shared stub and interpreter generators (stubRoutines.cpp,
+  // interpreter.cpp). All the generic forms below already materialize an
+  // absolute address via an inline literal, so these are aliases for them.
+  void push_absolute(Address src) { pushl(src); } // push *<addr>
+  void pop_absolute(Address dst) { popl(dst); } // pop top of stack into *<addr>
+  void lea_absolute(Register dst, Address src) { leal(dst, src); } // dst = <addr>
+  void inc_absolute(Address mem) { incl(mem); } // (*<addr>)++
+  void dec_absolute(Address mem) { decl(mem); } // (*<addr>)--
   void movq(Register dst, intptr_t imm) { mov(dst, imm); }
   void movq(Register dst, Register src) { movl(dst, src); }
   void movq(Register dst, Address src) { movl(dst, src); }
