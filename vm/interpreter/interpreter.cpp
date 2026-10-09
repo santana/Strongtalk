@@ -1220,9 +1220,11 @@ char* InterpreterGenerator::copy_params_into_context(bool self, int paramsCount)
     // store recv
     masm->movl(edx, self_addr());
     masm->movl(Address(ecx, contextOopDesc::temp0_byte_offset()), edx);
+    masm->store_check(ecx, edx);
   }
 
   if (paramsCount == -1) {
+    masm->pushl(ecx); // save context base for store checks
     masm->addl(esi, 2); // esi points to first parameter index
     masm->movb(eax, Address(esi, -1)); // get b (nof params)
     masm->bind(_loop);
@@ -1230,16 +1232,20 @@ char* InterpreterGenerator::copy_params_into_context(bool self, int paramsCount)
     masm->movl(edx, arg_addr(ebx)); // get parameter
     Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize * oneIfSelf);
     masm->movl(slot, edx); // store in context variable
+    masm->movl(ebx, Address(esp, 0)); // restored context base
+    masm->store_check(ebx, edx);
     masm->addl(ecx, oopSize);
     masm->incl(esi);
     masm->decb(eax);
     masm->jcc(Assembler::notZero, _loop);
+    masm->popl(ecx);
   } else {
     for (int i = 0; i < paramsCount; i++) {
       masm->movb(ebx, Address(esi, 1 + i)); // get i.th parameter index
       masm->movl(edx, arg_addr(ebx)); // get parameter
       Address slot = Address(ecx, contextOopDesc::temp0_byte_offset() + oopSize * (i + oneIfSelf));
       masm->movl(slot, edx); // store (i+oneIfSelf).th in context variable
+      masm->store_check(ecx, edx);
     }
     masm->addl(esi, 1 + paramsCount);
   }
@@ -1385,6 +1391,7 @@ char* InterpreterGenerator::install_context(int nofArgs, bool for_method) {
   restore_ebx();
   if (for_method) { // if method context then
     masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ebp); // parent points to method frame
+    masm->store_check(eax, ebp);
   } else { // else
     masm->movl(ecx, context_addr()); // get (incoming) enclosing context
     if (_debug) {
@@ -1393,10 +1400,11 @@ char* InterpreterGenerator::install_context(int nofArgs, bool for_method) {
       // but install_context is used with the use_context attribute?)
     }
     masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ecx); // parent points to enclosing context
+    masm->store_check(eax, ecx);
   }
   load_ebx(); // get next instruction
   masm->movl(context_addr(), eax); // install context
-  masm->store_check(eax, ecx); // store check on eax, use ecx as scratch register
+  // store check not needed for stack root store
   masm->popl(eax); // restore tos
   jump_ebx();
   return ep;

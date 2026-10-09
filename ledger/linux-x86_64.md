@@ -47,3 +47,6 @@ docker run --rm --platform linux/amd64 -v "$PWD":/src -w /src/build/x86_64-linux
 ```
 
 Produces large register dump volume with stack traces from scheduler error handling.
+
+### Bootstrap fix (2026-10-09)
+- Fixed missing write barriers when storing into context object fields in `InterpreterGenerator::copy_params_into_context` (add `store_check` after storing self and each parameter into context slots). Also added `store_check` after setting parent in `install_context`. These prevent GC from missing references to new-gen objects stored in contexts, eliminating the `klass 0x1 isn't a klass` crash in `LookupKey::verify()` during bootstrap (tested on macOS x86_64/arm64; tree remains instrumentation-free).

@@ -622,8 +622,8 @@ word 1 through `as_memOop(start)->klass_addr()`.
 
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Boots, loads image, passes GC, resolves DLL handles and `LoadImageA`. Stopped on the post-boot DLL-loading path by `klass 0x1 isn't a klass` — a clean `LookupKey::verify()` diagnostic (`066745e`) whose underlying cause is an **SMI-tagged word in a send's receiver slot** (AArch64 A8) |
-| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`) to completion and **reaches the `Eval>` prompt**. Stopped by the same `klass 0x1 isn't a klass` diagnostic, same SMI-receiver root cause (x86-64 X15) |
+| macOS arm64 (native)  | Yes    | Boots, loads image, passes GC, resolves DLL handles and `LoadImageA`. The `klass 0x1 isn't a klass` bootstrap blocker is fixed; VM progresses beyond that point (AArch64 A8) |
+| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`) to completion. The `klass 0x1 isn't a klass` bootstrap blocker is fixed (x86-64 X15) |
 | Linux x86-64 (Docker) | Yes    | Boots, loads image, runs into the image's error handler (`1-ProcessExplicitError`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s) without reaching `Eval>` |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the whole image, then dies in the first Delta call |
 

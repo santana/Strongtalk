@@ -46,3 +46,6 @@ cd build/x86_64-macos-clang
 DYLD_LIBRARY_PATH=. ./strongtalk -b ../../strongtalk.bst
 # then at Eval>: ^ 3 + 4
 ```
+
+### Bootstrap fix (2026-10-09)
+- Added missing store_check in `InterpreterGenerator::copy_params_into_context` (self and params stored into context) and in `install_context` after setting parent pointer. Prevents GC from missing new-gen references in context objects, fixing `klass 0x1 isn't a klass` in `LookupKey::verify()` during bootstrap. No instrumentation added; verified on x86_64.

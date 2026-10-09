@@ -11,7 +11,7 @@
 | Build | OK | Builds `strongtalk.exe`, `stest.exe`, `strongtalk.so` cleanly with `x86_64-w64-mingw32-g++`. |
 | Image load | FIXED | Previously aborted with `assert(contains(q), "q must be in this space")` in `vm/memory/space.cpp:397` during heap/card-table traversal. Root cause was an LLP64 truncation bug (32-bit mask constants), now fixed; the full `strongtalk.bst` read-in completes (image-compat rewrites run, `... 0.16x secs]`). |
 | First Delta call | FIXED | Was a RIP-relative disp32 wrap in `push [&last_Delta_fp]` (Root Cause 2, below); now the first Delta call runs cleanly. |
-| Runtime / interpreter | BOOTS (clean exit 0) | Native amd64 wine (QEMU TCG): banner, CODE_MEM allocs, all stub routines generated, image read in ~2.9 s, the image-compat `Alien` patches execute through the real interpreter via `Delta::call_generic`, no access violation, clean exit. The `stest.exe` harness still AVs after 3 init call_generics (next open item, see "Remaining"). |
+| Runtime / interpreter | BOOTS (clean exit 0) | Native amd64 wine (QEMU TCG): banner, CODE_MEM allocs, all stub routines generated, image read in ~2.9 s, the image-compat `Alien` patches execute through the real interpreter via `Delta::call_generic`, no access violation, clean exit. The `klass 0x1` bootstrap blocker is fixed; the `stest.exe` harness still AVs after 3 init call_generics (next open item, see "Remaining"). |
 | CI | Smoke-only | CI runs Windows builds (cross/native); smoke runs are best-effort/continue-on-error and may timeout/hang in certain environments. Rosetta-translated smoke hits `rosetta error: invalid gdt selector index 5` right after image-read (translator artifact; the real-amd64 QEMU path is authoritative). |
 
 ## Diagnostics additions (working tree, os_nt.cpp)
@@ -206,3 +206,5 @@ Symbolize `strongtalk.so` frames (PE ImageBase 0x293720000, DWARF-5):
 x86_64-w64-mingw32-addr2line -e build/x86_64-mingw-gcc/strongtalk.so -f -C \
   0x293827a71   # Delta::call_generic (delta.cpp:101)
 ```
+### Bootstrap fix (2026-10-09)
+- Fixed missing write barriers in interpreter context initialization (`copy_params_into_context`, `install_context`) - added store_check calls so GC properly remembers new-gen references stored in context objects. Resolves `klass 0x1 isn't a klass` in `LookupKey::verify()` on bootstrap paths. No instrumentation added.

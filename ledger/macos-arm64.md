@@ -53,3 +53,6 @@ Key locations:
 - `vm/interpreter/interpretedIC.cpp:609-646` — inline cache miss handler; reads receiver from frame
 - `vm/runtime/frame.cpp:123-235` — `method_from_hp()` and `is_interpreted_activation()` validation logic
 - `vm/runtime/frame.cpp:271-289` — `current_interpretedIC()` requires valid activation
+
+### Bootstrap fix (2026-10-09)
+- Added missing write barriers when initializing context objects (store_check in `copy_params_into_context` for self/params; store_check after setting context parent in `install_context`). Fixes `klass 0x1 isn't a klass` in `LookupKey::verify()` caused by stale pointers to new-gen objects not being remembered by GC. Tree remains instrumentation-free; build verified on arm64.

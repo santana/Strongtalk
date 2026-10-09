@@ -49,8 +49,8 @@ the image's own error-handling machinery executes on both backends.
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | boots, loads the image, and runs the interpreter into the image's error handler (`1-ProcessExplicitError` on `2-ProcessorScheduler`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s); never reaches `Eval>` |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, passes GC, resolves DLL handles and `LoadImageA`. Stopped on the post-boot DLL-loading path by `klass 0x1 isn't a klass`, a clean `LookupKey::verify()` diagnostic whose underlying cause is an SMI-tagged word in a send's receiver slot (AArch64 **A8**) |
-| macOS x86-64 (forced)     | yes   | boots, runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion, and **reaches the `Eval>` prompt**. Stopped by the same `klass 0x1 isn't a klass` diagnostic, same SMI-receiver root cause (x86-64 **X15**) |
+| macOS arm64 (AArch64)     | yes   | boots, loads the image, passes GC, resolves DLL handles and `LoadImageA`. The original `klass 0x1 isn't a klass` bootstrap blocker is fixed; VM now proceeds past the post-boot DLL-loading path to later runtime checks (AArch64 **A8**) |
+| macOS x86-64 (forced)     | yes   | boots, runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion. The original `klass 0x1 isn't a klass` bootstrap blocker is fixed (x86-64 **X15**) |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows-runtime-status) for status |
 
 macOS x86-64 now reaches `Eval>`; the others do not. The remaining blocker is
