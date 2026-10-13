@@ -120,7 +120,12 @@ handleStopFor: p <Process>
 	h := self stopHandler.
 	h isNil
 		ifTrue: [ self handleStopOnCommandLine: p ]
-		ifFalse: [  [ h value: p ] fork. ]!
+		ifFalse: [  
+			[ h value: p ] 
+				on: Error
+				do: [:ex | 
+					Transcript show: 'Stop handler failed: '; show: ex printString; cr.
+					self handleStopOnCommandLine: p ] fork. ]!
 
 handleStopOnCommandLine: p <Process>
 

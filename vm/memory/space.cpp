@@ -475,7 +475,53 @@ oop* oldSpace::object_start_checked(oop* p) {
     if (!(*n)->is_mark() && !(*n)->is_mem() && !contains((oop*)*n))
       return NULL;
     q = n;
-    int size = as_memOop(n)->size();
+    // Resolve the size WITHOUT dispatching through the klass field when the
+    // header has already been reversed by MarkSweep.  convert_hcode_pointers()
+    // both resolves hp through this function and reverses heap objects via
+    // follow_root() on the frames it marks, so by the time a later frame is
+    // classified, earlier frames' reachable objects -- possibly including the
+    // one this walk is standing on -- have word0 replaced by the address of
+    // the slot they were reached through, and follow_header() may have
+    // replaced word1 (the klass field) with a marking pointer too.
+    // blueprint()->oop_size() would then load a vtable through garbage and
+    // fault (the A6 crash: memOopDesc::size() -> [ASCII text + 0x48]).
+    //
+    // A not-yet-reversed object still has a real mark in word0: Mark_Tag in the
+    // low bits (and, when the object is live, the sentinel bit), so is_mark()
+    // distinguishes it from a reversed header, whose word0 reverse() replaced
+    // with a plain slot address (tag 0) or a marking pointer (tag 1) -- never
+    // Mark_Tag, since every slot address is word aligned.  While word0 is still
+    // a mark, word1 is still the genuine klass (reverse() overwrites word0
+    // first, follow_header() runs later), so klass dispatch is safe.  For a
+    // reversed object, gc_store_size() stashed the size in the age field of the
+    // mark that reverse() wrote back into the source slot; every re-reversal
+    // links slot -> previous slot -> ... -> stashed mark, so follow that chain
+    // until the sentinel mark appears.  age == 0 means the size overflowed into
+    // the remembered set.
+    int size;
+    oop hdr = *n;
+    if (hdr->is_mark()) {
+      size = as_memOop(n)->size();
+    } else {
+      // word0 is a marking pointer: either a plain slot address (tag 0) or the
+      // same address tagged with Mem_Tag (tag 1).  Mask the tag off before
+      // dereferencing.
+      oop* slot = (oop*)((uintptr_t)hdr & ~(uintptr_t)(Tag_Size - 1));
+      int age = -1;
+      for (int hops = 0; hops < 4096 && contains(slot); hops++) {
+        oop v = *slot;
+        if (v->is_mark()) {
+          age = markOop((uintptr_t)v)->age();
+          break;
+        }
+        slot = (oop*)(uintptr_t)v;
+      }
+      if (age < 0)
+        return NULL;
+      size = age;
+      if (size == 0)
+        size = Universe::remembered_set->get_size(as_memOop(n));
+    }
     if (size <= 0)
       return NULL;
     n += size;

@@ -207,10 +207,21 @@ bool frame::is_interpreted_frame() const {
 bool frame::is_interpreted_activation() const {
   // Safety: reject obviously bad hp values before dereferencing
   void* h = (void*)hp();
-  if (h == NULL || ((uintptr_t)h & (sizeof(void*) - 1)) != 0)
+  if (h == NULL)
     return false;
   if ((uintptr_t)h < 0x1000)
     return false;
+  // NB: hp must NOT be required to be pointer-aligned.  hp is the interpreter's
+  // byte-granular bytecode pointer (method object base + byte offset), so any
+  // 8-byte alignment is coincidence: a frame suspended at, say, bytecode offset
+  // 2 has hp & 7 == 2.  Requiring alignment here rejected genuine activations
+  // (measured on arm64: hp & 7 in {1,2,3} with method_from_hp() resolving a
+  // perfectly good method), frame::oop_iterate() then scanned no slots for
+  // them, and the scavenge root walk missed their receivers -- leaving stale
+  // pointers into a cleared space and the "klass 0x1 isn't a klass" crash at
+  // the next inline cache miss.  The authoritative validity test is
+  // method_from_hp() below, which bounds-checks hp against the old generation
+  // before touching any memory it names.
   if (!is_interpreted_frame())
     return false;
   // The pc test is necessary but *not* sufficient.  frame::sender()
