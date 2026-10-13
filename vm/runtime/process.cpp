@@ -190,8 +190,7 @@ void Process::basic_transfer(Process* target) {
   applyStepping();
 }
 
-// ======= VMProcess ========
-
+// ======= VMProcess =
 VMProcess::VMProcess() {
   assert(vm_process() == NULL, "we can only allocate one VMProcess");
 
@@ -355,8 +354,7 @@ bool DeltaProcess::stepping = false;
 VMProcess* VMProcess::_vm_process = NULL;
 VM_Operation* VMProcess::_vm_operation = NULL;
 
-// ======= DeltaProcess ========
-
+// ======= DeltaProcess =
 extern "C" char* active_stack_limit() {
   return (char*)&DeltaProcess::_active_stack_limit;
 }
@@ -702,7 +700,11 @@ void DeltaProcess::frame_iterate(FrameClosure* blk) {
   blk->begin_process(this);
 
   if (has_stack()) {
+    if (getenv("ST_TRACE_HCODE"))
+      fprintf(stderr, "FI: has_stack, calling last_frame()\n");
     frame v = last_frame();
+    if (getenv("ST_TRACE_HCODE"))
+      fprintf(stderr, "FI: last_frame fp=%p\n", (void*)v.fp());
     // Bound the walk.  frame::is_first_frame() is
     // is_entry_frame() && !has_next_Delta_fp(), so it is only reached by
     // following an intact delta chain; if sender() ever hands back a garbage
@@ -1219,8 +1221,7 @@ double DeltaProcess::system_time() {
   return _thread ? os::system_time_for(_thread) : 0.0;
 }
 
-// ======= Processes ========
-
+// ======= Processes =
 DeltaProcess* Processes::processList = NULL;
 
 void Processes::start(VMProcess* p) {
@@ -1230,6 +1231,10 @@ void Processes::start(VMProcess* p) {
 }
 
 void Processes::add(DeltaProcess* p) {
+  static int count = 0;
+  count++;
+  if (getenv("ST_TRACE_HCODE"))
+    fprintf(stderr, "ADD#%d p=%p\n", count, (void*)p);
   p->set_next(processList);
   processList = p;
 }
@@ -1332,16 +1337,53 @@ void Processes::follow_roots() {
 }
 
 class ConvertHCodePointersClosure : public FrameClosure {
+  GrowableArray<oop*>* _firsts;
+  GrowableArray<oop*>* _lasts;
+  GrowableArray<oop*>* _receivers;
+
+public:
+  ConvertHCodePointersClosure(GrowableArray<oop*>* firsts, GrowableArray<oop*>* lasts, GrowableArray<oop*>* receivers) :
+    _firsts(firsts), _lasts(lasts), _receivers(receivers) {}
+
   void do_frame(frame* f) {
-    if (f->is_interpreted_frame()) {
-      f->convert_hcode_pointer();
+    // Must be called for *every* interpreted frame, converted or not, so the
+    // offset FIFO stays in step with the restore walk.
+    if (!f->is_interpreted_frame())
+      return;
+    oop* first;
+    oop* last;
+    oop* receiver;
+    if (f->convert_hcode_pointer(&first, &last, &receiver) != NULL) {
+      _firsts->append(first);
+      _lasts->append(last);
+      _receivers->append(receiver);
     }
   }
 };
 
 void Processes::convert_hcode_pointers() {
-  ConvertHCodePointersClosure blk;
+  // Two passes.  The first converts every frame's hp slot from an interior
+  // bytecode address to its method's object base while all heap headers are
+  // still intact, recording the oop slots each converted frame roots.  The
+  // second then marks those slots.  They cannot be fused: marking a frame's
+  // roots reverses ("follows") every object it reaches, and those objects
+  // include methods reachable from other frames, so a fused walk leaves later
+  // frames' method headers replaced by marking pointers and method_from_hp()'s
+  // is_mark() test rejects them -- leaving the rest of the stack unconverted.
+  //
+  // Nor can the second pass re-walk the frames to recompute those slots: by then
+  // reverse() has replaced method headers, so sender() can no longer recognise a
+  // block activation and would hand back an sp one block-reservation too low.
+  // Recording the addresses during the conversion walk avoids that entirely.
+  GrowableArray<oop*> firsts(16);
+  GrowableArray<oop*> lasts(16);
+  GrowableArray<oop*> receivers(16);
+  ConvertHCodePointersClosure blk(&firsts, &lasts, &receivers);
   frame_iterate(&blk);
+
+  for (int i = 0; i < firsts.length(); i++) {
+    frame::follow_roots_of_converted_frame(firsts.at(i), lasts.at(i), receivers.at(i));
+  }
 }
 
 class RestoreHCodePointersClosure : public FrameClosure {

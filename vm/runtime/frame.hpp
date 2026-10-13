@@ -280,7 +280,21 @@ public:
 
   // Garbage collection operations
   void follow_roots();
-  void convert_hcode_pointer();
+  // Converts hp() from an interior bytecode address to the method's object base
+  // and records the offset for restore_hcode_pointer().  Returns the frame's
+  // method (resolved while hp was still valid), or NULL if the frame is not an
+  // interpreted activation.  For a converted frame, *first/*last delimit
+  // (inclusive) the oop slots that must be traced and *receiver is the receiver
+  // slot; all three are filled here because after set_hp() the frame can no
+  // longer resolve its own method.  The caller replays them through
+  // follow_roots_of_converted_frame() in a second pass; see there for why the
+  // conversion and the root following are not fused.
+  methodOop convert_hcode_pointer(oop** first, oop** last, oop** receiver);
+  // Traces the temporaries and receiver that convert_hcode_pointer() captured.
+  // Static because the second pass replays recorded ranges and has no frame
+  // object.  Must run before the heap is reversed, i.e. before
+  // Universe::oops_do().
+  static void follow_roots_of_converted_frame(oop* first, oop* last, oop* receiver);
   void restore_hcode_pointer();
 
   // Returns the size of a number of interpreter frames in words.

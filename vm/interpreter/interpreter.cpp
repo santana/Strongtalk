@@ -71,10 +71,13 @@ static const int float_0_offset = oopSize * (frame_temp_offset - 3);
 static const int temp_1_offset = oopSize * (frame_temp_offset - 1);
 static const int temp_0_offset = oopSize * frame_temp_offset;
 static const int esi_offset = oopSize * frame_hp_offset;
-// NOTE (x86-64/AArch64): frame_receiver_offset is measured in *slots*, but
-// oopSize is a *byte* count. On AArch64 slotSize == 2*oopSize, so this must use
-// slotSize, not oopSize, or the offset is half of what it should be.
-static const int self_offset = slotSize * frame_receiver_offset;
+// NOTE (x86-64/AArch64): the frame_*_offset constants are oop indices used with
+// frame::addr_at(), i.e. byte offset == oopSize * frame_*_offset (the AArch64
+// values are doubled relative to x86 because a delta slot holds two oops, but
+// they are still counted in oops, not slots).  Use oopSize here, exactly like
+// temp_0_offset/esi_offset/arg_n_offset below; multiplying by slotSize would
+// double-count the slot width and land on the hp slot instead of the receiver.
+static const int self_offset = oopSize * frame_receiver_offset;
 static const int link_offset = oopSize * frame_link_offset;
 static const int ret_addr_offset = oopSize * frame_return_addr_offset;
 static const int arg_n_offset = oopSize * frame_arg_offset;
@@ -1391,7 +1394,10 @@ char* InterpreterGenerator::install_context(int nofArgs, bool for_method) {
   restore_ebx();
   if (for_method) { // if method context then
     masm->movl(Address(eax, contextOopDesc::parent_byte_offset()), ebp); // parent points to method frame
-    masm->store_check(eax, ebp);
+    // store_check destroys its scratch register, so edx (free here) must be
+    // used. Passing ebp would clobber the activation's frame pointer, and the
+    // install below writes the context via that frame pointer.
+    masm->store_check(eax, edx);
   } else { // else
     masm->movl(ecx, context_addr()); // get (incoming) enclosing context
     if (_debug) {

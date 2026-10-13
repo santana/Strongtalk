@@ -2,7 +2,7 @@
 
 **Platform**: macOS on Apple Silicon (arm64)  
 **Build**: `make` / `build/arm64-macos-clang`  
-**Commit**: 144eed2 (HEAD as of capture)
+**Commit**: 389d3d9 (HEAD as of capture)
 
 ## Status
 
@@ -10,17 +10,11 @@
 |---|---|---|
 | Build | OK | Builds clean (debug build). Last change: commit 144eed2 fixed `self_offset` to use `slotSize` instead of `oopSize` on AArch64, resolving the previous "klass 0x1 isn't a klass" startup failure. |
 | Image load | OK | Boots, reads `strongtalk.bst`, runs image-compat rewrites (`Alien>>ensureLoaded:` size 4→8, Alien header 8→16). |
-| Runtime | HANG | After image load, VM enters scheduler/Delta boot path and hangs. It does not reach `Eval>` or crash with an obvious assert in normal operation. |
+| Runtime | LOOP (process fork storm) | After image load, two GCs complete; scheduler enters an idle/stop-handler loop spawning ProgramEnvironment/StackTraceInspector processes via `Process class>>for:`, causing runaway process/thread creation (does not reach `Eval>`). |
 
 ## Current Failure
 
-When run interactively, the VM prints the banner and image-load messages, then suspends/hangs in the startup transfer path. Backtraces sampled from the running process (thread states) show:
-
-- Main thread waits in `DeltaProcess::suspend_at_creation()` -> `os::wait_for_event()` (`__psynch_cvwait`)
-- VMProcess thread is in `VMProcess::transfer_to()` -> `os::transfer()` waiting on events
-- The Delta thread is running in the interpreter/JIT startup path performing sends (e.g. megamorphic sends) as part of `DeltaProcess::launch_delta()` calling into Smalltalk
-
-Sample trace shows heavy activity in the Delta startup thread with inline cache misses (e.g. repeated `InterpretedIC lookup (1-ProcessorScheduler class, #initialize)`) while synchronization waits are happening in the transfer/event layer. The hang is consistent with the commit message description: the earlier failure was masked; after 144eed2 the path proceeds further to the event/transfer coordination and exposes a pre-existing startup deadlock in `os::transfer` on macOS (AArch64).
+With the GC fixes (389d3d9), the VM now passes two full mark-sweep GC cycles and avoids the post-conversion crash. After image load, the image boot sequence proceeds further; however, the startup path does not reach `Eval>`. Instead, the scheduler repeatedly forks processes from the debugger/program environment idle handler: when the scheduler has no runnable process, it goes idle and `handleStopFor:` invokes the installed stopHandler (`Launcher>>startProgEnv` sets `Processor stopHandler:` to open a `StackTraceInspector`), which creates a new process via `Process class>>for:` → `fork` → `launch` → `openOn:` → `startProgEnv` → `handleStopFor:` → infinite loop (12k+ forks observed, hitting the thread limit with `pthread_create` returning `EAGAIN`).
 
 ## Evidence
 

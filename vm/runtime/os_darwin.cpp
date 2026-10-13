@@ -40,6 +40,7 @@
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/symbolOop.hpp"
+#include "interpreter/interpreter.hpp"
 #include <pthread.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -898,6 +899,18 @@ static void handler(int signum, siginfo_t* info, void* context) {
 #endif
 #ifdef __aarch64__
   {
+    unsigned char* pc_ptr_dbg = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
+    unsigned char* lr_ptr_dbg = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
+    printf("  [dbg] pc=%p lr=%p interp_pc=%d interp_lr=%d\n", pc_ptr_dbg, lr_ptr_dbg,
+           (int)Interpreter::contains((char*)pc_ptr_dbg), (int)Interpreter::contains((char*)lr_ptr_dbg));
+    for (int _i = 0; _i < 29; _i++)
+      printf(" x%d=%#llx%s", _i, (unsigned long long)((ucontext_t*)context)->uc_mcontext->__ss.__x[_i],
+             (_i % 4 == 3) ? "\n" : "");
+    printf(" sp=%#llx fp=%#llx lr=%#llx pc=%#llx\n", (unsigned long long)((ucontext_t*)context)->uc_mcontext->__ss.__sp,
+           (unsigned long long)((ucontext_t*)context)->uc_mcontext->__ss.__fp,
+           (unsigned long long)((ucontext_t*)context)->uc_mcontext->__ss.__lr,
+           (unsigned long long)((ucontext_t*)context)->uc_mcontext->__ss.__pc);
+    fflush(stdout);
     unsigned char* pc_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__pc;
     unsigned char* lr_ptr = (unsigned char*)((ucontext_t*)context)->uc_mcontext->__ss.__lr;
     Dl_info pc_info;

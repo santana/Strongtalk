@@ -84,7 +84,12 @@ void frame::patch_fp(void** fp) {
 
 #ifdef DELTA_BACKEND_AARCH64
 oop* frame::block_activation_sender_sp() const {
-  methodOop m = method_from_hp();
+  // method_from_hp_or_base(): a block activation reached from a *converted*
+  // frame has hp == the method's object base, which method_from_hp() rejects.
+  // Failing to resolve it here left nArgs == 0, so the caller's sp was computed
+  // with the wrong reservation -- reintroducing the very under-scan this method
+  // exists to prevent (see frame.hpp).
+  methodOop m = method_from_hp_or_base();
   int nArgs = (m != NULL) ? m->number_of_arguments() : 0;
   // See frame.hpp: call_C's saved-LR slot plus the (nArgs+1) slots reserved by
   // setupBlockValueFrame sit between the block's fp and the caller's sp.
@@ -624,7 +629,7 @@ void frame::follow_roots() {
   }
 }
 
-void frame::convert_hcode_pointer() {
+methodOop frame::convert_hcode_pointer(oop** first, oop** last, oop** receiver) {
   if (!is_interpreted_activation()) {
     // Keep the offset FIFO balanced.  restore_hcode_pointer() consumes exactly
     // one entry per frame visited by the matching restore walk and cannot
@@ -633,8 +638,12 @@ void frame::convert_hcode_pointer() {
     // cannot be used to tell a converted frame from an untouched one.
     MarkSweep::set_hcode_pending_base(NULL);
     MarkSweep::add_hcode_offset(-1);
-    return;
+    return NULL;
   }
+  // Resolve the method *before* clobbering hp: once set_hp() below stores the
+  // object base, method() (which requires hp to be an interior bytecode
+  // address) can no longer resolve it.
+  methodOop m = method();
   // Adjust hcode pointer to object start
   u_char* h = hp();
   u_char* obj = (u_char*)as_memOop(Universe::object_start((oop*)h));
@@ -643,32 +652,51 @@ void frame::convert_hcode_pointer() {
   // restore_hcode_pointer() can verify this exact frame still holds that base.
   MarkSweep::set_hcode_pending_base(obj);
   MarkSweep::add_hcode_offset(h - obj);
+  // Capture the oop slots this frame roots *now*, while the method (needed to
+  // locate a float method's uninitialised float section) is still resolvable.
+  // The caller traces them in a second pass; it cannot recompute them by
+  // re-walking the frames, because by then MarkSweep::reverse() has replaced
+  // method headers with marking pointers and sender() would no longer recognise
+  // a block activation (see its comment) -- and a block's extra reservation is
+  // exactly what would misalign the captured sp.
+  *first = (has_interpreted_float_marker() && m != NULL && m->has_float_temporaries())
+             ? (oop*)addr_at(m->float_section_start_offset())
+             : sp();
+  *last = temp_addr(0);
+  *receiver = receiver_addr();
+  return m;
+}
 
-  // Mark the rest of this frame *here*, while the hybrid code pointer is still
-  // valid.  Once set_hp() above has run, is_interpreted_activation() no longer
-  // recognises the frame, so frame::follow_roots() cannot reach its temporaries
-  // or its receiver later in phase1 -- and moving this after
-  // Universe::oops_do(&follow_root) is not an option either, because that pass
-  // reverses every marked object's header into its marking pointer, after which
-  // method_from_hp()'s is_mark() test fails for all of them.  Leaving the frame
-  // unmarked here is what produced "VM Error: klass 0x... isn't a klass" from
-  // InterpretedIC::inline_cache_miss: compaction moved the receiver and the
-  // temporaries without updating the frame.
-  methodOop m = method();
-  if (has_interpreted_float_marker() && m != NULL && m->has_float_temporaries()) {
-    // Everything at or below the float section is raw float data that the
-    // interpreter never initializes, so it must not be scanned as oops; the
-    // oop-carrying temporaries sit between it and temp0.
-    for (oop* q = (oop*)addr_at(m->float_section_start_offset()); q <= temp_addr(0); q += oopsPerSlot) {
-      MarkSweep::follow_root(q);
-    }
-  } else {
-    for (oop* p = sp(); p <= temp_addr(0); p += oopsPerSlot) {
-      MarkSweep::follow_root(p);
-    }
+void frame::follow_roots_of_converted_frame(oop* first, oop* last, oop* receiver) {
+  // Trace the temporaries and the receiver that convert_hcode_pointer()
+  // captured from a frame whose hp slot now holds its method's tagged object
+  // base (see there).
+  //
+  // This *must* run before Universe::oops_do(&follow_root) reverses the heap's
+  // headers, and frame::follow_roots() cannot do it later: once hp holds the
+  // object base, is_interpreted_activation() is false for this frame (the base
+  // lies below codes(), so method_from_hp()'s containment test fails), so
+  // follow_roots() only traces the hp slot.  Leaving the receiver and the
+  // temporaries unmarked produced "VM Error: klass 0x... isn't a klass" from
+  // InterpretedIC::inline_cache_miss: compaction moved them without updating
+  // the frame.
+  //
+  // It is deliberately a *separate* pass from convert_hcode_pointer(): tracing
+  // here reverses ("follows") every reachable object's header, and while a
+  // frame's method object may only be reachable through another frame's roots,
+  // reversing it mid-walk makes method_from_hp()'s is_mark() test fail for the
+  // frames not yet converted.  Converting the whole stack first, with all
+  // headers still intact, is what keeps every activation recognisable.  The
+  // caller therefore records the ranges during the conversion walk and replays
+  // them here, rather than re-walking the (now partly reversed) frames.
+  //
+  // `first` is already float-section aware: for a float method it skips the raw
+  // float data the interpreter never initialises, which must not be scanned as
+  // oops.
+  for (oop* p = first; p <= last; p += oopsPerSlot) {
+    MarkSweep::follow_root(p);
   }
-  MarkSweep::follow_root(receiver_addr());
-  // if (WizardMode) lprintf("[0x%lx+%d]\n", obj, h - obj);
+  MarkSweep::follow_root(receiver);
 }
 
 void frame::restore_hcode_pointer() {
@@ -752,28 +780,29 @@ frame frame::sender() const {
     // slots setupBlockValueFrame reserved for the block's return), so the
     // caller's sp is not at the usual sender_sp offset.
     //
-    // This test must NOT go through is_interpreted_activation().  That predicate
-    // is value-based on hp(), and convert_hcode_pointer() deliberately rewrites
-    // hp() to the method's object base -- which lies below codes(), so
-    // method_from_hp()'s [codes(), codes_end()) containment test then fails and
-    // is_interpreted_activation() reports false for exactly the frames that
-    // were converted.  Asking it here therefore made frame::sender() pick
-    // sender_sp() instead of block_activation_sender_sp() during the restore
-    // walk for block activations the convert walk had handled correctly, so the
-    // two walks enumerated *different* frames in the same order and the
-    // hcode-offset FIFO stayed balanced by count while replaying each offset
-    // onto the wrong frame.
+    // Resolve the method through method_from_hp_or_base(), NOT through
+    // is_interpreted_activation().  The latter is value-based on hp(), and
+    // convert_hcode_pointer() rewrites hp() to the method's object base, which
+    // lies below codes(), so method_from_hp()'s containment test fails and
+    // is_interpreted_activation() reports false for exactly the frames that were
+    // converted.  Asking it here made frame::sender() pick sender_sp() instead
+    // of block_activation_sender_sp() for a converted block activation, so the
+    // *next* frame was built with an sp one (nArgs+1)-slot reservation too low
+    // and the GC root scan started below the real expression stack -- reading
+    // uninitialised stack (a stray 0x1, i.e. memOop(NULL)) and faulting in
+    // MarkSweep::reverse().  It also made the convert and restore walks
+    // enumerate different frames, misapplying the hcode-offset FIFO.
     //
-    // NB: is_interpreted_activation() answers correctly here for a scavenge walk
-    // (headers are untouched and hp is still an interior bytecode pointer), so
-    // the block test below resolves the method normally.  It must NOT be
-    // swapped for a mark-tolerant lookup: during mark-sweep phase1
-    // MarkSweep::reverse() has overwritten the object's header with a marking
-    // pointer, so is_method()/codes() on the located object read a word that is
-    // no longer a klass.  Locating the object start mid-mark is fine; calling
-    // methods on the object is not.
-    if (is_interpreted_activation()) {
-      methodOop m = method_from_hp();
+    // method_from_hp_or_base() is safe even during mark-sweep phase1, when
+    // MarkSweep::reverse() has replaced headers with marking pointers: reverse()
+    // stores a raw stack address in the mark word, so is_mark() is false and the
+    // lookup returns NULL *before* it calls is_method()/codes() on a word that is
+    // no longer a klass.  That guard -- not the is_interpreted_activation()
+    // wrapper -- is what keeps the lookup from reading a reversed object's
+    // method; is_interpreted_frame() is a pc-range test and never dereferences
+    // hp, so it is still the cheap first gate.
+    if (is_interpreted_frame()) {
+      methodOop m = method_from_hp_or_base();
       if (m != NULL && m->is_blockMethod()) {
         result = frame(block_activation_sender_sp(), link(), return_addr());
         return result;

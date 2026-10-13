@@ -141,9 +141,17 @@ oop MarkSweep::collect(oop p) {
 
   allocate(); // allocate stack for traversal
 
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: collect -> phase1\n");
   mark_sweep_phase1(&p);
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: phase1 done -> phase2\n");
   mark_sweep_phase2();
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: phase2 done -> phase3\n");
   mark_sweep_phase3();
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: phase3 done\n");
 
   deallocate(); // clear allocated structures
 
@@ -264,7 +272,11 @@ void MarkSweep::mark_sweep_phase1(oop* p) {
   trace(" 1");
 
   WeakArrayRegister::begin_mark_sweep();
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: begin_mark_sweep done\n");
   Processes::convert_hcode_pointers();
+  if (getenv("ST_TRACE_MS"))
+    fprintf(stderr, "MS: convert_hcode_pointers done\n");
 
   Universe::oops_do(&follow_root);
 

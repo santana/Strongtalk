@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/oopFactory.hpp"
 #include "memory/vmSymbols.hpp"
 #include "memory/universe.hpp"
+#include "oops/blockOop.hpp"
 #include "oops/klassOop.hpp"
 #include "oops/oop.hpp"
 #include "oops/oop.inline.hpp"
@@ -58,6 +59,39 @@ PRIM_DECL_2(processOopPrimitives::create, oop receiver, oop block) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
   processOop process = processOop(receiver->primitive_allocate());
   assert(process->is_process(), "must be process");
+
+  if (getenv("ST_TRACE_PROC")) {
+    static int n = 0;
+    n++;
+    methodOop bm = blockClosureOop(block)->method();
+    if (n <= 5 || (n % 2000) == 0) {
+      fprintf(stderr, "CREATE#%d active=%p", n, (void*)DeltaProcess::active());
+      if (bm != NULL && bm->is_method()) {
+        symbolOop s = bm->is_blockMethod() ? bm->enclosing_method_selector() : bm->selector();
+        if (s != NULL)
+          fprintf(stderr, " block_encl=%.*s", (int)s->length(), s->chars());
+      }
+      fprintf(stderr, "\n");
+    }
+    if (n == 1 || n == 2001) {
+      frame f = DeltaProcess::active()->last_frame();
+      int i = 0;
+      for (; f.is_delta_frame() && i < 40; f = f.sender(), i++) {
+        fprintf(stderr, "  STK[%d] fp=%p", i, (void*)f.fp());
+        if (f.is_compiled_frame()) {
+          fprintf(stderr, " [compiled]");
+        } else if (f.is_interpreted_frame()) {
+          methodOop m = f.method();
+          if (m != NULL) {
+            symbolOop s = m->is_blockMethod() ? m->enclosing_method_selector() : m->selector();
+            if (s != NULL)
+              fprintf(stderr, " %.*s", (int)s->length(), s->chars());
+          }
+        }
+        fprintf(stderr, "\n");
+      }
+    }
+  }
 
   DeltaProcess* p = new DeltaProcess(block, oopFactory::new_symbol("value"));
   process->set_process(p);
