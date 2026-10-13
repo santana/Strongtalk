@@ -24,7 +24,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/util.hpp"
 #include "runtime/debug.hpp"
 #include "runtime/os.hpp"
-#include "utilities/lprintf.hpp" // temporary CODE_MEM layout dump
 
 // Shared executable-code arena.
 //
@@ -100,7 +99,7 @@ char* os::code_memory(int size) {
   if (result + size > arena_end)
     fatal1("os::code_memory: executable code arena exhausted (need %ld bytes)", size);
   arena_cur = result + size;
-  lprintf("CODE_MEM layout: base=%p cur=%p size=%d result=%p\n", (void*)arena_base, (void*)result, size, (void*)result);
+
   return result;
 }
 
