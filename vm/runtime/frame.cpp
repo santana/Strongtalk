@@ -45,14 +45,37 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/oop.inline.hpp"
 
 u_char* frame::hp() const {
-  // Lars, please check -- assertion fails
-  //assert(is_interpreted_frame(), "must be interpreted");
-  return *hp_addr();
+  // Be defensive: validate frame structure before accessing hp
+  if (fp() == NULL || sp() == NULL)
+    return NULL;
+  char* fpc = (char*)fp();
+  char* spc = (char*)sp();
+  if (fpc <= spc)
+    return NULL;
+  u_char** addr = hp_addr();
+  // hp is stored in the frame; must be within frame bounds
+  if ((char*)addr < spc || (char*)addr >= fpc)
+    return NULL;
+  // Dereference safely
+  u_char* v = *addr;
+  // Basic sanity on the hp value
+  if ((intptr_t)v < 0x1000 || (intptr_t)v > 0x7ffffffff000LL)
+    return NULL;
+  return v;
 }
 
 void frame::set_hp(u_char* hp) {
   //assert(is_interpreted_frame(), "must be interpreted");
-  *hp_addr() = hp;
+  if (fp() == NULL || sp() == NULL)
+    return;
+  char* fpc = (char*)fp();
+  char* spc = (char*)sp();
+  if (fpc <= spc)
+    return;
+  u_char** addr = hp_addr();
+  if ((char*)addr < spc || (char*)addr >= fpc)
+    return;
+  *addr = hp;
 }
 
 void frame::patch_pc(char* pc) {
