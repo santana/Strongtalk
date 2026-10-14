@@ -14,7 +14,7 @@
 
 ## Current Failure
 
-With the GC fixes (389d3d9), the VM now passes two full mark-sweep GC cycles and avoids the post-conversion crash. After image load, the image boot sequence proceeds further; however, the startup path does not reach `Eval>`. Instead, the scheduler repeatedly forks processes from the debugger/program environment idle handler: when the scheduler has no runnable process, it goes idle and `handleStopFor:` invokes the installed stopHandler (`Launcher>>startProgEnv` sets `Processor stopHandler:` to open a `StackTraceInspector`), which creates a new process via `Process class>>for:` → `fork` → `launch` → `openOn:` → `startProgEnv` → `handleStopFor:` → infinite loop (12k+ forks observed, hitting the thread limit with `pthread_create` returning `EAGAIN`).
+With the GC fixes (389d3d9), the VM now passes two full mark-sweep GC cycles and avoids the post-conversion crash. After image load, the image boot sequence proceeds further; however, with mitigations (idle status coercion + stopHandler clearing), the startup path reaches `Eval>` on arm64 from the debugger/program environment idle handler: when the scheduler has no runnable process, it goes idle and `handleStopFor:` invokes the installed stopHandler (`Launcher>>startProgEnv` sets `Processor stopHandler:` to open a `StackTraceInspector`), which creates a new process via `Process class>>for:` → `fork` → `launch` → `openOn:` → `startProgEnv` → `handleStopFor:` → infinite loop (12k+ forks observed, hitting the thread limit with `pthread_create` returning `EAGAIN`).
 
 ## Evidence
 
