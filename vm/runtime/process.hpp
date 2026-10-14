@@ -374,6 +374,7 @@ private:
   static DeltaProcess* _active_delta_process;
   static DeltaProcess* _main_process;
   static DeltaProcess* _scheduler_process;
+  static DeltaProcess* _idle_process;
   static bool _is_idle;
   static volatile char* _active_stack_limit;
   static volatile bool _interrupt;
@@ -407,6 +408,8 @@ public:
 
   // returns the scheduler process
   static DeltaProcess* scheduler() { return _scheduler_process; }
+  static void set_idle_process(DeltaProcess* p) { _idle_process = p; }
+  static DeltaProcess* idle_process() { return _idle_process; }
 
   static void set_terminating_process(ProcessState state) {
     _state_of_terminated_process = state;

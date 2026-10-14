@@ -247,6 +247,12 @@ void VMProcess::activate_system() {
   proc->set_process(DeltaProcess::scheduler());
   DeltaProcess::scheduler()->set_processObj(proc);
 
+  // Clear stopHandler to prevent fork storm
+  if (proc->is_process()) {
+    // inst var index: Process has 5 inst vars; stopHandler is 6th added (index 5) -> total 10
+    proc->raw_at_put(10, nilObj);
+  }
+
   // Transfer control to the scheduler
   transfer_to(DeltaProcess::scheduler());
 
@@ -364,6 +370,7 @@ DeltaProcess* DeltaProcess::_active_delta_process = NULL;
 DeltaProcess* DeltaProcess::_main_process = NULL;
 volatile char* DeltaProcess::_active_stack_limit = NULL;
 DeltaProcess* DeltaProcess::_scheduler_process = NULL;
+DeltaProcess* DeltaProcess::_idle_process = NULL;
 bool DeltaProcess::_is_idle = false;
 volatile bool DeltaProcess::_interrupt = false;
 
@@ -419,7 +426,24 @@ ProcessState DeltaProcess::transfer_to(DeltaProcess* destination) {
   if (process_has_terminated()) {
     return state_of_terminated_process();
   }
-  return destination->state();
+  ProcessState st = destination->state();
+  if (idle_process() != NULL &&
+      (idle_process() == destination || idle_process()->processObj() == destination->processObj())) {
+    switch (st) {
+      case initialized:
+      case running:
+      case yielded:
+      case preempted:
+      case uncommon:
+      case in_async_dll:
+      case yielded_after_async_dll:
+        break;
+      default:
+        st = yielded;
+        break;
+    }
+  }
+  return st;
 }
 
 void DeltaProcess::transfer_to_vm() {

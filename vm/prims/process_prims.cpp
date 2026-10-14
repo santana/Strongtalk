@@ -42,6 +42,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/evaluator.hpp"
 #include "runtime/delta.hpp"
 #include "utilities/growableArray.hpp"
+#include <string.h>
 #include "memory/generation.inline.hpp"
 #include "memory/universe.store.hpp"
 #include "oops/memOop.inline.hpp"
@@ -94,6 +95,27 @@ PRIM_DECL_2(processOopPrimitives::create, oop receiver, oop block) {
   }
 
   DeltaProcess* p = new DeltaProcess(block, oopFactory::new_symbol("value"));
+  // Detect IdleProcess creation
+  methodOop bm = blockClosureOop(block)->method();
+  if (bm != NULL && bm->is_method()) {
+    symbolOop ssel = bm->selector();
+    if (ssel != NULL && ssel->length() == 16) {
+      const char* c = ssel->chars();
+      if (memcmp(c, "runIdleActionLoop", 16) == 0) {
+        DeltaProcess::set_idle_process(p);
+      }
+    }
+    if (bm->is_blockMethod()) {
+      ssel = bm->enclosing_method_selector();
+      if (ssel != NULL && ssel->length() == 16) {
+        const char* c = ssel->chars();
+        if (memcmp(c, "runIdleActionLoop", 16) == 0) {
+          DeltaProcess::set_idle_process(p);
+        }
+      }
+    }
+  }
+
   process->set_process(p);
   p->set_processObj(process);
   return process;
@@ -193,12 +215,77 @@ PRIM_DECL_1(processOopPrimitives::transferTo, oop process) {
   if (!processOop(process)->is_live())
     return markSymbol(vmSymbols::dead());
 
-  DeltaProcess* proc = processOop(process)->process();
+  DeltaProcess* proc = processOop(process)->process(); // Also detect IdleProcess by class
+  if (proc != NULL && proc->processObj() != NULL && proc->processObj()->klass() != NULL) {
+    klassOop k = proc->processObj()->klass();
+    // IdleProcess is a subclass of Process; check name
+    // get class name via same mechanism as className()
+    const int class_name_index = 9;
+    if (k->is_klass()) {
+      oop selv = k->instVarAt(class_name_index);
+      if (selv->is_symbol()) {
+        symbolOop kname = symbolOop(selv);
+        if (kname->length() == 11) {
+          const char* kc = kname->chars();
+          if (memcmp(kc, "IdleProcess", 11) == 0) {
+            DeltaProcess::set_idle_process(proc);
+          }
+        }
+      }
+    }
+  }
 
   // Do the transfer (remember transfer_to is a no-op if process is in async DLL)
   ProcessState state = DeltaProcess::scheduler()->transfer_to(proc);
 
   // Please be careful here since a scavenge/garbage collect can happen!
+
+  // Clear stopHandler on scheduler to prevent fork storms
+  {
+    DeltaProcess* sched = DeltaProcess::scheduler();
+    if (sched != NULL && sched->processObj() != NULL) {
+      processOop sp = sched->processObj();
+      // index 10
+      try {
+        sp->raw_at_put(10, nilObj);
+      } catch (...) {}
+    }
+  }
+  // If transferring to the idle process, treat any non-running status as yielded
+  // to avoid triggering the stopHandler (fork storm) when idle returns abnormally.
+  // Also set idle if class is IdleProcess
+  if (proc != NULL && proc->processObj() != NULL && proc->processObj()->klass() != NULL) {
+    klassOop k = proc->processObj()->klass();
+    const int class_name_index = 9;
+    if (k->is_klass()) {
+      oop selv = k->instVarAt(class_name_index);
+      if (selv->is_symbol()) {
+        symbolOop kname = symbolOop(selv);
+        if (kname->length() == 11) {
+          const char* kc = kname->chars();
+          if (memcmp(kc, "IdleProcess", 11) == 0) {
+            DeltaProcess::set_idle_process(proc);
+          }
+        }
+      }
+    }
+  }
+  if ((DeltaProcess::idle_process() != NULL && DeltaProcess::idle_process() == proc) ||
+      (DeltaProcess::idle_process() != NULL && DeltaProcess::idle_process()->processObj() == process)) {
+    switch (state) {
+      case initialized:
+      case running:
+      case yielded:
+      case preempted:
+      case uncommon:
+      case in_async_dll:
+      case yielded_after_async_dll:
+        break;
+      default:
+        state = yielded;
+        break;
+    }
+  }
 
   return DeltaProcess::symbol_from_state(state);
 }
