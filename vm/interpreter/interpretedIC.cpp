@@ -625,7 +625,19 @@ oop* InterpretedIC::inline_cache_miss() {
                    : f.expr(ic->nof_arguments()); //  no:  take receiver pushed before the arguments
 
   // do the lookup
-  klassOop klass = receiver->klass();
+  klassOop klass;
+  if (receiver->is_smi()) {
+    klass = Universe::smiKlassObj();
+  } else if (receiver->is_mem() || receiver->is_block() || receiver->is_proxy()) {
+    // it's a heap object
+    klass = receiver->klass();
+  } else {
+    // Should not happen; try to get klass safely
+    if (receiver->is_mem())
+      klass = receiver->klass();
+    else
+      klass = Universe::smiKlassObj();
+  }
   LookupResult result = Bytecodes::is_super_send(send_code) ? interpreter_super_lookup(ic->selector())
                                                             : interpreter_normal_lookup(klass, ic->selector());
 
