@@ -1893,6 +1893,22 @@ void X86MacroAssembler::set_last_Delta_frame_before_call() {
   // C call that follows).
   store_absolute_value(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), ebp);
   store_absolute_value(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type), esp);
+#ifdef _WIN64
+  // On x86 the C-call glue relies on the return address the `call` pushes just
+  // below the interpreter sp: last_frame() -> frame(sp, fp) recovers the pc
+  // from last_Delta_sp[-1].  Win64 breaks that invariant -- win64_call_shadow_begin()
+  // lowers esp (down-align + 32-byte shadow) *after* last_Delta_sp has been
+  // recorded, so the pushed return address lands below the shadow and sp[-1] is
+  // garbage.  A bogus pc makes frame::is_interpreted_frame() false, hence
+  // is_interpreted_activation() false and current_interpretedIC() NULL, which
+  // turns every send into a silent no-op (see frame::method_from_hp).  Publish
+  // the current code address as last_Delta_pc instead, exactly like AArch64
+  // does.  This is a RIP-relative lea with no relocation: it needs none (a
+  // disp32 RIP reference auto-corrects when the whole buffer moves, and the
+  // interpreter's in-place CodeBuffer cannot record relocations anyway).
+  leaq(r11, Address((intptr_t)0, relocInfo::none)); // r11 = address just past this lea
+  store_absolute_value(Address((intptr_t)&last_Delta_pc, relocInfo::external_word_type), r11);
+#endif
 }
 
 void X86MacroAssembler::set_last_Delta_frame_after_call() {
@@ -1904,6 +1920,11 @@ void X86MacroAssembler::set_last_Delta_frame_after_call() {
 void X86MacroAssembler::reset_last_Delta_frame() {
   // movq(Address, intptr_t) materializes the absolute address via r10.
   movq(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type), 0);
+#ifdef _WIN64
+  // Clear the pc published by set_last_Delta_frame_before_call so a stale code
+  // address is not handed to last_frame() once last_Delta_fp is reset.
+  movq(Address((intptr_t)&last_Delta_pc, relocInfo::external_word_type), 0);
+#endif
 }
 
 // Windows x64 requires the caller to reserve a 32-byte shadow area above the

@@ -184,8 +184,15 @@ void InterpreterBackend::continueNonLocalReturn(MacroAssembler* masm, Register r
 }
 
 void InterpreterBackend::enterNLRFrame(MacroAssembler* masm, Register ret_addr, Address old_ret_addr) {
-  masm->movq(ebp, edi); // set new frame pointer (from SysV arg1)
-  masm->movq(esp, esi); // set new stack pointer (from SysV arg2)
+  // provoke_nlr_at/continue_nlr_in_delta are extern "C" functions, so the
+  // frame/stack pointers arrive in the C ABI argument registers.
+#ifdef _WIN64
+  masm->movq(ebp, ecx); // set new frame pointer (Win64 arg1 = rcx)
+  masm->movq(esp, edx); // set new stack pointer (Win64 arg2 = rdx)
+#else
+  masm->movq(ebp, edi); // set new frame pointer (SysV arg1 = rdi)
+  masm->movq(esp, esi); // set new stack pointer (SysV arg2 = rsi)
+#endif
   masm->movq(ret_addr, old_ret_addr); // find old return address
 }
 

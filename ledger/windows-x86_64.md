@@ -208,3 +208,8 @@ x86_64-w64-mingw32-addr2line -e build/x86_64-mingw-gcc/strongtalk.so -f -C \
 ```
 ### Bootstrap fix (2026-10-09)
 - Fixed missing write barriers in interpreter context initialization (`copy_params_into_context`, `install_context`) - added store_check calls so GC properly remembers new-gen references stored in context objects. Resolves `klass 0x1 isn't a klass` in `LookupKey::verify()` on bootstrap paths. No instrumentation added.
+
+### Win64 stack frame recovery (2026-10-13)
+- Root cause: on Win64, `set_last_Delta_frame_before_call()` records `last_Delta_sp`/`last_Delta_fp` but `win64_call_shadow_begin()` lowers `esp` (align+32-byte shadow) after recording; the return address lands below shadow so `sp[-1]` is wrong. `last_frame()` constructs with `pc = sp[-1]` → bogus pc → `is_interpreted_frame()` false → `current_interpretedIC()` NULL → sends become silent no-ops returning receiver.
+- Fix (gated to `_WIN64`): publish `last_Delta_pc` (current code address) in `set_last_Delta_frame_before_call()` and clear it in `reset_last_Delta_frame()` (mirrors AArch64 behavior). Also fixed `enterNLRFrame` to use Win64 C ABI (`rcx`/`rdx` for fp/sp).
+- Result: `cIC NULL` / silent send no-op eliminated on Windows x86-64 (MinGW). Build/run verified via Docker cross-build + QEMU TCG amd64 + Wine.
