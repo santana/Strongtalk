@@ -48,19 +48,17 @@ the image's own error-handling machinery executes on both backends.
 
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
-| Linux x86-64 (native)     | yes   | boots, loads the image, and runs the interpreter into the image's error handler (`1-ProcessExplicitError` on `2-ProcessorScheduler`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s); never reaches `Eval>` |
-| macOS arm64 (AArch64)     | yes   | boots, loads the image, passes GC, resolves DLL handles and `LoadImageA`. Bootstrap blockers fixed; reaches the evaluator (`Eval>` prompt). |
-| macOS x86-64 (forced)     | yes   | boots, runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion. The original `klass 0x1 isn't a klass` bootstrap blocker is fixed (x86-64 **X15**) |
-| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, reaches the evaluator (`Eval>` prompt) and evaluates expressions — see [Windows](#windows-runtime-status) for status |
+| Linux x86-64 (native)     | yes   | builds; reaches `Eval>` but loops in the scheduler error handler (~300k register dumps in 45 s) |
+| macOS arm64 (AArch64)     | yes   | builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>` |
+| macOS x86-64 (forced)     | yes   | builds; boots and runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion; does not reach `Eval>` |
+| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots to `Eval>` and evaluates expressions (`^ 1 + 2` → `3` etc) — see [Windows](#windows-runtime-status) for status |
 
-macOS arm64, macOS x86-64 and Windows x86-64 now reach `Eval>`; the platform
-table above records each configuration's last verified stopping point. The
-remaining blocker is
-shared by both macOS arches and is in the VM's own send path, not in the image
-and not in the code generator: the interpreter's receiver-slot decode for sends
-hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
-`0x7ffffffffffffffc` — both SMI-tagged) where the receiver object should be, so
-`receiver->klass()` reads ordinary memory through a bogus base. See [ledger/](ledger/) for detailed per-architecture status and reproduction notes.
+macOS arm64 and Windows x86-64 reach `Eval>`; macOS x86-64 runs the image's error
+handler to completion but does not reach `Eval>`; Linux x86-64 loops in the
+scheduler error handler and does not reach `Eval>`. The platform table above
+records each configuration's last verified stopping point. The remaining blocker
+is shared by Linux x86-64 and macOS x86-64 (in the VM's send path); see
+[ledger/](ledger/) for detailed per-architecture status and reproduction notes.
 
 Getting the VM running end-to-end requires fixing that receiver-slot decode.
 Every configuration is verified by building from the

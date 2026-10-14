@@ -622,9 +622,9 @@ word 1 through `as_memOop(start)->klass_addr()`.
 
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Boots, loads image, passes GC, resolves DLL handles. Bootstrap blockers fixed; reaches `Eval>` prompt. |
-| macOS x86-64 (forced) | Yes    | Boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`) to completion. The `klass 0x1 isn't a klass` bootstrap blocker is fixed (x86-64 X15) |
-| Linux x86-64 (Docker) | Yes    | Boots, loads image, runs into the image's error handler (`1-ProcessExplicitError`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s) without reaching `Eval>` |
+| macOS arm64 (native)  | Yes    | Builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>`. |
+| macOS x86-64 (forced) | Yes    | Builds; boots and runs the image's error handler (`Error>>defaultAction`, `BlockExceptionHandler`) to completion; does not reach `Eval>`. |
+| Linux x86-64 (Docker) | Yes    | Builds; reaches `Eval>` but loops in the scheduler error handler. |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the image, reaches `Eval>` and evaluates expressions. |
 
 The remaining blocker is shared by both arches: the interpreter's **receiver-slot
