@@ -759,6 +759,10 @@ void DeltaProcess::frame_iterate(FrameClosure* blk) {
       }
       blk->do_frame(&v);
       v = v.sender();
+      static int fi = 0;
+      if (fi < 2) {
+        lprintf("FI[%d]: fp=%p hp=%p pc=%p\n", fi++, (void*)v.fp(), (void*)v.hp(), v.pc());
+      }
       char* fp = (char*)v.fp();
       if (fp == NULL || (limit != NULL && fp < limit) || fp <= previous_fp) {
         // Left the delta stack: stop rather than keep walking.  Not fatal --
