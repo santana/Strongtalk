@@ -1949,6 +1949,19 @@ void X86MacroAssembler::win64_call_shadow_end() {
 #endif
 }
 
+void X86MacroAssembler::spillPrimitiveArgs() {
+#ifdef _WIN64
+  // After win64_call_shadow_begin, esp points at the caller-reserved shadow
+  // area, which is also the callee's [rsp+8] slot once the call pushes the
+  // return address. The generated primitives read their receiver at
+  // [rsp+oopSize] and their argument at [rsp+2*oopSize], i.e. these two shadow
+  // slots, so publish the Win64 argument registers there. See the comment on
+  // the declaration in assembler_x86.hpp.
+  movq(Address(esp, 0), ecx); // receiver  -> [rsp+oopSize] at the primitive
+  movq(Address(esp, oopSize), edx); // argument -> [rsp+2*oopSize] at the primitive
+#endif
+}
+
 void X86MacroAssembler::call_C(Label& L) {
   set_last_Delta_frame_before_call();
   call(L);
@@ -1974,14 +1987,21 @@ void X86MacroAssembler::call_C(char* entry, relocInfo::relocType rtype, Label& n
   set_last_Delta_frame_before_call();
   win64_call_shadow_begin();
   call(entry, rtype);
-  win64_call_shadow_end();
+  // The return address pushed by the call doubles as the base for decoding the
+  // non-local-return IC info (StubRoutines::generate_continue_NLR reads
+  // [ret_addr..] as the `test eax, imm32`).  It must therefore be emitted
+  // directly after the call: win64_call_shadow_end() would otherwise insert a
+  // `mov rsp,rdi` in between on _WIN64 and the decoder would read garbage.
+  // A no-op outside _WIN64, so the byte sequence is unchanged there.
   X86Assembler::ic_info(nlrTestPoint, 0);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 
 void X86MacroAssembler::call_C(Register entry) {
   set_last_Delta_frame_before_call();
   win64_call_shadow_begin();
+  spillPrimitiveArgs();
   call(entry);
   win64_call_shadow_end();
   reset_last_Delta_frame();
@@ -1990,9 +2010,16 @@ void X86MacroAssembler::call_C(Register entry) {
 void X86MacroAssembler::call_C(Register entry, Label& nlrTestPoint) {
   set_last_Delta_frame_before_call();
   win64_call_shadow_begin();
+  spillPrimitiveArgs();
   call(entry);
-  win64_call_shadow_end();
+  // See call_C(char*, relocType, Label&): the return address pushed here is the
+  // IC-info test the interpreter/block NLR machinery decodes from, so it must
+  // immediately follow the call.  In particular the block-value primitives
+  // (primitiveValue -> _block_entry) are entered through this path, so a block
+  // non-local return otherwise decodes IC info from win64_call_shadow_end()'s
+  // `mov rsp,rdi` instead.
   X86Assembler::ic_info(nlrTestPoint, 0);
+  win64_call_shadow_end();
   reset_last_Delta_frame();
 }
 

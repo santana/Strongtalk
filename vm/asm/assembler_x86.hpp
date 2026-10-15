@@ -649,6 +649,17 @@ public:
   void win64_call_shadow_begin();
   void win64_call_shadow_end();
 
+  // Windows x64 only. The generated SmallInteger/Double/behavior primitives
+  // read their receiver/argument from the hardware stack at
+  // [esp+oopSize]/[esp+2*oopSize] (relative to the pushed return address), but
+  // win64_call_shadow_begin lowers esp past the pushed delta-stack arguments.
+  // Copy the Win64 argument registers (loaded by
+  // InterpreterBackend::passPrimitiveCallArgs) into the shadow slots those
+  // primitives read, keeping their stack-based argument ABI intact. Harmless
+  // for real C callees, for which the shadow area is scratch space. No-op
+  // outside _WIN64.
+  void spillPrimitiveArgs();
+
   void call_C(Label& L);
   void call_C(Label& L, Label& nlrTestPoint);
 

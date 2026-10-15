@@ -51,9 +51,11 @@ the image's own error-handling machinery executes on both backends.
 | Linux x86-64 (native)     | yes   | boots, loads the image, and runs the interpreter into the image's error handler (`1-ProcessExplicitError` on `2-ProcessorScheduler`). Then `Unhandled error in the scheduler` re-raises in a loop (~300k register dumps in 45 s); never reaches `Eval>` |
 | macOS arm64 (AArch64)     | yes   | boots, loads the image, passes GC, resolves DLL handles and `LoadImageA`. Bootstrap blockers fixed; reaches the evaluator (`Eval>` prompt). |
 | macOS x86-64 (forced)     | yes   | boots, runs the image's error handler (`#2 Error defaultAction`, `#3 BlockExceptionHandler block`) to completion. The original `klass 0x1 isn't a klass` bootstrap blocker is fixed (x86-64 **X15**) |
-| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, then dies in the first Delta call — see [Windows](#windows-runtime-status) for status |
+| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); reads the image fully, reaches the evaluator (`Eval>` prompt) and evaluates expressions — see [Windows](#windows-runtime-status) for status |
 
-macOS x86-64 now reaches `Eval>`; the others do not. The remaining blocker is
+macOS arm64, macOS x86-64 and Windows x86-64 now reach `Eval>`; the platform
+table above records each configuration's last verified stopping point. The
+remaining blocker is
 shared by both macOS arches and is in the VM's own send path, not in the image
 and not in the code generator: the interpreter's receiver-slot decode for sends
 hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
@@ -241,14 +243,18 @@ Knobs:
 
 ## Windows runtime status
 
-The Windows x86-64 configuration **builds, links, and boots**: the full
-`strongtalk.bst` read-in completes and, under native amd64 Wine (reproduced in
-QEMU TCG + wine), `strongtalk.exe` runs the image-compat `Alien` patches through
-the real interpreter (`Delta::call_generic`) and exits cleanly with no access
-violation. The fixes (see `ledger/windows-x86_64.md`) closed three root causes:
-an LLP64 mask truncation in `bits.hpp`, a RIP-relative disp32 wrap on C-global
-references, and the missing Windows x64 C-call shadow space/stack alignment
-that let C callees stamp over the interpreter's delta stack.
+The Windows x86-64 configuration **builds, links, boots to the `Eval>` REPL, and
+evaluates expressions**: the full `strongtalk.bst` read-in completes and, under
+native amd64 Wine (reproduced in QEMU TCG + wine), `strongtalk.exe` runs the
+image-compat `Alien` patches through the real interpreter
+(`Delta::call_generic`), reaches the evaluator, and evaluates `^ 1 + 2` → `3`,
+`^ 3 * 7` → `21`, `^ 6 * 7` → `42` before exiting cleanly (`q`/EOF, exit 0). The
+fixes (see `ledger/windows-x86_64.md`) closed five root causes: an LLP64 mask
+truncation in `bits.hpp`, a RIP-relative disp32 wrap on C-global references, the
+missing Windows x64 C-call shadow space/stack alignment that let C callees stamp
+over the interpreter's delta stack, the generated primitives' stack argument ABI
+versus that shadow space (`spillPrimitiveArgs`), and the non-local-return
+IC-info ordering around `win64_call_shadow_end`.
 
 Remaining Windows-specific work:
 

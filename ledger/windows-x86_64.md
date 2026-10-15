@@ -2,7 +2,7 @@
 
 **Platform**: Windows x86-64 via MinGW-w64 (cross-built on Linux, and native MSYS2 in CI)  
 **Build**: `build/x86_64-mingw-gcc`  
-**Commit**: 12d3a6f + working-tree fixes (LLP64 mask widths `vm/topIncludes/bits.hpp`; `os_nt.cpp` global decl + crash diagnostics; Win64 shadow space + `call_C` arg overlap)
+**Commit**: 12d3a6f + working-tree fixes (LLP64 mask widths `vm/topIncludes/bits.hpp`; `os_nt.cpp` global decl + crash diagnostics; Win64 shadow space + `call_C` arg overlap; Win64 generated-primitive arg spill; Win64 NLR IC-info ordering)
 
 ## Status
 
@@ -11,7 +11,7 @@
 | Build | OK | Builds `strongtalk.exe`, `stest.exe`, `strongtalk.so` cleanly with `x86_64-w64-mingw32-g++`. |
 | Image load | FIXED | Previously aborted with `assert(contains(q), "q must be in this space")` in `vm/memory/space.cpp:397` during heap/card-table traversal. Root cause was an LLP64 truncation bug (32-bit mask constants), now fixed; the full `strongtalk.bst` read-in completes (image-compat rewrites run, `... 0.16x secs]`). |
 | First Delta call | FIXED | Was a RIP-relative disp32 wrap in `push [&last_Delta_fp]` (Root Cause 2, below); now the first Delta call runs cleanly. |
-| Runtime / interpreter | BOOTS (clean exit 0) | Native amd64 wine (QEMU TCG): banner, CODE_MEM allocs, all stub routines generated, image read in ~2.9 s, the image-compat `Alien` patches execute through the real interpreter via `Delta::call_generic`, no access violation, clean exit. The `klass 0x1` bootstrap blocker is fixed; the `stest.exe` harness still AVs after 3 init call_generics (next open item, see "Remaining"). |
+| Runtime / interpreter | BOOTS to `Eval>` | Native amd64 wine (QEMU TCG): banner, CODE_MEM allocs, all stub routines generated, image read in ~1.2 s, the image-compat `Alien` patches execute through the real interpreter via `Delta::call_generic`, no access violation. The REPL is reached and evaluates expressions (e.g. `^ 1 + 2` → `3`, `^ 3 * 7` → `21`, `^ 6 * 7` → `42`), then exits cleanly (0) on `q`/EOF. The two Win64 blockers fixed here are the generated-primitive argument spill and the non-local-return IC-info ordering (below). The `stest.exe` harness still AVs after 3 init call_generics (next open item, see "Remaining"). |
 | CI | Smoke-only | CI runs Windows builds (cross/native); smoke runs are best-effort/continue-on-error and may timeout/hang in certain environments. Rosetta-translated smoke hits `rosetta error: invalid gdt selector index 5` right after image-read (translator artifact; the real-amd64 QEMU path is authoritative). |
 
 ## Diagnostics additions (working tree, os_nt.cpp)
@@ -213,3 +213,61 @@ x86_64-w64-mingw32-addr2line -e build/x86_64-mingw-gcc/strongtalk.so -f -C \
 - Root cause: on Win64, `set_last_Delta_frame_before_call()` records `last_Delta_sp`/`last_Delta_fp` but `win64_call_shadow_begin()` lowers `esp` (align+32-byte shadow) after recording; the return address lands below shadow so `sp[-1]` is wrong. `last_frame()` constructs with `pc = sp[-1]` → bogus pc → `is_interpreted_frame()` false → `current_interpretedIC()` NULL → sends become silent no-ops returning receiver.
 - Fix (gated to `_WIN64`): publish `last_Delta_pc` (current code address) in `set_last_Delta_frame_before_call()` and clear it in `reset_last_Delta_frame()` (mirrors AArch64 behavior). Also fixed `enterNLRFrame` to use Win64 C ABI (`rcx`/`rdx` for fp/sp).
 - Result: `cIC NULL` / silent send no-op eliminated on Windows x86-64 (MinGW). Build/run verified via Docker cross-build + QEMU TCG amd64 + Wine.
+
+### Win64 boot-to-`Eval>`: primitive arg spill + NLR IC-info ordering (2026-10-14)
+
+After the stack-frame-recovery fix the VM progressed into the image's startup but
+died at `SmallInteger class#computedMaxVal` (`3 times: 2` → `times:ifFail:` →
+`[^v] value`). Two Win64-only defects, both in the engine→C call glue
+(`vm/asm/assembler_x86.cpp`), were fixed. Both are no-ops outside `_WIN64`.
+
+**Blocker A — shadow space vs the generated primitives' stack argument ABI.**
+The generated SmallInteger/Double/behavior primitives read their receiver and
+argument from the hardware stack at `[rsp+oopSize]`/`[rsp+2*oopSize]` (relative
+to the return address pushed by the primitive `call`). `primitiveMultiply:ifFail:`
+dispatches through `call_primitive_can_fail`, which does `push rax` (last
+argument), loads `rcx/rdx/r8/r9` via `passPrimitiveCallArgs`, and only then calls
+`win64_call_shadow_begin()` — which lowers `rsp` (16-byte align + 32-byte shadow)
+past the pushed delta-stack words. The primitive's fixed `[rsp+8]`/`[rsp+0x10]`
+reads then landed in the shadow area and got `#FirstArgumentHasWrongType`.
+
+- Fix: new `X86MacroAssembler::spillPrimitiveArgs()` (decl
+  `vm/asm/assembler_x86.hpp`, def `vm/asm/assembler_x86.cpp`) called right after
+  `win64_call_shadow_begin()` in both `call_C(Register)` overloads, copying
+  `ecx`→`[esp]` and `edx`→`[esp+oopSize]` into those two shadow slots. Harmless
+  for a real C callee (the shadow is scratch).
+
+**Blocker B — non-local-return IC-info decode base.**
+`StubRoutines::generate_continue_NLR` pops an interpreted frame's return address
+and decodes the NLR target from an `ic_info` instruction (`test eax, imm32`) at
+that address (`[ret_addr+1]`, byte offset in bits 8..): the `call` that entered
+the frame must push the address of the `ic_info` test *immediately* after it (as
+`InterpreterGenerator::call_method` does: `call; ic_info`). The shadowed
+`call_C(..., Label& nlrTestPoint)` overloads instead emitted
+`win64_call_shadow_end()` (`mov rsp,rdi`) between the `call` and the `ic_info`,
+so on Win64 the return address pointed at the shadow-end rather than the test.
+A block activation (`primitiveValue` → `_block_entry`) reuses the primitive
+call's return address as its own frame return address, so the block non-local
+return in `times:ifFail:`'s `[^v] value` decoded garbage (offset `0xa9e7` from
+`[ret_addr+1]`) and `jmp`ed into zeroed arena memory.
+
+- Fix: emit `X86Assembler::ic_info(nlrTestPoint, 0)` directly after `call`,
+  before `win64_call_shadow_end()`, in `call_C(char*, relocType, Label&)` and
+  `call_C(Register, Label&)`. Byte-identical outside `_WIN64` (the shadow helpers
+  are empty there), so the Linux/macOS x86-64 sequences are unchanged.
+
+**Evidence / verification.**
+
+- Fault was `jmp r8` in `_continue_NLR_entry` to `0x7fffb70e2d1d` (all-zero arena
+  bytes ⇒ `add %al,(%rax)`), with `r8` = `ret_addr` (`0x7fffb70d8336` =
+  `interp_base+0x42D6`, the post-`call rax` slot in `call_primitive_can_fail`)
+  `+` decoded IC offset `0xa9e7`. `rdi`/`rbx` = NLR home, `rsi` = `~0`
+  (negated arg count), confirming the block NLR path.
+- Build: Docker `strongtalk:mingw-wine`,
+  `make -j$(nproc) OS=mingw CXX=x86_64-w64-mingw32-g++` (exit 0).
+- Run (QEMU TCG amd64 Ubuntu noble guest, Wine):
+  `printf '^ 1 + 2\n^ 3 * 7\n^ 6 * 7\nq\n' | WINEDEBUG=-all xvfb-run -a /usr/lib/wine/wine64 ./strongtalk.exe -b strongtalk.bst`
+  → `3`, `21`, `42`, exit 0. (The REPL tokenizes on whitespace and bare input is
+  a literal, so arithmetic must be entered as `^ lhs op rhs`.)
+- Sanity: `make -j$(nproc) OS=linux` (x86-64) also builds cleanly; the reordered
+  statements are byte-identical when `_WIN64` is undefined.
