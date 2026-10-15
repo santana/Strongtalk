@@ -623,7 +623,7 @@ word 1 through `as_memOop(start)->klass_addr()`.
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
 | macOS arm64 (native)  | Yes    | Builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>`. |
-| macOS x86-64 (forced) | Yes    | Builds; boots but crashes during GC/scavenge after boot (SIGSEGV in `frame::hp()`/`is_interpreted_activation`); does not reach `Eval>`. |
+| macOS x86-64 (forced) | Yes    | Builds; loads image, reaches `Eval>` and evaluates expressions; large allocations can trigger GC faults. |
 | Linux x86-64 (Docker) | Yes    | Builds; reaches `Eval>` but loops in the scheduler error handler. |
 | Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the image, reaches `Eval>` and evaluates expressions. |
 

@@ -50,7 +50,7 @@ the image's own error-handling machinery executes on both backends.
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | builds; reaches `Eval>` but loops in the scheduler error handler (~300k register dumps in 45 s) |
 | macOS arm64 (AArch64)     | yes   | builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>` |
-| macOS x86-64 (forced)     | yes   | builds; crashes during GC/scavenge after boot (SIGSEGV in `frame::hp()`/`is_interpreted_activation`), does not reach `Eval>` |
+| macOS x86-64 (forced)     | yes   | builds; loads image, reaches `Eval>`, evaluates simple expressions; large allocations can trigger GC faults |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots to `Eval>` and evaluates expressions (`^ 1 + 2` → `3` etc) — see [Windows](#windows-runtime-status) for status |
 
 macOS arm64 and Windows x86-64 reach `Eval>`; macOS x86-64 crashes during GC/scavenge after boot and does not reach `Eval>`; Linux x86-64 loops in the scheduler error handler but has reached `Eval>`. The platform table above
