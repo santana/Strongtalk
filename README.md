@@ -53,8 +53,11 @@ the image's own error-handling machinery executes on both backends.
 | macOS x86-64 (forced)     | yes   | builds; loads image, reaches `Eval>`, evaluates simple expressions; large allocations can trigger GC faults |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots to `Eval>` and evaluates expressions (`^ 1 + 2` → `3` etc) — see [Windows](#windows-runtime-status) for status |
 
-macOS arm64 and Windows x86-64 reach `Eval>`; macOS x86-64 crashes during GC/scavenge after boot and does not reach `Eval>`; Linux x86-64 loops in the scheduler error handler but has reached `Eval>`. The platform table above
-records each configuration's last verified stopping point. The remaining blocker
+macOS arm64 and Windows x86-64 reach `Eval>`; macOS x86-64 crashes during GC/scavenge after boot and does not reach `Eval>`; Linux x86-64 loops in the scheduler error handler but has reached `Eval>`. The platform table above records each configuration's last verified stopping point.
+
+`Eval>` is the VM's error fallback REPL, not a successful boot: `ProcessorScheduler>>start` contains no REPL — it runs `SystemInitializer` then `self run` → VM quit. `Eval>` is entered only when the scheduler hits an unhandled error (`handle_error()` / `processOopPrimitives::stop` → `read_eval_loop()`). Expressions may evaluate at `Eval>`, but that is error-fallback behavior.
+
+The remaining blocker
 is shared by Linux x86-64 and macOS x86-64 (in the VM's send path); see
 [ledger/](ledger/) for detailed per-architecture status and reproduction notes.
 
@@ -251,6 +254,9 @@ missing Windows x64 C-call shadow space/stack alignment that let C callees stamp
 over the interpreter's delta stack, the generated primitives' stack argument ABI
 versus that shadow space (`spillPrimitiveArgs`), and the non-local-return
 IC-info ordering around `win64_call_shadow_end`.
+
+Note: `Eval>` is the VM's error fallback, not a successful boot — see
+`ledger/windows-x86_64.md` ("Important note on `Eval>`").
 
 Remaining Windows-specific work:
 

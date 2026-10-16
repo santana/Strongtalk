@@ -140,6 +140,19 @@ corruption, not an independent decode bug.
 
 The `0x7fffb74f1b99` execute-PF was the observable of Root Cause 3 (FIXED).
 
+## Important note on `Eval>`
+
+Reaching `Eval>` is **not** a successful boot. It is the VM's error fallback:
+the image's `ProcessorScheduler>>start` runs `SystemInitializer` and then `self
+run` → VM quit; there is no REPL in the normal boot path. `Eval>` is entered
+only when the active process (the scheduler) hits an unhandled error
+(`handle_error()` / `processOopPrimitives::stop` → `read_eval_loop()`).
+
+On Windows x86-64, the VM now boots to `Eval>` (one `ProcessExplicitError`
+during `Character initialize` is caught by the scheduler's error handler, and
+execution continues at `Eval>`). Expressions evaluate correctly at `Eval>`
+(e.g. `^ 3 + 4` → `7`), but this is error-fallback behavior, not a clean boot.
+
 ## Remaining (post-boot)
 
 - `stest.exe` exits 5 (wine NTSTATUS `0xC0000005` low byte) after 3 init
