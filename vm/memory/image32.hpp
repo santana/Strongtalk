@@ -80,10 +80,10 @@ int image32_translate_fields(memOop obj);
 // can look up 32-bit heap addresses.
 void image32_set_addr32_map(int* keys, oop* table, int count);
 
-// Walk the old generation and translate 32-bit raw oop fields to 64-bit
+// Walk the bootstrap oop table and translate 32-bit raw oop fields to 64-bit
 // tagged oops.  Called during bootstrap after all objects have been read
 // but before any interpreted sends execute.  Returns the total number of
 // fields translated.
-int image32_translate_all_fields();
+int image32_translate_all_fields(oop* oop_table, int oop_count);
 
 #endif // _IMAGE32_HPP

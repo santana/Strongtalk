@@ -162,9 +162,10 @@ int image32_translate_fields(memOop obj) {
     } else if ((w32 & 3) == Mem_Tag) {
       // Heap object: raw 32-bit address.  Look up the 64-bit oop.
       oop wide = lookup_addr32((int)w32);
-      if (wide != NULL)
+      if (wide != NULL) {
         obj->raw_at_put(i, wide);
-      else
+        translated++;
+      } else
         lprintf("[image32] untranslatable field raw=0x%x\n", w32);
     } else {
       lprintf("[image32] unknown field tag raw=0x%x\n", w32);
@@ -201,17 +202,22 @@ int image32_translate_fields(memOop obj) {
   return translated;
 }
 
-// Walk the old generation and translate 32-bit raw oop fields to 64-bit
+// Walk the bootstrap oop table and translate 32-bit raw oop fields to 64-bit
 // tagged oops.  Called during bootstrap after all objects have been read
-// but before any interpreted sends execute.
+// but before any interpreted sends execute.  Only objects read from the 32-bit
+// image are translated -- this avoids corrupting Delta frames and other
+// heap objects that were not read from the image.
 //
 // Returns the total number of fields translated.
-int image32_translate_all_fields() {
-  class TranslateClosure : public ObjectClosure {
-  public:
-    int total = 0;
-    void do_object(memOop obj) override { total += image32_translate_fields(obj); }
-  } closure;
-  Universe::old_gen.object_iterate(&closure);
-  return closure.total;
+int image32_translate_all_fields(oop* oop_table, int oop_count) {
+  int total = 0;
+  int translated = 0;
+  int skipped = 0;
+  for (int i = 0; i < oop_count; i++) {
+    oop obj = oop_table[i];
+    if (obj != NULL && obj->is_mem())
+      total += image32_translate_fields(as_memOop(obj));
+  }
+  lprintf("[image32] translated %d fields across %d objects\n", total, oop_count);
+  return total;
 }
