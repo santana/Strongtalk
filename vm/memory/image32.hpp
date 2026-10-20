@@ -70,4 +70,15 @@ int image32_verify_old_gen();
 // imageCompat.cpp. Returns the number of patches applied.
 int image32_patch_bytecode_operands();
 
+// Translate 32-bit raw oop fields in a single object to 64-bit tagged oops.
+// Called during bootstrap after each object is read from the 32-bit image.
+// Returns the number of fields translated.
+int image32_translate_fields(memOop obj);
+
+// Walk the old generation and translate 32-bit raw oop fields to 64-bit
+// tagged oops.  Called during bootstrap after all objects have been read
+// but before any interpreted sends execute.  Returns the total number of
+// fields translated.
+int image32_translate_all_fields();
+
 #endif // _IMAGE32_HPP
