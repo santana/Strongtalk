@@ -63,7 +63,7 @@ public:
     int hdr = k->klass_part()->oop_header_size();
     // Check instVar oop fields (hdr .. non_idx).  Field 0 is the mark word,
     // field 1 is the klass pointer (already validated above).
-    for (int i = hdr; i < non_idx; i++) {
+    for (int i = hdr; i < non_idx && i < s; i++) {
       oop f = obj->raw_at(i);
       if (f == NULL)
         continue;
@@ -71,8 +71,9 @@ public:
       if (!f_valid) {
         flagged++;
         const char* kname = k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)";
-        lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d field[%d]=%p tag=%d\n", count, kname, s,
-                non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+        lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d "
+                "field[%d]=%p tag=%d\n",
+                count, kname, s, non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
         if (flagged > 100)
           return; // don't flood
       }
@@ -87,8 +88,9 @@ public:
         if (!f_valid) {
           flagged++;
           const char* kname = k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)";
-          lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d field[%d]=%p tag=%d\n", count, kname, s,
-                  non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+          lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d "
+                  "field[%d]=%p tag=%d\n",
+                  count, kname, s, non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
           if (flagged > 100)
             return;
         }
@@ -111,14 +113,6 @@ int image32_verify_old_gen() {
   Image32VerifyClosure closure;
   Universe::old_gen.object_iterate(&closure);
   return closure.flagged;
-}
-
-// Placeholder for bytecode operand patching beyond imageCompat.cpp.
-// Currently returns 0; imageCompat.cpp handles the known Alien patches.
-// Additional patches can be added here as 32-bit-specific operands are
-// discovered during boot debugging.
-int image32_patch_bytecode_operands() {
-  return 0;
 }
 
 // Translate 32-bit raw oop fields in an object body to 64-bit tagged oops.
@@ -153,7 +147,11 @@ int image32_translate_fields(memOop obj) {
     // Already a valid tagged oop (nil, smi, or heap pointer into old space).
     if (f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
       continue;
-    // Raw 32-bit value.  Reconstruct the original 32-bit word and retag.
+    // Raw 32-bit values stored as 64-bit have zero upper 32 bits.
+    // Skip anything that already looks like a 64-bit pointer.
+    if ((intptr_t)f >> 32 != 0)
+      continue;
+    // Reconstruct the original 32-bit word and retag.
     uint32_t w32 = (uint32_t)raw;
     if ((w32 & 3) == Int_Tag) {
       // Smi: 30-bit value stored as (v << 2) | 0 on 32-bit.  Widen to 62-bit.
@@ -165,10 +163,14 @@ int image32_translate_fields(memOop obj) {
       if (wide != NULL) {
         obj->raw_at_put(i, wide);
         translated++;
-      } else
-        lprintf("[image32] untranslatable field raw=0x%x\n", w32);
+        lprintf("[image32] translated obj=%p field[%d]=0x%x -> %p\n", (void*)obj, i, w32, (void*)wide);
+      } else {
+        lprintf("[image32] untranslatable field raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
+                k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)");
+      }
     } else {
-      lprintf("[image32] unknown field tag raw=0x%x\n", w32);
+      lprintf("[image32] unknown field tag raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
+              k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)");
     }
     translated++;
   }
@@ -182,16 +184,22 @@ int image32_translate_fields(memOop obj) {
       intptr_t raw = (intptr_t)f;
       if (f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
         continue;
+      // Raw 32-bit values stored as 64-bit have zero upper 32 bits.
+      if ((intptr_t)f >> 32 != 0)
+        continue;
       uint32_t w32 = (uint32_t)raw;
       if ((w32 & 3) == Int_Tag) {
         int32_t v32 = (int32_t)(w32 >> 2);
         obj->raw_at_put(i, as_smiOop(v32));
       } else if ((w32 & 3) == Mem_Tag) {
         oop wide = lookup_addr32((int)w32);
-        if (wide != NULL)
+        if (wide != NULL) {
           obj->raw_at_put(i, wide);
-        else
+          translated++;
+          lprintf("[image32] translated array field[%d]=0x%x -> %p\n", i, w32, (void*)wide);
+        } else {
           lprintf("[image32] untranslatable array field raw=0x%x\n", w32);
+        }
       } else {
         lprintf("[image32] unknown array field tag raw=0x%x\n", w32);
       }
