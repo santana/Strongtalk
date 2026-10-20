@@ -31,12 +31,27 @@ public:
     if (bad) {
       flagged++;
     }
-    lprintf("[image32] obj #%d addr=%p klass=%p k_in_old=%d size=%d bad=%d %s%s\n", count, (void*)obj->addr(), (void*)k,
-            k_in_old ? 1 : 0, s, bad ? 1 : 0, obj->is_method() ? "METHOD " : "", obj->is_symbol() ? "SYMBOL " : "");
-    if (k != NULL) {
-      lprintf("[image32]   klass name='%s' non_indexable_size=%d\n",
-              k->klass_part()->delta_name() != NULL ? k->klass_part()->delta_name() : "(null)",
-              k->klass_part()->non_indexable_size());
+    // Walk object-body oop fields and check each is a valid tagged oop:
+    // nil, smi, or a heap pointer into old space.
+    int hdr;
+    if (k != NULL && obj->is_klass())
+      hdr = klassOopDesc::header_size(); // klass object: mark + klass + Klass part
+    else if (k != NULL)
+      hdr = k->klass_part()->oop_header_size(); // instances: header size from klass
+    else
+      hdr = 2;
+    for (int i = hdr; i < s; i++) {
+      oop f = obj->raw_at(i);
+      if (f == NULL)
+        continue;
+      bool f_valid = f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f));
+      if (!f_valid) {
+        flagged++;
+        lprintf("[image32] bad field obj#%d addr=%p field[%d]=%p tag=%d\n", count, (void*)obj->addr(), i,
+                (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+        if (flagged > 20)
+          return; // don't flood
+      }
     }
   }
 };
