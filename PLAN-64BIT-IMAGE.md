@@ -20,16 +20,13 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - Bootstrap already handles: byte container size recomputation, method bytecode relocation, oop fields.
 - `imageCompat.cpp`: existing load-time shim for Alien (size 4→8, primitiveNew: operand 3→15).
 
-### Phase 2: Fix field offset translation during bootstrap (IN PROGRESS)
-- **Confirmed root cause**: **0 bad objects** but **54,968 bad fields** across ALL klass types — field-level 4-byte→8-byte misalignment WITHIN objects, not header layout.
-- **Affected klass types**: Method (19K), Array (15.5K), CompressedSymbol (14K), GlobalAssociation (1.4K), Metaclass (1.1K), Float (280), Character (257), plus many others with 1-2 fields each.
-- **Mechanism**: The 32-bit image writes instVar fields at 4-byte offsets; the 64-bit VM's `raw_at(i)` reads them at `i * 8` byte offsets. Pairs of 32-bit fields merge into one 64-bit word, producing garbage tagged oops (raw integers, ASCII text, Mark_Tag values).
-- **Fix location**: `vm/runtime/bootstrap.cpp` `get_object()` — after each object's type-specific `bootstrap_object()` completes, walk oop fields 0..non_indexable_size() and widen any raw 32-bit value to a 64-bit tagged oop.
-- **Key insight**: `read_oop()` reads type-tagged oops (already 64-bit via oop_table), but raw 32-bit instVar fields stored inline in the image bypass `read_oop()` and need manual widening.
-- **Smi widening**: 30-bit smi → 62-bit smi (tag stays Int_Tag=0, value shifted).
-- **Mem widening**: 32-bit raw heap pointer → 64-bit tagged oop (tag Mem_Tag=1, pointer widened).
-- **Null smi (0)** stays valid — `smiOop_zero` is already 0.
-- **Already integrated**: `image32_verify_old_gen()` called in `load_image()` after `imageCompat` patches.
+### Phase 2: Investigate interpreter receiver-slot decode (COMPLETE — root cause identified)
+- **Finding**: `image32_verify_old_gen` reports **0 bad instVar fields** — object headers, klass pointers, and instVar fields are all valid 64-bit layout. Field widening in bootstrap.cpp is NOT needed for object fields themselves.
+- **Debug evidence**: Instrumented `inline_cache_miss()` shows `f.receiver()` (reading `fp[-2]`) returns the correct receiver object, while `f.expr(ic->nof_arguments())` (reading `sp[2*nof_args]`) returns garbage (SMI-tagged values, raw integers). On AArch64, `sp` is 64 bytes below `fp` (4 slots), not 16 bytes (1 slot), so `sp[0]` is NOT at the same address as `fp[-2]`.
+- **Root cause**: The interpreter's receiver-slot decode in `inline_cache_miss()` uses `f.expr(nof_args)` which reads the wrong stack slot. The receiver is always at `fp[-2]` (set during method entry via `pushl(eax)`), not at `sp[nof_args]`.
+- **Fix attempt**: Changing `inline_cache_miss()` to always use `f.receiver()` instead of `f.expr(nof_args)` causes the VM to crash earlier during boot — before reaching `Eval>`. This suggests the 32-bit image's object references point to wrong objects (e.g., a klass where an instance is expected), causing `doesNotUnderstand:` cascades that crash the error-handling machinery.
+- **Conclusion**: The receiver decode fix is correct in principle but is not sufficient by itself. The underlying issue is that the 32-bit image's frozen object references need to be re-based for the 64-bit object model. This requires Plan A Phase 2: proper 32-bit→64-bit field translation during bootstrap read-in.
+- **Files**: `vm/interpreter/interpretedIC.cpp` (receiver decode), `vm/runtime/bootstrap.cpp` (object read-in), `vm/memory/image32.cpp` (verification).
 
 ### Phase 3: Compiled-code problem
 - 32-bit machine code inside methodOops will not execute on a 64-bit CPU.
