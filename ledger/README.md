@@ -11,7 +11,7 @@ This ledger documents the current state, known issues, and reproduction notes fo
 
 ## Root Cause Summary
 
-The remaining shared blocker reported across both macOS arches is that the interpreter's receiver-slot decode for sends passes a non-pointer (an SMI-tagged word) to `InterpretedIC::inline_cache_miss()`, causing a bogus `receiver->klass()` dereference. The AArch64 path is currently hanging after image load (post the AArch64 self_offset fix from commit 144eed2), while x86-64 successfully boots to the `Eval>` REPL. Linux and Windows have their own observed failure modes as documented below.
+The remaining shared blocker reported across both macOS arches is that the interpreter's receiver-slot decode for sends passes a non-pointer (an SMI-tagged word) to `InterpretedIC::inline_cache_miss()`, causing a bogus `receiver->klass()` dereference. All four configurations (macOS arm64/x86-64, Linux x86-64, Windows x86-64) build and load the image but currently end in the `Eval>` error-fallback REPL rather than completing a clean boot; none reach a successful `ProcessorScheduler>>start` → `self run`. Linux and Windows have their own observed failure modes as documented below.
 
 See also: [README.md](../README.md), [ARCHITECTURE.md](../ARCHITECTURE.md)
 
@@ -19,6 +19,6 @@ See also: [README.md](../README.md), [ARCHITECTURE.md](../ARCHITECTURE.md)
 
 - **Shared root cause (documented)**: Interpreter receiver-slot decode for sends hands `InterpretedIC::inline_cache_miss()` a non-pointer (SMI-tagged) where receiver should be on both macOS arches (AArch64 A8, x86-64 X15). This is the VM send-path issue highlighted in README/ARCHITECTURE.
 - **macOS x86-64**: functional REPL; large allocations can trigger GC faults (e.g. scavenge path accessing forwarding/mark state). Tokenizer accepts `^` prefix in evaluator; parenthesized expressions may not parse in the non-`^` form as written.
-- **macOS arm64**: currently hangs after image load (post 144eed2). Heavy IC misses during startup; event/transfer coordination blocks.
+- **macOS arm64**: boots, loads `strongtalk.bst`, passes GC, resolves DLL handles, and reaches the `Eval>` error-fallback REPL. The shared receiver-slot decode blocker limits sends in interpreted code; the historical startup synchronization stall (threads blocked on `pthread_cond_wait` / event objects during `Processes::start()` / `os::transfer()`) is resolved. Boot does not complete — `Eval>` is entered on an unhandled error.
 - **Linux x86-64**: reaches image error machinery but is overwhelmed by continuous register dumps from signal/context logging; effectively unusable in this state.
 - **Windows x86-64 (MinGW)**: image loads and the VM boots cleanly under native amd64 wine (QEMU TCG + wine, `setarch x86_64 -R`): the image-compat patches run through the real interpreter to `exit=0` with no access violation. Fixes: LLP64 `bits.hpp` mask truncation (32-bit `~0UL` zeroed address upper halves), RIP-relative disp32 wrap on `external_word` C-global refs (`export_pcrel` loads), and the missing Windows x64 C-call shadow space + arg-overlap staging in `call_C`. Remaining: `stest.exe` exits `0xC0000005` after 3 init `call_generic`s; DNU-tail pops with a 32-bit byte count; DLL-call stubs / compiler C-call sites still lack shadow space. Rosetta-only smoke faults `rosetta error: invalid gdt selector index 5` (emulation artifact).
