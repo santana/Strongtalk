@@ -18,6 +18,28 @@ See image32.hpp for license and design notes.
 
 namespace {
 
+// Global 32-bit address -> 64-bit oop mapping, populated by bootstrap during
+// read-in.  Used by image32_translate_fields() to rewrite raw 32-bit pointers
+// in object bodies to their 64-bit equivalents.
+static int* g_addr32_keys = NULL;
+static oop* g_addr32_table = NULL;
+static int g_addr32_count = 0;
+
+void image32_set_addr32_map(int* keys, oop* table, int count) {
+  g_addr32_keys = keys;
+  g_addr32_table = table;
+  g_addr32_count = count;
+}
+
+// Look up a 32-bit heap address in the global map.  Returns NULL if not found.
+static oop lookup_addr32(int addr32) {
+  for (int i = 0; i < g_addr32_count; i++) {
+    if (g_addr32_keys[i] == addr32)
+      return g_addr32_table[i];
+  }
+  return NULL;
+}
+
 // ObjectClosure used to verify 64-bit object layout in old space.
 // Only checks oop fields (0 .. non_indexable_size), not indexable data
 // (raw bytes for byte containers, bytecodes for methods).
@@ -138,10 +160,9 @@ int image32_translate_fields(memOop obj) {
       int32_t v32 = (int32_t)(w32 >> 2);
       obj->raw_at_put(i, as_smiOop(v32));
     } else if ((w32 & 3) == Mem_Tag) {
-      // Heap object: raw 32-bit address.  Treat as a raw heap pointer into
-      // old space.
-      oop wide = as_memOop((void*)(intptr_t)w32);
-      if (Universe::old_gen.contains((void*)wide))
+      // Heap object: raw 32-bit address.  Look up the 64-bit oop.
+      oop wide = lookup_addr32((int)w32);
+      if (wide != NULL)
         obj->raw_at_put(i, wide);
       else
         lprintf("[image32] untranslatable field raw=0x%x\n", w32);
@@ -165,8 +186,8 @@ int image32_translate_fields(memOop obj) {
         int32_t v32 = (int32_t)(w32 >> 2);
         obj->raw_at_put(i, as_smiOop(v32));
       } else if ((w32 & 3) == Mem_Tag) {
-        oop wide = as_memOop((void*)(intptr_t)w32);
-        if (Universe::old_gen.contains((void*)wide))
+        oop wide = lookup_addr32((int)w32);
+        if (wide != NULL)
           obj->raw_at_put(i, wide);
         else
           lprintf("[image32] untranslatable array field raw=0x%x\n", w32);

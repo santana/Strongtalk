@@ -75,6 +75,11 @@ int image32_patch_bytecode_operands();
 // Returns the number of fields translated.
 int image32_translate_fields(memOop obj);
 
+// Set the 32-bit address -> 64-bit oop mapping from bootstrap.
+// Called before the bootstrap object is destroyed so image32_translate_all_fields()
+// can look up 32-bit heap addresses.
+void image32_set_addr32_map(int* keys, oop* table, int count);
+
 // Walk the old generation and translate 32-bit raw oop fields to 64-bit
 // tagged oops.  Called during bootstrap after all objects have been read
 // but before any interpreted sends execute.  Returns the total number of

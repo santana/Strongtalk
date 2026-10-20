@@ -38,6 +38,14 @@ private:
   int max_number_of_oops;
   bool _new_format;
 
+  // 32-bit heap address -> 64-bit oop mapping, used to translate raw
+  // 32-bit pointer fields in the frozen image to 64-bit tagged oops.
+  oop* _addr32_table;
+  int* _addr32_keys;
+  int _addr32_count;
+  int _addr32_max;
+  int _heap32_addr; // current 32-bit heap address as we read objects
+
   // A method that grew past its image-sized codes area during bootstrap.
   // methodOopDesc::bootstrap_object reallocates it and records the new oop
   // here so get_object returns the replacement to the caller.
@@ -87,5 +95,12 @@ public:
   bool is_byte() { return getc(stream) == '4'; }
 
   long file_pos() { return ftell(stream); }
+
+  // 32-bit address translation
+  void register_addr32(int addr32, oop obj); // record 32-bit heap addr -> 64-bit oop
+  oop translate_addr32(int addr32); // look up 64-bit oop for 32-bit addr
+  int* addr32_keys() { return _addr32_keys; }
+  oop* addr32_table() { return _addr32_table; }
+  int addr32_count() { return _addr32_count; }
 };
 #endif // _BOOTSTRAP_HPP

@@ -57,6 +57,10 @@ bootstrap::bootstrap(char* name) {
   file_name = name;
   _has_error = false;
   _oop_replacement = NULL;
+  _addr32_table = NULL;
+  _addr32_count = 0;
+  _addr32_max = 0;
+  _heap32_addr = 0;
   open_file();
   if (!has_error()) {
     //    initialize_tables(file_size > 0 ? (file_size / 32) : (10 * K));
@@ -72,10 +76,17 @@ void bootstrap::initialize_tables(int initial_table_size) {
   max_number_of_oops = initial_table_size;
   number_of_oops = 0;
   //position           = 0;
+  _addr32_table = NEW_C_HEAP_ARRAY(oop, initial_table_size * 2);
+  _addr32_keys = NEW_C_HEAP_ARRAY(int, initial_table_size * 2);
+  _addr32_max = initial_table_size * 2;
+  _addr32_count = 0;
+  _heap32_addr = 0;
 }
 
 bootstrap::~bootstrap() {
   FreeHeap(oop_table);
+  FreeHeap(_addr32_table);
+  FreeHeap(_addr32_keys);
 }
 
 oop bootstrap::at(int index) {
@@ -85,6 +96,34 @@ oop bootstrap::at(int index) {
   if ((intptr_t)o != 0 && (intptr_t)o < 64)
     lprintf("SUSPICIOUS at(%d) = 0x%tx (n_oops=%d)\n", index, (intptr_t)o, number_of_oops);
   return o;
+}
+
+void bootstrap::register_addr32(int addr32, oop obj) {
+  if (_addr32_count >= _addr32_max) {
+    int new_size = _addr32_max * 2;
+    int* new_keys = NEW_C_HEAP_ARRAY(int, new_size);
+    oop* new_table = NEW_C_HEAP_ARRAY(oop, new_size);
+    for (int i = 0; i < _addr32_count; i++) {
+      new_keys[i] = _addr32_keys[i];
+      new_table[i] = _addr32_table[i];
+    }
+    FreeHeap(_addr32_keys);
+    FreeHeap(_addr32_table);
+    _addr32_keys = new_keys;
+    _addr32_table = new_table;
+    _addr32_max = new_size;
+  }
+  _addr32_keys[_addr32_count] = addr32;
+  _addr32_table[_addr32_count] = obj;
+  _addr32_count++;
+}
+
+oop bootstrap::translate_addr32(int addr32) {
+  for (int i = 0; i < _addr32_count; i++) {
+    if (_addr32_keys[i] == addr32)
+      return _addr32_table[i];
+  }
+  return NULL; // not found
 }
 
 void bootstrap::add(oop obj) {
@@ -229,7 +268,8 @@ oop bootstrap::get_object() {
     return at(v);
   }
 
-  int size = get_integer();
+  int size_32 = get_integer();
+  int size = size_32;
 
   // The .bst file was written on 32-bit where image_oop_size was 4.
   // For byte-like objects the data portion is packed into oops; on 64-bit
@@ -252,6 +292,8 @@ oop bootstrap::get_object() {
     lprintf("%c %d = 0x%tx\n", type, size, (intptr_t)m);
 
   add(m);
+  register_addr32(_heap32_addr, m);
+  _heap32_addr += size_32 * 4; // 4 bytes per 32-bit oop
   int my_index = number_of_oops - 1;
   switch (type) {
     // Classes
