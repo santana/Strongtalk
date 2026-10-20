@@ -13,20 +13,23 @@ Two approaches:
 Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects into the 64-bit layout in memory, boot, then regenerate a native 64-bit image and delete the reader. 32-bit knowledge is isolated to image read-in only — not the object model, assembler, or runtime.
 
 ### Phase 1: Map the 32-bit object header (COMPLETE — audit done)
-- **Image format**: text-based, not raw heap dump. `vm/runtime/bootstrap.cpp` reads opcodes (`'0'` smi, `'-'` neg smi, `'3'` ref, `'c'` memOop, `'d'` byteArray, `'e'` doubleByteArray, `'f'` objArray, `'g'` symbol, `'h'` double, `'i'` association, `'j'` method, `'n'` mixin, `'p'` process, etc.) and allocates via `Universe::allocate_tenured(size)`.
-- **Header**: `memOopDesc::bootstrap_header()` reads mark(4)+klass(4) for old format; new format reads klass only. 64-bit layout: mark(8)+klass(8) = 16 bytes.
-- **klassOop**: `bootstrap_object()` reads `_non_indexable_size`, `_has_untagged_contents`, header, then klass fields (`_classVars`, `_methods`, `_superKlass`, `_mixin`).
-- **methodOop**: bootstrap already handles 32→64-bit bytecode relocation (byte items advance 1, oop items advance 4 in 32-bit; oops are 8 bytes in 64-bit, interpreter 8-byte aligns inline oops). Uses `bootstrap_instr`, `rec_w32`/`rec_w64` arrays.
-- **doubleOop** (`'h'`): reads `read_double()` (8 raw bytes) — OK on both.
-- **Byte containers** (`'d'`, `'g'`, `'e'`): size already recomputed from 32-bit oop count (4 bytes each) to 64-bit oop count (8 bytes each).
-- **CRITICAL GAP**: No size recomputation covers object headers or klass `_non_indexable_size`. A 32-bit object with N instVars stores them at 4 bytes each, but `allocate_tenured(size)` with the image's `size` field under-allocates on 64-bit (needs 8 bytes per field).
-- **`imageCompat.cpp`**: existing load-time shim rewrites `Alien>>ensureLoaded:` (size 4→8) and `primitiveNew:` operand (3→15) so the frozen 32-bit image allocates the 16-byte LP64 header. This is separate from header layout but complementary — keep it.
+- **Finding**: `image32_verify_old_gen` found **0 bad objects out of 109,936** — object headers, sizes, and klass pointers are all valid 64-bit layout.
+- **Real problem**: field-level offset misalignment WITHIN objects. The 32-bit image stores instVars at 4-byte spacing; the 64-bit VM reads them at 8-byte spacing. That's why `f.receiver()` (fp[-2]) returns klass objects instead of actual receivers, and `sp[]` slots hold mixed/garbage values.
+- **Debug output in `interpretedIC.cpp`** confirms 40 NIL/smi receivers during boot → cascading `doesNotUnderstand:` → `Eval>`.
+- Image format: text-based bootstrap (not raw heap dump), read by `vm/runtime/bootstrap.cpp`.
+- Bootstrap already handles: byte container size recomputation, method bytecode relocation, oop fields.
+- `imageCompat.cpp`: existing load-time shim for Alien (size 4→8, primitiveNew: operand 3→15).
 
-### Phase 2: Build the 32-bit→64-bit reader
-- Add `vm/memory/image32.cpp` (+ `.hpp`): opens `strongtalk.bst`, parses 32-bit headers, materializes objects in the 64-bit heap with correct tagging (`Mem_Tag`, `Int_Tag`) and 8-byte fields.
-- Oop widening: every 32-bit raw oop → 64-bit tagged oop; Smi values widened from 30-bit to 62-bit range.
-- Rebase all object pointers; re-hash symbol/intern tables.
-- Plug into `Universe::load_image()` / `vm/runtime/imageCompat.*` path so boot uses it. Keep the existing Alien load-time rewrite (separate from header layout).
+### Phase 2: Fix field offset translation during bootstrap (IN PROGRESS)
+- **Confirmed root cause**: **0 bad objects** but **54,968 bad fields** across ALL klass types — field-level 4-byte→8-byte misalignment WITHIN objects, not header layout.
+- **Affected klass types**: Method (19K), Array (15.5K), CompressedSymbol (14K), GlobalAssociation (1.4K), Metaclass (1.1K), Float (280), Character (257), plus many others with 1-2 fields each.
+- **Mechanism**: The 32-bit image writes instVar fields at 4-byte offsets; the 64-bit VM's `raw_at(i)` reads them at `i * 8` byte offsets. Pairs of 32-bit fields merge into one 64-bit word, producing garbage tagged oops (raw integers, ASCII text, Mark_Tag values).
+- **Fix location**: `vm/runtime/bootstrap.cpp` `get_object()` — after each object's type-specific `bootstrap_object()` completes, walk oop fields 0..non_indexable_size() and widen any raw 32-bit value to a 64-bit tagged oop.
+- **Key insight**: `read_oop()` reads type-tagged oops (already 64-bit via oop_table), but raw 32-bit instVar fields stored inline in the image bypass `read_oop()` and need manual widening.
+- **Smi widening**: 30-bit smi → 62-bit smi (tag stays Int_Tag=0, value shifted).
+- **Mem widening**: 32-bit raw heap pointer → 64-bit tagged oop (tag Mem_Tag=1, pointer widened).
+- **Null smi (0)** stays valid — `smiOop_zero` is already 0.
+- **Already integrated**: `image32_verify_old_gen()` called in `load_image()` after `imageCompat` patches.
 
 ### Phase 3: Compiled-code problem
 - 32-bit machine code inside methodOops will not execute on a 64-bit CPU.

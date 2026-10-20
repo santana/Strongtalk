@@ -36,8 +36,10 @@ public:
     if (k == NULL)
       return;
     int non_idx = k->klass_part()->non_indexable_size();
-    // Check all oop fields: header (0 .. hdr) and instVars (hdr .. non_idx).
-    for (int i = 0; i < non_idx; i++) {
+    int hdr = k->klass_part()->oop_header_size();
+    // Check instVar oop fields (hdr .. non_idx).  Field 0 is the mark word,
+    // field 1 is the klass pointer (already validated above).
+    for (int i = hdr; i < non_idx; i++) {
       oop f = obj->raw_at(i);
       if (f == NULL)
         continue;
