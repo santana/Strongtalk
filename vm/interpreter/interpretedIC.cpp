@@ -624,6 +624,26 @@ oop* InterpretedIC::inline_cache_miss() {
                    ? f.receiver() //  yes: take receiver of frame
                    : f.expr(ic->nof_arguments()); //  no:  take receiver pushed before the arguments
 
+  if (receiver->is_nil() || receiver->is_smi()) {
+    mystd->print("IC miss NIL receiver: code=%d sel=", ic->send_code());
+    ic->selector()->print_value();
+    mystd->print(" nof_args=%d spec=%d sp=%p fp=%p f.receiver()=", ic->nof_arguments(), ic->argument_spec(),
+                 (void*)f.sp(), (void*)f.fp());
+    f.receiver()->print_value();
+    mystd->print(" sp[0..7]=");
+    for (int i = 0; i < 8; i++) {
+      f.sp()[i]->print_value();
+      mystd->print(" ");
+    }
+    mystd->print(" fp[-6..2]=");
+    oop* fp_oop = (oop*)f.fp();
+    for (int i = -6; i <= 2; i++) {
+      fp_oop[i]->print_value();
+      mystd->print(" ");
+    }
+    mystd->print("\n");
+  }
+
   // do the lookup
   klassOop klass;
   if (receiver->is_smi()) {

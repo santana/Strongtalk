@@ -20,19 +20,23 @@ namespace {
 class Image32VerifyClosure : public ObjectClosure {
 public:
   int flagged = 0;
+  int count = 0;
 
   void do_object(memOop obj) override {
-    // Sanity: klass pointer should point into old space (klasses are tenured)
+    count++;
     klassOop k = obj->klass_field();
-    if (k != NULL && !Universe::old_gen.contains((void*)k)) {
-      lprintf("[image32] klass %p not in old space for obj %p\n", (void*)k, (void*)obj->addr());
+    bool k_in_old = k != NULL && Universe::old_gen.contains((void*)k);
+    int s = obj->size();
+    bool bad = !k_in_old || s < 2;
+    if (bad) {
       flagged++;
     }
-    // Sanity: size should be >= header_size(2)
-    int s = obj->size();
-    if (s < 2) {
-      lprintf("[image32] obj %p size %d < header_size(2)\n", (void*)obj->addr(), s);
-      flagged++;
+    lprintf("[image32] obj #%d addr=%p klass=%p k_in_old=%d size=%d bad=%d %s%s\n", count, (void*)obj->addr(), (void*)k,
+            k_in_old ? 1 : 0, s, bad ? 1 : 0, obj->is_method() ? "METHOD " : "", obj->is_symbol() ? "SYMBOL " : "");
+    if (k != NULL) {
+      lprintf("[image32]   klass name='%s' non_indexable_size=%d\n",
+              k->klass_part()->delta_name() != NULL ? k->klass_part()->delta_name() : "(null)",
+              k->klass_part()->non_indexable_size());
     }
   }
 };
