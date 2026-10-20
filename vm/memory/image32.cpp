@@ -71,9 +71,8 @@ public:
       if (!f_valid) {
         flagged++;
         const char* kname = k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)";
-        lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d "
-                "field[%d]=%p tag=%d\n",
-                count, kname, s, non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+        lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d field[%d]=%p tag=%d\n", count, kname, s,
+                non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
         if (flagged > 100)
           return; // don't flood
       }
@@ -144,8 +143,8 @@ int image32_translate_fields(memOop obj) {
     if (f == NULL)
       continue;
     intptr_t raw = (intptr_t)f;
-    // Already a valid tagged oop (nil, smi, or heap pointer into old space).
-    if (f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
+    // Already a valid tagged oop (nil, or heap pointer into old space).
+    if (f->is_nil() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
       continue;
     // Raw 32-bit values stored as 64-bit have zero upper 32 bits.
     // Skip anything that already looks like a 64-bit pointer.
@@ -153,23 +152,20 @@ int image32_translate_fields(memOop obj) {
       continue;
     // Reconstruct the original 32-bit word and retag.
     uint32_t w32 = (uint32_t)raw;
-    if ((w32 & 3) == Int_Tag) {
+    // First check if this raw 32-bit address is in our map.  We do this BEFORE
+    // checking is_smi() because a raw 32-bit address like 0x00001234 has tag
+    // Int_Tag (0) and would otherwise be misinterpreted as a smi value.
+    oop wide = lookup_addr32((int)w32);
+    if (wide != NULL) {
+      obj->raw_at_put(i, wide);
+      translated++;
+      lprintf("[image32] translated obj=%p field[%d]=0x%x -> %p\n", (void*)obj, i, w32, (void*)wide);
+    } else if ((w32 & 3) == Int_Tag) {
       // Smi: 30-bit value stored as (v << 2) | 0 on 32-bit.  Widen to 62-bit.
       int32_t v32 = (int32_t)(w32 >> 2);
       obj->raw_at_put(i, as_smiOop(v32));
-    } else if ((w32 & 3) == Mem_Tag) {
-      // Heap object: raw 32-bit address.  Look up the 64-bit oop.
-      oop wide = lookup_addr32((int)w32);
-      if (wide != NULL) {
-        obj->raw_at_put(i, wide);
-        translated++;
-        lprintf("[image32] translated obj=%p field[%d]=0x%x -> %p\n", (void*)obj, i, w32, (void*)wide);
-      } else {
-        lprintf("[image32] untranslatable field raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
-                k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)");
-      }
     } else {
-      lprintf("[image32] unknown field tag raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
+      lprintf("[image32] untranslatable field raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
               k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)");
     }
     translated++;
@@ -188,18 +184,15 @@ int image32_translate_fields(memOop obj) {
       if ((intptr_t)f >> 32 != 0)
         continue;
       uint32_t w32 = (uint32_t)raw;
-      if ((w32 & 3) == Int_Tag) {
+      // First check if this raw 32-bit address is in our map.
+      oop wide = lookup_addr32((int)w32);
+      if (wide != NULL) {
+        obj->raw_at_put(i, wide);
+        translated++;
+        lprintf("[image32] translated array field[%d]=0x%x -> %p\n", i, w32, (void*)wide);
+      } else if ((w32 & 3) == Int_Tag) {
         int32_t v32 = (int32_t)(w32 >> 2);
         obj->raw_at_put(i, as_smiOop(v32));
-      } else if ((w32 & 3) == Mem_Tag) {
-        oop wide = lookup_addr32((int)w32);
-        if (wide != NULL) {
-          obj->raw_at_put(i, wide);
-          translated++;
-          lprintf("[image32] translated array field[%d]=0x%x -> %p\n", i, w32, (void*)wide);
-        } else {
-          lprintf("[image32] untranslatable array field raw=0x%x\n", w32);
-        }
       } else {
         lprintf("[image32] unknown array field tag raw=0x%x\n", w32);
       }
