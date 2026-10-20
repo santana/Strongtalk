@@ -50,7 +50,6 @@ extern "C" void load_image() {
   patch_alien_ensure_loaded_size();
   patch_alien_allocation_sizes();
   image32_verify_old_gen();
-  image32_translate_all_fields(b.oop_table_ptr(), b.oop_table_count());
   image32_patch_bytecode_operands();
 }
 
