@@ -17,6 +17,8 @@ See image32.hpp for license and design notes.
 namespace {
 
 // ObjectClosure used to verify 64-bit object layout in old space.
+// Only checks oop fields (0 .. non_indexable_size), not indexable data
+// (raw bytes for byte containers, bytecodes for methods).
 class Image32VerifyClosure : public ObjectClosure {
 public:
   int flagged = 0;
@@ -31,26 +33,39 @@ public:
     if (bad) {
       flagged++;
     }
-    // Walk object-body oop fields and check each is a valid tagged oop:
-    // nil, smi, or a heap pointer into old space.
-    int hdr;
-    if (k != NULL && obj->is_klass())
-      hdr = klassOopDesc::header_size(); // klass object: mark + klass + Klass part
-    else if (k != NULL)
-      hdr = k->klass_part()->oop_header_size(); // instances: header size from klass
-    else
-      hdr = 2;
-    for (int i = hdr; i < s; i++) {
+    if (k == NULL)
+      return;
+    int non_idx = k->klass_part()->non_indexable_size();
+    // Check all oop fields: header (0 .. hdr) and instVars (hdr .. non_idx).
+    for (int i = 0; i < non_idx; i++) {
       oop f = obj->raw_at(i);
       if (f == NULL)
         continue;
       bool f_valid = f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f));
       if (!f_valid) {
         flagged++;
-        lprintf("[image32] bad field obj#%d addr=%p field[%d]=%p tag=%d\n", count, (void*)obj->addr(), i,
-                (void*)(intptr_t)f, (int)((intptr_t)f & 3));
-        if (flagged > 20)
+        const char* kname = k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)";
+        lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d field[%d]=%p tag=%d\n", count, kname, s,
+                non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+        if (flagged > 100)
           return; // don't flood
+      }
+    }
+    // For objArray, indexable fields are also oops.
+    if (obj->is_objArray()) {
+      for (int i = non_idx; i < s; i++) {
+        oop f = obj->raw_at(i);
+        if (f == NULL)
+          continue;
+        bool f_valid = f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f));
+        if (!f_valid) {
+          flagged++;
+          const char* kname = k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)";
+          lprintf("[image32] bad field obj#%d klass=%s size=%d non_idx=%d field[%d]=%p tag=%d\n", count, kname, s,
+                  non_idx, i, (void*)(intptr_t)f, (int)((intptr_t)f & 3));
+          if (flagged > 100)
+            return;
+        }
       }
     }
   }
@@ -63,8 +78,9 @@ public:
 // For each object in old space, check:
 //   - The object's klass pointer points into old space (klasses are tenured)
 //   - The object's size is >= header_size(2)
+//   - Each oop field (0 .. non_indexable_size) is a valid tagged oop
 //
-// Returns the number of objects flagged for review.
+// Returns the number of objects/fields flagged for review.
 int image32_verify_old_gen() {
   Image32VerifyClosure closure;
   Universe::old_gen.object_iterate(&closure);
