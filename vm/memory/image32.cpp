@@ -211,8 +211,6 @@ int image32_translate_fields(memOop obj) {
 // Returns the total number of fields translated.
 int image32_translate_all_fields(oop* oop_table, int oop_count) {
   int total = 0;
-  int translated = 0;
-  int skipped = 0;
   for (int i = 0; i < oop_count; i++) {
     oop obj = oop_table[i];
     if (obj != NULL && obj->is_mem())

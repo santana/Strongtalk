@@ -102,5 +102,9 @@ public:
   int* addr32_keys() { return _addr32_keys; }
   oop* addr32_table() { return _addr32_table; }
   int addr32_count() { return _addr32_count; }
+
+  // Oop table access for image32 translation
+  oop* oop_table_ptr() { return oop_table; }
+  int oop_table_count() { return number_of_oops; }
 };
 #endif // _BOOTSTRAP_HPP
