@@ -28,6 +28,15 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - **Conclusion**: The receiver decode fix is correct in principle but is not sufficient by itself. The underlying issue is that the 32-bit image's frozen object references need to be re-based for the 64-bit object model. This requires Plan A Phase 2: proper 32-bit→64-bit field translation during bootstrap read-in.
 - **Files**: `vm/interpreter/interpretedIC.cpp` (receiver decode), `vm/runtime/bootstrap.cpp` (object read-in), `vm/memory/image32.cpp` (verification).
 
+### Phase 2b: Fix 32-bit→64-bit field translation (IN PROGRESS)
+- **Finding**: `image32_translate_all_fields()` crashes the VM immediately when called from `load_image()`. Crash is `pc=0` (null function pointer dereference).
+- **Cause**: The `image32_translate_fields()` function treats ALL non-tagged-oop values as 32-bit raw pointers that need translation. But many fields contain legitimate 64-bit values that happen to have non-Mem_Tag/Int_Tag tags (e.g., character codes, small integers stored as raw integers, etc.). Translating these corrupts the object.
+- **Fix approach**:
+  1. Add more restrictive filtering: only translate fields that are valid 32-bit addresses (upper 32 bits zero AND the address maps to a known 32-bit object in `addr32` map).
+  2. Add debugging to `image32_translate_fields()` to log which fields are being translated and why.
+  3. Consider translating only specific object types known to have pointer fields (klass, method, association, context, etc.) rather than all objects.
+- **Files**: `vm/memory/image32.cpp` (translation logic), `vm/runtime/bootstrap.cpp` (address registration), `vm/runtime/shell.cpp` (call site).
+
 ### Phase 3: Compiled-code problem
 - 32-bit machine code inside methodOops will not execute on a 64-bit CPU.
 - Choose simplest path for the bridge: mark all compiled methods for interpretation/recompilation on first send (force interpreted execution until the JIT recompiles hot methods).
