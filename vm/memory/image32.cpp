@@ -143,8 +143,8 @@ int image32_translate_fields(memOop obj) {
     if (f == NULL)
       continue;
     intptr_t raw = (intptr_t)f;
-    // Already a valid tagged oop (nil, or heap pointer into old space).
-    if (f->is_nil() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
+    // Already a valid tagged oop (nil, smi, or heap pointer into old space).
+    if (f->is_nil() || f->is_smi() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
       continue;
     // Raw 32-bit values stored as 64-bit have zero upper 32 bits.
     // Skip anything that already looks like a 64-bit pointer.
