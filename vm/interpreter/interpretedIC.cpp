@@ -622,7 +622,9 @@ oop* InterpretedIC::inline_cache_miss() {
 
   oop receiver = ic->argument_spec() == Bytecodes::args_only // Are we at a self or super send?
                    ? f.receiver() //  yes: take receiver of frame
-                   : f.expr(ic->nof_arguments()); //  no:  take receiver pushed before the arguments
+                   : (ic->argument_spec() == Bytecodes::recv_0_args
+                        ? f.receiver() //  recv_0_args: receiver is at fp[-2]
+                        : f.expr(ic->nof_arguments())); //  no:  take receiver pushed before the arguments
 
   if (receiver->is_nil() || receiver->is_smi()) {
     mystd->print("IC miss NIL receiver: code=%d sel=", ic->send_code());
