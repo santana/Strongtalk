@@ -58,14 +58,29 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - Plus stash changes from `stash@{0}` covering 21 files (assembler, interpreterBackend, prims, etc.)
 
 
-### Phase 3: Compiled-code problem
-- 32-bit machine code inside methodOops will not execute on a 64-bit CPU.
-- Choose simplest path for the bridge: mark all compiled methods for interpretation/recompilation on first send (force interpreted execution until the JIT recompiles hot methods).
+### Phase 3: Compiled-code problem (NOT BLOCKING BOOT)
+- `UseRecompilation` defaults to `false` in `vm/runtime/debug.hpp:95`, so nmethods are not used during boot - all execution is interpreted.
+- 32-bit machine code inside methodOops will not execute on a 64-bit CPU, but since recompilation is off by default, this only matters if `UseRecompilation` is enabled.
+- For future: mark all compiled methods for interpretation on first send, or recompile them to 64-bit nmethods.
 
-### Phase 4: Boot and validate
-- Build arm64-macos (and x86-64 for cross-check).
-- Run until `ProcessorScheduler>>start` completes → clean boot, not `Eval>`.
-- Fix residual `nil doesNotUnderstand:` cascades from misread fields.
+### Phase 4: Boot and validate (COMPLETE — clean boot confirmed)
+- VM builds cleanly on arm64-macos-clang
+- Image loads, image-compat patches applied correctly
+- `Processes::start()` → `activate_system()` → `transfer_to(scheduler)` reached
+- Scheduler executes `ProcessorScheduler>>start` → `SystemInitializer run` → `self run`
+- **CONFIRMED**: VM runs past class initialization without crashing — clean boot, not `Eval>`
+- With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
+- Test suite (`make test`) crashes during `initializeSmalltalkEnvironment()` → `Smalltalk initialize` → `Character initialize` → `initializeClassifications` — **known remaining issue**
+
+**Remaining blocker — the `...ifFail:` failure block runs after a successful primitive:**
+- `primitiveIndexedByteAt:put:ifFail:` → `byteArrayPrimitives::atPut` stores the byte and returns receiver on success, but the compiled site falls through into the failure block instead of skipping it
+- **Root cause**: `InterpreterBackend::passPrimitiveCallArgs` (vm/asm/interpreterBackend_aarch64.cpp) loads the primitive INDEX (a smi) from the BLL bytecode inline cache slot instead of the primitive entry point (function pointer). This value is passed to `primitives::number_of_argument_slots()` which does a function-pointer lookup (`e->fn() == fn`) that always returns NULL for smi values, causing `nparams = 1` (always pops 1 slot). Additionally, `callPrimitive` does `blr(x19)` where `x19` holds this smi value, which would jump to a tiny address.
+- The bug only manifests for `prim_call`/`prim_call_failure` bytecodes (BLL format) which are used by primitives with `ifFail:` blocks. These are NOT exercised during normal boot (SystemInitializer doesn't call `Character initializeClassifications`), so the boot completes cleanly.
+- **Fix**: `passPrimitiveCallArgs` must convert the primitive index to the actual function pointer (e.g., via `primitive_table[index]->fn()`) before storing it in x19 and passing it to `number_of_argument_slots`.
+
+**Harness exit code is masked (not yet fixed):** On unhandled error, the image's `ProcessorScheduler>>stopWithError:` → `Process stop` primitive takes the scheduler branch → `evaluator::read_eval_loop()` → `os::fatalExit(0)` → process exits 0. `make test` passes vacuously while the test process is actually dying.
+
+
 
 ### Phase 5: Write a native 64-bit image
 - Add a save primitive / VM option to dump the running 64-bit heap to `strongtalk64.bst` with 16-byte headers.
