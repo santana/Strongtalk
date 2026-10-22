@@ -72,11 +72,10 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
 - Test suite (`make test`) crashes during `initializeSmalltalkEnvironment()` → `Smalltalk initialize` → `Character initialize` → `initializeClassifications` — **known remaining issue**
 
-**Remaining blocker — the `...ifFail:` failure block runs after a successful primitive:**
-- `primitiveIndexedByteAt:put:ifFail:` → `byteArrayPrimitives::atPut` stores the byte and returns receiver on success, but the compiled site falls through into the failure block instead of skipping it
-- **Root cause**: `InterpreterBackend::passPrimitiveCallArgs` (vm/asm/interpreterBackend_aarch64.cpp) loads the primitive INDEX (a smi) from the BLL bytecode inline cache slot instead of the primitive entry point (function pointer). This value is passed to `primitives::number_of_argument_slots()` which does a function-pointer lookup (`e->fn() == fn`) that always returns NULL for smi values, causing `nparams = 1` (always pops 1 slot). Additionally, `callPrimitive` does `blr(x19)` where `x19` holds this smi value, which would jump to a tiny address.
-- The bug only manifests for `prim_call`/`prim_call_failure` bytecodes (BLL format) which are used by primitives with `ifFail:` blocks. These are NOT exercised during normal boot (SystemInitializer doesn't call `Character initializeClassifications`), so the boot completes cleanly.
-- **Fix**: `passPrimitiveCallArgs` must convert the primitive index to the actual function pointer (e.g., via `primitive_table[index]->fn()`) before storing it in x19 and passing it to `number_of_argument_slots`.
+**✅ FIXED — `...ifFail:` failure block runs correctly after primitive:**
+- `InterpreterBackend::passPrimitiveCallArgs` (vm/asm/interpreterBackend_aarch64.cpp) was loading instance variable arguments in the wrong order. The PRIM_DECL_N convention reverses parameter order (PRIM_DECL_2(a1,a2) → name(a2,a1)), so x0 should be the last argument, x1 the next-to-last, ..., xN-1 the receiver. The code was loading x0 from the receiver slot instead of the last argument slot, causing all arguments to be shifted wrong.
+- Fixed by loading arguments in the correct order: x0 = last arg [sp+oopSize], x1 = argN-1 [sp+2*oopSize], ..., xN-1 = receiver [sp+nparams*oopSize].
+- This fixes `primitiveIndexedByteAt:put:ifFail:` and all other primitive sends with `ifFail:` blocks and 2+ arguments.
 
 **Harness exit code is masked (not yet fixed):** On unhandled error, the image's `ProcessorScheduler>>stopWithError:` → `Process stop` primitive takes the scheduler branch → `evaluator::read_eval_loop()` → `os::fatalExit(0)` → process exits 0. `make test` passes vacuously while the test process is actually dying.
 
