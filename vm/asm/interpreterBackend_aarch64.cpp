@@ -102,28 +102,17 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
   // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
   // Stack after pushl(eax): [sp+0]=last arg dup, [sp+1*oopSize]=last arg,
   //   [sp+2*oopSize]=argN-1, ..., [sp+nparams*oopSize]=receiver (arg 0).
-  // Receiver is at sp + x25 - oopSize; walk down from there.
-  masm->add(x16, esp, x25_argument_slots); // x16 = sp + (nparams+1)*oopSize
-  masm->sub(x16, x16, oopSize); // x16 = &receiver (sp + nparams*oopSize)
-  masm->ldr(x0, Address(x16)); // x0 = receiver (arg 0)
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x1, Address(x16)); // x1 = arg1
-  lprintf("[PPA] sp=%p x25=%lld x16=%p x0=%p\n", (void*)/*esp*/ 0, (long long)/*x25*/ 0, (void*)/*x16*/ 0,
-          (void*)/*x0*/ 0);
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x1, Address(x16)); // x1 = arg1
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x2, Address(x16)); // x2 = arg2
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x3, Address(x16)); // x3 = arg3
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x4, Address(x16)); // x4 = arg4
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x5, Address(x16)); // x5 = arg5
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x6, Address(x16)); // x6 = arg6
-  masm->sub(x16, x16, oopSize);
-  masm->ldr(x7, Address(x16)); // x7 = arg7
+  // Walk UP from sp+oopSize to load args in PRIM_DECL_N reversed order:
+  // x0 = last arg [sp+oopSize], x1 = argN-1 [sp+2*oopSize], ...,
+  // xN-1 = receiver [sp+nparams*oopSize].
+  masm->ldr(x0, Address(sp, oopSize)); // x0 = last arg [sp+oopSize]
+  masm->ldr(x1, Address(sp, 2 * oopSize)); // x1 = argN-1 [sp+2*oopSize]
+  masm->ldr(x2, Address(sp, 3 * oopSize)); // x2 = argN-2 [sp+3*oopSize]
+  masm->ldr(x3, Address(sp, 4 * oopSize)); // x3 = argN-3 [sp+4*oopSize]
+  masm->ldr(x4, Address(sp, 5 * oopSize)); // x4 = argN-4 [sp+5*oopSize]
+  masm->ldr(x5, Address(sp, 6 * oopSize)); // x5 = argN-5 [sp+6*oopSize]
+  masm->ldr(x6, Address(sp, 7 * oopSize)); // x6 = argN-6 [sp+7*oopSize]
+  masm->ldr(x7, Address(sp, 8 * oopSize)); // x7 = argN-7 [sp+8*oopSize]
   // Function pointer stays in x19 (loaded at line 92); callPrimitive will blr(x19).
 }
 

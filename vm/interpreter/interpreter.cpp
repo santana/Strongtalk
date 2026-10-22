@@ -1885,6 +1885,7 @@ char* InterpreterGenerator::predict_prim(bool canFail) {
 char* InterpreterGenerator::lookup_primitive() {
   char* ep = entry_point();
   masm->pushl(eax); // push last argument
+  save_esi(); // save bytecode pointer so lookup_and_patch finds the right call site
   call_C((char*)primitives::lookup_and_patch); // do the lookup and patch call site appropriately
   load_ebx();
   masm->popl(eax); // restore last argument

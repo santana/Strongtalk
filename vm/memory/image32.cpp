@@ -132,6 +132,10 @@ int image32_translate_fields(memOop obj) {
   klassOop k = obj->klass_field();
   if (k == NULL)
     return 0;
+  // Klass field may be a raw 32-bit pointer from the 32-bit image.
+  // If it's already a valid 64-bit pointer, proceed; otherwise skip.
+  if ((intptr_t)k >> 32 == 0)
+    return 0;
   int hdr = k->klass_part()->oop_header_size();
   int non_idx = k->klass_part()->non_indexable_size();
   int s = obj->size();
@@ -143,29 +147,24 @@ int image32_translate_fields(memOop obj) {
     if (f == NULL)
       continue;
     intptr_t raw = (intptr_t)f;
-    // Already a valid tagged oop (nil or heap pointer into old space).
-    if (f->is_nil() || (f->is_mem() && Universe::old_gen.contains((void*)f)))
-      continue;
     // Raw 32-bit values stored as 64-bit have zero upper 32 bits.
     // Skip anything that already looks like a 64-bit pointer.
-    if ((intptr_t)f >> 32 != 0)
+    // Check this BEFORE calling any methods on f, since f may be a raw
+    // 32-bit heap address that is not a valid object pointer.
+    if (raw >> 32 != 0)
       continue;
-    // Reconstruct the original 32-bit word and retag.
-    uint32_t w32 = (uint32_t)raw;
-    // First check if this raw 32-bit address is in our map.  We do this BEFORE
-    // checking is_smi() because a raw 32-bit address like 0x00001234 has tag
-    // Int_Tag (0) and would otherwise be misinterpreted as a smi value.
-    oop wide = lookup_addr32((int)w32);
+    // f is either nil, smi, or raw 32-bit pointer - look up in addr32_map
+    oop wide = lookup_addr32((int)raw);
     if (wide != NULL) {
       obj->raw_at_put(i, wide);
       translated++;
-      lprintf("[image32] translated obj=%p field[%d]=0x%x -> %p\n", (void*)obj, i, w32, (void*)wide);
-    } else if ((w32 & 3) == Int_Tag) {
+      lprintf("[image32] translated obj=%p field[%d]=0x%x -> %p\n", (void*)obj, i, (uint32_t)raw, (void*)wide);
+    } else if ((raw & 3) == Int_Tag) {
       // Smi: 30-bit value stored as (v << 2) | 0 on 32-bit.  Widen to 62-bit.
-      int32_t v32 = (int32_t)(w32 >> 2);
+      int32_t v32 = (int32_t)(raw >> 2);
       obj->raw_at_put(i, as_smiOop(v32));
     } else {
-      lprintf("[image32] untranslatable field raw=0x%x obj=%p klass=%s\n", w32, (void*)obj,
+      lprintf("[image32] untranslatable field raw=0x%x obj=%p klass=%s\n", (uint32_t)raw, (void*)obj,
               k->klass_part()->delta_name() ? k->klass_part()->delta_name() : "(null)");
     }
     translated++;
