@@ -49,3 +49,8 @@ DYLD_LIBRARY_PATH=. ./strongtalk -b ../../strongtalk.bst
 
 ### Bootstrap fix (2026-10-09)
 - Added missing store_check in `InterpreterGenerator::copy_params_into_context` (self and params stored into context) and in `install_context` after setting parent pointer. Prevents GC from missing new-gen references in context objects, fixing `klass 0x1 isn't a klass` in `LookupKey::verify()` during bootstrap. No instrumentation added; verified on x86_64.
+
+### Defensive hardening (2026-10-13)
+- `01bf5d7` validates the receiver in `InterpretedIC::inline_cache_miss()` before the `klass()` read (SMI -> `Universe::smiKlassObj()`; `klass()` only for `is_mem()`/`is_block()`/`is_proxy()`), containing the shared receiver-slot decode fault.
+- `8506a1d` makes `frame::hp()`/`set_hp()` reject structurally-invalid frames; relevant to the GC-fault-on-large-allocation path noted above.
+- Root cause of the receiver-slot decode is still open; these are guards, not the fix.

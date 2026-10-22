@@ -37,6 +37,11 @@ void initializeSmalltalkEnvironment();
 void set_test_done_event(Event* e);
 void wait_for_test_done();
 
+// True when the test run ended because the test process stopped on an
+// unhandled error rather than by running every test to completion.  The
+// launcher uses this to exit non-zero instead of silently reporting success.
+bool test_run_failed();
+
 class AddTestProcess : public ValueObj {
 public:
   AddTestProcess() { addTestToProcesses(); }

@@ -1898,11 +1898,11 @@ char* InterpreterGenerator::call_primitive() {
   InterpreterBackend::savePrimitiveBytecodePtr(masm);
   masm->pushl(eax); // push last argument
   InterpreterBackend::passPrimitiveCallArgs(masm, -oopSize);
-  call_C(eax);
-  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the pushed
-  // argument scaffolding is popped here by the caller. Result stays in eax
-  // as the new tos.
-  masm->addl(esp, slotSize);
+  InterpreterBackend::callPrimitive(masm);
+  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the operand
+  // slots (number_of_parameters(), resolved at run time) are popped here by the
+  // caller. Result stays in eax as the new tos.
+  InterpreterBackend::popPrimitiveCallArguments(masm);
   InterpreterBackend::restorePrimitiveBytecodePtr(masm);
   if (_debug) { // (Pascal calling conv. => args are popped by callee)
     masm->testb(eax, Mark_Tag_Bit);
@@ -1920,15 +1920,18 @@ char* InterpreterGenerator::call_primitive_can_fail() {
   InterpreterBackend::savePrimitiveBytecodePtr(masm);
   masm->pushl(eax); // push last argument
   InterpreterBackend::passPrimitiveCallArgs(masm, -2 * oopSize);
-  call_C(eax);
-  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the pushed
-  // argument scaffolding is popped here by the caller.
-  masm->addl(esp, slotSize);
+  InterpreterBackend::callPrimitive(masm);
+  // PRIM_API=__stdcall is a no-op on both 64-bit backends, so the operand
+  // slots (number_of_parameters(), resolved at run time) are popped here by the
+  // caller.
+  InterpreterBackend::popPrimitiveCallArguments(masm);
   InterpreterBackend::restorePrimitiveBytecodePtr(masm);
-  masm->testb(eax, Mark_Tag_Bit); // if not marked then
-  masm->jcc(Assembler::notZero, failed);
-  masm->movl(ecx, Address(esi, -oopSize)); // get jump offset
-  masm->addl(esi, ecx); // jump over failure block
+  // Test Mark_Tag_Bit (bit 1): branch to failure if bit is set (marked result).
+  // Use tbnz (test bit non-zero) directly instead of testb/jcc to avoid any
+  // condition-flag clobbering issues on aarch64.
+  masm->tbnz(eax, 1, failed);
+  masm->ldr(ecx, Address(esi, -oopSize)); // get jump offset (64-bit)
+  masm->add(esi, esi, ecx); // jump over failure block (64-bit)
   load_ebx();
   jump_ebx();
 
@@ -2149,10 +2152,9 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
   maybeINT3() restore_esi();
   restore_ebx(); // ebx := 0
   masm->reset_last_Delta_frame();
-  masm->test(eax, Mark_Tag_Bit); // if not marked then
-  masm->jcc(Assembler::notZero, _deoptimized_return_from_primitive_call_with_failure_block_failed);
-  masm->movl(ecx, Address(esi, -oopSize)); // load jump offset
-  masm->addl(esi, ecx); // and jump over failure block
+  masm->tbnz(eax, 1, _deoptimized_return_from_primitive_call_with_failure_block_failed);
+  masm->ldr(ecx, Address(esi, -oopSize)); // load jump offset (64-bit)
+  masm->add(esi, esi, ecx); // and jump over failure block (64-bit)
   load_ebx();
   jump_ebx();
 

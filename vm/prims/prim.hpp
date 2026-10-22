@@ -149,6 +149,15 @@ public:
   static primitive_desc* lookup(symbolOop selector) { return lookup((char*)selector->bytes(), selector->length()); }
   static primitive_desc* lookup(fntype fn);
 
+  // Number of delta stack slots a primitive consumes: the interpreter's
+  // primitive-call glue loads the operands into registers (AAPCS64 x0..x7 on
+  // AArch64, the hardware stack on x86-64) and must pop exactly this many slots
+  // afterwards. On the historic 32-bit __stdcall backend the callee did it with
+  // "ret number_of_parameters*4"; on the 64-bit backends __stdcall is a no-op,
+  // so the caller has to know the count, which is only available at run time
+  // through the primitive's entry point.
+  static intptr_t number_of_argument_slots(fntype fn);
+
   static void lookup_and_patch(); // routine called by interpreter
 
   // For degbugging/profiling

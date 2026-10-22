@@ -780,7 +780,9 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
 
   masm->bind(convert_loop);
   masm->ldr(x0, Address(x11)); // get Delta argument
-  masm->addl(x11, 8); // go to next Delta argument
+  // Delta stack slots are slotSize bytes (16 on AArch64, 8 on x86-64), so the
+  // walk must step by slotSize, not by one oop.
+  masm->addl(x11, slotSize); // go to next Delta argument
   masm->testb(x0, Mem_Tag); // mem oop iff bit 0 is set
   masm->jcc(MacroAssembler::notZero, boxed_argument);
   masm->sarl(x0, Tag_Size); // smi -> C int
@@ -793,7 +795,7 @@ char* StubRoutines::generate_call_DLL_aarch64(MacroAssembler* masm, bool async) 
   masm->bind(next_argument);
   masm->str(x0, Address(x16)); // store converted argument
   masm->sub(x16, x16, 8);
-  masm->sub(x17, x17, 1); // decrement argument counter
+  masm->decl(x17); // decrement argument counter (subs: must set flags for jcc)
   masm->jcc(MacroAssembler::notZero, convert_loop);
 
   masm->bind(no_arguments);

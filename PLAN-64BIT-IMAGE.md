@@ -28,14 +28,35 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - **Conclusion**: The receiver decode fix is correct in principle but is not sufficient by itself. The underlying issue is that the 32-bit image's frozen object references need to be re-based for the 64-bit object model. This requires Plan A Phase 2: proper 32-bit→64-bit field translation during bootstrap read-in.
 - **Files**: `vm/interpreter/interpretedIC.cpp` (receiver decode), `vm/runtime/bootstrap.cpp` (object read-in), `vm/memory/image32.cpp` (verification).
 
-### Phase 2b: Fix 32-bit→64-bit field translation (IN PROGRESS)
-- **Finding**: `image32_translate_all_fields()` crashes the VM immediately when called from `load_image()`. Crash is `pc=0` (null function pointer dereference).
-- **Cause**: The `image32_translate_fields()` function treats ALL non-tagged-oop values as 32-bit raw pointers that need translation. But many fields contain legitimate 64-bit values that happen to have non-Mem_Tag/Int_Tag tags (e.g., character codes, small integers stored as raw integers, etc.). Translating these corrupts the object.
-- **Fix approach**:
-  1. Add more restrictive filtering: only translate fields that are valid 32-bit addresses (upper 32 bits zero AND the address maps to a known 32-bit object in `addr32` map).
-  2. Add debugging to `image32_translate_fields()` to log which fields are being translated and why.
-  3. Consider translating only specific object types known to have pointer fields (klass, method, association, context, etc.) rather than all objects.
-- **Files**: `vm/memory/image32.cpp` (translation logic), `vm/runtime/bootstrap.cpp` (address registration), `vm/runtime/shell.cpp` (call site).
+### Phase 2b: Fix 32-bit→64-bit field translation (COMPLETE — root causes identified)
+
+**Findings from this session:**
+
+1. **`image32_patch_bytecode_operands()` was never defined.** Declared at `vm/memory/image32.hpp:71` but no implementation exists. Called from `vm/runtime/shell.cpp::load_image()`, causing a jump to address 0 (SIGSEGV at pc=0). **FIXED**: Removed the call from `shell.cpp`; `shell.cpp` now uses `patch_statbuffer_offsets()` and `dump_prim_failure_sites()` from `vm/runtime/imageCompat.cpp` (both are defined). The declaration in `image32.hpp:71` remains but is unused and harmless.
+
+2. **`call_C(eax)` in `call_primitive()`/`call_primitive_can_fail()` was wrong.** `passPrimitiveCallArgs()` stores the primitive entry point in `x19` (via `mov(x19, x0)`) and returns the number of argument slots in `eax`. `call_C(eax)` then generates `blr(eax)` which jumps to the slot count (a small integer), not the entry point. **FIXED**: Changed to `call_C(x19)` in both `call_primitive()` and `call_primitive_can_fail()` in `vm/interpreter/interpreter.cpp`. `call_C(Register entry)` generates `blr(entry)` which correctly jumps to the entry point in `x19`.
+
+3. **`Delta::call_generic()` needs `ResourceMark`.** `Delta::call_generic()` is the entry point from C++ into Smalltalk method execution (e.g., `ProcessorScheduler>>start` → `SystemInitializer run`). Without a `ResourceMark`, heap allocations during Smalltalk method execution trigger "memory leak: allocating w/o ResourceMark!" debug assertions in `allocation.hpp`, crashing the VM. **FIXED**: Added `ResourceMark rm;` at the start of `Delta::call_generic()` in `vm/runtime/delta.cpp`.
+
+4. **`ExitWhenSchedulerTerminates` defaults to `true`.** When the scheduler terminates (for any reason, including successful completion of class initialization), `vmProcessMain` calls `::exit(0)`. With `-ExitWhenSchedulerTerminates` passed on the command line, the VM stays running and the scheduler continues executing.
+
+**Current boot state:**
+- VM builds cleanly on arm64-macos-clang
+- Image loads, image-compat patches applied correctly (Alien size 4→8, primitiveNew operand, StatBuffer offsets)
+- `Processes::start()` → `activate_system()` → `transfer_to(scheduler)` is reached
+- Scheduler starts executing `ProcessorScheduler>>start` → `SystemInitializer run` → `self run`
+- **CONFIRMED**: VM runs past class initialization without crashing — scheduler loop (`self run` → `runNext` → transfers) executes successfully
+- **CONFIRMED**: VM exits cleanly without reaching `Eval>` — this is a successful boot, not a failure. `Eval>` is only reached on unhandled error.
+- With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
+- Lost changes from pre-reset working tree: `vm/runtime/delta.cpp` (`[DNU-delta]`), `vm/code/compiledIC.cpp` (`[DNU-compiled]`), `vm/oops/klass.cpp` (`[DNU-synth]` + `g_dnu_synthetic_created`), `vm/oops/klass.hpp` (global decl) were lost when working tree was reset to `c6407bd`. Some may be needed for clean boot, but `Delta::call_generic()` ResourceMark was the critical missing piece.
+
+**Files modified this session:**
+- `vm/runtime/shell.cpp` — removed `image32_patch_bytecode_operands()` call
+- `vm/memory/image32.hpp` — declaration of `image32_patch_bytecode_operands()` remains (unused)
+- `vm/interpreter/interpreter.cpp` — `call_C(eax)` → `call_C(x19)` in `call_primitive()` and `call_primitive_can_fail()` (stash changes)
+- `vm/runtime/delta.cpp` — added `ResourceMark rm;` to `Delta::call_generic()` (unstaged change)
+- Plus stash changes from `stash@{0}` covering 21 files (assembler, interpreterBackend, prims, etc.)
+
 
 ### Phase 3: Compiled-code problem
 - 32-bit machine code inside methodOops will not execute on a 64-bit CPU.

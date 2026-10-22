@@ -75,18 +75,38 @@ public:
 
   // ---- Primitive call/return ABI ----
   //
-  // call_primitive / call_primitive_can_fail push the last argument (receiver)
-  // and call the generated primitive whose entry point is embedded after the
-  // bytecode. On x86-64 the arguments arrive on the hardware stack and the
-  // interpreter's bytecode pointer (esi = rsi) collides with the SysV second
-  // argument register, so esi is parked in r12 (callee-saved) for the duration
-  // of the call. On AArch64 AAPCS64 wants the arguments in x0..x7 (loaded from
-  // the delta stack slots), the primitive entry point is read from the bytecode
-  // stream, and esi keeps pointing at the bytecodes throughout. After the call
-  // both backends pop the one pushed argument slot (caller-pops).
-  static void savePrimitiveBytecodePtr(MacroAssembler* masm); // no-op on AArch64
-  static void restorePrimitiveBytecodePtr(MacroAssembler* masm); // no-op on AArch64
+  // call_primitive / call_primitive_can_fail push the last argument and call the
+  // primitive whose entry point is embedded after the bytecode. On x86-64 the
+  // arguments arrive on the hardware stack and the interpreter's bytecode
+  // pointer (esi = rsi) collides with the SysV second argument register, so esi
+  // is parked in r12 (callee-saved) for the duration of the call. On AArch64
+  // AAPCS64 wants the arguments in x0..x7 (loaded from the delta stack slots),
+  // but esi is a caller-saved register the primitive may clobber, so it is
+  // likewise parked in a callee-saved register (x24). The primitive entry point
+  // is read from the bytecode stream (through the parked pointer).
+  //
+  // Unlike the historic 32-bit __stdcall callee, a 64-bit primitive does not
+  // pop its operands (and on x86-64 SysV returnToInterpreter pops only the
+  // receiver+argument it knows about), so the caller pops the operand slots:
+  // number_of_parameters() of them. AArch64 resolves that count in
+  // passPrimitiveCallArgs (it is not known at code-generation time) and pops it
+  // in popPrimitiveCallArguments.
+  static void savePrimitiveBytecodePtr(MacroAssembler* masm);
+  static void restorePrimitiveBytecodePtr(MacroAssembler* masm);
   static void passPrimitiveCallArgs(MacroAssembler* masm, int entryOffsetBytes);
+
+  // Pop the delta stack slots the primitive consumed. A C primitive is called
+  // with its operands in registers (AArch64) or on the hardware stack (x86-64);
+  // unlike the historic 32-bit __stdcall callee it does not remove them itself,
+  // so the caller must pop number_of_parameters() delta slots. AArch64 resolves
+  // that count at run time in passPrimitiveCallArgs and pops it here; x86-64
+  // keeps its historical single-slot pop.
+  static void popPrimitiveCallArguments(MacroAssembler* masm);
+
+  // Call the primitive function pointer already loaded in x17 by
+  // passPrimitiveCallArgs, with arguments already in x0..x7. Copy the result
+  // from x0 to eax (x13). Preserve VM registers across the C boundary.
+  static void callPrimitive(MacroAssembler* masm);
 
   // Receiver/argument operands of a generated primitive. x86-64: the receiver
   // is at [esp+oopSize], the argument at [esp+2*oopSize] (the primitive pops

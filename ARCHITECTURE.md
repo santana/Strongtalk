@@ -634,15 +634,12 @@ be, so `receiver->klass()` reads ordinary memory through a bogus base. This is
 in the VM's send path, not in the image and not in the code generator. In-repo
 `StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the load-time
 `imageCompat` rewrite exists only because the frozen image cannot be regenerated
-in this tree. See [README.md](README.md#status) and the [architecture ledger](ledger/) for per-architecture details.
-
-`Eval>` is the VM's error fallback REPL, not a successful boot:
-`ProcessorScheduler>>start` contains no REPL — it runs `SystemInitializer` then
-`self run` → VM quit. `Eval>` is entered only when the scheduler hits an
-unhandled error (`handle_error()` / `processOopPrimitives::stop` →
-`read_eval_loop()`). A platform "reaching `Eval>`" means it boots far enough to
-trigger the error-handling machinery; expressions evaluated there are
-error-fallback behavior, not evidence of a clean boot.
+in this tree. A defensive pass (2026-10-13) validates the receiver in
+`inline_cache_miss()` before dereferencing `klass()` (a SMI resolves to
+`Universe::smiKlassObj()`; `klass()` is read only for `is_mem()`/`is_block()`/
+`is_proxy()` objects) and hardens `frame::hp()`/`set_hp()` against corrupted
+frames; this contains the fault without yet root-causing the decode. See [README.md](README.md#status) and the
+[architecture ledger](ledger/) for per-architecture details.
 
 ### Platform Abstraction
 

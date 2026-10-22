@@ -2290,7 +2290,16 @@ void AArch64MacroAssembler::call_C(char* entry, relocInfo::relocType rtype) {
   set_last_Delta_frame_before_call();
   PRESERVE_LR_BEFORE_CALL();
   align_stack_before_call(*this);
+  // Save VM registers that the C call may clobber (AAPCS64 caller-saved).
+  str_pre(x14, sp, -16); // save esi
+  str_pre(x15, sp, -16); // save ebx
+  str_pre(x10, sp, -16); // save edi
+  str_pre(x16, sp, -16); // save ebp
   AArch64Assembler::call(entry, rtype);
+  ldr_post(x16, sp, 16); // restore ebp
+  ldr_post(x10, sp, 16); // restore edi
+  ldr_post(x15, sp, 16); // restore ebx
+  ldr_post(x14, sp, 16); // restore esi
   restore_stack_after_call(*this);
   RESTORE_LR_AFTER_CALL();
   reset_last_Delta_frame();
@@ -2303,7 +2312,16 @@ void AArch64MacroAssembler::call_C(char* entry, relocInfo::relocType rtype, Labe
   set_last_Delta_frame_before_call();
   PRESERVE_LR_BEFORE_CALL();
   align_stack_before_call(*this);
+  // Save VM registers that the C call may clobber (AAPCS64 caller-saved).
+  str_pre(x14, sp, -16); // save esi
+  str_pre(x15, sp, -16); // save ebx
+  str_pre(x10, sp, -16); // save edi
+  str_pre(x16, sp, -16); // save ebp
   AArch64Assembler::call(entry, rtype);
+  ldr_post(x16, sp, 16); // restore ebp
+  ldr_post(x10, sp, 16); // restore edi
+  ldr_post(x15, sp, 16); // restore ebx
+  ldr_post(x14, sp, 16); // restore esi
   ic_info(nlrTestPoint, 0);
   restore_stack_after_call(*this);
   RESTORE_LR_AFTER_CALL();
@@ -2315,7 +2333,16 @@ void AArch64MacroAssembler::call_C(Register entry) {
   set_last_Delta_frame_before_call();
   PRESERVE_LR_BEFORE_CALL();
   align_stack_before_call(*this);
+  // Save VM registers that the C call may clobber (AAPCS64 caller-saved).
+  str_pre(x14, sp, -16); // save esi
+  str_pre(x15, sp, -16); // save ebx
+  str_pre(x10, sp, -16); // save edi
+  str_pre(x16, sp, -16); // save ebp
   blr(entry);
+  ldr_post(x16, sp, 16); // restore ebp
+  ldr_post(x10, sp, 16); // restore edi
+  ldr_post(x15, sp, 16); // restore ebx
+  ldr_post(x14, sp, 16); // restore esi
   restore_stack_after_call(*this);
   RESTORE_LR_AFTER_CALL();
   reset_last_Delta_frame();
@@ -2326,7 +2353,16 @@ void AArch64MacroAssembler::call_C(Register entry, Label& nlrTestPoint) {
   set_last_Delta_frame_before_call();
   PRESERVE_LR_BEFORE_CALL();
   align_stack_before_call(*this);
+  // Save VM registers that the C call may clobber (AAPCS64 caller-saved).
+  str_pre(x14, sp, -16); // save esi
+  str_pre(x15, sp, -16); // save ebx
+  str_pre(x10, sp, -16); // save edi
+  str_pre(x16, sp, -16); // save ebp
   blr(entry);
+  ldr_post(x16, sp, 16); // restore ebp
+  ldr_post(x10, sp, 16); // restore edi
+  ldr_post(x15, sp, 16); // restore ebx
+  ldr_post(x14, sp, 16); // restore esi
   ic_info(nlrTestPoint, 0);
   restore_stack_after_call(*this);
   RESTORE_LR_AFTER_CALL();

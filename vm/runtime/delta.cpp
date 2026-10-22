@@ -71,6 +71,11 @@ oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofA
   os::jit_write_protect(true);
   call_delta_func* _call_delta = (call_delta_func*)StubRoutines::call_delta();
 
+  // ResourceMark ensures that any heap allocations during Smalltalk method
+  // execution are properly tracked (avoids "allocating w/o ResourceMark"
+  // debug assertions in the interpreter/bytecode execution path).
+  ResourceMark rm;
+
   if (ic->match(receiver->klass(), symbolOop(selector))) {
     // use ic entry - but first make sure it's not a zombie nmethod
     jumpTableEntry* entry = ic->result().entry();

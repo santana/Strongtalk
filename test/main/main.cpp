@@ -62,4 +62,5 @@ int main(int argc, char* argv[]) {
   start_vm_process(&testProcess);
   wait_for_test_done();
   stop_vm_process();
+  return test_run_failed() ? 1 : 0;
 }

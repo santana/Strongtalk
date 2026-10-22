@@ -50,6 +50,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "utilities/lprintf.hpp"
 
 #include <cstring>
+#include <cstdlib>
 
 #include "runtime/imageCompat.hpp"
 
@@ -202,6 +203,50 @@ template <typename A> int rewrite_push_before_send(methodOop m, symbolOop select
 
 } // namespace
 
+// The frozen image's `MacOSXStatBuffer` was generated for a non-LP64 platform:
+// its `struct stat` field offsets describe a 32-bit-ish layout.  On LP64 macOS
+// `struct stat` is 144 bytes with `st_blksize` at 112 and `st_size` at 96, so
+// `blockSize` reads `st_ctimespec.tv_sec` (a ~1.8e9 timestamp) and the image
+// then allocates a multi-gigabyte read buffer.  Rewrite the `^k` accessors,
+// which are all encoded as `push_succ_n (k-1); return_tos`, to the LP64 offsets.
+int patch_statbuffer_offsets() {
+  klassOop k = klassOop(Universe::find_global("MacOSXStatBuffer"));
+  if (k == nilObj || !k->is_klass())
+    return 0;
+
+  struct {
+    const char* selector;
+    int old_value;
+    int new_value;
+  } table[] = {
+    {"structureSize", 96, 144}, {"blockSizeOffset", 64, 112}, {"fileSizeOffset", 48, 96},
+    {"gidOffset", 16, 20},      {"modeOffset", 8, 4},         {"uidOffset", 12, 16},
+  };
+
+  int patched = 0;
+  for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+    methodOop mo = find_method(k, table[i].selector);
+    if (mo == nilObj || mo == NULL)
+      continue;
+    u_char* codes = mo->codes();
+    if (codes[0] != Bytecodes::push_succ_n) {
+      lprintf("[image-compat] StatBuffer>>%s: unexpected opcode 0x%02x\n", table[i].selector, codes[0]);
+      continue;
+    }
+    int current = codes[1] + 1;
+    if (current != table[i].old_value) {
+      // Already patched (or a value we do not recognise): leave it alone.
+      continue;
+    }
+    codes[1] = (u_char)(table[i].new_value - 1);
+    patched++;
+  }
+
+  if (patched > 0)
+    lprintf("[image-compat] StatBuffer offsets -> LP64 macOS struct stat (%d site(s))\n", patched);
+  return patched;
+}
+
 int patch_alien_ensure_loaded_size() {
   klassOop alien = klassOop(Universe::find_global("Alien"));
   if (alien == nilObj || !alien->is_klass())
@@ -269,4 +314,97 @@ int patch_alien_allocation_sizes() {
   if (patched > 0)
     lprintf("[image-compat] Alien header 8 -> 16 bytes: primitiveNew: (%d site(s))\n", patched);
   return patched;
+}
+
+namespace {
+
+int g_prim_failure_sites = 0;
+
+bool is_prim_failure_code(Bytecodes::Code c) {
+  return c == Bytecodes::prim_call_failure || c == Bytecodes::predict_prim_call_failure ||
+         c == Bytecodes::prim_call_self_failure || c == Bytecodes::prim_call_failure_lookup ||
+         c == Bytecodes::predict_prim_call_failure_lookup || c == Bytecodes::prim_call_self_failure_lookup;
+}
+
+bool is_target_selector(symbolOop sel) {
+  static const char* names[] = {
+    "primitiveAt:put:", "at:put:", "classify:as:", "initializeClassifications", "vframe", "atAllPut:"};
+  for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+    if (symbol_is(sel, names[i]))
+      return true;
+  return false;
+}
+
+void hex_bytes(char* out, u_char* p, int n) {
+  static const char* H = "0123456789abcdef";
+  int k = 0;
+  for (int i = 0; i < n; i++) {
+    out[k++] = H[(p[i] >> 4) & 0xf];
+    out[k++] = H[p[i] & 0xf];
+    out[k++] = ' ';
+  }
+  out[k] = 0;
+}
+
+void dump_one_method(methodOop m) {
+  bool target = is_target_selector(m->selector());
+  for (CodeIterator it(m, 1); it.hp() < m->codes_end(); it.advance()) {
+    Bytecodes::Code c = it.code();
+    if (!is_prim_failure_code(c))
+      continue;
+    g_prim_failure_sites++;
+    if (!target)
+      continue;
+
+    u_char* p = it.hp();
+    int total = int(m->codes_end() - p);
+    int nBytes = total < 48 ? total : 48;
+
+    // The VM's model (CodeIterator::next_hp, BLL): both operands are oopSize and
+    // start at align(p+1).  Report the jump offset and entry point read that way,
+    // and also read as 4-byte words, so a 32-bit vs 64-bit layout is visible.
+    u_char* ops = it.aligned_oop(1) ? (u_char*)it.aligned_oop(1) : p;
+    intptr_t as8_off = *(intptr_t*)(ops + oopSize);
+    int32_t as4_off = *(int32_t*)(ops + oopSize);
+    int32_t as4_off2 = *(int32_t*)(ops + 4);
+    intptr_t as8_entry = *(intptr_t*)(ops);
+    int32_t as4_entry = *(int32_t*)(ops);
+
+    char sel[64];
+    sel[0] = 0;
+    {
+      symbolOop s = m->selector();
+      int len = s->length();
+      if (len > 60)
+        len = 60;
+      for (int i = 0; i < len; i++)
+        sel[i] = (char)s->byte_at(i + 1);
+      sel[len] = 0;
+    }
+
+    lprintf("[site] %s bci=%d op=0x%02x total=%d off8=%lld off4b=%d\n", sel, it.bci(), (unsigned)c, total,
+            (long long)as8_off, (int)as4_off2);
+    if (!target)
+      continue;
+
+    char buf[200];
+    hex_bytes(buf, p, nBytes);
+    lprintf("[dump]   bytes: %s\n", buf);
+    lprintf("[dump]   ops@%p entry8=0x%llx entry4=0x%x off8=%lld off4=%d off4b=%d\n", (void*)ops,
+            (unsigned long long)as8_entry, (unsigned)as4_entry, (long long)as8_off, (int)as4_off, (int)as4_off2);
+  }
+}
+
+void dump_one_method_thunk(methodOop m) {
+  dump_one_method(m);
+}
+
+} // namespace
+
+int dump_prim_failure_sites() {
+  if (getenv("ST_DUMP_PRIM") == NULL)
+    return 0;
+  Universe::methods_do(&dump_one_method_thunk);
+  lprintf("[image-compat] primitive-with-failure-block sites total = %d\n", g_prim_failure_sites);
+  return g_prim_failure_sites;
 }

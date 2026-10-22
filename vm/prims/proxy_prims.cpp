@@ -321,9 +321,16 @@ PRIM_DECL_3(proxyOopPrimitives::doublePrecisionFloatAtPut, oop receiver, oop off
   return receiver;
 }
 
-static bool convert_to_arg(oop arg, int* addr) {
+// FFI arguments are machine words: they may be small integers *or* pointers
+// (proxies), and the callee's signature is not known here.  They must therefore
+// be passed at full pointer width.  Accumulating into an `int` (as this used
+// to) silently truncated every pointer argument to its low 32 bits -- on LP64
+// that handed `open`, `read`, `write`, ... a garbage `char*`, so e.g.
+// `FilePath>>exists` reported that a directory it had just listed did not
+// exist.
+static bool convert_to_arg(oop arg, intptr_t* addr) {
   if (arg->is_smi()) {
-    *addr = smiOop(arg)->value();
+    *addr = (intptr_t)smiOop(arg)->value();
     return true;
   }
   if (arg->is_proxy()) {
@@ -333,7 +340,7 @@ static bool convert_to_arg(oop arg, int* addr) {
   return false;
 }
 
-typedef void*(__stdcall* call_out_func_0)();
+typedef intptr_t(__stdcall* call_out_func_0)();
 PRIM_DECL_2(proxyOopPrimitives::callOut0, oop receiver, oop result) {
   PROLOGUE_2("callOut0", receiver, result);
   ASSERT_RECEIVER_ACCESS;
@@ -346,16 +353,16 @@ PRIM_DECL_2(proxyOopPrimitives::callOut0, oop receiver, oop result) {
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   call_out_func_0 f = (call_out_func_0)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)());
+  proxyOop(result)->set_pointer((void*)(*f)());
   return result;
 }
 
-typedef void*(__stdcall* call_out_func_1)(int a);
+typedef intptr_t(__stdcall* call_out_func_1)(intptr_t a);
 PRIM_DECL_3(proxyOopPrimitives::callOut1, oop receiver, oop arg1, oop result) {
   PROLOGUE_3("callOut1", receiver, arg1, result);
   ASSERT_RECEIVER_ACCESS;
 
-  int a1;
+  intptr_t a1;
   if (!receiver->is_proxy())
     return markSymbol(vmSymbols::receiver_has_wrong_type());
   if (proxyOop(receiver)->is_null())
@@ -366,16 +373,16 @@ PRIM_DECL_3(proxyOopPrimitives::callOut1, oop receiver, oop arg1, oop result) {
     return markSymbol(vmSymbols::second_argument_has_wrong_type());
 
   call_out_func_1 f = (call_out_func_1)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)(a1));
+  proxyOop(result)->set_pointer((void*)(*f)(a1));
   return result;
 }
 
-typedef void*(__stdcall* call_out_func_2)(int a, int b);
+typedef intptr_t(__stdcall* call_out_func_2)(intptr_t a, intptr_t b);
 PRIM_DECL_4(proxyOopPrimitives::callOut2, oop receiver, oop arg1, oop arg2, oop result) {
   PROLOGUE_4("callOut2", receiver, arg1, arg2, result);
   ASSERT_RECEIVER_ACCESS;
 
-  int a1, a2;
+  intptr_t a1, a2;
   if (!receiver->is_proxy())
     return markSymbol(vmSymbols::receiver_has_wrong_type());
   if (proxyOop(receiver)->is_null())
@@ -388,16 +395,16 @@ PRIM_DECL_4(proxyOopPrimitives::callOut2, oop receiver, oop arg1, oop arg2, oop 
     return markSymbol(vmSymbols::third_argument_has_wrong_type());
 
   call_out_func_2 f = (call_out_func_2)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)(a1, a2));
+  proxyOop(result)->set_pointer((void*)(*f)(a1, a2));
   return result;
 }
 
-typedef void*(__stdcall* call_out_func_3)(int a, int b, int c);
+typedef intptr_t(__stdcall* call_out_func_3)(intptr_t a, intptr_t b, intptr_t c);
 PRIM_DECL_5(proxyOopPrimitives::callOut3, oop receiver, oop arg1, oop arg2, oop arg3, oop result) {
   PROLOGUE_5("callOut3", receiver, arg1, arg2, arg3, result);
   ASSERT_RECEIVER_ACCESS;
 
-  int a1, a2, a3;
+  intptr_t a1, a2, a3;
   if (!receiver->is_proxy())
     return markSymbol(vmSymbols::receiver_has_wrong_type());
   if (proxyOop(receiver)->is_null())
@@ -412,16 +419,16 @@ PRIM_DECL_5(proxyOopPrimitives::callOut3, oop receiver, oop arg1, oop arg2, oop 
     return markSymbol(vmSymbols::fourth_argument_has_wrong_type());
 
   call_out_func_3 f = (call_out_func_3)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)(a1, a2, a3));
+  proxyOop(result)->set_pointer((void*)(*f)(a1, a2, a3));
   return result;
 }
 
-typedef void*(__stdcall* call_out_func_4)(int a, int b, int c, int d);
+typedef intptr_t(__stdcall* call_out_func_4)(intptr_t a, intptr_t b, intptr_t c, intptr_t d);
 PRIM_DECL_6(proxyOopPrimitives::callOut4, oop receiver, oop arg1, oop arg2, oop arg3, oop arg4, oop result) {
   PROLOGUE_6("callOut4", receiver, arg1, arg2, arg3, arg4, result);
   ASSERT_RECEIVER_ACCESS;
 
-  int a1, a2, a3, a4;
+  intptr_t a1, a2, a3, a4;
   if (!receiver->is_proxy())
     return markSymbol(vmSymbols::receiver_has_wrong_type());
   if (proxyOop(receiver)->is_null())
@@ -438,17 +445,17 @@ PRIM_DECL_6(proxyOopPrimitives::callOut4, oop receiver, oop arg1, oop arg2, oop 
     return markSymbol(vmSymbols::fifth_argument_has_wrong_type());
 
   call_out_func_4 f = (call_out_func_4)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)(a1, a2, a3, a4));
+  proxyOop(result)->set_pointer((void*)(*f)(a1, a2, a3, a4));
   return result;
 }
 
-typedef void*(__stdcall* call_out_func_5)(int a, int b, int c, int d, int e);
+typedef intptr_t(__stdcall* call_out_func_5)(intptr_t a, intptr_t b, intptr_t c, intptr_t d, intptr_t e);
 
 PRIM_DECL_7(proxyOopPrimitives::callOut5, oop receiver, oop arg1, oop arg2, oop arg3, oop arg4, oop arg5, oop result) {
   PROLOGUE_7("callOut5", receiver, arg1, arg2, arg3, arg4, arg5, result);
   ASSERT_RECEIVER_ACCESS;
 
-  int a1, a2, a3, a4, a5;
+  intptr_t a1, a2, a3, a4, a5;
   if (!receiver->is_proxy())
     return markSymbol(vmSymbols::receiver_has_wrong_type());
   if (proxyOop(receiver)->is_null())
@@ -467,6 +474,6 @@ PRIM_DECL_7(proxyOopPrimitives::callOut5, oop receiver, oop arg1, oop arg2, oop 
     return markSymbol(vmSymbols::sixth_argument_has_wrong_type());
 
   call_out_func_5 f = (call_out_func_5)proxyOop(receiver)->get_pointer();
-  proxyOop(result)->set_pointer((*f)(a1, a2, a3, a4, a5));
+  proxyOop(result)->set_pointer((void*)(*f)(a1, a2, a3, a4, a5));
   return result;
 }

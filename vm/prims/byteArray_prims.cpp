@@ -123,21 +123,41 @@ PRIM_DECL_2(byteArrayPrimitives::at, oop receiver, oop index) {
   PROLOGUE_2("at", receiver, index);
   ASSERT_RECEIVER;
 
+  // TEMP diagnostic
+  extern char* getenv(const char*);
+  bool log = getenv("ST_LOG_ATPUT") != NULL;
+
   // check index type
   if (!index->is_smi())
     return markSymbol(vmSymbols::first_argument_has_wrong_type());
 
   // check index value
-  if (!byteArrayOop(receiver)->is_within_bounds(smiOop(index)->value()))
+  if (!byteArrayOop(receiver)->is_within_bounds(smiOop(index)->value())) {
+    if (log)
+      lprintf("[at] FAIL out_of_bounds recv=%p idx=%lld\n", (void*)receiver, (long long)smiOop(index)->value());
     return markSymbol(vmSymbols::out_of_bounds());
+  }
 
   // do the operation
+  if (log)
+    lprintf("[at] recv=%p idx=%lld -> %d\n", (void*)receiver, (long long)smiOop(index)->value(),
+            (int)byteArrayOop(receiver)->byte_at(smiOop(index)->value()));
   return as_smiOop(byteArrayOop(receiver)->byte_at(smiOop(index)->value()));
 }
 
 PRIM_DECL_3(byteArrayPrimitives::atPut, oop receiver, oop index, oop value) {
   PROLOGUE_3("atPut", receiver, index, value);
   ASSERT_RECEIVER;
+
+  // TEMP diagnostic
+  extern char* getenv(const char*);
+  if (getenv("ST_LOG_ATPUT")) {
+    long long idx = index->is_smi() ? (long long)smiOop(index)->value() : -12345;
+    long long val = value->is_smi() ? (long long)smiOop(value)->value() : -12345;
+    int rlen = receiver->is_byteArray() ? byteArrayOop(receiver)->length() : -1;
+    lprintf("[atPut] recv=%p len=%d ismem=%d idx=%lld isSmi=%d val=%lld isSmi=%d\n", (void*)receiver, rlen,
+            receiver->is_mem(), idx, (int)index->is_smi(), val, (int)value->is_smi());
+  }
 
   // check index type
   if (!index->is_smi())
@@ -206,6 +226,13 @@ PRIM_DECL_2(byteArrayPrimitives::characterAt, oop receiver, oop index) {
 PRIM_DECL_2(byteArrayPrimitives::at_all_put, oop receiver, oop value) {
   PROLOGUE_2("at_all_put", receiver, value);
   ASSERT_RECEIVER;
+
+  // TEMP diagnostic
+  extern char* getenv(const char*);
+  if (getenv("ST_LOG_ATPUT"))
+    lprintf("[atAllPut] recv=%p len=%d ismem=%d val=%lld isSmi=%d\n", (void*)receiver,
+            receiver->is_byteArray() ? byteArrayOop(receiver)->length() : -1, (int)receiver->is_mem(),
+            value->is_smi() ? (long long)smiOop(value)->value() : -12345, (int)value->is_smi());
 
   // check index type
   if (!value->is_smi())

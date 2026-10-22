@@ -19,5 +19,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 extern "C" int patch_alien_ensure_loaded_size();
 extern "C" int patch_alien_allocation_sizes();
+extern "C" int patch_statbuffer_offsets();
+
+// TEMP diagnostic: dump raw bytecodes around every primitive-call-with-failure
+// -block site (opcode 0xb2/0xb3/0xb6/...).  Enabled by ST_DUMP_PRIM.
+extern "C" int dump_prim_failure_sites();
 
 #endif // _RUNTIME_IMAGE_COMPAT_HPP_

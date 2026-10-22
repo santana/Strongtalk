@@ -15,6 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // is defined; see asm/assembler.hpp for the backend selection macro.
 
 #include "asm/interpreterBackend.hpp"
+#include "asm/assembler_aarch64.hpp"
 #include "code/nativeInstruction.hpp"
 #include "lookup/lookupCache.hpp"
 #include "memory/generation.inline.hpp"
@@ -22,10 +23,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "memory/util.hpp"
 #include "oops/memOop.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "prims/prim.hpp"
+
+extern "C" void st_debug_ppa2(intptr_t a0, intptr_t a1);
 
 extern "C" void scavenge_and_allocate(int size);
 extern "C" void popStackHandles(char* nextFrame);
 extern "C" char* nlr_testpoint_entry; // set by InterpreterGenerator::generate_nonlocal_return_code
+
+// Scratch callee-saved registers used by the primitive-call glue. Both are
+// preserved across the C primitive call and are not part of any register map:
+// the interpreter maps eax=x13, ebx=x15, ecx=x11, edx=x12, esi=x14, edi=x27,
+// ebp=x29, and compiled code uses x21..x23 (local registers) and x27/x14 for
+// NLR state.
+static const Register x24_bytecode_ptr = x24; // parked esi across a primitive call
+static const Register x25_argument_slots = x25; // delta stack slots the primitive consumes
 
 // On AArch64 a delta stack slot holds two oops (slotSize = 2*oopSize), so a
 // register-held slot count is scaled by times_16 (two oops per slot).
@@ -59,24 +71,87 @@ void InterpreterBackend::incrementMethodCounter(MacroAssembler* masm, Address co
 }
 
 void InterpreterBackend::savePrimitiveBytecodePtr(MacroAssembler* masm) {
-  // esi keeps pointing at the bytecodes throughout the primitive call (the
-  // primitive entry point is read directly from the stream); nothing to park.
+  // A primitive runs as a C call, so it may clobber any caller-saved register,
+  // including esi (x14, the bytecode pointer). Park it in x24 (callee-saved and
+  // unused by the interpreter/compiler register maps) for the duration of the
+  // call, exactly like the x86-64 backend parks esi in r12.
+  masm->mov(x24_bytecode_ptr, esi);
 }
 
-void InterpreterBackend::restorePrimitiveBytecodePtr(MacroAssembler* masm) {}
+void InterpreterBackend::restorePrimitiveBytecodePtr(MacroAssembler* masm) {
+  masm->mov(esi, x24_bytecode_ptr);
+}
 
 void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOffsetBytes) {
-  // AAPCS64 wants the arguments in x0..x7; the delta stack slots below the
-  // pushed last argument are spaced by slotSize (two oops per delta slot).
-  masm->movl(x0, Address(sp, 0));
-  masm->movl(x1, Address(sp, slotSize));
-  masm->movl(x2, Address(sp, 2 * slotSize));
-  masm->movl(x3, Address(sp, 3 * slotSize));
-  masm->movl(x4, Address(sp, 4 * slotSize));
-  masm->movl(x5, Address(sp, 5 * slotSize));
-  masm->movl(x6, Address(sp, 6 * slotSize));
-  masm->movl(x7, Address(sp, 7 * slotSize));
-  masm->movl(eax, Address(esi, entryOffsetBytes)); // get primitive entry point
+  // The primitive consumes number_of_parameters() delta stack slots (the
+  // compiler pushed all but the last operand; call_primitive/call_primitive_can_fail
+  // push the last one). Resolve the count from the primitive's entry point now,
+  // while the argument registers x0..x7 are still free, and keep it in x25
+  // (callee-saved, preserved across the primitive call) for
+  // popPrimitiveCallArguments. This is what the historic __stdcall "ret n"
+  // did on the callee side.
+  masm->movl(x0, Address(x24_bytecode_ptr, entryOffsetBytes)); // primitive entry point
+  masm->mov(x19, x0); // stash function pointer in x19 (callee-saved, survives call_C)
+  masm->call_C((char*)&primitives::number_of_argument_slots, x0); // -> eax
+  masm->movl(x25_argument_slots, eax);
+
+  // AAPCS64 wants the arguments in x0..x7. Delta stack pushes oops at oopSize
+  // (8-byte) intervals, not slotSize (16-byte). PRIM_DECL_N reverses parameter
+  // order (PRIM_DECL_2(a1,a2) -> name(a2,a1)), so x0 = last arg, x1 =
+  // next-to-last, ..., xN-1 = receiver (first arg).
+  // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
+  // Stack after pushl(eax): [sp+0]=last arg dup, [sp+1*oopSize]=last arg,
+  //   [sp+2*oopSize]=argN-1, ..., [sp+nparams*oopSize]=receiver (arg 0).
+  // Receiver is at sp + x25 - oopSize; walk down from there.
+  masm->add(x16, esp, x25_argument_slots); // x16 = sp + (nparams+1)*oopSize
+  masm->sub(x16, x16, oopSize); // x16 = &receiver (sp + nparams*oopSize)
+  masm->ldr(x0, Address(x16)); // x0 = receiver (arg 0)
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x1, Address(x16)); // x1 = arg1
+  lprintf("[PPA] sp=%p x25=%lld x16=%p x0=%p\n", (void*)/*esp*/ 0, (long long)/*x25*/ 0, (void*)/*x16*/ 0,
+          (void*)/*x0*/ 0);
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x1, Address(x16)); // x1 = arg1
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x2, Address(x16)); // x2 = arg2
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x3, Address(x16)); // x3 = arg3
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x4, Address(x16)); // x4 = arg4
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x5, Address(x16)); // x5 = arg5
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x6, Address(x16)); // x6 = arg6
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x7, Address(x16)); // x7 = arg7
+  // Function pointer stays in x19 (loaded at line 92); callPrimitive will blr(x19).
+}
+
+void InterpreterBackend::callPrimitive(MacroAssembler* masm) {
+  // Save VM registers that the C call may clobber (AAPCS64 caller-saved).
+  masm->str_pre(x14, sp, -16); // save esi
+  masm->str_pre(x15, sp, -16); // save ebx
+  masm->str_pre(x10, sp, -16); // save edi
+  masm->str_pre(x16, sp, -16); // save ebp
+  masm->blr(x19); // call primitive via function pointer in x19
+  masm->ldr_post(x16, sp, 16); // restore ebp
+  masm->ldr_post(x10, sp, 16); // restore edi
+  masm->ldr_post(x15, sp, 16); // restore ebx
+  masm->ldr_post(x14, sp, 16); // restore esi
+  // Result in x0 -> move to eax (x13)
+  masm->mov(eax, x0);
+}
+
+void InterpreterBackend::popPrimitiveCallArguments(MacroAssembler* masm) {
+  // Pop the operand slots the primitive consumed (computed by
+  // passPrimitiveCallArgs above and kept in x25).
+  //
+  // sp is register 31, which the shifted-register ADD form reads/writes as xzr;
+  // only the immediate form aliases 31 to sp. The count is only known at run
+  // time, so adjust sp through the reserved scratch register x16.
+  masm->mov(x16, esp);
+  masm->addl(x16, x25_argument_slots); // x25 already in bytes (nparams * slotSize)
+  masm->mov(esp, x16);
 }
 
 Register InterpreterBackend::primReceiver() {

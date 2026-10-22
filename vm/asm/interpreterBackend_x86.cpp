@@ -83,6 +83,12 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
 #endif
 }
 
+void InterpreterBackend::popPrimitiveCallArguments(MacroAssembler* masm) {
+  // x86-64 keeps its historical single-slot pop; the generated primitives pop
+  // the receiver/argument themselves via returnToInterpreter's ret(2*oopSize).
+  masm->addl(esp, slotSize);
+}
+
 Address InterpreterBackend::primReceiver() {
   return Address(esp, oopSize);
 }

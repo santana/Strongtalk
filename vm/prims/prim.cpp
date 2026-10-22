@@ -24,6 +24,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "compiler/expr.hpp"
 #include "interpreter/codeIterator.hpp"
 #include "memory/oopFactory.hpp"
+#include "memory/util.hpp"
 #include "prims/prim.hpp"
 #include "prims/behavior_prims.hpp"
 #include "prims/block_prims.hpp"
@@ -353,6 +354,30 @@ primitive_desc* primitives::lookup(fntype fn) {
       return e;
   }
   return NULL;
+}
+
+// Called from the interpreter's primitive-call glue (see the declaration in
+// prim.hpp). Direct-mapped cache: primitives are called in short bursts from the
+// same call sites, and a linear scan over the ~440-entry table is too slow for a
+// per-call path.
+intptr_t primitives::number_of_argument_slots(fntype fn) {
+  primitive_desc* pdesc = lookup(fn);
+  // The bytecode compiler pushes number_of_parameters()-1 operands and leaves
+  // the last one in eax; call_primitive/call_primitive_can_fail always push
+  // that last operand, so number_of_parameters() slots are consumed - except
+  // for a parameterless primitive, where the compiler pushes nothing, the glue
+  // still pushes one (spurious) slot, and that slot must be popped as well.
+  int nparams = (pdesc != NULL ? pdesc->number_of_parameters() : 1);
+  if (nparams < 1)
+    nparams = 1;
+  // Pop the pushl(eax) duplicate (1 slot) plus the nparams arguments, each at
+  // oopSize intervals on AArch64 delta stack.
+  intptr_t slots = (intptr_t)(nparams + 1) * oopSize;
+  return slots;
+}
+
+extern "C" void st_debug_ppa2(intptr_t a0, intptr_t a1) {
+  lprintf("[PPA_DEBUG] x0=%p x1=%p\n", (void*)a0, (void*)a1);
 }
 
 void primitives::lookup_and_patch() {
