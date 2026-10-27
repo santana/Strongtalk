@@ -702,20 +702,28 @@ void InterpreterGenerator::should_not_reach_here() {
 
 Address InterpreterGenerator::arg_addr(int i) {
   assert(1 <= i, "argument number must be positive");
-  return Address(ebp, arg_n_offset + (i - 1) * slotSize);
+  // Arguments are stored at oopSize (8-byte) intervals on the hardware stack,
+  // not slotSize (16-byte on AArch64). Use oopSize so each argument index
+  // lands on the correct oop, not every other one.
+  return Address(ebp, arg_n_offset + (i - 1) * oopSize);
 }
 
 Address InterpreterGenerator::arg_addr(Register arg_no) {
-  return InterpreterBackend::slotScaled(ebp, arg_no, arg_n_offset);
+  // Same oopSize scaling as arg_addr(int) -- arguments are at oopSize
+  // intervals, not slotSize intervals.
+  return Address(ebp, arg_no, Address::times_8, arg_n_offset, relocInfo::none);
 }
 
 Address InterpreterGenerator::temp_addr(int i) {
   assert(0 <= i, "temporary number must be positive");
-  return Address(ebp, temp_0_offset - i * slotSize);
+  // Temporaries are stored at oopSize (8-byte) intervals on the hardware
+  // stack, not slotSize (16-byte on AArch64).
+  return Address(ebp, temp_0_offset - i * oopSize);
 }
 
 Address InterpreterGenerator::temp_addr(Register temp_no) {
-  return InterpreterBackend::slotScaled(ebp, temp_no, temp_0_offset - (max_nof_temps - 1) * slotSize);
+  // Same oopSize scaling as temp_addr(int).
+  return Address(ebp, temp_no, Address::times_8, temp_0_offset - (max_nof_temps - 1) * oopSize, relocInfo::none);
 }
 
 Address InterpreterGenerator::float_addr(Register float_no) {
