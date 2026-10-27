@@ -368,7 +368,10 @@ The virtual interpreter frame layout itself (`frame_*_offset` in
   (`savePrimitiveBytecodePtr`, `passPrimitiveCallArgs`, `primReceiver`/
   `primArgument` as `Address`). AArch64: args go in x0..x7 loaded from delta
   slots, entry read from the bytecode stream, esi untouched, result copied
-  eax→x0 before `ret(0)` (`primReceiver`/`primArgument` as `Register`).
+  eax→x0 before `ret(0)` (`primReceiver`/`primArgument` as `Register`). Since
+  the `load_absolute_address` fix (see §6), `call_delta` passes `method_entry_point`
+  in x4 and jumps to the interpreter entry point with `blr x4`, moving the
+  receiver from x1 into `eax` (x13) first.
 - **call_delta / NLR / return conventions** — `spillCallDeltaArgs`,
   `returnToCallDeltaCaller`, `callPopStackHandles`; the NLR stub pieces
   (`decodeICInfo`, `continueNonLocalReturn`, `enterNLRFrame`); and the
@@ -650,6 +653,16 @@ OS-specific code is isolated in:
 
 The `VirtualSpace` class (`vm/runtime/virtualspace.cpp`) abstracts virtual
 memory allocation across platforms.
+
+---
+
+### 6.1 AArch64 Primitive Call ABI Fixes
+
+Two AArch64-specific defects blocked clean boot past `ProcessorScheduler>>start`:
+
+1. **`load_absolute_address` used a 32-bit load (`sf=0`, instruction `0x58000000`) instead of 64-bit (`sf=1`, `0xD8000000`) for absolute addresses.** On AArch64 this loads only the low 32 bits of a 64-bit pointer, producing a garbage address that causes a jump to address 0 when reading `method_entry_point` in `call_delta`. Fixed in `vm/asm/assembler_aarch64.cpp`.
+
+2. **`call_delta` passed primitive arguments on a `slotSize`-spaced stack** (`vm/code/stubRoutines.cpp`, `vm/runtime/delta.cpp`). On AArch64 `slotSize = 16` bytes but the C ABI spills arguments at `oopSize = 8`-byte intervals via `pushl`/`popq`. `generate_call_delta` read `[esp + n * slotSize]`, skipping every other argument, and `spillCallDeltaArgs` wrote at `slotSize` intervals while `generate_call_delta` read at the same `slotSize` intervals — consistent but wrong relative to the C ABI's 8-byte intervals. Replaced with a minimal stub: save callee-saved registers, move `x1` (receiver) to `eax` (x13), and `blr x4` where `x4` carries `method_entry_point` (passed as a fifth argument from `call_generic` in `vm/runtime/delta.cpp`).
 
 ---
 

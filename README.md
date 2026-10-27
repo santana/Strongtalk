@@ -49,26 +49,53 @@ the image's own error-handling machinery executes on both backends.
 | Platform                  | Build  | Runtime                                                          |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
 | Linux x86-64 (native)     | yes   | builds; reaches `Eval>` but loops in the scheduler error handler (~300k register dumps in 45 s) |
-| macOS arm64 (AArch64)     | yes   | builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>` and evaluates expressions |
+| macOS arm64 (AArch64)     | yes   | builds; clean boot — `ProcessorScheduler>>start` → `SystemInitializer run` → `self run` executes without reaching `Eval>`; image loads, passes GC, resolves DLL handles; `stest` runs past `initializeClassifications` and runs test suites |
 | macOS x86-64 (forced)     | yes   | builds; loads image, reaches `Eval>`, evaluates simple expressions; large allocations can trigger GC faults |
 | Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots to `Eval>` and evaluates expressions (`^ 1 + 2` → `3` etc) — see [Windows](#windows-runtime-status) for status |
 
-macOS arm64, macOS x86-64 and Windows x86-64 now reach `Eval>`; the platform
-table above records each configuration's last verified stopping point. The
-remaining blocker is
-shared by both macOS arches and is in the VM's own send path, not in the image
-and not in the code generator: the interpreter's receiver-slot decode for sends
-hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
-`0x7ffffffffffffffc` — both SMI-tagged) where the receiver object should be, so
-`receiver->klass()` reads ordinary memory through a bogus base. A defensive pass
-(2026-10-13) now guards `inline_cache_miss()` — a SMI receiver resolves to
-`Universe::smiKlassObj()`, and `klass()` is read only for `is_mem()`/
-`is_block()`/`is_proxy()` objects — and hardens `frame::hp()`/`set_hp()` against
-corrupted frames. This contains the fault rather than fixing the decode: the
-receiver-slot decode itself is still the thing to root-cause. See [ledger/](ledger/) for detailed per-architecture status and reproduction notes.
+macOS arm64 now boots cleanly past `Eval>`: the scheduler loop
+(`ProcessorScheduler>>start` → `SystemInitializer run` → `self run`) executes
+without entering the error-fallback REPL, and `stest` runs the test suite past
+`initializeClassifications`. See [PLAN-64BIT-IMAGE.md](PLAN-64BIT-IMAGE.md) for
+the detailed per-session tracking document.
 
-Getting the VM running end-to-end requires finding the root cause behind that
-receiver-slot decode.
+Two AArch64-specific root causes were fixed in the send/primitive path:
+
+1. **`load_recv`/`arg_addr`/`temp_addr` used `slotSize` instead of `oopSize`**
+   (`vm/interpreter/interpreter.cpp`). On AArch64 `slotSize = 2*oopSize = 16`
+   bytes but hardware stack operations (`pushl`/`popq`) work at `oopSize = 8`
+   bytes. `load_recv(recv_1_args)` was reading `[esp + slotSize]`, skipping past
+   the receiver at `[esp + oopSize]` and loading garbage — causing
+   `ProcessorScheduler>>next:` to receive garbage as `self`, leading to
+   `self[10]` (next) being `nil` and `nil - 1` DNU crashes. Fixed by using
+   `oopSize` so the esp-relative load reads the value just pushed by `pushl()`.
+
+2. **`load_absolute_address` used a 32-bit load (`sf=0`) instead of 64-bit**
+   (`vm/asm/assembler_aarch64.cpp`). The instruction `0x58000000` loads only 32
+   bits from an absolute address; on AArch64 it must be `0xD8000000` (`sf=1`) to
+   load the full 64-bit pointer. With the primitive ABI fix below, `call_delta`
+   reads `method_entry_point` via this load, so the truncated value caused a
+   jump to address 0.
+
+3. **`call_delta` simplified to use `x4` for `method_entry_point`**
+   (`vm/code/stubRoutines.cpp`, `vm/runtime/delta.cpp`). The previous `slotSize`
+   stack-relative addressing for the four spilled arguments was wrong on AArch64
+   (C ABI spills at 8-byte intervals, not 16-byte `slotSize`). Replaced with a
+   minimal stub: save callee-saved registers, move `x1` (receiver) to `eax`
+   (x13), and `blr x4` (method_entry_point already passed in `x4` by
+   `call_generic`). `call_generic` now passes `method_entry_point` as a fifth
+   argument.
+
+The remaining blocker is still in the interpreter's **receiver-slot decode for
+sends** — `InterpretedIC::inline_cache_miss()` receives a non-pointer where the
+receiver object should be. This is in the VM's send path, not in the image and
+not in the code generator. A defensive pass (2026-10-13) validates the receiver
+in `inline_cache_miss()` before dereferencing `klass()` (a SMI resolves to
+`Universe::smiKlassObj()`; `klass()` is read only for `is_mem()`/`is_block()`/
+`is_proxy()` objects) and hardens `frame::hp()`/`set_hp()` against corrupted
+frames; this contains the fault without yet root-causing the decode. See [PLAN-64BIT-IMAGE.md](PLAN-64BIT-IMAGE.md),
+[README.md#status](README.md#status) and the [architecture ledger](ledger/) for
+detailed per-architecture status and reproduction notes.
 Every configuration is verified by building from the
 root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
