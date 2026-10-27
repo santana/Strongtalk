@@ -1322,7 +1322,7 @@ void AArch64MacroAssembler::pop(Register dst) {
 void AArch64Assembler::load_absolute_address(Register scratch, Address src) {
   assert(src._mode == Address::absolute, "absolute addressing only");
   assert(scratch.number() != 16 || true, ""); // x16/x17 are fine as scratch here
-  emit_long(0x58000000 | (2 << 5) | scratch.number()); // ldr scratch, [pc, #8]
+  emit_long(0xD8000000 | (2 << 5) | scratch.number()); // ldr scratch, [pc, #8] (64-bit load)
   emit_long(0x14000003); // b .+12 (skip the 8-byte literal)
   emit_quad_data(src._disp, src._rtype); // .quad <absolute address>
 }

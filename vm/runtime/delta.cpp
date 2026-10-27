@@ -36,6 +36,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "memory/generation.inline.hpp"
 #include "oops/oop.inline.hpp"
 
+extern "C" char* method_entry_point;
+
 // Implementation of DeltaCallCache
 
 DeltaCallCache* DeltaCallCache::_root = NULL; // anchor of all DeltaCallCaches
@@ -61,7 +63,7 @@ void DeltaCallCache::clearAll() {
 
 // Implementation of Delta
 
-typedef oop(call_delta_func)(void* method, oop receiver, int nofArgs, oop* args);
+typedef oop(call_delta_func)(void* method, oop receiver, int nofArgs, oop* args, void* method_entry_point);
 
 oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofArgs, oop* args) {
   // On Apple Silicon the MAP_JIT code regions must be executable (not just
@@ -84,9 +86,9 @@ oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofA
       LookupResult result = ic->lookup(receiver->klass(), symbolOop(selector));
       if (result.is_empty())
         fatal("lookup failure - not treated");
-      return _call_delta(result.value(), receiver, nofArgs, args);
+      return _call_delta(result.value(), receiver, nofArgs, args, method_entry_point);
     }
-    return _call_delta(ic->result().value(), receiver, nofArgs, args);
+    return _call_delta(ic->result().value(), receiver, nofArgs, args, method_entry_point);
   }
 
   if (!selector->is_symbol())
@@ -103,7 +105,7 @@ oop Delta::call_generic(DeltaCallCache* ic, oop receiver, oop selector, int nofA
     methodOop meth = methodOop(m);
     assert(meth->is_method(), "not a method");
   }
-  oop res = _call_delta(result.value(), receiver, nofArgs, args);
+  oop res = _call_delta(result.value(), receiver, nofArgs, args, method_entry_point);
   return res;
 }
 

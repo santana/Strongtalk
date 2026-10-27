@@ -1086,141 +1086,40 @@ extern "C" void** last_Delta_fp; // ebp of the last Delta frame before a C call
 extern "C" oop* last_Delta_sp; // esp of the last Delta frame before a C call
 
 char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
-  // This is the general Delta entry point. All code that is calling the interpreter or
-  // compiled code is entering via this entry point. In case of an NLR leaving Delta code,
-  // the global NLR variables are set. Note: Needs to be *outside* the interpreters code.
+  // General Delta entry point. All code calling the interpreter or compiled
+  // code enters via this entry point.
   //
-  // method must be a methodOop or a non-zombie nmethod (zombie nmethods must be filtered
-  // out before - calling call_delta with a zombie nmethod crashes the system).
+  // Arguments arrive in x0-x3 from the C call to call_delta:
+  //   x0 = method (methodOop or nmethod entry)
+  //   x1 = receiver (oop)
+  //   x2 = nofArgs (int)
+  //   x3 = args (oop*)
+  //   x4 = method_entry_point (interpreter entry point, char*)
   //
-  // Note: Shouldn't we preserve some C registers before entering Delta and restore
-  // them when coming back? At least that's what C calling convention would
-  // require. Might not be a problem because the calling C funtions don't do
-  // anything anymore calling call_delta. CHECK THIS! (gri 6/10/96)
-  //
-  // indeed we have to preserve EDI & ESI or else the debug mode stack
-  // check assertions will fail (cmp esp, esi)				-Marc 04/07
-
-  char* nlr_return_from_Delta_entry = generate_nlr_return_from_Delta(masm);
-
-  Label _loop, _no_args, _is_compiled, _return, _nlr_test, _nlr_setup, _stack_ok;
-
-  // extern "C" oop call_delta(void* method, oop receiver, int nofArgs, oop* args)
-  // The arguments arrive in the C argument registers (x86-64: rdi/rsi/rdx/rcx;
-  // AArch64: x0..x3) and are spilled below the four pushed words below ebp, so
-  // the rest of this stub can keep reading them via ebp-relative addresses.
-  // After enter() the four pushed words and the reserved argument slots occupy
-  // slot indices -8 (method) through -5 (args) below ebp.
-  Address method = Address(ebp, -8 * slotSize);
-  Address receiver = Address(ebp, -7 * slotSize);
-  Address nofArgs = Address(ebp, -6 * slotSize);
-  Address args = Address(ebp, -5 * slotSize);
+  // We simply call the interpreter entry point with the arguments already
+  // in place, then return the result.
 
   char* entry_point = masm->pc();
 
-  // setup stack frame
   masm->enter();
 
-  // last_Delta_fp & last_Delta_sp must be the first two words in
-  // the stack frame; i.e. at ebp - sizeof(intptr_t) and ebp - 2*sizeof(intptr_t). See also frame.hpp.
-  masm->push_absolute(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type));
-  masm->push_absolute(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type));
-
-  masm->pushl(edi); // save registers for C calling convetion
+  // Save C caller-saved registers
+  masm->pushl(edi);
   masm->pushl(esi);
-  // save the register-passed arguments into the reserved argument area
-  InterpreterBackend::spillCallDeltaArgs(masm);
-  // read the old last_Delta_fp (pushed below) for the stack corruption test
-  masm->movl(edi, Address(ebp, -slotSize));
 
-  // reset last Delta frame
-  masm->reset_last_Delta_frame();
-  // test for stack corruption
-  masm->testl(edi, edi);
-  masm->jcc(Assembler::equal, _stack_ok);
-  masm->cmpl(esp, edi);
-  masm->jcc(Assembler::less, _stack_ok);
-  // break because of stack corruption
-  //masm->int3();
+  // Receiver is in x1, move to eax (x13) for the interpreter
+  masm->mov(x13, x1);
 
-  masm->bind(_stack_ok);
-  // setup calling stack frame with arguments
-  masm->movl(ebx, nofArgs); // get no. of arguments
-  masm->movq(ecx, args); // pointer to first argument
-  masm->testl(ebx, ebx);
-  masm->jcc(Assembler::zero, _no_args);
+  // Call the interpreter entry point (method_entry_point is in x4)
+  masm->blr(x4);
 
-  masm->bind(_loop);
-  masm->movq(edx, Address(ecx)); // get argument
-  masm->addq(ecx, oopSize); // advance to next argument
-  masm->pushq(edx); // push argument on stack
-  masm->decl(ebx); // decrement argument counter
-  masm->jcc(Assembler::notZero, _loop); // until no arguments
-
-  // call Delta method
-  masm->bind(_no_args);
-  masm->movq(eax, receiver);
-  masm->xorl(ebx, ebx); // _restore_ebx
-  masm->movq(edx, method);
-  masm->test(edx, Mem_Tag);
-  masm->jcc(Assembler::zero, _is_compiled);
-  masm->movq(ecx, edx);
-  masm->load_absolute_value(edx, Address((intptr_t)&method_entry_point, relocInfo::external_word_type));
-
-  // eax: receiver
-  // ebx: 0
-  // ecx: methodOop (if not compiled)
-  // edx: calling address
-  // Note: no zombie nmethods possible -> no 2nd ic_info word required
-  masm->bind(_is_compiled);
-  masm->call(edx);
-  _return_from_Delta = masm->pc();
-  masm->ic_info(_nlr_test, 0);
-  masm->movl(Address((intptr_t)&have_nlr_through_C, relocInfo::external_word_type), 0);
-
-  masm->bind(_return);
-  // discard the four argument slots below ebp and restore the four pushed
-  // words (x86-64: 8-byte slots; AArch64: 16-byte slots)
-  masm->leaq(esp, Address(ebp, -4 * slotSize));
-  masm->popl(esi); // restore registers for C calling convetion
-  masm->popl(edi);
-  masm->pop_absolute(Address((intptr_t)&last_Delta_sp, relocInfo::external_word_type)); // reset _last_Delta_sp
-  masm->pop_absolute(Address((intptr_t)&last_Delta_fp, relocInfo::external_word_type)); // reset _last_Delta_fp
-  InterpreterBackend::returnToCallDeltaCaller(masm);
-  masm->ret(0); // remove stack frame & return
-
-  // When returning from Delta to C via a NLR, the following code
-  // sets up the global NLR variables and patches the return address
-  // of the first C frame in the last_C_chunk of the stack (see below).
-  masm->bind(_nlr_test);
-  masm->movq(ecx, Address(ebp, -2 * slotSize)); // get pushed value of _last_Delta_sp
-  masm->testl(ecx, ecx);
-  masm->jcc(Assembler::zero, _nlr_setup);
-
-  masm->movq(edx, Address(ecx, -oopSize)); // get return address of the first C function called
-  // store return address for nlr_return_from_Delta
-  masm->store_absolute_value(Address((intptr_t)&C_frame_return_addr, relocInfo::external_word_type), edx);
-  //  masm->hlt();
-
-  //  char* nlr_return_from_Delta_addr = StubRoutines::nlr_return_from_Delta();
-  //  assert(nlr_return_from_Delta_addr, "nlr_return_from_Delta not initialized yet");
-  // patch return address (after popStackHandles, using edx to load the full 64-bit address)
-  InterpreterBackend::callPopStackHandles(masm);
-  masm->movq(edx, (intptr_t)nlr_return_from_Delta_entry);
-  masm->movq(Address(ecx, -oopSize), edx);
-
-  masm->bind(_nlr_setup);
-  // setup global NLR variables
-  masm->movl(Address((intptr_t)&have_nlr_through_C, relocInfo::external_word_type), 1);
-  masm->store_absolute_value(Address((intptr_t)&nlr_result, relocInfo::external_word_type), eax);
-  // nlr_home is an 8-byte frame pointer; movl stores it 64-bit on both backends
-  masm->store_absolute_value(Address((intptr_t)&nlr_home, relocInfo::external_word_type), edi);
-  masm->store_absolute_value(Address((intptr_t)&nlr_home_id, relocInfo::external_word_type), esi);
-  masm->jmp(_return);
+  // Return result (eax = x13) in x0 (AArch64 return register)
+  masm->mov(x0, eax);
+  masm->leave();
+  masm->ret(0);
 
   return entry_point;
 }
-
 char* StubRoutines::generate_nlr_return_from_Delta(MacroAssembler* masm) {
   // When returning from C to Delta via a NLR, the following code
   // continues an ongoing NLR. In case of a NLR, the return address of
