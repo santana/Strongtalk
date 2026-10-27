@@ -25,7 +25,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "oops/oop.inline.hpp"
 #include "prims/prim.hpp"
 
+#include <cstdio>
+
 extern "C" void st_debug_ppa2(intptr_t a0, intptr_t a1);
+extern "C" void dbg_print_two_args(oop a, oop b);
 
 extern "C" void scavenge_and_allocate(int size);
 extern "C" void popStackHandles(char* nextFrame);
@@ -100,19 +103,38 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
   // order (PRIM_DECL_2(a1,a2) -> name(a2,a1)), so x0 = last arg, x1 =
   // next-to-last, ..., xN-1 = receiver (first arg).
   // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
-  // Stack after pushl(eax): [sp+0]=last arg dup, [sp+1*oopSize]=last arg,
-  //   [sp+2*oopSize]=argN-1, ..., [sp+nparams*oopSize]=receiver (arg 0).
-  // Walk UP from sp+oopSize to load args in PRIM_DECL_N reversed order:
-  // x0 = last arg [sp+oopSize], x1 = argN-1 [sp+2*oopSize], ...,
-  // xN-1 = receiver [sp+nparams*oopSize].
-  masm->ldr(x0, Address(sp, oopSize)); // x0 = last arg [sp+oopSize]
-  masm->ldr(x1, Address(sp, 2 * oopSize)); // x1 = argN-1 [sp+2*oopSize]
-  masm->ldr(x2, Address(sp, 3 * oopSize)); // x2 = argN-2 [sp+3*oopSize]
-  masm->ldr(x3, Address(sp, 4 * oopSize)); // x3 = argN-3 [sp+4*oopSize]
-  masm->ldr(x4, Address(sp, 5 * oopSize)); // x4 = argN-4 [sp+5*oopSize]
-  masm->ldr(x5, Address(sp, 6 * oopSize)); // x5 = argN-5 [sp+6*oopSize]
-  masm->ldr(x6, Address(sp, 7 * oopSize)); // x6 = argN-6 [sp+7*oopSize]
-  masm->ldr(x7, Address(sp, 8 * oopSize)); // x7 = argN-7 [sp+8*oopSize]
+  // Stack after pushl(eax): [sp+0]=last arg, [sp+1*oopSize]=argN-1, ...,
+  //   [sp+nparams*oopSize]=receiver (arg 0).
+  // Walk DOWN from sp+nparams*oopSize to load args in PRIM_DECL_N order:
+  // x0 = receiver [sp+nparams*oopSize], x1 = arg1 [sp+(nparams-1)*oopSize], ...,
+  // xN-1 = last arg [sp+0].
+  // (8-byte) intervals, not slotSize (16-byte). PRIM_DECL_N reverses parameter
+  // (8-byte) intervals, not slotSize (16-byte). PRIM_DECL_N reverses parameter
+  // order (PRIM_DECL_2(a1,a2) -> name(a2,a1)), so x0 = last arg, x1 =
+  // next-to-last, ..., xN-1 = receiver (first arg).
+  // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
+  // Stack after pushl(eax): [sp+0]=last arg, [sp+1*oopSize]=argN-1, ...,
+  //   [sp+nparams*oopSize]=receiver (arg 0).
+  // Walk DOWN from sp+nparams*oopSize to load args in PRIM_DECL_N order:
+  // x0 = receiver [sp+nparams*oopSize], x1 = arg1 [sp+(nparams-1)*oopSize], ...,
+  // xN-1 = last arg [sp+0].
+  masm->add(x16, sp, x25_argument_slots); // x16 = sp + (nparams+1)*oopSize
+  masm->sub(x16, x16, oopSize); // x16 = sp + nparams*oopSize = &receiver (first arg)
+  masm->ldr(x0, Address(x16)); // x0 = receiver (first arg)
+  masm->sub(x16, x16, oopSize); // x16 = sp + (nparams-1)*oopSize
+  masm->ldr(x1, Address(x16)); // x1 = arg1 (second arg)
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x2, Address(x16)); // x2 = arg2
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x3, Address(x16)); // x3 = arg3
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x4, Address(x16)); // x4 = arg4
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x5, Address(x16)); // x5 = arg5
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x6, Address(x16)); // x6 = arg6
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x7, Address(x16)); // x7 = arg7
   // Function pointer stays in x19 (loaded at line 92); callPrimitive will blr(x19).
 }
 
@@ -308,3 +330,7 @@ void InterpreterBackend::probeSecondaryLookupCache(MacroAssembler* masm, Label& 
 }
 
 const int InterpreterBackend::interpreterCodeSize = 200000;
+
+extern "C" void dbg_print_two_args(oop a, oop b) {
+  fprintf(stderr, "PPA_DBG: x0=%p x1=%p\n", (void*)a, (void*)b);
+}

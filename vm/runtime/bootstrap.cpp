@@ -63,7 +63,6 @@ bootstrap::bootstrap(char* name) {
   _heap32_addr = 0;
   open_file();
   if (!has_error()) {
-    //    initialize_tables(file_size > 0 ? (file_size / 32) : (10 * K));
     initialize_tables(64 * K);
     parse_file();
     close_file();

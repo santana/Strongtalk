@@ -56,14 +56,6 @@ private:
   void add(oop obj);
   oop at(int index);
 
-public:
-  // Accessors for image32 translation after bootstrap
-  oop* oop_table_ptr() const { return oop_table; }
-  int oop_count() const { return number_of_oops; }
-  int* addr32_keys_ptr() const { return _addr32_keys; }
-  oop* addr32_table_ptr() const { return _addr32_table; }
-  int addr32_count() const { return _addr32_count; }
-
 private:
   // File
   char* file_name;

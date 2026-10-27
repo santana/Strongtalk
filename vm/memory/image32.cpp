@@ -133,9 +133,14 @@ int image32_translate_fields(memOop obj) {
   if (k == NULL)
     return 0;
   // Klass field may be a raw 32-bit pointer from the 32-bit image.
-  // If it's already a valid 64-bit pointer, proceed; otherwise skip.
-  if ((intptr_t)k >> 32 == 0)
-    return 0;
+  // If upper 32 bits are non-zero, it's already a valid 64-bit pointer;
+  // otherwise look up the raw 32-bit address in the addr32 map.
+  if ((intptr_t)k >> 32 == 0) {
+    k = klassOop(lookup_addr32((int)(intptr_t)k));
+    if (k == NULL)
+      return 0; // Can't resolve klass; skip this object
+    obj->raw_at_put(memOopDesc::klass_byte_offset() / oopSize, k);
+  }
   int hdr = k->klass_part()->oop_header_size();
   int non_idx = k->klass_part()->non_indexable_size();
   int s = obj->size();
