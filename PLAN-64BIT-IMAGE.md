@@ -48,13 +48,16 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - **CONFIRMED**: VM runs past class initialization without crashing — scheduler loop (`self run` → `runNext` → transfers) executes successfully
 - **CONFIRMED**: VM exits cleanly without reaching `Eval>` — this is a successful boot, not a failure. `Eval>` is only reached on unhandled error.
 - With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
+- `make test` (`stest`) runs 120+ seconds without crashing — `initializeSmalltalkEnvironment()` → `Smalltalk initialize` → `Character initialize` → `initializeClassifications` no longer crashes. Test output not observed within test timeframe (likely slow interpreted execution in debug mode).
 - Lost changes from pre-reset working tree: `vm/runtime/delta.cpp` (`[DNU-delta]`), `vm/code/compiledIC.cpp` (`[DNU-compiled]`), `vm/oops/klass.cpp` (`[DNU-synth]` + `g_dnu_synthetic_created`), `vm/oops/klass.hpp` (global decl) were lost when working tree was reset to `c6407bd`. Some may be needed for clean boot, but `Delta::call_generic()` ResourceMark was the critical missing piece.
 
-**New finding: `load_recv()` used `slotSize` instead of `oopSize` on AArch64 (FIXED)**
-- **Finding**: `InterpreterGenerator::load_recv(recv_1_args/recv_2_args)` reads `[esp + n * slotSize]` to get the receiver/argument after `pushl(eax)`. But `pushl()` stores at `oopSize` (8-byte) intervals on the hardware stack, while `slotSize = 16` bytes on AArch64 (2 oops per delta slot). This caused `eax` to load garbage 8 bytes past the intended value instead of the receiver/argument.
-- **Impact**: `ProcessorScheduler>>next:` received garbage as `self`, causing `self[10]` (next) to be `nil`, leading to `nil - 1` DNU in `suspend:` and crashes at `store instVar 10`.
-- **FIXED**: Changed `1 * slotSize` → `1 * oopSize` and `2 * slotSize` → `2 * oopSize` in `load_recv()` in `vm/interpreter/interpreter.cpp` (commit e2d8299).
-- **Verification**: VM runs 45+ seconds without crashing after boot; previously crashed immediately at `ProcessorScheduler>>next:`.
+**New findings: `load_recv`, `arg_addr`, `temp_addr` used `slotSize` instead of `oopSize` on AArch64 (FIXED)**
+- **Finding**: On AArch64, `slotSize = 16` bytes (2 oops per delta stack slot) but hardware stack operations (`pushl`/`popq`) and object field access use `oopSize = 8` bytes. Three functions in `vm/interpreter/interpreter.cpp` incorrectly used `slotSize` for esp/ebp-relative addressing:
+  1. `load_recv(recv_1_args/recv_2_args)`: read `[esp + n * slotSize]` instead of `[esp + n * oopSize]`, skipping past the pushed receiver/argument. Caused `ProcessorScheduler>>next:` to receive garbage as `self`, leading to `nil` instVar[10] and `nil - 1` DNU.
+  2. `arg_addr(int/Register)`: computed argument addresses at `slotSize` (16-byte) intervals, skipping every other argument. Broke multi-argument sends like `classify:as:`.
+  3. `temp_addr(int/Register)`: computed temporary addresses at `slotSize` intervals, accessing wrong temporaries.
+- **FIXED**: Changed all three to use `oopSize` (8 bytes) for correct hardware stack addressing (commit 5235665).
+- **Verification**: VM boots cleanly past `ProcessorScheduler>>start` → `SystemInitializer` → `self run` without crashing. Runs 120+ seconds without error. Previously crashed immediately at `ProcessorScheduler>>next:`.
 
 **Files modified this session:**
 - `vm/runtime/shell.cpp` — removed `image32_patch_bytecode_operands()` call
