@@ -1110,6 +1110,15 @@ char* StubRoutines::generate_call_delta(MacroAssembler* masm) {
   // Receiver is in x1, move to eax (x13) for the interpreter
   masm->mov(x13, x1);
 
+  // Method is in x0, move to ecx (x11) for the interpreter
+  masm->mov(x11, x0);
+
+  // esi = bytecode pointer = methodOop + codes_byte_offset()
+  // ecx is tagged (has Mem_Tag bit), so ecx + code_offset =
+  // memOop_addr + Mem_Tag + sizeof(methodOopDesc) - Mem_Tag =
+  // memOop_addr + sizeof(methodOopDesc) = first bytecode
+  masm->leaq(esi, Address(ecx, methodOopDesc::codes_byte_offset()));
+
   // Call the interpreter entry point (method_entry_point is in x4)
   masm->blr(x4);
 

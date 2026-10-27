@@ -2335,15 +2335,14 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->bind(start_setup);
   masm->enter(); // setup new stack frame
   masm->pushl(eax); // install receiver
-  // The invocation counter is a 32-bit field (only its upper word carries the
-  // count); 32-bit accesses are forced so the 4 padding bytes after _counters
-  // are never read or written and the counter can never look >= the limit.
-  InterpreterBackend::loadMethodCounter(masm, edx, Address(ecx, counter_offset)); // get method invocation counter
-  masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
-  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
-  masm->pushl(esi); // initialize esi stack location for profiler
-  InterpreterBackend::storeMethodCounter(masm, Address(ecx, counter_offset), edx); // store method invocation counter
+  // esi = bytecode pointer = methodOop base + codes offset
+  // x0 is tagged (has Mem_Tag bit), so x0 + codes_byte_offset() =
+  // memOop_addr + Mem_Tag + sizeof(methodOopDesc) - Mem_Tag =
+  // memOop_addr + sizeof(methodOopDesc) = first bytecode
+  masm->leaq(esi, Address(x0, methodOopDesc::codes_byte_offset()));
   load_ebx(); // get first byte code of method
+  masm->jmp(ebx); // start execution
+
   // The limit is patched by set_invocation_counter_limit: on x86-64 an imm32
   // field of the emitted compare, on AArch64 the invocation_counter_limit_value
   // global the compare loads.
