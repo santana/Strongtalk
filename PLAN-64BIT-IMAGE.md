@@ -50,10 +50,17 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
 - Lost changes from pre-reset working tree: `vm/runtime/delta.cpp` (`[DNU-delta]`), `vm/code/compiledIC.cpp` (`[DNU-compiled]`), `vm/oops/klass.cpp` (`[DNU-synth]` + `g_dnu_synthetic_created`), `vm/oops/klass.hpp` (global decl) were lost when working tree was reset to `c6407bd`. Some may be needed for clean boot, but `Delta::call_generic()` ResourceMark was the critical missing piece.
 
+**New finding: `load_recv()` used `slotSize` instead of `oopSize` on AArch64 (FIXED)**
+- **Finding**: `InterpreterGenerator::load_recv(recv_1_args/recv_2_args)` reads `[esp + n * slotSize]` to get the receiver/argument after `pushl(eax)`. But `pushl()` stores at `oopSize` (8-byte) intervals on the hardware stack, while `slotSize = 16` bytes on AArch64 (2 oops per delta slot). This caused `eax` to load garbage 8 bytes past the intended value instead of the receiver/argument.
+- **Impact**: `ProcessorScheduler>>next:` received garbage as `self`, causing `self[10]` (next) to be `nil`, leading to `nil - 1` DNU in `suspend:` and crashes at `store instVar 10`.
+- **FIXED**: Changed `1 * slotSize` → `1 * oopSize` and `2 * slotSize` → `2 * oopSize` in `load_recv()` in `vm/interpreter/interpreter.cpp` (commit e2d8299).
+- **Verification**: VM runs 45+ seconds without crashing after boot; previously crashed immediately at `ProcessorScheduler>>next:`.
+
 **Files modified this session:**
 - `vm/runtime/shell.cpp` — removed `image32_patch_bytecode_operands()` call
 - `vm/memory/image32.hpp` — declaration of `image32_patch_bytecode_operands()` remains (unused)
 - `vm/interpreter/interpreter.cpp` — `call_C(eax)` → `call_C(x19)` in `call_primitive()` and `call_primitive_can_fail()` (stash changes)
+- `vm/interpreter/interpreter.cpp` — `load_recv()`: `slotSize` → `oopSize` for `recv_1_args`/`recv_2_args` esp-relative addressing (commit e2d8299)
 - `vm/runtime/delta.cpp` — added `ResourceMark rm;` to `Delta::call_generic()` (unstaged change)
 - Plus stash changes from `stash@{0}` covering 21 files (assembler, interpreterBackend, prims, etc.)
 
