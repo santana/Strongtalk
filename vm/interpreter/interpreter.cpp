@@ -878,10 +878,13 @@ void InterpreterGenerator::load_recv(Bytecodes::ArgumentSpec arg_spec) {
     case Bytecodes::recv_0_args:
       break; // recv already in eax
     case Bytecodes::recv_1_args:
-      masm->movl(eax, Address(esp, 1 * slotSize));
+      // pushl() stores at oopSize (8-byte) intervals on the hardware stack,
+      // not slotSize (16-byte on AArch64). Use oopSize so we read the
+      // receiver we just pushed, not garbage 8 bytes beyond it.
+      masm->movl(eax, Address(esp, 1 * oopSize));
       break;
     case Bytecodes::recv_2_args:
-      masm->movl(eax, Address(esp, 2 * slotSize));
+      masm->movl(eax, Address(esp, 2 * oopSize));
       break;
     case Bytecodes::recv_n_args:
       // byte after send byte code specifies the number of arguments (0..255)
