@@ -17,6 +17,8 @@ A defensive-hardening pass (2026-10-13) guards this path rather than fixing it: 
 
 A defensive-hardening pass (2026-10-13) guards this path rather than fixing it: `01bf5d7` validates the receiver in `inline_cache_miss()` before dereferencing `klass()` (a SMI resolves to `Universe::smiKlassObj()`; `klass()` is read only for `is_mem()`/`is_block()`/`is_proxy()` objects), and `8506a1d` makes `frame::hp()`/`set_hp()` reject structurally-corrupted frames. (`984c55b` adds only a temporary frame-walk `lprintf` diagnostic in `DeltaProcess::frame_iterate()`, despite its "defensive checks" message.) The underlying receiver-slot decode remains to be root-caused.
 
+A defensive-hardening pass (2026-10-13) guards this path rather than fixing it: `01bf5d7` validates the receiver in `inline_cache_miss()` before dereferencing `klass()` (a SMI resolves to `Universe::smiKlassObj()`; `klass()` is read only for `is_mem()`/`is_block()`/`is_proxy()` objects), and `8506a1d` makes `frame::hp()`/`set_hp()` reject structurally-corrupted frames. (`984c55b` adds only a temporary frame-walk `lprintf` diagnostic in `DeltaProcess::frame_iterate()`, despite its "defensive checks" message.) The underlying receiver-slot decode remains to be root-caused.
+
 See also: [README.md](../README.md), [ARCHITECTURE.md](../ARCHITECTURE.md)
 
 ## Cross-cutting Findings

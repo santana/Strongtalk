@@ -25,10 +25,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "oops/oop.inline.hpp"
 #include "prims/prim.hpp"
 
-#include <cstdio>
-
 extern "C" void st_debug_ppa2(intptr_t a0, intptr_t a1);
-extern "C" void dbg_print_two_args(oop a, oop b);
 
 extern "C" void scavenge_and_allocate(int size);
 extern "C" void popStackHandles(char* nextFrame);
@@ -103,26 +100,18 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
   // order (PRIM_DECL_2(a1,a2) -> name(a2,a1)), so x0 = last arg, x1 =
   // next-to-last, ..., xN-1 = receiver (first arg).
   // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
-  // Stack after pushl(eax): [sp+0]=last arg, [sp+1*oopSize]=argN-1, ...,
-  //   [sp+nparams*oopSize]=receiver (arg 0).
-  // Walk DOWN from sp+nparams*oopSize to load args in PRIM_DECL_N order:
-  // x0 = receiver [sp+nparams*oopSize], x1 = arg1 [sp+(nparams-1)*oopSize], ...,
-  // xN-1 = last arg [sp+0].
-  // (8-byte) intervals, not slotSize (16-byte). PRIM_DECL_N reverses parameter
-  // (8-byte) intervals, not slotSize (16-byte). PRIM_DECL_N reverses parameter
-  // order (PRIM_DECL_2(a1,a2) -> name(a2,a1)), so x0 = last arg, x1 =
-  // next-to-last, ..., xN-1 = receiver (first arg).
-  // x25 = (nparams + 1) * oopSize (bytes to pop, incl. pushl(eax) dup).
-  // Stack after pushl(eax): [sp+0]=last arg, [sp+1*oopSize]=argN-1, ...,
-  //   [sp+nparams*oopSize]=receiver (arg 0).
-  // Walk DOWN from sp+nparams*oopSize to load args in PRIM_DECL_N order:
-  // x0 = receiver [sp+nparams*oopSize], x1 = arg1 [sp+(nparams-1)*oopSize], ...,
-  // xN-1 = last arg [sp+0].
-  masm->add(x16, sp, x25_argument_slots); // x16 = sp + (nparams+1)*oopSize
-  masm->sub(x16, x16, oopSize); // x16 = sp + nparams*oopSize = &receiver (first arg)
-  masm->ldr(x0, Address(x16)); // x0 = receiver (first arg)
-  masm->sub(x16, x16, oopSize); // x16 = sp + (nparams-1)*oopSize
-  masm->ldr(x1, Address(x16)); // x1 = arg1 (second arg)
+  // Stack after pushl(eax): [sp+0]=last arg dup, [sp+1*oopSize]=last arg,
+  //   [sp+2*oopSize]=argN-1, ..., [sp+nparams*oopSize]=receiver (arg 0).
+  // Receiver is at sp + x25 - oopSize; walk down from there.
+  masm->add(x16, esp, x25_argument_slots); // x16 = sp + (nparams+1)*oopSize
+  masm->sub(x16, x16, oopSize); // x16 = &receiver (sp + nparams*oopSize)
+  masm->ldr(x0, Address(x16)); // x0 = receiver (arg 0)
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x1, Address(x16)); // x1 = arg1
+  lprintf("[PPA] sp=%p x25=%lld x16=%p x0=%p\n", (void*)/*esp*/ 0, (long long)/*x25*/ 0, (void*)/*x16*/ 0,
+          (void*)/*x0*/ 0);
+  masm->sub(x16, x16, oopSize);
+  masm->ldr(x1, Address(x16)); // x1 = arg1
   masm->sub(x16, x16, oopSize);
   masm->ldr(x2, Address(x16)); // x2 = arg2
   masm->sub(x16, x16, oopSize);
@@ -330,7 +319,3 @@ void InterpreterBackend::probeSecondaryLookupCache(MacroAssembler* masm, Label& 
 }
 
 const int InterpreterBackend::interpreterCodeSize = 200000;
-
-extern "C" void dbg_print_two_args(oop a, oop b) {
-  fprintf(stderr, "PPA_DBG: x0=%p x1=%p\n", (void*)a, (void*)b);
-}

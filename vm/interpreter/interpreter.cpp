@@ -702,28 +702,20 @@ void InterpreterGenerator::should_not_reach_here() {
 
 Address InterpreterGenerator::arg_addr(int i) {
   assert(1 <= i, "argument number must be positive");
-  // Arguments are stored at oopSize (8-byte) intervals on the hardware stack,
-  // not slotSize (16-byte on AArch64). Use oopSize so each argument index
-  // lands on the correct oop, not every other one.
-  return Address(ebp, arg_n_offset + (i - 1) * oopSize);
+  return Address(ebp, arg_n_offset + (i - 1) * slotSize);
 }
 
 Address InterpreterGenerator::arg_addr(Register arg_no) {
-  // Same oopSize scaling as arg_addr(int) -- arguments are at oopSize
-  // intervals, not slotSize intervals.
-  return Address(ebp, arg_no, Address::times_8, arg_n_offset, relocInfo::none);
+  return InterpreterBackend::slotScaled(ebp, arg_no, arg_n_offset);
 }
 
 Address InterpreterGenerator::temp_addr(int i) {
   assert(0 <= i, "temporary number must be positive");
-  // Temporaries are stored at oopSize (8-byte) intervals on the hardware
-  // stack, not slotSize (16-byte on AArch64).
-  return Address(ebp, temp_0_offset - i * oopSize);
+  return Address(ebp, temp_0_offset - i * slotSize);
 }
 
 Address InterpreterGenerator::temp_addr(Register temp_no) {
-  // Same oopSize scaling as temp_addr(int).
-  return Address(ebp, temp_no, Address::times_8, temp_0_offset - (max_nof_temps - 1) * oopSize, relocInfo::none);
+  return InterpreterBackend::slotScaled(ebp, temp_no, temp_0_offset - (max_nof_temps - 1) * slotSize);
 }
 
 Address InterpreterGenerator::float_addr(Register float_no) {
@@ -886,13 +878,10 @@ void InterpreterGenerator::load_recv(Bytecodes::ArgumentSpec arg_spec) {
     case Bytecodes::recv_0_args:
       break; // recv already in eax
     case Bytecodes::recv_1_args:
-      // pushl() stores at oopSize (8-byte) intervals on the hardware stack,
-      // not slotSize (16-byte on AArch64). Use oopSize so we read the
-      // receiver we just pushed, not garbage 8 bytes beyond it.
-      masm->movl(eax, Address(esp, 1 * oopSize));
+      masm->movl(eax, Address(esp, 1 * slotSize));
       break;
     case Bytecodes::recv_2_args:
-      masm->movl(eax, Address(esp, 2 * oopSize));
+      masm->movl(eax, Address(esp, 2 * slotSize));
       break;
     case Bytecodes::recv_n_args:
       // byte after send byte code specifies the number of arguments (0..255)
@@ -1896,7 +1885,6 @@ char* InterpreterGenerator::predict_prim(bool canFail) {
 char* InterpreterGenerator::lookup_primitive() {
   char* ep = entry_point();
   masm->pushl(eax); // push last argument
-  save_esi(); // save bytecode pointer so lookup_and_patch finds the right call site
   call_C((char*)primitives::lookup_and_patch); // do the lookup and patch call site appropriately
   load_ebx();
   masm->popl(eax); // restore last argument
@@ -2335,14 +2323,15 @@ void InterpreterGenerator::generate_method_entry_code() {
   masm->bind(start_setup);
   masm->enter(); // setup new stack frame
   masm->pushl(eax); // install receiver
-  // esi = bytecode pointer = methodOop base + codes offset
-  // x0 is tagged (has Mem_Tag bit), so x0 + codes_byte_offset() =
-  // memOop_addr + Mem_Tag + sizeof(methodOopDesc) - Mem_Tag =
-  // memOop_addr + sizeof(methodOopDesc) = first bytecode
-  masm->leaq(esi, Address(x0, methodOopDesc::codes_byte_offset()));
+  // The invocation counter is a 32-bit field (only its upper word carries the
+  // count); 32-bit accesses are forced so the 4 padding bytes after _counters
+  // are never read or written and the counter can never look >= the limit.
+  InterpreterBackend::loadMethodCounter(masm, edx, Address(ecx, counter_offset)); // get method invocation counter
+  masm->leaq(esi, Address(ecx, code_offset)); // set bytecode pointer to first instruction
+  masm->addl(edx, 1 << methodOopDesc::_invocation_count_offset); // increment invocation counter (only upper word)
+  masm->pushl(esi); // initialize esi stack location for profiler
+  InterpreterBackend::storeMethodCounter(masm, Address(ecx, counter_offset), edx); // store method invocation counter
   load_ebx(); // get first byte code of method
-  masm->jmp(ebx); // start execution
-
   // The limit is patched by set_invocation_counter_limit: on x86-64 an imm32
   // field of the emitted compare, on AArch64 the invocation_counter_limit_value
   // global the compare loads.
