@@ -13,10 +13,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install MinGW toolchain and Wine
+      - name: Install MinGW toolchain
+        # Keep this step small: GitHub's ubuntu-latest resolves apt to a shared
+        # Azure mirror that is occasionally very slow, and the Wine recommends
+        # alone pull 111 packages (~400 MB). The build only needs MinGW; Wine is
+        # installed separately after it, so a slow mirror cannot block the build.
+        timeout-minutes: 15
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y g++-mingw-w64-x86-64 wine64 xvfb
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-x86-64
           sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
           sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
 
@@ -27,6 +34,17 @@ jobs:
       - name: Build (make all, OS=mingw)
         run: make -j"$(nproc)" all OS=mingw CXX=x86_64-w64-mingw32-g++
 
+      - name: Install Wine (best effort)
+        # The smoke test is advisory; never let a slow/partial Wine install
+        # block the cross-build result. Skip its recommendations too.
+        id: wine
+        continue-on-error: true
+        timeout-minutes: 12
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get install -y --no-install-recommends wine64 xvfb
+
       - name: Smoke test Windows binaries under Wine
         # The VM runtime may hit platform/emulation issues; don't fail the
         # build over it (same policy as the Linux test job). Run under a
@@ -34,6 +52,7 @@ jobs:
         # the CI log (redirecting to a file loses the VM's buffered output if
         # the process is killed), and capture the exit code with `||` so
         # bash -e does not abort before it is printed.
+        if: steps.wine.outcome == 'success'
         continue-on-error: true
         timeout-minutes: 10
         run: |
