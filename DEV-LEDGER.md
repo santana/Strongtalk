@@ -118,8 +118,11 @@ two files byte-for-byte.
    `Smalltalk initialize` → `Character initialize` →
    `initializeClassifications` failure. This is unrelated to the image format.
 2. Windows x86-64 was validated locally with a MinGW cross-build under Wine in
-   a QEMU TCG amd64 guest. The native `windows-latest` CI job has not run this
-   change yet (it needs the commit pushed).
+   a QEMU TCG amd64 guest, and in CI: `build-windows-native` (native
+   `windows-latest`, MSYS2) passes on `0f54117`/`5a4914d`. The cross-build job
+   (`build-windows-mingw`) passes after the Wine install was made
+   best-effort and the MinGW install was slimmed to `--no-install-recommends`
+   (a slow Azure apt mirror had stalled the job for 27 minutes).
 3. The macos/amd64 support needed two pre-existing fixes that were unrelated to
    the image work: the unguarded AArch64 failure-block instructions in
    `interpreter.cpp`, and the missing x86-64 `InterpreterBackend::callPrimitive`.
