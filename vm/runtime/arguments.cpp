@@ -37,6 +37,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 //char* boot_filename = "delta.bst";
 char* boot_filename = SYSTEM_NAME ".bst";
 char* rc_filename = "." SYSTEM_NAME "rc";
+char* save_image_filename = NULL;
 
 static void set_bool_flag(char* name, bool value) {
   bool s = value;
@@ -166,6 +167,13 @@ void parse_arguments(int argc, char* argv[]) {
         exit(-1);
       }
       boot_filename = argv[index];
+    } else if (strcmp(argv[index], "-SaveImage") == 0) {
+      index++;
+      if (index >= argc) {
+        fprintf(stderr, "file name expected after '-SaveImage'\n");
+        exit(-1);
+      }
+      save_image_filename = argv[index];
     } else if (strcmp(argv[index], "-f") == 0) {
       index++;
       if (index >= argc) {

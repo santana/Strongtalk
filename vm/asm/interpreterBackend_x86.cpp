@@ -83,6 +83,13 @@ void InterpreterBackend::passPrimitiveCallArgs(MacroAssembler* masm, int entryOf
 #endif
 }
 
+void InterpreterBackend::callPrimitive(MacroAssembler* masm) {
+  // The entry point is in eax (loaded by passPrimitiveCallArgs). call_C(Register)
+  // publishes the last Delta frame, reserves the Win64 shadow area (no-op
+  // elsewhere), spills the Win64 receiver/argument shadow slots, and calls.
+  masm->call_C(eax);
+}
+
 void InterpreterBackend::popPrimitiveCallArguments(MacroAssembler* masm) {
   // x86-64 keeps its historical single-slot pop; the generated primitives pop
   // the receiver/argument themselves via returnToInterpreter's ret(2*oopSize).

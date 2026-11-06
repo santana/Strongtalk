@@ -1927,11 +1927,18 @@ char* InterpreterGenerator::call_primitive_can_fail() {
   InterpreterBackend::popPrimitiveCallArguments(masm);
   InterpreterBackend::restorePrimitiveBytecodePtr(masm);
   // Test Mark_Tag_Bit (bit 1): branch to failure if bit is set (marked result).
+#ifdef DELTA_BACKEND_AARCH64
   // Use tbnz (test bit non-zero) directly instead of testb/jcc to avoid any
   // condition-flag clobbering issues on aarch64.
   masm->tbnz(eax, 1, failed);
   masm->ldr(ecx, Address(esi, -oopSize)); // get jump offset (64-bit)
   masm->add(esi, esi, ecx); // jump over failure block (64-bit)
+#else
+  masm->testb(eax, Mark_Tag_Bit); // if not marked then
+  masm->jcc(Assembler::notZero, failed);
+  masm->movl(ecx, Address(esi, -oopSize)); // get jump offset
+  masm->addl(esi, ecx); // jump over failure block
+#endif
   load_ebx();
   jump_ebx();
 
@@ -2152,9 +2159,16 @@ void InterpreterGenerator::generate_deoptimized_return_code() {
   maybeINT3() restore_esi();
   restore_ebx(); // ebx := 0
   masm->reset_last_Delta_frame();
+#ifdef DELTA_BACKEND_AARCH64
   masm->tbnz(eax, 1, _deoptimized_return_from_primitive_call_with_failure_block_failed);
   masm->ldr(ecx, Address(esi, -oopSize)); // load jump offset (64-bit)
   masm->add(esi, esi, ecx); // and jump over failure block (64-bit)
+#else
+  masm->test(eax, Mark_Tag_Bit); // if not marked then
+  masm->jcc(Assembler::notZero, _deoptimized_return_from_primitive_call_with_failure_block_failed);
+  masm->movl(ecx, Address(esi, -oopSize)); // load jump offset
+  masm->addl(esi, ecx); // and jump over failure block
+#endif
   load_ebx();
   jump_ebx();
 

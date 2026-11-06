@@ -28,7 +28,10 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <cstdio>
 
-// bootstrap parses and allocates memOops from a text file
+// bootstrap parses and allocates memOops from a native 64-bit image file.
+// The only supported format is the native format written by imageWriter
+// (version 200 + Bytecodes::version()); sizes and method codes are already in
+// the native 64-bit layout, so no 32-bit fixups or code relocation are needed.
 
 class bootstrap : CHeapObj {
 private:
@@ -36,20 +39,6 @@ private:
   oop* oop_table;
   int number_of_oops;
   int max_number_of_oops;
-  bool _new_format;
-
-  // 32-bit heap address -> 64-bit oop mapping, used to translate raw
-  // 32-bit pointer fields in the frozen image to 64-bit tagged oops.
-  oop* _addr32_table;
-  int* _addr32_keys;
-  int _addr32_count;
-  int _addr32_max;
-  int _heap32_addr; // current 32-bit heap address as we read objects
-
-  // A method that grew past its image-sized codes area during bootstrap.
-  // methodOopDesc::bootstrap_object reallocates it and records the new oop
-  // here so get_object returns the replacement to the caller.
-  oop _oop_replacement;
 
   void initialize_tables(int initial_table_size);
 
@@ -80,32 +69,18 @@ public:
 
   bool has_error() { return _has_error; }
 
-  void read_mark(markOop* mark_addr);
   void read_oop(oop* oop_addr) { *oop_addr = get_object(); }
-
-  void set_oop_replacement(oop m) { _oop_replacement = m; }
-  oop get_oop_replacement() { return _oop_replacement; }
 
   char read_byte() { return get_char(); }
   doubleByte read_doubleByte() { return (doubleByte)get_integer(); }
   long read_long() { return get_integer(); }
   double read_double();
 
-  bool new_format() const { return _new_format; }
-
-  bool is_byte() { return getc(stream) == '4'; }
-
   long file_pos() { return ftell(stream); }
 
-  // 32-bit address translation
-  void register_addr32(int addr32, oop obj); // record 32-bit heap addr -> 64-bit oop
-  oop translate_addr32(int addr32); // look up 64-bit oop for 32-bit addr
-  int* addr32_keys() { return _addr32_keys; }
-  oop* addr32_table() { return _addr32_table; }
-  int addr32_count() { return _addr32_count; }
-
-  // Oop table access for image32 translation
-  oop* oop_table_ptr() { return oop_table; }
-  int oop_table_count() { return number_of_oops; }
+  // Plain unsigned base-128 integer (instruction counts, lengths, ...).
+  int read_integer() { return get_integer(); }
+  // 'I' + signed integer: a raw inline word (branch distance, DLL entry).
+  int read_native_int();
 };
 #endif // _BOOTSTRAP_HPP

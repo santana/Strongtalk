@@ -130,14 +130,8 @@ void memOopDesc::set_identity_hash(smi h) {
 }
 
 void memOopDesc::bootstrap_header(bootstrap* st) {
-  if (st->new_format()) {
-    st->read_oop((oop*)&addr()->_klass_field);
-    set_mark(blueprint()->has_untagged_contents() ? markOopDesc::untagged_prototype()
-                                                  : markOopDesc::tagged_prototype());
-  } else {
-    st->read_mark(&addr()->_mark);
-    st->read_oop((oop*)&addr()->_klass_field);
-  }
+  st->read_oop((oop*)&addr()->_klass_field);
+  set_mark(blueprint()->has_untagged_contents() ? markOopDesc::untagged_prototype() : markOopDesc::tagged_prototype());
 }
 
 void memOopDesc::bootstrap_object(bootstrap* st) {

@@ -98,6 +98,8 @@ protected:
     assert(hashValue % symbol_table_size >= 0, "must be positive");
     return &buckets[hashValue % symbol_table_size];
   }
+
+public:
   symbolTableEntry* firstBucket() { return &buckets[0]; }
   symbolTableEntry* lastBucket() { return &buckets[symbol_table_size - 1]; }
 

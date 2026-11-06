@@ -20,6 +20,9 @@ TEST_DIR 	:= $(ROOT_DIR)/test
 VM_DIR 		:= $(ROOT_DIR)/vm
 EASYUNIT_DIR	:= $(ROOT_DIR)/easyunit
 DOC_DIR		:= $(ROOT_DIR)/documentation
+# Boot image loaded by `make test` and the image round-trip check. Override to
+# test an alternate image, e.g. `make test IMAGE=/path/to/other.bst`.
+IMAGE		?= $(ROOT_DIR)/strongtalk.bst
 
 CC		?= cc
 CXX		?= c++
@@ -386,7 +389,7 @@ stest_DIRS = $(TEST_DIR) $(EASYUNIT_DIR)
 stest_INCLUDEDIRS = $(stest_DIRS)
 stest_SO = $(BUILD_DIR)/strongtalk.so $(BUILD_DIR)/stest.so
 
-.PHONY: all vm test clean pristine format format-check format-version setup-deps install-hooks docs version package version-file-tag
+.PHONY: all vm test test-image clean pristine format format-check format-version setup-deps install-hooks docs version package version-file-tag
 .DEFAULT_GOAL := all
 all: $(addprefix $(BUILD_DIR)/,$(addsuffix $(EXE_SUFFIX),$(PROGRAMS)))
 
@@ -394,7 +397,21 @@ vm: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
 
 test: $(BUILD_DIR)/stest$(EXE_SUFFIX)
 	$(SHORT) TEST stest
-	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest$(EXE_SUFFIX) -b $(ROOT_DIR)/strongtalk.bst
+	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/stest$(EXE_SUFFIX) -b $(IMAGE)
+
+# Verify that the boot image survives a reader/writer round trip: load IMAGE,
+# save it, reload the saved image, save again, and require the two saved images
+# to be byte-identical. Both saves happen on the same platform, so the
+# platform-specific state that load_image installs (the Platform association)
+# is the same in both. This catches reader/writer drift without needing the
+# tracked image to be reproducible on every platform.
+ROUNDTRIP_DIR = $(BUILD_DIR)/roundtrip
+test-image: $(BUILD_DIR)/strongtalk$(EXE_SUFFIX)
+	$(SHORT) IMAGE round-trip
+	$(Q)mkdir -p $(ROUNDTRIP_DIR)
+	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) -b $(IMAGE) -SaveImage $(ROUNDTRIP_DIR)/first.bst
+	$(Q)$(LIBRARY_PATH_VAR)=$(BUILD_DIR) $(BUILD_DIR)/strongtalk$(EXE_SUFFIX) -b $(ROUNDTRIP_DIR)/first.bst -SaveImage $(ROUNDTRIP_DIR)/second.bst
+	$(Q)cmp $(ROUNDTRIP_DIR)/first.bst $(ROUNDTRIP_DIR)/second.bst
 
 # Regenerate the bytecode reference from the VM's built-in generator
 # (debug build only: the +GenerateHTML path lives under #ifndef PRODUCT).

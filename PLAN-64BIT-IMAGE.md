@@ -2,7 +2,9 @@
 
 Goal: get macOS arm64 (and Linux x86-64, macOS x86-64, Windows x86-64) past `Eval>` to a clean boot (`ProcessorScheduler>>start` → `SystemInitializer` → `self run`).
 
-Current state: all four configs build, load `strongtalk.bst`, pass GC, and reach `Eval>` — but `Eval>` is the error-fallback REPL, not a successful boot. The shared blocker is the interpreter's receiver-slot decode passing non-pointers (nil/smi/garbage) to `InterpretedIC::inline_cache_miss()`. Root cause under investigation: `strongtalk.bst` was written by a 32-bit VM (8-byte object header: mark+klass) while the VM is 64-bit-only (16-byte header), so field offsets read from the image are misaligned, producing bogus receivers.
+Current state: Plan A is complete. Phases 1–4 booted the 64-bit VM from the original 32-bit image through a temporary reader bridge. Phase 5 added `-SaveImage` and a native 64-bit writer, and Phase 6 replaced the tracked `strongtalk.bst` with that native image (version 202) and removed the 32-bit reader bridge (`image32.cpp/.hpp`, `_addr32_*`, old-format branches, and the 32-bit method-code relocation path). `make test-image` verifies a reader/writer round trip, and CI runs it on Linux x86-64.
+
+Original problem (for context): the 32-bit `strongtalk.bst` stores fields at 4-byte spacing while this VM reads them at 8-byte spacing, so receivers decoded from the image were misaligned and boot fell into the `Eval>` error REPL. The bridge in `bootstrap.cpp` translates the 32-bit layout on read.
 
 Two approaches:
 
@@ -81,6 +83,7 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 - **CONFIRMED**: VM runs past class initialization without crashing — clean boot, not `Eval>`
 - With `-ExitWhenSchedulerTerminates`, VM stays running in scheduler loop
 - Test suite (`make test`) crashes during `initializeSmalltalkEnvironment()` → `Smalltalk initialize` → `Character initialize` → `initializeClassifications` — **known remaining issue**
+- **✅ FIXED — `memOopDesc::bootstrap_header()` old format**: Removed incorrect `read_mark()` call for old images (version 102). Old 32-bit image format doesn't have mark bytes in stream; bootstrap now sets default mark and reads klass field directly via `read_oop()`. Version parsing in `bootstrap.cpp` correctly distinguishes: >=200 (new), 101-199 (old root-order), <=100 (very old with mark bytes).
 
 **✅ FIXED — `...ifFail:` failure block runs correctly after primitive:**
 - `InterpreterBackend::passPrimitiveCallArgs` (vm/asm/interpreterBackend_aarch64.cpp) was loading instance variable arguments in the wrong order. The PRIM_DECL_N convention reverses parameter order (PRIM_DECL_2(a1,a2) → name(a2,a1)), so x0 should be the last argument, x1 the next-to-last, ..., xN-1 the receiver. The code was loading x0 from the receiver slot instead of the last argument slot, causing all arguments to be shifted wrong.
@@ -91,18 +94,36 @@ Read the 32-bit `strongtalk.bst` with 32-bit header offsets, re-header objects i
 
 
 
-### Phase 5: Write a native 64-bit image
-- Add a save primitive / VM option to dump the running 64-bit heap to `strongtalk64.bst` with 16-byte headers.
-- Boot from that image to prove round-trip.
+### Phase 5: Write a native 64-bit image (COMPLETE)
+- Add `-SaveImage <file>` (`vm/runtime/arguments.*`) and call `image_writer_save()` right after `load_image()` in `vm/runtime/shell.cpp`; the VM then exits.
+- `vm/memory/imageWriter.cpp` (+ `.hpp`) — new native 64-bit image writer.
+- Format version `200 + Bytecodes::version()` (currently 202) selects the native format in `bootstrap.cpp::parse_file()`: dependency-order roots and no 32-bit size/address fixups.
+- Objects are emitted inline depth-first from the 26 bootstrap roots. An object's index is assigned when its header is emitted — exactly when the reader's `get_object()` allocates and registers the oop — so repeated references, self references, and cycles always resolve. No discovery pass, root table, or dependency sort is needed; method codes are written in the same traversal.
+- Object sizes are native oop counts (`as_mem(obj)->size()`), so byte-container sizes need no recomputation in native mode.
+- Type chars come from `format()`: klass objects `A`..`R`, instances `c` (mem), `d` (byteArray), `e` (doubleByteArray), `f` (objArray), `g` (symbol), `h` (double), `i` (association), `j` (method), `n` (mixin), `p` (process), `q` (doubleValueArray). `?` is an uninitialized NULL slot; it is **not** `N`, because `N` is the valid old-image `mixin_klass` type char.
+- Method codes: instruction count, then per instruction the raw opcode/argument bytes and structured inline slots. Branch/failure-block offsets and the DLL entry cell are encoded as `'I'` + signed integer (the DLL entry is forced to 0 and resolved at runtime); every other inline slot is a normal object value. The reader (`methodOopDesc::bootstrap_object`) rebuilds the native layout exactly.
+- Process pointers are process-specific: the writer omits them and the reader installs NULL.
+- Instances of `blockClosure`, `context`, `proxy`, `weakArray`, and `vframe` are not serializable (code pointers / stack / foreign addresses) and the reader rejects them; they are not reachable in the frozen graph and the writer now fails loudly if one ever is.
+- **Verified**: the writer emits 54,866 objects. `strongtalk64.bst` (1,515,046 bytes, version 202) loads with no `image-compat` patches, and re-saving from the loaded native image produces a byte-identical file. Boot behaviour matches the original image (same scheduler/interpreter state); `make test` still hits the pre-existing `Character initialize` issue noted in Phase 4.
+- **Remaining**: no x86-64 run has been done yet (arm64-macos only).
 
-### Phase 6: Remove the bridge
-- Delete `image32.cpp` and any 32-bit read-in code once a 64-bit image exists.
+### Phase 6: Remove the bridge (COMPLETE)
+- Replaced the tracked `strongtalk.bst` with the native version-202 image. `-SaveImage` writes it from the loaded native image and the result is byte-identical, so the tracked file is canonical.
+- `make test` now loads `$(IMAGE)` (default `strongtalk.bst`), and `make test-image` checks the reader/writer round trip: load → save → reload → save, then `cmp` the two saves. Both saves happen on the same platform, so load-time platform state (the `Platform` association) does not make the check platform-dependent.
+- CI (`.github/workflows/linux.yml`) runs `make test-image` after `make test`, covering the native reader/writer on Linux x86-64.
+- Deleted `vm/memory/image32.cpp` and `.hpp` (never called), plus the `_addr32_*` map, `_heap32_addr`, `register_addr32`, `translate_addr32`, `read_mark`, `_oop_replacement`, `read_long`-era helpers, `_new_format`/`_native_format`, and the old root-order/version branches in `bootstrap.*`.
+- Removed the entire 32-bit method-code relocation path in `methodOop.cpp` (`bootstrap_instr`, branch-upgrade layout, method reallocation); `bootstrap_object()` now contains only the native reader.
+- `memOopDesc::bootstrap_header()` is native-only: read the klass, install the prototype mark.
+- Images with version < 200 are rejected with an "Unsupported image format" diagnostic.
+- `imageCompat.cpp` is retained as a macOS-only safety net: the tracked image carries patched `MacOSXStatBuffer` offsets, and re-applying the patch on load is idempotent. It is a no-op for native images on the other platforms.
+- **Verified**: build, boot from `strongtalk.bst`, and `make test-image` (tracked image is byte-identical to the first save) all pass on arm64-macos and x86_64-macos. x86_64-linux builds and passes `make test-image` in an Ubuntu 24.04/GCC 13 container, and boots without error markers (the tracked file differs there only in the `Platform` association, as expected). The tracked image is 1,515,046 bytes, first byte 202, 54,866 objects.
+- The x86-64 builds also needed two pre-existing, image-unrelated fixes: the AArch64-only failure-block instructions in `interpreter.cpp` are now arch-guarded, and `interpreterBackend_x86.cpp` implements the previously missing `InterpreterBackend::callPrimitive()` (the macOS linker's `-undefined dynamic_lookup` had hidden the undefined symbol).
 
 ### Deliverables
-- `vm/memory/image32.cpp` (+ `.hpp`) — temporary reader
-- 64-bit `strongtalk64.bst` image
-- Clean boot on arm64-macos and x86-64 (no `Eval>`)
-- Removal commit
+- Native 64-bit `strongtalk.bst` (replaces the 32-bit image in place)
+- Native reader/writer with no 32-bit bridge
+- `make test-image` round-trip check, also run in Linux x86-64 CI
+- Clean boot on arm64-macos; Linux x86-64 validated by CI round-trip
 
 ### Risks
 - Image format is undocumented; reverse-engineering header offsets is error-prone.

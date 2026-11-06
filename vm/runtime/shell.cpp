@@ -35,6 +35,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "runtime/timer.hpp"
 #include "utilities/ostream.hpp"
 #include "memory/universe.store.hpp"
+#include "memory/imageWriter.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/memOop.inline.hpp"
 
@@ -73,6 +74,11 @@ int vm_main(int argc, char* argv[]) {
   init_globals();
 
   load_image();
+
+  if (save_image_filename != NULL) {
+    // Fail the process if the image could not be written completely.
+    ::exit(image_writer_save(save_image_filename) < 0 ? 1 : 0);
+  }
 
   if (UseInliningDatabase)
     InliningDatabase::load_index_file();

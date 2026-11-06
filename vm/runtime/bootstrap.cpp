@@ -27,6 +27,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include "oops/blockKlass.hpp"
 #include "oops/dByteArrayKlass.hpp"
 #include "oops/dByteArrayOop.hpp"
+#include "oops/dValueArrayOop.hpp"
 #include "oops/doubleKlass.hpp"
 #include "oops/doubleOop.hpp"
 #include "oops/dValueArrayKlass.hpp"
@@ -56,11 +57,6 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 bootstrap::bootstrap(char* name) {
   file_name = name;
   _has_error = false;
-  _oop_replacement = NULL;
-  _addr32_table = NULL;
-  _addr32_count = 0;
-  _addr32_max = 0;
-  _heap32_addr = 0;
   open_file();
   if (!has_error()) {
     initialize_tables(64 * K);
@@ -74,18 +70,10 @@ void bootstrap::initialize_tables(int initial_table_size) {
   oop_table = NEW_C_HEAP_ARRAY(oop, initial_table_size);
   max_number_of_oops = initial_table_size;
   number_of_oops = 0;
-  //position           = 0;
-  _addr32_table = NEW_C_HEAP_ARRAY(oop, initial_table_size * 2);
-  _addr32_keys = NEW_C_HEAP_ARRAY(int, initial_table_size * 2);
-  _addr32_max = initial_table_size * 2;
-  _addr32_count = 0;
-  _heap32_addr = 0;
 }
 
 bootstrap::~bootstrap() {
   FreeHeap(oop_table);
-  FreeHeap(_addr32_table);
-  FreeHeap(_addr32_keys);
 }
 
 oop bootstrap::at(int index) {
@@ -95,34 +83,6 @@ oop bootstrap::at(int index) {
   if ((intptr_t)o != 0 && (intptr_t)o < 64)
     lprintf("SUSPICIOUS at(%d) = 0x%tx (n_oops=%d)\n", index, (intptr_t)o, number_of_oops);
   return o;
-}
-
-void bootstrap::register_addr32(int addr32, oop obj) {
-  if (_addr32_count >= _addr32_max) {
-    int new_size = _addr32_max * 2;
-    int* new_keys = NEW_C_HEAP_ARRAY(int, new_size);
-    oop* new_table = NEW_C_HEAP_ARRAY(oop, new_size);
-    for (int i = 0; i < _addr32_count; i++) {
-      new_keys[i] = _addr32_keys[i];
-      new_table[i] = _addr32_table[i];
-    }
-    FreeHeap(_addr32_keys);
-    FreeHeap(_addr32_table);
-    _addr32_keys = new_keys;
-    _addr32_table = new_table;
-    _addr32_max = new_size;
-  }
-  _addr32_keys[_addr32_count] = addr32;
-  _addr32_table[_addr32_count] = obj;
-  _addr32_count++;
-}
-
-oop bootstrap::translate_addr32(int addr32) {
-  for (int i = 0; i < _addr32_count; i++) {
-    if (_addr32_keys[i] == addr32)
-      return _addr32_table[i];
-  }
-  return NULL; // not found
 }
 
 void bootstrap::add(oop obj) {
@@ -166,20 +126,21 @@ int bootstrap::get_integer() {
 }
 
 void bootstrap::parse_file() {
-  // Check version number
+  // Only the native 64-bit format is supported. Its version is
+  // 200 + Bytecodes::version(), and sizes / method codes are already in the
+  // native layout.
   int version_number = get_integer();
-
-  if (version_number > 100) {
-    _new_format = true;
-    lprintf(", n");
-    version_number -= 100;
-  } else {
-    _new_format = false;
+  if (version_number < 200) {
+    lprintf("\n");
+    lprintf("Unsupported image format\n");
+    lprintf(" expected: %d\n", 200 + Bytecodes::version());
+    lprintf(" received:  %d\n", version_number);
+    exit(-1);
   }
+  version_number -= 200;
+  lprintf(", n");
 
-  if (Bytecodes::version() == version_number) {
-
-  } else {
+  if (Bytecodes::version() != version_number) {
     lprintf("\n");
     lprintf("Bytecode version conflict\n");
     lprintf(" excpected: %d\n", Bytecodes::version());
@@ -187,31 +148,35 @@ void bootstrap::parse_file() {
     exit(-1);
   }
 
-  Universe::_systemDictionaryObj = objArrayOop(get_object());
-  nilObj = memOop(get_object());
-  trueObj = memOop(get_object());
-  falseObj = memOop(get_object());
-  smiKlassObj = klassOop(get_object());
-  Universe::_memOopKlassObj = klassOop(get_object());
-  Universe::_objArrayKlassObj = klassOop(get_object());
-  Universe::_byteArrayKlassObj = klassOop(get_object());
-  symbolKlassObj = klassOop(get_object());
-  doubleKlassObj = klassOop(get_object());
-  Universe::_methodKlassObj = klassOop(get_object());
-  Universe::_associationKlassObj = klassOop(get_object());
-  zeroArgumentBlockKlassObj = klassOop(get_object());
-  oneArgumentBlockKlassObj = klassOop(get_object());
-  twoArgumentBlockKlassObj = klassOop(get_object());
-  threeArgumentBlockKlassObj = klassOop(get_object());
-  fourArgumentBlockKlassObj = klassOop(get_object());
-  fiveArgumentBlockKlassObj = klassOop(get_object());
-  sixArgumentBlockKlassObj = klassOop(get_object());
-  sevenArgumentBlockKlassObj = klassOop(get_object());
-  eightArgumentBlockKlassObj = klassOop(get_object());
-  nineArgumentBlockKlassObj = klassOop(get_object());
-  contextKlassObj = klassOop(get_object());
-  Universe::_asciiCharacters = objArrayOop(get_object());
-  Universe::_vframeKlassObj = HasActivationClass ? klassOop(get_object()) : klassOop(nilObj);
+  // Objects are written in dependency order: klassKlass first (self-ref), then
+  // other klasses, then instances. All klass refs are backward refs.
+  // klassKlass at index 0 (self-ref -> ref 0)
+  (void)get_object(); // klassKlass
+  smiKlassObj = klassOop(get_object()); // 1
+  Universe::_memOopKlassObj = klassOop(get_object()); // 2
+  Universe::_objArrayKlassObj = klassOop(get_object()); // 3
+  Universe::_byteArrayKlassObj = klassOop(get_object()); // 4
+  symbolKlassObj = klassOop(get_object()); // 5
+  doubleKlassObj = klassOop(get_object()); // 6
+  Universe::_methodKlassObj = klassOop(get_object()); // 7
+  Universe::_associationKlassObj = klassOop(get_object()); // 8
+  zeroArgumentBlockKlassObj = klassOop(get_object()); // 9
+  oneArgumentBlockKlassObj = klassOop(get_object()); // 10
+  twoArgumentBlockKlassObj = klassOop(get_object()); // 11
+  threeArgumentBlockKlassObj = klassOop(get_object()); // 12
+  fourArgumentBlockKlassObj = klassOop(get_object()); // 13
+  fiveArgumentBlockKlassObj = klassOop(get_object()); // 14
+  sixArgumentBlockKlassObj = klassOop(get_object()); // 15
+  sevenArgumentBlockKlassObj = klassOop(get_object()); // 16
+  eightArgumentBlockKlassObj = klassOop(get_object()); // 17
+  nineArgumentBlockKlassObj = klassOop(get_object()); // 18
+  contextKlassObj = klassOop(get_object()); // 19
+  nilObj = memOop(get_object()); // 20
+  trueObj = memOop(get_object()); // 21
+  falseObj = memOop(get_object()); // 22
+  Universe::_vframeKlassObj = HasActivationClass ? klassOop(get_object()) : klassOop(nilObj); // 23
+  Universe::_asciiCharacters = objArrayOop(get_object()); // 24
+  Universe::_systemDictionaryObj = objArrayOop(get_object()); // 25
 
   klassOop platform_klass = klassOop(Universe::find_global(os::platform_class_name()));
   associationOop assoc = Universe::find_global_association("Platform");
@@ -266,21 +231,14 @@ oop bootstrap::get_object() {
       lprintf("r %d\n", v);
     return at(v);
   }
-
-  int size_32 = get_integer();
-  int size = size_32;
-
-  // The .bst file was written on 32-bit where image_oop_size was 4.
-  // For byte-like objects the data portion is packed into oops; on 64-bit
-  // each oop holds 8 bytes instead of 4, so fewer oops are needed.
-  // Recompute the correct 64-bit oop count before allocating.
-  if (type == 'd' || type == 'g' || type == 'e') {
-    int ni = 2; // non_indexable_size for memOop-based byte containers
-    int data_oops_32 = size - ni - 1;
-    int data_bytes = data_oops_32 * 4; // each 32-bit oop held 4 bytes
-    int data_oops_64 = (data_bytes + oopSize - 1) / oopSize;
-    size = ni + 1 + data_oops_64;
+  if (type == '?') {
+    // Native format only: a genuinely uninitialized (NULL) oop slot.
+    if (TraceBootstrap)
+      lprintf("n\n");
+    return NULL;
   }
+
+  int size = get_integer();
 
   memOop m = as_memOop(Universe::allocate_tenured(size));
 
@@ -291,9 +249,6 @@ oop bootstrap::get_object() {
     lprintf("%c %d = 0x%tx\n", type, size, (intptr_t)m);
 
   add(m);
-  register_addr32(_heap32_addr, m);
-  _heap32_addr += size_32 * 4; // 4 bytes per 32-bit oop
-  int my_index = number_of_oops - 1;
   switch (type) {
     // Classes
     case 'A':
@@ -353,11 +308,6 @@ oop bootstrap::get_object() {
       OBJECT_CASE(associationOop);
     case 'j':
       methodOop(m)->bootstrap_object(this);
-      if (_oop_replacement) {
-        m = (memOop)_oop_replacement;
-        oop_table[my_index] = m;
-        _oop_replacement = NULL;
-      }
       break;
     case 'k':
       OBJECT_ERROR("blockClosure")
@@ -371,6 +321,8 @@ oop bootstrap::get_object() {
       OBJECT_ERROR("weakArrayOop")
     case 'p':
       OBJECT_CASE(processOop)
+    case 'q':
+      OBJECT_CASE(doubleValueArrayOop)
     default:
       lprintf("DBG bad obj type 0x%02x ftell=%ld next: ", (u_char)type, (long)ftell(stream));
       for (int i = 0; i < 12; i++)
@@ -386,18 +338,6 @@ void bootstrap::close_file() {
   fclose(stream);
 }
 
-void bootstrap::read_mark(markOop* mark_addr) {
-  char type = get_char();
-  markOop m;
-  if (type == '1')
-    m = markOopDesc::untagged_prototype();
-  else if (type == '2')
-    m = markOopDesc::tagged_prototype();
-  else
-    fatal("expecting a markup");
-  *mark_addr = m;
-}
-
 double bootstrap::read_double() {
   double value;
   unsigned char* str = (unsigned char*)&value;
@@ -405,4 +345,15 @@ double bootstrap::read_double() {
     str[index] = getc(stream);
   }
   return value;
+}
+
+// Raw inline word: 'I' followed by the same sign/magnitude encoding used for
+// small integers.
+int bootstrap::read_native_int() {
+  char type = get_char();
+  if (type != 'I')
+    fatal("expecting a raw native integer");
+  char sign = get_char();
+  int value = get_integer();
+  return sign == '-' ? -value : value;
 }
