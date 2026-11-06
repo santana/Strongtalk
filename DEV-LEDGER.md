@@ -27,8 +27,8 @@
 | `vm/oops/methodOop.hpp` | Modified | Single `bootstrap_object()` declaration |
 | `vm/oops/memOop.cpp` | Modified | Native-only `bootstrap_header()` |
 | `vm/memory/symbolTable.hpp` | Modified | `firstBucket()`/`lastBucket()` made public |
-| `vm/memory/imageWriter.cpp` | Modified (untracked) | Native 64-bit image writer |
-| `vm/memory/imageWriter.hpp` | Modified (untracked) | Writer interface / format notes |
+| `vm/memory/imageWriter.cpp` | Added | Native 64-bit image writer |
+| `vm/memory/imageWriter.hpp` | Added | Writer interface / format notes |
 | `vm/memory/image32.cpp` / `.hpp` | **Deleted** | Dead 32-bit verification/translation module |
 | `vm/interpreter/interpreter.cpp` | Modified | Guarded AArch64-only `tbnz`/`ldr` failure-block sequences for x86-64 |
 | `vm/asm/interpreterBackend_x86.cpp` | Modified | Added the missing `callPrimitive()` (`call_C(eax)`); the macOS linker's `-undefined dynamic_lookup` had hidden the undefined symbol |
@@ -88,17 +88,38 @@ Platform matrix for this change:
 | arm64-macos (clang) | pass | pass, tracked image canonical | pass, scheduler loop, no error markers |
 | x86_64-macos (Rosetta) | pass | pass, tracked image canonical | pass, scheduler loop, no error markers |
 | x86_64-linux (Ubuntu 24.04, GCC 13.3, Docker) | pass | pass (same-platform round trip) | alive after 12 s, no error markers (killed; SIGTERM triggers the VM register dump) |
+| x86_64-windows (MinGW GCC 13, Wine 9 in QEMU TCG amd64 Ubuntu 24.04) | pass | pass (same-platform round trip, 1,514,906 bytes) | alive after 60 s, image read in 0.85 s, no error/AV markers |
 
-The Linux save of the tracked image differs from the tracked file at the
-`Platform` association (macOS `MacOSXPlatform` vs Linux `UnixPlatform`), which
-`load_image()` installs on every load. That is why `test-image` compares two
-saves made on the same platform instead of comparing against the tracked file.
+The Windows/AMD64 run used the MinGW cross-build from `make all OS=mingw` and
+executed `strongtalk.exe` under Wine in an amd64 Ubuntu 24.04 guest emulated by
+QEMU TCG (not Rosetta, whose Wine path is known to fault after image read). The
+round trip saved the tracked image, reloaded it, saved again, and the two
+1,514,906-byte files were byte-identical.
+
+The Linux and Windows saves of the tracked image differ from the tracked file
+in platform-specific state (`UnixPlatform` / `Win32FilePath` versus
+`MacOSXPlatform` and the macOS stat-buffer classes), which `load_image()`
+installs or patches on every load. That is why `test-image` compares two saves
+made on the same platform instead of comparing against the tracked file.
+
+### Windows/AMD64 validation harness
+The MinGW build is produced with
+`make -j$(nproc) all OS=mingw CXX=x86_64-w64-mingw32-g++`. Because Wine under
+Rosetta faults after image read (`invalid gdt selector index 5`), the run used an
+amd64 Ubuntu 24.04 cloud image booted with QEMU TCG, with the build directory
+shared over 9p and Wine 9 installed in the guest. Cloud-init seeds were served
+with `-smbios 'type=1,serial=ds=nocloud-net;s=http://10.0.2.2:8000/'` because
+macOS `hdiutil` ISO labels are uppercase (`CIDATA`) while the NoCloud datasource
+looks for lowercase `cidata`. The guest saved the image twice and compared the
+two files byte-for-byte.
 
 ### What's Broken / Remaining
 1. `make test` still hits the pre-existing `initializeSmalltalkEnvironment()` →
    `Smalltalk initialize` → `Character initialize` →
    `initializeClassifications` failure. This is unrelated to the image format.
-2. Windows x86-64 has not been exercised for this change.
+2. Windows x86-64 was validated locally with a MinGW cross-build under Wine in
+   a QEMU TCG amd64 guest. The native `windows-latest` CI job has not run this
+   change yet (it needs the commit pushed).
 3. The macos/amd64 support needed two pre-existing fixes that were unrelated to
    the image work: the unguarded AArch64 failure-block instructions in
    `interpreter.cpp`, and the missing x86-64 `InterpreterBackend::callPrimitive`.
