@@ -17,6 +17,13 @@ The VM is a work in progress as a project. The C++ code builds on **Linux
 and native MSYS2)** via the portable root `Makefile` (out-of-tree builds), and
 a CI build runs on every push.
 
+The tracked `strongtalk.bst` is a **native 64-bit image** (format version
+`200 + Bytecodes::version()` = 202; 54,866 objects, 1,515,046 bytes). The reader
+accepts only that format — older/32-bit images are rejected with an
+"Unsupported image format" diagnostic — and the image can be regenerated from a
+running VM with `-SaveImage <file>` (`vm/memory/imageWriter.cpp`). See
+[Boot image](#boot-image).
+
 The JIT/code generator has a **single frontend with per-architecture
 backends**: it emits **x86-64 machine code** on x86-64 and **AArch64 machine
 code** on Apple Silicon. The same frontend/backend split extends to the
@@ -46,19 +53,25 @@ the fix the scheduler's `ProcessorScheduler>>start` ran its seven bytecodes,
 dropped all four sends and returned; after it, the system image initialises and
 the image's own error-handling machinery executes on both backends.
 
-| Platform                  | Build  | Runtime                                                          |
+| Platform                  | Build  | Runtime (native image)                                            |
 | ------------------------- | ----- | ---------------------------------------------------------------- |
-| Linux x86-64 (native)     | yes   | builds; reaches `Eval>` but loops in the scheduler error handler (~300k register dumps in 45 s) |
-| macOS arm64 (AArch64)     | yes   | builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>` and evaluates expressions |
-| macOS x86-64 (forced)     | yes   | builds; loads image, reaches `Eval>`, evaluates simple expressions; large allocations can trigger GC faults |
-| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots to `Eval>` and evaluates expressions (`^ 1 + 2` → `3` etc) — see [Windows](#windows-runtime-status) for status |
+| Linux x86-64 (native)     | yes   | boots the native image into the scheduler loop with no error markers; `make test-image` passes in CI |
+| macOS arm64 (AArch64)     | yes   | boots the native image; loads image, passes GC, resolves DLL handles; `make test-image` passes |
+| macOS x86-64 (forced)     | yes   | boots the native image into the scheduler loop; `make test-image` passes |
+| Windows x86-64 (MinGW)    | yes   | builds `strongtalk.exe`/`stest.exe` (PE32+); boots the native image under Wine with no error markers; round trip byte-identical — see [Windows](#windows-runtime-status) |
 
-macOS arm64, macOS x86-64 and Windows x86-64 now reach `Eval>`; the platform
-table above records each configuration's last verified stopping point. The
-remaining blocker is
-shared by both macOS arches and is in the VM's own send path, not in the image
-and not in the code generator: the interpreter's receiver-slot decode for sends
-hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
+All four configurations boot the native image past class initialization and
+into the scheduler loop, with no crash or error markers. The interactive
+`Eval>` prompt is not observable in this harness — the image has no shutdown
+path there and the scheduler keeps running — so **boot-alive plus the
+`make test-image` round trip are the acceptance criteria**. `make test` still
+fails in `Character initialize` → `initializeClassifications` (pre-existing,
+unrelated to the image format); that is the open receiver-slot-decode issue
+described next.
+
+The open root cause behind that failure is in the VM's own send path, not in
+the image and not in the code generator: the interpreter's receiver-slot decode
+for sends hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
 `0x7ffffffffffffffc` — both SMI-tagged) where the receiver object should be, so
 `receiver->klass()` reads ordinary memory through a bogus base. A defensive pass
 (2026-10-13) now guards `inline_cache_miss()` — a SMI receiver resolves to
@@ -67,8 +80,8 @@ hands `InterpretedIC::inline_cache_miss()` a non-pointer (`0xc`,
 corrupted frames. This contains the fault rather than fixing the decode: the
 receiver-slot decode itself is still the thing to root-cause. See [ledger/](ledger/) for detailed per-architecture status and reproduction notes.
 
-Getting the VM running end-to-end requires finding the root cause behind that
-receiver-slot decode.
+Getting the VM through `make test` and to an interactive `Eval>` loop requires
+finding the root cause behind that receiver-slot decode.
 Every configuration is verified by building from the
 root `Makefile`: the native arm64 config, a
 **forced x86-64** config (`make ARCH=x86_64`) on macOS, the Linux/amd64
@@ -89,7 +102,7 @@ and `proxyOop.cpp` (`-Wint-to-pointer-cast`) and `proxy_prims.cpp`
 | `vm/`               | C++ VM source                                     |
 | `source/`            | Legacy Smalltalk library source dump (fileout format with extensionless files and .class stubs; contains change/save logs) |
 | `StrongtalkSource/`  | Primary Smalltalk library source (Delta `.dlt`/`.str`/`.gr` chunk files) |
-| `strongtalk.bst`    | The Smalltalk image file                          |
+| `strongtalk.bst`    | Native 64-bit boot image (format version 202)     |
 | `test/` `easyunit/` | C++ test suite (easyunit) for the VM              |
 | `build/`           | Out-of-tree per-config build dirs (`build/<arch>-<os>-<compiler>`) |
 | `documentation/`    | HTML docs (typed Smalltalk, bytecodes, primitives)|
@@ -116,6 +129,10 @@ Useful targets:
 - `make` / `make vm` — build just the `strongtalk` VM
 - `make stest` — build the test runner
 - `make test` — run the C++ test suite (loads `strongtalk.bst`)
+- `make test-image` — verify the boot image survives a reader/writer round trip
+  (load → save → reload → save, then compare the two saves)
+- `make test IMAGE=/path/to/other.bst` / `make test-image IMAGE=...` — use an
+  alternate image (default: the tracked `strongtalk.bst`)
 - `make docs` — regenerate `documentation/internal/vm/bytecodes.html` (runs the debug VM with `+GenerateHTML`)
 - `make clean` — remove that config's build directory
 - `make pristine` — like `clean`, plus that config's `.d` dependency files
@@ -159,14 +176,62 @@ configs never share objects, so switching configs needs no clean.
 
 ## Running
 
-The VM needs the image file in the working directory:
+Run from the repo root, passing the image explicitly (the build directory holds
+only the binaries and libraries):
 
 ```sh
-cd build/arm64-macos-clang
-DYLD_LIBRARY_PATH=. ./strongtalk   # needs strongtalk.bst at the repo root
+DYLD_LIBRARY_PATH=build/arm64-macos-clang \
+  ./build/arm64-macos-clang/strongtalk -b strongtalk.bst
 ```
 
-On Linux use `LD_LIBRARY_PATH` instead of `DYLD_LIBRARY_PATH`.
+On Linux use `LD_LIBRARY_PATH` instead of `DYLD_LIBRARY_PATH`; on Windows run
+`strongtalk.exe` with the MinGW runtime DLLs next to it. `-b <file>` selects the
+image, and `-SaveImage <file>` loads it, writes a fresh native image, and exits
+(see [Boot image](#boot-image)).
+
+## Boot image
+
+`strongtalk.bst` is a text-based bootstrap stream, not a raw heap dump, and the
+tracked copy is the **native 64-bit image**:
+
+| Property | Value |
+| --- | --- |
+| Format version | `200 + Bytecodes::version()` = **202** |
+| Objects | 54,866 |
+| Size (macOS save) | 1,515,046 bytes |
+| Writer | `vm/memory/imageWriter.cpp` (`-SaveImage <file>`) |
+| Reader | `vm/runtime/bootstrap.cpp` (native only) |
+
+The reader accepts only version ≥ 200. Loading an older (32-bit) image fails
+with an `Unsupported image format` diagnostic; the temporary 32-bit reader
+bridge (`image32.cpp/.hpp`, `_addr32_*`, and the 32-bit method-code relocation
+path) has been removed. The stream starts with the 26 bootstrap roots; objects
+are written inline depth-first with the index assigned at header emission, so
+repeated references, self references, and cycles resolve without a discovery
+pass. Sizes are native oop counts and method codes are in the native layout, so
+the reader applies no fixups. `?` is the NULL token (`N` is a valid mixin type
+char). See
+[ARCHITECTURE.md §3.6](ARCHITECTURE.md#36-boot-image-format) for the full
+format.
+
+`make test-image` guards reader/writer drift: it loads the image, saves it,
+reloads the saved file, saves again, and requires the two saves to be
+byte-identical. Both saves are made on the same platform, because `load_image()`
+installs platform-specific state (the `Platform` association and the platform
+file-path/stat classes); the tracked file itself is therefore only canonical on
+macOS. `make test` and `make test-image` both honor `IMAGE` (default
+`strongtalk.bst`).
+
+Verified on:
+
+| Platform | Build | Round trip | Boot |
+| --- | --- | --- | --- |
+| macOS arm64 (clang) | pass | pass, tracked image canonical | clean scheduler loop |
+| macOS x86-64 (Rosetta) | pass | pass, tracked image canonical | clean scheduler loop |
+| Linux x86-64 (Ubuntu 24.04, GCC 13) | pass | pass (same-platform round trip) | alive, no error markers |
+| Windows x86-64 (MinGW GCC 13, Wine 9) | pass | pass, two byte-identical 1,514,906-byte images | alive, no error/AV markers |
+
+Linux CI runs `make test-image` after `make test`.
 
 ## Version reporting
 
@@ -249,13 +314,18 @@ Knobs:
 
 ## Windows runtime status
 
-The Windows x86-64 configuration **builds, links, boots to the `Eval>` REPL, and
-evaluates expressions**: the full `strongtalk.bst` read-in completes and, under
+The Windows x86-64 configuration **builds, links, and boots the native image**:
+the full `strongtalk.bst` read-in completes (0.85 s under Wine) and, under
 native amd64 Wine (reproduced in QEMU TCG + wine), `strongtalk.exe` runs the
 image-compat `Alien` patches through the real interpreter
-(`Delta::call_generic`), reaches the evaluator, and evaluates `^ 1 + 2` → `3`,
-`^ 3 * 7` → `21`, `^ 6 * 7` → `42` before exiting cleanly (`q`/EOF, exit 0). The
-fixes (see `ledger/windows-x86_64.md`) closed five root causes: an LLP64 mask
+(`Delta::call_generic`) with no error markers. A load/save round trip on the
+tracked image produces two byte-identical 1,514,906-byte images (the tracked
+macOS image differs only in platform-specific state). With the earlier 32-bit
+image the same binary also reached the `Eval>` REPL and evaluated `^ 1 + 2` →
+`3`, `^ 3 * 7` → `21`, `^ 6 * 7` → `42` before exiting cleanly (`q`/EOF,
+exit 0); on the native image the scheduler keeps running, so boot-alive plus
+the round trip are the verified checks. The fixes (see
+`ledger/windows-x86_64.md`) closed five root causes: an LLP64 mask
 truncation in `bits.hpp`, a RIP-relative disp32 wrap on C-global references, the
 missing Windows x64 C-call shadow space/stack alignment that let C callees stamp
 over the interpreter's delta stack, the generated primitives' stack argument ABI
@@ -283,7 +353,7 @@ CI; the smoke runs are best-effort (`continue-on-error`) and capped with
 ## Continuous integration
 
 - `linux.yml` — clang-format check plus the native `ubuntu-latest` (x86-64)
-  build and test.
+  build, tests, and the `make test-image` boot-image round trip.
 - `macos.yml` — native `macos-latest` (arm64) build.
 - `windows-mingw.yml` — Windows (x86-64) cross-built on `ubuntu-latest` with
   the MinGW-w64 toolchain, smoke-tested under Wine.

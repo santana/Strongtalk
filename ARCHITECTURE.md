@@ -473,6 +473,69 @@ static oop* allocate(int size, memOop* p = NULL, bool permit_scavenge = true);
 - If `permit_scavenge` is false, returns NULL if no space
 - `allocate_tenured(size)` allocates directly in old space
 
+### 3.6 Boot Image Format
+
+`strongtalk.bst` is a text-based bootstrap stream, not a raw heap dump. The
+first token is the format version, a base-128 integer; version
+`200 + Bytecodes::version()` (currently **202**) is the only format the reader
+accepts. Older/32-bit images are rejected with an `Unsupported image format`
+diagnostic.
+
+The reader lives in `vm/runtime/bootstrap.cpp` (+ `bootstrap.hpp`) and is
+native-only: sizes and method codes in the stream are already in the native
+64-bit layout, so there are no 32-bit size/address fixups and no method-code
+relocation. `memOopDesc::bootstrap_header()` (`vm/oops/memOop.cpp`) reads the
+klass and installs the prototype mark; `methodOopDesc::bootstrap_object()`
+(`vm/oops/methodOop.cpp`) rebuilds the native method layout exactly. The
+writer (`vm/memory/imageWriter.cpp`) regenerates the stream from a running VM:
+`-SaveImage <file>` (`vm/runtime/arguments.*`) saves right after `load_image()`
+in `vm/runtime/shell.cpp` and exits.
+
+Format details:
+
+- The stream starts with the 26 bootstrap roots beginning with `first_root()`
+  (smiKlass's metaclass); the reader discards root 0 and assigns the rest.
+- Objects are written **inline depth-first**. An index is assigned (and the
+  object marked written) when its header is emitted — the same moment the
+  reader's `get_object()` allocates and registers it — so repeated references,
+  self references, and cycles (`klassKlass`) always resolve. A repeated
+  reference is `'3'` + index.
+- Sizes are native oop counts (`as_mem(obj)->size()`); byte containers need no
+  size recomputation.
+- Type chars come from `format()`. Klasses: `A` klassKlass, `B` smi, `C` mem,
+  `D` byteArray, `E` doubleByteArray, `F` objArray, `G` symbol, `H` double,
+  `I` association, `J` method, `K` blockClosure, `L` context, `M` proxy,
+  `N` mixin, `O` weakArray, `P` process, `Q` doubleValueArray, `R` vframe.
+  Instances: `c` mem, `d` byteArray, `e` doubleByteArray, `f` objArray,
+  `g` symbol, `h` double, `i` association, `j` method, `n` mixin, `p` process,
+  `q` doubleValueArray. `?` is a NULL slot; `N` is a valid mixin type char and
+  must not be reused for NULL.
+- Method codes: instruction count, then per instruction the raw opcode/argument
+  bytes plus structured inline slots. Branch/failure-block offsets and the DLL
+  entry cell are `'I'` + signed integer (the DLL entry is forced to 0 and
+  resolved at runtime); every other inline slot is a normal object value.
+- Process pointers are process-specific: the writer omits them and the reader
+  installs NULL.
+- Instances of `blockClosure`, `context`, `proxy`, `weakArray`, and `vframe`
+  are not serializable (code pointers, stack, foreign addresses). They are not
+  reachable in the frozen graph; the reader rejects them and the writer fails
+  loudly if one ever becomes reachable.
+
+`make test-image` checks reader/writer drift: load the image, save it, reload
+the saved file, save again, and require the two saves to be byte-identical.
+Both saves happen on the same platform because `load_image()` installs
+platform-specific state (the `Platform` association and the platform
+file-path/stat classes), which is why the check does not compare against the
+tracked file. `make test` and `make test-image` load `$(IMAGE)` (default
+`strongtalk.bst`, overridable with `make test IMAGE=...`), and Linux CI runs
+`make test-image` after `make test`.
+
+Verified on macOS arm64, macOS x86-64 (Rosetta), Linux x86-64 (Ubuntu 24.04,
+GCC 13) and Windows x86-64 (MinGW cross-build under Wine 9 in a QEMU TCG
+Ubuntu 24.04 guest). The Windows round trip yields two byte-identical
+1,514,906-byte images; the tracked macOS image is 1,515,046 bytes with 54,866
+objects. All four boot the image into the scheduler loop with no error markers.
+
 ---
 
 ## 4. Runtime Services
@@ -571,12 +634,14 @@ vm/
   interpreter/      Bytecode interpreter (code generation, bytecodes)
   lookup/           Method lookup and inline cache resolution
   memory/           Heap management (universe, spaces, generations,
-                    GC, handle management, symbol table)
+                    GC, handle management, symbol table); native boot-image
+                    writer (imageWriter.*)
   oops/             Object representations (oop hierarchy, klass system)
   prims/            Built-in primitives
   recompiler/       Optimizing JIT compiler and recompilation
   runtime/          Core runtime (processes, frames, stack chunks,
-                    VM operations, OS abstraction, debugging)
+                    VM operations, OS abstraction, boot-image reader
+                    (bootstrap.*), debugging)
   topIncludes/      Fundamental types and constants (tags, bits)
   utilities/        Utility classes (arrays, hash tables, etc.)
 
@@ -603,12 +668,12 @@ Repo-root developer docs:
 
 ## 6. Platform Support
 
-All four configurations build and load the image, and all of them now execute
-real Smalltalk — but they stop in **different** places, because the shared
-blocker that used to mask everything (the frozen image's 4-byte
-`Alien>>ensureLoaded:` site) is handled by `vm/runtime/imageCompat.*` rewriting
-that bytecode at load time, and a second defect was fixed that had been
-silently disabling the interpreter itself:
+All four configurations build and boot the native 64-bit image (§3.6) into the
+scheduler loop with no crash or error markers. The shared blocker that used to
+mask everything (the frozen image's 4-byte `Alien>>ensureLoaded:` site) is
+handled by `vm/runtime/imageCompat.*` rewriting that bytecode at load time, and
+a second defect was fixed that had been silently disabling the interpreter
+itself:
 
 `frame::is_interpreted_activation()` validated a memOop's **mark** word as if it
 were its **klass**. A memOop header is two words — `oopDesc::_mark` at
@@ -625,23 +690,29 @@ word 1 through `as_memOop(start)->klass_addr()`.
 
 | Platform              | Build  | Runtime state  |
 |-----------------------|--------|---------------------------------------------------------------------------|
-| macOS arm64 (native)  | Yes    | Builds; boots, loads image, passes GC, resolves DLL handles; reaches `Eval>`. |
-| macOS x86-64 (forced) | Yes    | Builds; loads image, reaches `Eval>` and evaluates expressions; large allocations can trigger GC faults. |
-| Linux x86-64 (Docker) | Yes    | Builds; reaches `Eval>` but loops in the scheduler error handler. |
-| Windows x86-64 (MinGW) | Yes    | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); reads the image, reaches `Eval>` and evaluates expressions. |
+| macOS arm64 (native)  | Yes    | Builds and boots the native image into the scheduler loop; loads image, passes GC, resolves DLL handles; `make test-image` passes. |
+| macOS x86-64 (forced) | Yes    | Builds and boots the native image into the scheduler loop; `make test-image` passes. |
+| Linux x86-64 (Docker) | Yes    | Builds and boots the native image into the scheduler loop with no error markers; `make test-image` passes in CI. |
+| Windows x86-64 (MinGW) | Yes   | Builds `strongtalk.exe`/`stest.exe` (PE32+) via MinGW-w64 (cross and native MSYS2); boots the native image under Wine with no error markers; round trip byte-identical. |
 
-The remaining blocker is shared by both arches: the interpreter's **receiver-slot
-decode for sends** hands `InterpretedIC::inline_cache_miss()` a non-pointer
+The open root cause behind the `make test` failure (`Character initialize` →
+`initializeClassifications`) is the interpreter's **receiver-slot
+decode for sends**: it hands `InterpretedIC::inline_cache_miss()` a non-pointer
 (`0xc`, `0x7ffffffffffffffc` — both SMI-tagged) where a receiver object should
 be, so `receiver->klass()` reads ordinary memory through a bogus base. This is
 in the VM's send path, not in the image and not in the code generator. In-repo
-`StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the load-time
-`imageCompat` rewrite exists only because the frozen image cannot be regenerated
-in this tree. A defensive pass (2026-10-13) validates the receiver in
+`StrongtalkSource/Alien.dlt` is already correct (`(Alien new: 8)`); the
+`imageCompat` rewrite is retained as an idempotent safety net because the
+tracked image still carries the patched `MacOSXStatBuffer` offsets. A defensive
+pass (2026-10-13) validates the receiver in
 `inline_cache_miss()` before dereferencing `klass()` (a SMI resolves to
 `Universe::smiKlassObj()`; `klass()` is read only for `is_mem()`/`is_block()`/
 `is_proxy()` objects) and hardens `frame::hp()`/`set_hp()` against corrupted
-frames; this contains the fault without yet root-causing the decode. See [README.md](README.md#status) and the
+frames; this contains the fault without yet root-causing the decode. All four
+platforms meet the current boot criterion (image loads, class initialization
+completes, scheduler loop runs) and pass `make test-image`; the interactive
+`Eval>` prompt is not observed on a clean boot because the scheduler keeps
+running. See [README.md](README.md#status) and the
 [architecture ledger](ledger/) for per-architecture details.
 
 ### Platform Abstraction
@@ -737,6 +808,8 @@ configuration builds into its own out-of-tree directory,
 make              # build into build/<arch>-<os>-<compiler>
 make vm           # build just the strongtalk VM
 make test         # run C++ test suite (stest -b strongtalk.bst)
+make test-image   # boot-image reader/writer round trip (same platform)
+make test IMAGE=/path/to/other.bst   # use an alternate boot image
 make docs         # regenerate documentation/internal/vm/bytecodes.html
 make version      # print the build identity this build would embed
 make package      # build a self-contained, versioned, runnable archive
@@ -761,7 +834,9 @@ docker run --rm --platform linux/amd64 \
 ```
 
 The Makefile exports the runtime library path (`DYLD_LIBRARY_PATH` on macOS,
-`LD_LIBRARY_PATH` on Linux) for `make test` and `make docs`.
+`LD_LIBRARY_PATH` on Linux) for `make test`, `make test-image` and `make docs`.
+`IMAGE` selects the boot image for those targets (default
+`$(ROOT_DIR)/strongtalk.bst`).
 
 ### Build identity
 
